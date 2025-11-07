@@ -553,16 +553,15 @@ export default function IOSBaselineAssessment() {
           </div>
 
           <div className="bg-orange-500 bg-opacity-10 border border-orange-500 rounded-lg p-6 mb-6">
-            <h2 className="text-xl font-bold mb-4">What's Next</h2>
-            <p className="text-gray-300 mb-4">
-              You'll now begin <strong>Stage 1: Neural Priming</strong> - where you'll install two daily 
-              practices that teach your nervous system to regulate and your mind to rest in awareness.
-            </p>
-            <p className="text-gray-300">
-              Track your progress, and when you demonstrate competence (≥80% adherence + delta improvement), 
-              you'll unlock the next stage.
-            </p>
-          </div>
+  <h2 className="text-xl font-bold mb-4">What's Next</h2>
+  <p className="text-gray-300 mb-4">
+    You'll now begin <strong>Stage 1 (of 7): Neural Priming</strong> - where you'll install two daily 
+    rituals that teach your NOS to regulate and your mind to rest in awareness.
+  </p>
+  <p className="text-gray-300">
+    We will track your progress, and when ready you'll unlock the next stage.
+  </p>
+</div>
 
           <button
             onClick={() => window.location.href = '/chat'}
