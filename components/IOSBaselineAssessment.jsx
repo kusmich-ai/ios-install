@@ -249,10 +249,10 @@ export default function IOSBaselineAssessment() {
         <div className="max-w-2xl w-full">
           <div className="text-center mb-8">
             <img 
-              src="https://framerusercontent.com/images/OMKXvoLx7cfTffhoTiZXpSVhX8.png?scale-down-to=512" 
-              alt="IOS Logo" 
-              className="w-24 h-24 mx-auto mb-6"
-            />
+  src="/logo.png" 
+  alt="IOS Logo" 
+  className="w-24 h-24 mx-auto mb-6"
+/>
             <h1 className="text-4xl font-bold mb-4">IOS BASELINE ASSESSMENT</h1>
             <p className="text-gray-400 text-lg mb-8">
               Welcome to your neural and mental transformation diagnostic.
