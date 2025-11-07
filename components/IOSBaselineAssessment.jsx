@@ -21,11 +21,11 @@ export default function IOSBaselineAssessment() {
       domain: 'Regulation',
       description: 'Measuring your nervous system\'s baseline stress and regulatory capacity',
       questions: [
-        { text: 'In the past week, how often have you felt unable to control important things in your life?', scale: 'frequency' },
-        { text: 'In the past week, how often have you felt confident about your ability to handle personal problems?', scale: 'frequency', reverse: true },
-        { text: 'In the past week, how often have you felt that things were going your way?', scale: 'frequency', reverse: true },
-        { text: 'In the past week, how often have you felt difficulties piling up so high you could not overcome them?', scale: 'frequency' }
-      ],
+  { text: 'In the past week, how often have you felt unable to control important things in your life?', scale: 'frequency', reverse: true },
+  { text: 'In the past week, how often have you felt confident about your ability to handle personal problems?', scale: 'frequency' },
+  { text: 'In the past week, how often have you felt that things were going your way?', scale: 'frequency' },
+  { text: 'In the past week, how often have you felt difficulties piling up so high you could not overcome them?', scale: 'frequency', reverse: true }
+]
       scaleLabels: ['Never', 'Rarely', 'Sometimes', 'Often', 'Very Often']
     },
     {
@@ -408,19 +408,19 @@ export default function IOSBaselineAssessment() {
               <ol className="space-y-3 text-gray-300">
                 <li className="flex">
                   <span className="font-bold text-orange-500 mr-3">1.</span>
-                  <span>Count breaths <strong>1 through 8</strong> silently in your mind</span>
+                  <span>Count your breaths <strong>1 through 8</strong> silently in your mind</span>
                 </li>
                 <li className="flex">
                   <span className="font-bold text-orange-500 mr-3">2.</span>
-                  <span>Press <strong>"Next Breath"</strong> for each breath (1-8)</span>
+                  <span>Press <strong>"Next Breath"</strong> after each breath (1-8)</span>
                 </li>
                 <li className="flex">
                   <span className="font-bold text-orange-500 mr-3">3.</span>
-                  <span>After breath 8, press <strong>"Complete Cycle"</strong> to mark breath 9</span>
+                  <span>After breath 9, press <strong>"Complete Cycle"</strong> to mark breath 9</span>
                 </li>
                 <li className="flex">
                   <span className="font-bold text-orange-500 mr-3">4.</span>
-                  <span>Immediately start a new cycle (count restarts at 1)</span>
+                  <span>Immediately start a new cycle (starting from 1 in your head)</span>
                 </li>
                 <li className="flex">
                   <span className="font-bold text-orange-500 mr-3">5.</span>
@@ -431,7 +431,7 @@ export default function IOSBaselineAssessment() {
 
             <div className="bg-orange-500 bg-opacity-10 border border-orange-500 rounded-lg p-4 mb-6">
               <p className="text-sm text-orange-300">
-                <strong>Note:</strong> The test runs for 3 minutes. One mistake ends the test. 
+                <strong>Note:</strong> The test runs for 3 minutes.
                 This measures your sustained attention capacity.
               </p>
             </div>
@@ -468,10 +468,10 @@ export default function IOSBaselineAssessment() {
 
             <div className="text-center mb-8">
               <div className="text-gray-400 text-lg mb-2">
-                Count breaths 1-8 internally
+                Take long deep breaths
               </div>
               <div className="text-sm text-gray-500">
-                One mistake ends the test
+                Count breaths 1-8 internally
               </div>
             </div>
 
