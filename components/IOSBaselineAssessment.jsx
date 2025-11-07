@@ -255,46 +255,46 @@ export default function IOSBaselineAssessment() {
 />
             <h1 className="text-4xl font-bold mb-4">IOS BASELINE ASSESSMENT</h1>
             <p className="text-gray-400 text-lg mb-8">
-              Welcome to your neural and mental transformation diagnostic.
+              Welcome to your Integrated Operating System transformation diagnostic.
             </p>
           </div>
 
           <div className="bg-gray-800 rounded-lg p-6 mb-8">
             <p className="text-gray-300 mb-6">
-              This 8-minute assessment establishes your starting point across four core domains:
+              This short 8-minute assessment establishes your starting point across four core domains:
             </p>
             <div className="space-y-3 mb-6">
               <div className="flex items-start">
                 <span className="text-orange-500 mr-3">•</span>
                 <div>
                   <span className="font-semibold">Regulation</span>
-                  <span className="text-gray-400"> - nervous system stability</span>
+                  <span className="text-gray-400"> - NOS stability</span>
                 </div>
               </div>
               <div className="flex items-start">
                 <span className="text-orange-500 mr-3">•</span>
                 <div>
                   <span className="font-semibold">Awareness</span>
-                  <span className="text-gray-400"> - meta-cognitive capacity</span>
+                  <span className="text-gray-400"> - Meta-cognitive Capacity</span>
                 </div>
               </div>
               <div className="flex items-start">
                 <span className="text-orange-500 mr-3">•</span>
                 <div>
                   <span className="font-semibold">Outlook</span>
-                  <span className="text-gray-400"> - emotional baseline</span>
+                  <span className="text-gray-400"> - Emotional Baseline</span>
                 </div>
               </div>
               <div className="flex items-start">
                 <span className="text-orange-500 mr-3">•</span>
                 <div>
                   <span className="font-semibold">Attention</span>
-                  <span className="text-gray-400"> - sustained focus ability</span>
+                  <span className="text-gray-400"> - Sustained Focus Ability</span>
                 </div>
               </div>
             </div>
             <p className="text-sm text-gray-500">
-              Answer honestly - there are no wrong answers. This establishes your transformation starting point.
+              Answer honestly - there are no wrong answers. This establishes your transformation starting point so we can track deltas as you progress through the system.
             </p>
           </div>
 
