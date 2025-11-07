@@ -25,7 +25,7 @@ export default function IOSBaselineAssessment() {
   { text: 'In the past week, how often have you felt confident about your ability to handle personal problems?', scale: 'frequency' },
   { text: 'In the past week, how often have you felt that things were going your way?', scale: 'frequency' },
   { text: 'In the past week, how often have you felt difficulties piling up so high you could not overcome them?', scale: 'frequency', reverse: true }
-]
+],
       scaleLabels: ['Never', 'Rarely', 'Sometimes', 'Often', 'Very Often']
     },
     {
