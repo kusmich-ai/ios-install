@@ -178,26 +178,20 @@ Questions?`);
   const introduceDailyTracking = () => {
     setConversationState('tracking_explained');
 
-    addMessage('assistant', `**Tracking & Progress:**
+    addMessage('assistant', `**Here is how this works:**
 
-Every morning, you'll check in with me:
-- Confirm you completed each practice
-- Rate your calm level (0-5)
+Every morning, you'll check in with me. I'll guide you through the rituals for the day and we'll do a quick status check.
 
-Every Sunday, we'll do a weekly delta check-in:
-- 4 quick questions across all domains
-- Track improvement vs baseline
-
-After 14 days, if you've hit the criteria, Stage 2 unlocks.`);
+After a week, we'll look at the numbers and see if any adjustments need to be made. Then, once you're ready, Stage 2 unlocks.`);
 
     setTimeout(() => {
       addMessage('assistant', `**Important notes:**
 
-**On "rituals" vs "practices":** I call these rituals, not practices. Practices are optional. Rituals are non-negotiable. This is your operating system - treat it like you'd treat brushing your teeth.
+**On "rituals":** I call these rituals, not practices. Practices are optional. Rituals are non-negotiable. This is your operating system—treat it like brushing your teeth, only more important.
 
-**On motivation:** I'm not a cheerleader. I won't celebrate participation trophies. But when you hit real milestones, I'll acknowledge them.
+**On motivation:** I'm not your cheerleader. We don't celebrate participation trophies. I want you to progress. When you hit real milestones, I'll acknowledge them. But you should be ready to show up every day.
 
-**On resistance:** You'll resist. Your nervous system prefers familiar patterns, even dysfunctional ones. When resistance shows up, we'll work with it.
+**On resistance:** You'll resist. Your nervous system prefers familiar patterns, even dysfunctional ones. When resistance shows up, we'll work with it—but don't give up.
 
 Ready to start tomorrow morning?`);
       setConversationState('ready_to_begin');
