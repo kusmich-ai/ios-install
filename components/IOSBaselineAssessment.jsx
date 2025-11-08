@@ -223,25 +223,34 @@ export default function IOSBaselineAssessment() {
   };
 
   const storeBaselineData = async (sectionScores, resultsData) => {
-    try {
-      await window.storage.set('ios:baseline:calm_core', JSON.stringify(sectionScores.calm_core));
-      await window.storage.set('ios:baseline:observer_index', JSON.stringify(sectionScores.observer_index));
-      await window.storage.set('ios:baseline:vitality_index', JSON.stringify(sectionScores.vitality_index));
-      await window.storage.set('ios:baseline:focus_diagnostic', JSON.stringify(sectionScores.focus_diagnostic));
-      await window.storage.set('ios:baseline:presence_test', JSON.stringify(sectionScores.presence_test));
-      await window.storage.set('ios:baseline:domain_scores', JSON.stringify(resultsData.domainScores));
-      await window.storage.set('ios:baseline:rewired_index', JSON.stringify(resultsData.rewiredIndex));
-      await window.storage.set('ios:baseline:tier', JSON.stringify(resultsData.tier));
-      await window.storage.set('ios:baseline:date', JSON.stringify(resultsData.timestamp));
-      await window.storage.set('ios:system_initialized', JSON.stringify(true));
-      await window.storage.set('ios:current_stage', JSON.stringify(1));
-      await window.storage.set('ios:stage_start_date', JSON.stringify(resultsData.timestamp));
-      await window.storage.set('ios:weekly_deltas', JSON.stringify([]));
-      console.log('✅ Baseline data stored successfully');
-    } catch (error) {
-      console.error('❌ Error storing baseline data:', error);
-    }
-  };
+  try {
+    console.log('💾 Storing baseline data...');
+    console.log('📊 Results data:', resultsData);
+    
+    await window.storage.set('ios:baseline:calm_core', JSON.stringify(sectionScores.calm_core));
+    await window.storage.set('ios:baseline:observer_index', JSON.stringify(sectionScores.observer_index));
+    await window.storage.set('ios:baseline:vitality_index', JSON.stringify(sectionScores.vitality_index));
+    await window.storage.set('ios:baseline:focus_diagnostic', JSON.stringify(sectionScores.focus_diagnostic));
+    await window.storage.set('ios:baseline:presence_test', JSON.stringify(sectionScores.presence_test));
+    await window.storage.set('ios:baseline:domain_scores', JSON.stringify(resultsData.domainScores));
+    await window.storage.set('ios:baseline:rewired_index', JSON.stringify(resultsData.rewiredIndex));
+    await window.storage.set('ios:baseline:tier', JSON.stringify(resultsData.tier));
+    await window.storage.set('ios:baseline:date', JSON.stringify(resultsData.timestamp));
+    await window.storage.set('ios:system_initialized', JSON.stringify(true));
+    await window.storage.set('ios:current_stage', JSON.stringify(1));
+    await window.storage.set('ios:stage_start_date', JSON.stringify(resultsData.timestamp));
+    await window.storage.set('ios:weekly_deltas', JSON.stringify([]));
+    
+    console.log('✅ Baseline data stored successfully');
+    
+    // Verify it was stored
+    const verify = await window.storage.get('ios:system_initialized');
+    console.log('🔍 Verification check:', verify);
+    
+  } catch (error) {
+    console.error('❌ Error storing baseline data:', error);
+  }
+};
 
   if (stage === 'welcome') {
     return (
