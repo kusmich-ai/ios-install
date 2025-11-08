@@ -250,9 +250,9 @@ const storeBaselineData = async (sectionScores, resultsData) => {
     await storage.set('ios:daily_log', JSON.stringify([]));
     await storage.set('ios:weekly_deltas', JSON.stringify([]));
     
-    console.log('✅ All baseline data stored');
+    console.log('✅ Baseline data stored successfully');
     
-    // Verification
+    // Verify critical keys
     const verifyInit = await storage.get('ios:system_initialized');
     const verifyIndex = await storage.get('baseline:rewired_index');
     console.log('🔍 Verification - Initialized:', verifyInit);
