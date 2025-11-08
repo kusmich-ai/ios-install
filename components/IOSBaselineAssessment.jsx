@@ -291,8 +291,6 @@ const storeBaselineData = async (sectionScores, resultsData) => {
     const verifyIndex = await storage.get('baseline:rewired_index');
     console.log('🔍 Verification - Initialized:', verifyInit);
     console.log('🔍 Verification - REwired Index:', verifyIndex);
-    
-  } catch (error) {
     console.error('❌ Error storing baseline data:', error);
   }
 };
