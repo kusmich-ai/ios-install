@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { storage } from '../lib/storage';
 
 export default function ChatPage() {
   const [messages, setMessages] = useState([]);
@@ -26,7 +27,7 @@ export default function ChatPage() {
   try {
     // DEBUG: Log what we're getting from storage
     console.log('🔍 Checking storage...');
-    const initializedData = await window.storage.get('ios:system_initialized');
+    const initializedData = await storage.get('ios:system_initialized');
     console.log('📦 Initialized data:', initializedData);
     
     if (!initializedData || !initializedData.value) {
@@ -46,10 +47,10 @@ export default function ChatPage() {
 
     // Load all baseline data
     console.log('📊 Loading baseline data...');
-    const rewiredIndex = JSON.parse((await window.storage.get('ios:baseline:rewired_index')).value);
-    const tier = JSON.parse((await window.storage.get('ios:baseline:tier')).value);
-    const domainScores = JSON.parse((await window.storage.get('ios:baseline:domain_scores')).value);
-    const currentStage = JSON.parse((await window.storage.get('ios:current_stage')).value);
+    const rewiredIndex = JSON.parse((await storage.get('ios:baseline:rewired_index')).value);
+    const tier = JSON.parse((await storage.get('ios:baseline:tier')).value);
+    const domainScores = JSON.parse((await storage.get('ios:baseline:domain_scores')).value);
+    const currentStage = JSON.parse((await storage.get('ios:current_stage')).value);
 
     console.log('✅ Loaded data:', { rewiredIndex, tier, domainScores, currentStage });
 
