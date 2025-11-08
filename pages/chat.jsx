@@ -23,39 +23,51 @@ export default function ChatPage() {
   }, []);
 
   const loadBaselineData = async () => {
-    try {
-      // Check if system is initialized
-      const initialized = await window.storage.get('ios:system_initialized');
-      
-      if (!initialized || initialized.value !== 'true') {
-        // No baseline data - redirect to assessment
-        window.location.href = '/assessment';
-        return;
-      }
-
-      // Load all baseline data
-      const rewiredIndex = JSON.parse((await window.storage.get('ios:baseline:rewired_index')).value);
-      const tier = JSON.parse((await window.storage.get('ios:baseline:tier')).value);
-      const domainScores = JSON.parse((await window.storage.get('ios:baseline:domain_scores')).value);
-      const currentStage = JSON.parse((await window.storage.get('ios:current_stage')).value);
-
-      setUserData({
-        rewiredIndex,
-        tier,
-        domainScores,
-        currentStage
-      });
-
-      // Start conversation
-      setIsLoading(false);
-      startOnboarding(rewiredIndex, tier, domainScores);
-
-    } catch (error) {
-      console.error('Error loading baseline data:', error);
-      // If error, redirect to assessment
+  try {
+    // DEBUG: Log what we're getting from storage
+    console.log('🔍 Checking storage...');
+    const initializedData = await window.storage.get('ios:system_initialized');
+    console.log('📦 Initialized data:', initializedData);
+    
+    if (!initializedData || !initializedData.value) {
+      console.log('❌ No initialization data found');
       window.location.href = '/assessment';
+      return;
     }
-  };
+    
+    const initialized = JSON.parse(initializedData.value);
+    console.log('✅ Parsed initialized:', initialized);
+    
+    if (!initialized) {
+      console.log('❌ Initialized is false');
+      window.location.href = '/assessment';
+      return;
+    }
+
+    // Load all baseline data
+    console.log('📊 Loading baseline data...');
+    const rewiredIndex = JSON.parse((await window.storage.get('ios:baseline:rewired_index')).value);
+    const tier = JSON.parse((await window.storage.get('ios:baseline:tier')).value);
+    const domainScores = JSON.parse((await window.storage.get('ios:baseline:domain_scores')).value);
+    const currentStage = JSON.parse((await window.storage.get('ios:current_stage')).value);
+
+    console.log('✅ Loaded data:', { rewiredIndex, tier, domainScores, currentStage });
+
+    setUserData({
+      rewiredIndex,
+      tier,
+      domainScores,
+      currentStage
+    });
+
+    setIsLoading(false);
+    startOnboarding(rewiredIndex, tier, domainScores);
+
+  } catch (error) {
+    console.error('❌ Error loading baseline data:', error);
+    window.location.href = '/assessment';
+  }
+};
 
   const startOnboarding = (rewiredIndex, tier, domainScores) => {
     // Initial greeting
