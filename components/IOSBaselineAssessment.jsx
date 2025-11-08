@@ -222,41 +222,53 @@ export default function IOSBaselineAssessment() {
     setStage('results');
   };
 
-const storeBaselineData = async (resultsData) => {
-     try {
-       const storage = window.storage;
-       const sectionScores = resultsData.sectionScores;
-       
-       // Use consistent key naming without 'ios:' prefix
-       await storage.set('baseline:calm_core', JSON.stringify(sectionScores.calm_core));
-       await storage.set('baseline:observer_index', JSON.stringify(sectionScores.observer_index));
-       await storage.set('baseline:vitality_index', JSON.stringify(sectionScores.vitality_index));
-       await storage.set('baseline:focus_diagnostic', JSON.stringify(sectionScores.focus_diagnostic));
-       await storage.set('baseline:presence_test', JSON.stringify(sectionScores.presence_test));
-       await storage.set('baseline:domain_scores', JSON.stringify(resultsData.domainScores));
-       await storage.set('baseline:rewired_index', JSON.stringify(resultsData.rewiredIndex));
-       await storage.set('baseline:tier', JSON.stringify(resultsData.tier));
-       await storage.set('baseline:date', JSON.stringify(resultsData.timestamp));
-       
-       // System state keys can keep 'ios:' prefix (these are different)
-       await storage.set('ios:system_initialized', JSON.stringify(true));
-       await storage.set('ios:current_stage', JSON.stringify(1));
-       await storage.set('ios:stage_start_date', JSON.stringify(resultsData.timestamp));
-       await storage.set('ios:daily_log', JSON.stringify([]));
-       await storage.set('ios:weekly_deltas', JSON.stringify([]));
-       
-       console.log('✅ Baseline data stored successfully');
-       
-       // Verify critical keys
-       const verifyInit = await storage.get('system_initialized');
-       const verifyIndex = await storage.get('baseline:rewired_index');
-       console.log('🔍 Verification - Initialized:', verifyInit);
-       console.log('🔍 Verification - REwired Index:', verifyIndex);
-       
-     } catch (error) {
-       console.error('❌ Error storing baseline data:', error);
-     }
-   };
+const storeBaselineData = async (sectionScores, resultsData) => {
+  try {
+    const { supabase, userId } = await import('../lib/storage').then(m => ({
+      supabase: m.supabase,
+      userId: m.userId
+    }));
+    
+    // Store each piece of data
+    const dataToStore = [
+      { key: 'baseline:calm_core', value: sectionScores.calm_core },
+      { key: 'baseline:observer_index', value: sectionScores.observer_index },
+      { key: 'baseline:vitality_index', value: sectionScores.vitality_index },
+      { key: 'baseline:focus_diagnostic', value: sectionScores.focus_diagnostic },
+      { key: 'baseline:presence_test', value: sectionScores.presence_test },
+      { key: 'baseline:domain_scores', value: resultsData.domainScores },
+      { key: 'baseline:rewired_index', value: resultsData.rewiredIndex },
+      { key: 'baseline:tier', value: resultsData.tier },
+      { key: 'baseline:date', value: resultsData.timestamp },
+      { key: 'ios:system_initialized', value: true },
+      { key: 'ios:current_stage', value: 1 },
+      { key: 'ios:stage_start_date', value: resultsData.timestamp },
+      { key: 'ios:daily_log', value: [] },
+      { key: 'ios:weekly_deltas', value: [] }
+    ];
+
+    for (const item of dataToStore) {
+      const { error } = await supabase
+        .from('storage')
+        .upsert({
+          user_id: userId,
+          key: item.key,
+          value: item.value
+        }, {
+          onConflict: 'user_id,key'
+        });
+
+      if (error) {
+        console.error(`Error storing ${item.key}:`, error);
+      }
+    }
+    
+    console.log('✅ Baseline data stored successfully to Supabase');
+    
+  } catch (error) {
+    console.error('❌ Error storing baseline data:', error);
+  }
+};
   if (stage === 'welcome') {
     return (
       <div className="min-h-screen bg-gray-900 text-white p-8 flex items-center justify-center">
