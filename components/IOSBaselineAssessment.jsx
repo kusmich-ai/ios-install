@@ -308,4 +308,279 @@ export default function IOSBaselineAssessment() {
 
           <button
             onClick={() => setStage('assessment')}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-6 rounded-lg transition
+            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-6 rounded-lg transition-colors text-lg"
+          >
+            Begin Assessment
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (stage === 'assessment') {
+    const progress = ((currentQuestion + 1) / section.questions.length) * 100;
+    const overallProgress = ((currentSection * 100 + progress) / (sections.length * 100)) * 100;
+
+    return (
+      <div className="min-h-screen bg-gray-900 text-white p-8">
+        <div className="max-w-3xl mx-auto">
+          <div className="mb-6">
+            <div className="flex justify-between text-sm text-gray-400 mb-2">
+              <span>Overall Progress</span>
+              <span>Section {currentSection + 1} of {sections.length}</span>
+            </div>
+            <div className="w-full bg-gray-700 rounded-full h-2">
+              <div 
+                className="bg-orange-500 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${overallProgress}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="bg-gray-800 rounded-lg p-6 mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-2xl font-bold">{section.name}</h2>
+              <span className="text-orange-500 text-sm font-semibold">{section.domain}</span>
+            </div>
+            <p className="text-gray-400 text-sm">{section.description}</p>
+          </div>
+
+          <div className="bg-gray-800 rounded-lg p-8">
+            <div className="mb-6">
+              <div className="text-sm text-gray-400 mb-4">
+                Question {currentQuestion + 1} of {section.questions.length}
+              </div>
+              <p className="text-xl mb-8">{question.text}</p>
+            </div>
+
+            <div className="space-y-3 mb-8">
+              {section.scaleLabels.map((label, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleResponse(idx)}
+                  className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
+                    selectedValue === idx
+                      ? 'border-orange-500 bg-orange-500 bg-opacity-10'
+                      : 'border-gray-600 hover:border-gray-500'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span>{label}</span>
+                    {selectedValue === idx && (
+                      <span className="text-orange-500 text-xl">✓</span>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <div className="mb-6">
+              <div className="w-full bg-gray-700 rounded-full h-1">
+                <div 
+                  className="bg-orange-500 h-1 rounded-full transition-all duration-300"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+
+            <button
+              onClick={handleNext}
+              disabled={selectedValue === null}
+              className={`w-full py-4 px-6 rounded-lg font-bold transition-colors ${
+                selectedValue !== null
+                  ? 'bg-orange-500 hover:bg-orange-600 text-white'
+                  : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              {currentQuestion < section.questions.length - 1 ? 'Next Question' : 
+               currentSection < sections.length - 1 ? 'Continue to Next Section' : 'Complete Section'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (stage === 'bct_intro') {
+    return (
+      <div className="min-h-screen bg-gray-900 text-white p-8 flex items-center justify-center">
+        <div className="max-w-2xl w-full">
+          <div className="bg-gray-800 rounded-lg p-8">
+            <div className="text-center mb-6">
+              <h2 className="text-3xl font-bold mb-2">Presence Test</h2>
+              <p className="text-orange-500 font-semibold">Section 5 of 5 - Final Assessment</p>
+            </div>
+
+            <div className="bg-gray-700 rounded-lg p-6 mb-6">
+              <h3 className="font-bold text-lg mb-4">Instructions:</h3>
+              <ol className="space-y-3 text-gray-300">
+                <li className="flex">
+                  <span className="font-bold text-orange-500 mr-3">1.</span>
+                  <span>Count breaths <strong>1 through 8</strong> silently in your mind</span>
+                </li>
+                <li className="flex">
+                  <span className="font-bold text-orange-500 mr-3">2.</span>
+                  <span>Press <strong>"Next Breath"</strong> for each breath (1-8)</span>
+                </li>
+                <li className="flex">
+                  <span className="font-bold text-orange-500 mr-3">3.</span>
+                  <span>After breath 8, press <strong>"Complete Cycle"</strong> to mark breath 9</span>
+                </li>
+                <li className="flex">
+                  <span className="font-bold text-orange-500 mr-3">4.</span>
+                  <span>Immediately start a new cycle (count restarts at 1)</span>
+                </li>
+                <li className="flex">
+                  <span className="font-bold text-orange-500 mr-3">5.</span>
+                  <span>If you lose count, press <strong>"Lost Count"</strong></span>
+                </li>
+              </ol>
+            </div>
+
+            <div className="bg-orange-500 bg-opacity-10 border border-orange-500 rounded-lg p-4 mb-6">
+              <p className="text-sm text-orange-300">
+                <strong>Note:</strong> The test runs for 3 minutes. One mistake ends the test. 
+                This measures your sustained attention capacity.
+              </p>
+            </div>
+
+            <button
+              onClick={startBCT}
+              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
+            >
+              <span className="text-xl">▶</span>
+              Start 3-Minute Test
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (stage === 'bct_active') {
+    return (
+      <div className="min-h-screen bg-gray-900 text-white p-8 flex items-center justify-center">
+        <div className="max-w-2xl w-full">
+          <div className="bg-gray-800 rounded-lg p-8">
+            <div className="text-center mb-8">
+              <div className="text-6xl font-bold text-orange-500 mb-2">
+                {formatTime(bctTime)}
+              </div>
+              <div className="text-gray-400">Time Remaining</div>
+            </div>
+
+            <div className="text-center mb-8">
+              <div className="text-4xl font-bold mb-2">{bctCycles}</div>
+              <div className="text-gray-400">Cycles Completed</div>
+            </div>
+
+            <div className="text-center mb-8">
+              <div className="text-gray-400 text-lg mb-2">
+                Count breaths 1-8 internally
+              </div>
+              <div className="text-sm text-gray-500">
+                One mistake ends the test
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <button
+                onClick={handleBreath}
+                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-8 px-6 rounded-lg transition-all text-xl active:scale-95"
+              >
+                Next Breath
+                <div className="text-sm font-normal mt-1 opacity-90">Press for breaths 1-8</div>
+              </button>
+
+              <button
+                onClick={handleCompleteCycle}
+                className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-8 px-6 rounded-lg transition-all text-xl active:scale-95"
+              >
+                Complete Cycle
+                <div className="text-sm font-normal mt-1 opacity-90">Press after breath 8 (marks breath 9)</div>
+              </button>
+
+              <button
+                onClick={handleLostCount}
+                className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-6 px-6 rounded-lg transition-all active:scale-95"
+              >
+                Lost Count
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (stage === 'results' && results) {
+    return (
+      <div className="min-h-screen bg-gray-900 text-white p-8">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold mb-4">Baseline Assessment Complete</h1>
+            <p className="text-gray-400">Your transformation starting point has been established</p>
+          </div>
+
+          <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg p-8 mb-6 text-center">
+            <div className="text-sm font-semibold text-orange-100 mb-2">REwired Index</div>
+            <div className="text-7xl font-bold mb-2">{results.rewiredIndex}</div>
+            <div className="text-xl font-semibold text-orange-100">{results.tier}</div>
+          </div>
+
+          <div className="bg-gray-800 rounded-lg p-6 mb-6">
+            <h2 className="text-xl font-bold mb-6">Domain Breakdown</h2>
+            <div className="space-y-6">
+              {Object.entries(results.domainScores).map(([domain, score]) => (
+                <div key={domain}>
+                  <div className="flex justify-between mb-2">
+                    <span className="font-semibold capitalize">{domain}</span>
+                    <span className="text-orange-500">{score.toFixed(1)}/5.0</span>
+                  </div>
+                  <div className="w-full bg-gray-700 rounded-full h-3">
+                    <div 
+                      className="bg-orange-500 h-3 rounded-full transition-all"
+                      style={{ width: `${(score / 5) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-gray-800 rounded-lg p-6 mb-6">
+            <h2 className="text-xl font-bold mb-4">What This Means</h2>
+            <p className="text-gray-300 mb-4">
+              Your REwired Index of <strong className="text-orange-500">{results.rewiredIndex}</strong> represents 
+              your current baseline across nervous system regulation, meta-awareness, emotional outlook, and sustained attention.
+            </p>
+            <p className="text-gray-300">
+              This isn't good or bad - it's simply your starting point. The IOS is designed to systematically 
+              upgrade each domain through progressive stage unlocks.
+            </p>
+          </div>
+
+          <div className="bg-orange-500 bg-opacity-10 border border-orange-500 rounded-lg p-6 mb-6">
+            <h2 className="text-xl font-bold mb-4">What's Next</h2>
+            <p className="text-gray-300 mb-4">
+              You'll now begin <strong>Stage 1 (of 7): Neural Priming</strong> - where you'll install two daily 
+              rituals that teach your NOS to regulate and your mind to rest in awareness.
+            </p>
+            <p className="text-gray-300">
+              We will track your progress, and when ready you'll unlock the next stage.
+            </p>
+          </div>
+
+          <button
+            onClick={() => window.location.href = '/chat'}
+            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-6 rounded-lg transition-colors text-lg"
+          >
+            Continue to System Installer
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
