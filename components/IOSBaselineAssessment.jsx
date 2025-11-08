@@ -226,7 +226,18 @@ const storeBaselineData = async (sectionScores, resultsData) => {
   try {
     console.log('💾 Storing baseline data...');
     console.log('📊 Results data:', resultsData);
-    
+      // Verify storage worked
+  const verifyStorage = await storage.get('baseline:rewired_index');
+  if (!verifyStorage) {
+    console.error('❌ WARNING: Storage verification failed!');
+    alert('Data may not have saved properly. Please try again or contact support.');
+  } else {
+    console.log('✅ Storage verified successfully');
+  }
+  
+  setResults(resultsData);
+  setStage('results');
+};
     // Use consistent key naming without 'ios:' prefix
     await storage.set('baseline:calm_core', JSON.stringify(sectionScores.calm_core));
     await storage.set('baseline:observer_index', JSON.stringify(sectionScores.observer_index));
