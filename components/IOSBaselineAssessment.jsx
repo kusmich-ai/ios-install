@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { storage } from '../lib/storage';
+import { supabase, userId } from '../lib/storage';
 
 export default function IOSBaselineAssessment() {
   const [stage, setStage] = useState('welcome');
@@ -224,10 +224,9 @@ export default function IOSBaselineAssessment() {
 
 const storeBaselineData = async (sectionScores, resultsData) => {
   try {
-    const { supabase, userId } = await import('../lib/storage').then(m => ({
-      supabase: m.supabase,
-      userId: m.userId
-    }));
+    console.log('🔄 Starting to store baseline data...');
+    console.log('User ID:', userId);
+    console.log('Supabase client:', supabase ? 'Available' : 'Undefined');
     
     // Store each piece of data
     const dataToStore = [
@@ -248,7 +247,9 @@ const storeBaselineData = async (sectionScores, resultsData) => {
     ];
 
     for (const item of dataToStore) {
-      const { error } = await supabase
+      console.log(`📝 Storing ${item.key}...`);
+      
+      const { data, error } = await supabase
         .from('storage')
         .upsert({
           user_id: userId,
@@ -259,11 +260,13 @@ const storeBaselineData = async (sectionScores, resultsData) => {
         });
 
       if (error) {
-        console.error(`Error storing ${item.key}:`, error);
+        console.error(`❌ Error storing ${item.key}:`, error);
+      } else {
+        console.log(`✅ Stored ${item.key}`);
       }
     }
     
-    console.log('✅ Baseline data stored successfully to Supabase');
+    console.log('✅ All baseline data stored successfully to Supabase');
     
   } catch (error) {
     console.error('❌ Error storing baseline data:', error);
