@@ -248,11 +248,24 @@ export default function IOSBaselineAssessment() {
     if (!userId) return;
     
     try {
+      // Save full baseline data
       await storage.set(`baseline_${userId}`, JSON.stringify({
         ...data,
         timestamp: new Date().toISOString(),
         userId
       }));
+      
+      // Also save as current baseline for easy access by chat
+      await storage.set('ios_current_baseline', JSON.stringify({
+        userId,
+        scores: data.scores,
+        timestamp: new Date().toISOString(),
+        completed: true
+      }));
+      
+      // Save baseline completion flag
+      await storage.set('ios_baseline_complete', 'true');
+      
       console.log('✅ Baseline data saved to Supabase');
     } catch (error) {
       console.error('❌ Error saving baseline data:', error);
@@ -482,6 +495,23 @@ export default function IOSBaselineAssessment() {
     setStage('results');
   };
 
+  const handleContinueToChat = () => {
+    // Build URL with baseline data as query params for immediate access
+    const params = new URLSearchParams({
+      baseline_complete: 'true',
+      rewired_index: scores.rewiredIndex.toFixed(1),
+      regulation: scores.regulation.toFixed(2),
+      awareness: scores.awareness.toFixed(2),
+      outlook: scores.outlook.toFixed(2),
+      attention: scores.attention.toFixed(2),
+      tier: scores.tier,
+      user_id: userId
+    });
+    
+    // Redirect to chat page with baseline data
+    window.location.href = `/chat?${params.toString()}`;
+  };
+
   const startAssessment = () => {
     setStage('assessment');
     setCurrentSection(sectionOrder[0]);
@@ -669,7 +699,7 @@ export default function IOSBaselineAssessment() {
             </div>
 
             <button
-              onClick={() => window.location.href = '/'}
+              onClick={handleContinueToChat}
               className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
             >
               Continue to IOS Installation
