@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { storage } from '../lib/storage';
 
 export default function IOSBaselineAssessment() {
   const [stage, setStage] = useState('welcome');
