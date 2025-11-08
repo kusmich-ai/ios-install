@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { supabase, userId } from '../lib/storage';
+import storage from '../lib/storage';
 
 export default function IOSBaselineAssessment() {
   const [stage, setStage] = useState('welcome');
