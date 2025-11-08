@@ -144,31 +144,31 @@ These four domains form your neural and mental operating system. We're going to 
 This stage installs two daily rituals that form the foundation of everything else.`);
 
     setTimeout(() => {
-      addMessage('assistant', `**Your Daily Practices:**
+      addMessage('assistant', `**Your Daily Rituals:**
 
-**1. 🫁 Resonance Breathing (HRVB)** - 5-7 minutes
+**1. 🫁 Resonance Breathing (HRVB)** - 5 mins
    *When:* Morning, immediately upon waking
-   *What:* 4-second inhale, 6-second exhale rhythm
+   *What:* 4-second inhale, 6-second exhale rhythm (for 5 mins). Follow the guided video.
    *Why:* Stimulates vagus nerve, increases heart rate variability, builds regulatory capacity
 
-**2. 👁 Awareness Rep** - 2 minutes  
-   *When:* Morning after breathing (+ optional midday/evening)
-   *What:* Guided decentering practice - rest in awareness, not reactivity
-   *Why:* Strengthens meta-awareness circuitry, teaches your mind to observe rather than identify with thought
+**2. 👁 Awareness Rep** - 3 minutes
+   *When:* Morning after Resonance Breathing (+ optional midday/evening if you want to train it further or find calm)
+   *What:* Guided decentering practice where you rest in awareness, not reactivity
+   *Why:* Strengthens meta-awareness circuitry, teaches your mind to observe rather than identify with thought.
 
-That's it. Two practices. Every morning.`);
+That's it. Two rituals. Every morning.`);
     }, 2000);
 
     setTimeout(() => {
       addMessage('assistant', `**Here's how this works:**
 
-You'll do these practices daily for at least 14 days.
+You'll do these rituals daily for at least 14 days.
 
-I'll track your adherence and progress through weekly check-ins.
+I'll track your progress through regular check-ins.
 
-When you hit ≥80% adherence + show delta improvement in Regulation and Awareness, you'll unlock Stage 2.
+When we see stability with Regulation and Awareness, you'll unlock Stage 2.
 
-No unlock without competence proof. The system doesn't install without repetition.
+Consistency is key.
 
 Questions?`);
       setConversationState('awaiting_practice_acknowledgment');
