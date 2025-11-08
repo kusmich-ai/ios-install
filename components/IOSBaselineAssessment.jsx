@@ -1,206 +1,267 @@
-import React, { useState, useEffect, useRef } from 'react';
-import storage from '../lib/storage';
+import React, { useState, useEffect } from 'react';
+import { storage } from '../lib/storage'; // Named export, not default
 
 export default function IOSBaselineAssessment() {
   const [stage, setStage] = useState('welcome');
-  const [currentSection, setCurrentSection] = useState(0);
-  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [currentSection, setCurrentSection] = useState(null);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [responses, setResponses] = useState({});
-  const [selectedValue, setSelectedValue] = useState(null);
-  const [bctActive, setBctActive] = useState(false);
-  const [bctTime, setBctTime] = useState(180);
-  const [bctBreaths, setBctBreaths] = useState(0);
-  const [bctCycles, setBctCycles] = useState(0);
-  const [bctScore, setBctScore] = useState(0);
-  const [results, setResults] = useState(null);
-  const timerRef = useRef(null);
+  const [userId, setUserId] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [scores, setScores] = useState(null);
 
-  const sections = [
-    {
-      id: 'calm_core',
-      name: 'Calm Core Assessment',
-      domain: 'Regulation',
-      description: 'Measuring your nervous system\'s baseline stress and regulatory capacity',
-      questions: [
-        { text: 'In the past week, how often have you felt unable to control important things in your life?', scale: 'frequency', reverse: true },
-        { text: 'In the past week, how often have you felt confident about your ability to handle personal problems?', scale: 'frequency' },
-        { text: 'In the past week, how often have you felt that things were going your way?', scale: 'frequency' },
-        { text: 'In the past week, how often have you felt difficulties piling up so high you could not overcome them?', scale: 'frequency', reverse: true }
-      ],
-      scaleLabels: ['Never', 'Rarely', 'Sometimes', 'Often', 'Very Often']
-    },
-    {
-      id: 'observer_index',
-      name: 'Observer Index',
-      domain: 'Awareness',
-      description: 'Assessing your capacity for meta-awareness and cognitive decentering',
-      questions: [
-        { text: 'I am able to separate myself from my thoughts and feelings', scale: 'agreement' },
-        { text: 'I can observe unpleasant feelings without getting caught up in them', scale: 'agreement' },
-        { text: 'I am able to see my thoughts as mental events rather than facts', scale: 'agreement' },
-        { text: 'I can notice when my mind wanders without getting lost in thought', scale: 'agreement' },
-        { text: 'I experience my thoughts as separate from who I am', scale: 'agreement' },
-        { text: 'I can watch my feelings without being swept away by them', scale: 'agreement' },
-        { text: 'I am able to see my experiences from a distance', scale: 'agreement' }
-      ],
-      scaleLabels: ['Strongly Disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly Agree']
-    },
-    {
-      id: 'vitality_index',
-      name: 'Vitality Index',
-      domain: 'Outlook',
-      description: 'Measuring your baseline emotional tone and life satisfaction',
-      questions: [
-        { text: 'Over the past two weeks, I have felt cheerful and in good spirits', scale: 'frequency' },
-        { text: 'Over the past two weeks, I have felt calm and relaxed', scale: 'frequency' },
-        { text: 'Over the past two weeks, I have felt active and vigorous', scale: 'frequency' },
-        { text: 'Over the past two weeks, I woke up feeling fresh and rested', scale: 'frequency' },
-        { text: 'Over the past two weeks, my daily life has been filled with things that interest me', scale: 'frequency' }
-      ],
-      scaleLabels: ['Never', 'Rarely', 'Sometimes', 'Often', 'Very Often']
-    },
-    {
-      id: 'focus_diagnostic',
-      name: 'Focus Diagnostic',
-      domain: 'Attention',
-      description: 'Evaluating sustained attention and mind-wandering patterns',
-      questions: [
-        { text: 'I find my thoughts wandering spontaneously', scale: 'frequency' },
-        { text: 'When I\'m working, I find myself thinking about things unrelated to the task', scale: 'frequency' },
-        { text: 'I have difficulty maintaining focus on simple or repetitive tasks', scale: 'frequency' },
-        { text: 'While reading, I find I haven\'t been thinking about the text', scale: 'frequency' },
-        { text: 'I do things without paying full attention', scale: 'frequency' }
-      ],
-      scaleLabels: ['Never', 'Rarely', 'Sometimes', 'Often', 'Very Often']
-    }
-  ];
-
-  const section = sections[currentSection];
-  const question = section?.questions[currentQuestion];
-
+  // Load or initialize user on mount
   useEffect(() => {
-    if (bctActive && bctTime > 0) {
-      timerRef.current = setInterval(() => {
-        setBctTime(prev => {
-          if (prev <= 1) {
-            completeBCT(180);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      return () => clearInterval(timerRef.current);
-    }
-  }, [bctActive, bctTime]);
+    initializeUser();
+  }, []);
 
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  const initializeUser = async () => {
+    try {
+      // Get user ID from localStorage (getUserId handles creation)
+      let storedUserId = localStorage.getItem('ios_user_id');
+      if (!storedUserId) {
+        storedUserId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('ios_user_id', storedUserId);
+      }
+      setUserId(storedUserId);
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error initializing user:', error);
+      const fallbackId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      setUserId(fallbackId);
+      setIsLoading(false);
+    }
   };
 
-  const handleResponse = (value) => {
-    setSelectedValue(value);
+  const saveBaselineData = async (data) => {
+    if (!userId) return;
+    
+    try {
+      // Save to Supabase via your storage wrapper
+      // Your storage.js handles both Supabase AND localStorage automatically
+      await storage.set(`baseline_${userId}`, JSON.stringify({
+        ...data,
+        timestamp: new Date().toISOString(),
+        userId
+      }));
+      
+      console.log('✅ Baseline data saved (Supabase primary, localStorage fallback)');
+    } catch (error) {
+      console.error('❌ Error saving baseline data:', error);
+    }
+  };
+
+  // Assessment sections data
+  const assessmentSections = {
+    calmCore: {
+      title: "Calm Core Assessment",
+      subtitle: "Regulation Domain (~1 min)",
+      description: "Measures perceived stress and autonomic load",
+      questions: [
+        {
+          id: "cc1",
+          text: "In the last month, how often have you felt that you were unable to control the important things in your life?",
+          scale: { min: 0, max: 4, labels: ["Never", "Almost never", "Sometimes", "Fairly often", "Very often"] }
+        },
+        {
+          id: "cc2",
+          text: "In the last month, how often have you felt confident about your ability to handle your personal problems?",
+          scale: { min: 0, max: 4, labels: ["Never", "Almost never", "Sometimes", "Fairly often", "Very often"], reverse: true }
+        },
+        {
+          id: "cc3",
+          text: "In the last month, how often have you felt that things were going your way?",
+          scale: { min: 0, max: 4, labels: ["Never", "Almost never", "Sometimes", "Fairly often", "Very often"], reverse: true }
+        },
+        {
+          id: "cc4",
+          text: "In the last month, how often have you felt difficulties were piling up so high that you could not overcome them?",
+          scale: { min: 0, max: 4, labels: ["Never", "Almost never", "Sometimes", "Fairly often", "Very often"] }
+        }
+      ]
+    },
+    observerIndex: {
+      title: "Observer Index",
+      subtitle: "Awareness Domain (~2 min)",
+      description: "Measures meta-awareness and ability to observe thoughts",
+      questions: [
+        {
+          id: "oi1",
+          text: "I can separate myself from my thoughts and feelings",
+          scale: { min: 1, max: 5, labels: ["Strongly disagree", "Disagree", "Neutral", "Agree", "Strongly agree"] }
+        },
+        {
+          id: "oi2",
+          text: "I can step back and be aware of my thoughts without being caught up in them",
+          scale: { min: 1, max: 5, labels: ["Strongly disagree", "Disagree", "Neutral", "Agree", "Strongly agree"] }
+        },
+        {
+          id: "oi3",
+          text: "I can observe my thoughts and feelings without reacting to them",
+          scale: { min: 1, max: 5, labels: ["Strongly disagree", "Disagree", "Neutral", "Agree", "Strongly agree"] }
+        },
+        {
+          id: "oi4",
+          text: "I am able to view my thoughts and feelings from a distance",
+          scale: { min: 1, max: 5, labels: ["Strongly disagree", "Disagree", "Neutral", "Agree", "Strongly agree"] }
+        },
+        {
+          id: "oi5",
+          text: "I notice when my attention drifts into thought",
+          scale: { min: 1, max: 5, labels: ["Strongly disagree", "Disagree", "Neutral", "Agree", "Strongly agree"] }
+        },
+        {
+          id: "oi6",
+          text: "I can watch my thoughts come and go without getting lost in them",
+          scale: { min: 1, max: 5, labels: ["Strongly disagree", "Disagree", "Neutral", "Agree", "Strongly agree"] }
+        },
+        {
+          id: "oi7",
+          text: "I experience myself as separate from my changing thoughts",
+          scale: { min: 1, max: 5, labels: ["Strongly disagree", "Disagree", "Neutral", "Agree", "Strongly agree"] }
+        }
+      ]
+    },
+    vitalityIndex: {
+      title: "Vitality Index",
+      subtitle: "Outlook Domain (~1 min)",
+      description: "Gold-standard positive-affect scale",
+      questions: [
+        {
+          id: "vi1",
+          text: "Over the last 2 weeks, I have felt cheerful and in good spirits",
+          scale: { min: 0, max: 5, labels: ["At no time", "Some of the time", "Less than half the time", "More than half the time", "Most of the time", "All of the time"] }
+        },
+        {
+          id: "vi2",
+          text: "Over the last 2 weeks, I have felt calm and relaxed",
+          scale: { min: 0, max: 5, labels: ["At no time", "Some of the time", "Less than half the time", "More than half the time", "Most of the time", "All of the time"] }
+        },
+        {
+          id: "vi3",
+          text: "Over the last 2 weeks, I have felt active and vigorous",
+          scale: { min: 0, max: 5, labels: ["At no time", "Some of the time", "Less than half the time", "More than half the time", "Most of the time", "All of the time"] }
+        },
+        {
+          id: "vi4",
+          text: "Over the last 2 weeks, I woke up feeling fresh and rested",
+          scale: { min: 0, max: 5, labels: ["At no time", "Some of the time", "Less than half the time", "More than half the time", "Most of the time", "All of the time"] }
+        },
+        {
+          id: "vi5",
+          text: "Over the last 2 weeks, my daily life has been filled with things that interest me",
+          scale: { min: 0, max: 5, labels: ["At no time", "Some of the time", "Less than half the time", "More than half the time", "Most of the time", "All of the time"] }
+        }
+      ]
+    },
+    focusDiagnostic: {
+      title: "Focus Diagnostic",
+      subtitle: "Attention Domain - Part 1 (~1 min)",
+      description: "Fast, reliable proxy for attentional control",
+      questions: [
+        {
+          id: "fd1",
+          text: "I have difficulty concentrating on what people say to me, even when they are speaking to me directly",
+          scale: { min: 1, max: 6, labels: ["Almost never", "Very infrequently", "Somewhat infrequently", "Somewhat frequently", "Very frequently", "Almost always"] }
+        },
+        {
+          id: "fd2",
+          text: "I find it difficult to stay focused on what's happening in the present",
+          scale: { min: 1, max: 6, labels: ["Almost never", "Very infrequently", "Somewhat infrequently", "Somewhat frequently", "Very frequently", "Almost always"] }
+        },
+        {
+          id: "fd3",
+          text: "It seems I am running on automatic without much awareness of what I'm doing",
+          scale: { min: 1, max: 6, labels: ["Almost never", "Very infrequently", "Somewhat infrequently", "Somewhat frequently", "Very frequently", "Almost always"] }
+        },
+        {
+          id: "fd4",
+          text: "I find myself doing things without paying attention",
+          scale: { min: 1, max: 6, labels: ["Almost never", "Very infrequently", "Somewhat infrequently", "Somewhat frequently", "Very frequently", "Almost always"] }
+        },
+        {
+          id: "fd5",
+          text: "I find myself preoccupied with the future or the past",
+          scale: { min: 1, max: 6, labels: ["Almost never", "Very infrequently", "Somewhat infrequently", "Somewhat frequently", "Very frequently", "Almost always"] }
+        }
+      ]
+    }
+  };
+
+  const sectionOrder = ['calmCore', 'observerIndex', 'vitalityIndex', 'focusDiagnostic'];
+
+  const handleResponse = (questionId, value) => {
+    setResponses(prev => ({
+      ...prev,
+      [questionId]: value
+    }));
   };
 
   const handleNext = () => {
-    const key = `${section.id}_q${currentQuestion}`;
-    setResponses(prev => ({
-      ...prev,
-      [key]: {
-        value: selectedValue,
-        reverse: question.reverse || false
-      }
-    }));
-
-    if (currentQuestion < section.questions.length - 1) {
-      setCurrentQuestion(prev => prev + 1);
-      setSelectedValue(null);
-    } else {
-      if (currentSection < sections.length - 1) {
-        setCurrentSection(prev => prev + 1);
-        setCurrentQuestion(0);
-        setSelectedValue(null);
-      } else {
-        setStage('bct_intro');
-      }
-    }
-  };
-
-  const startBCT = () => {
-    setBctActive(true);
-    setStage('bct_active');
-    setBctTime(180);
-    setBctBreaths(0);
-    setBctCycles(0);
-  };
-
-  const handleBreath = () => {
-    if (bctBreaths < 8) {
-      setBctBreaths(prev => prev + 1);
-    } else {
-      completeBCT(180 - bctTime, 'Miscount: Pressed breath after 8');
-    }
-  };
-
-  const handleCompleteCycle = () => {
-    if (bctBreaths === 8) {
-      setBctCycles(prev => prev + 1);
-      setBctBreaths(0);
-    } else {
-      completeBCT(180 - bctTime, `Miscount: Completed at breath ${bctBreaths}`);
-    }
-  };
-
-  const handleLostCount = () => {
-    completeBCT(180 - bctTime, 'Self-reported: Lost count');
-  };
-
-  const completeBCT = (elapsedSeconds, reason = 'Perfect! Completed full 3 minutes') => {
-    clearInterval(timerRef.current);
-    setBctActive(false);
-    const score = (elapsedSeconds / 180) * 5;
-    setBctScore(score);
-    calculateResults(elapsedSeconds, score);
-  };
-
-  const calculateResults = async (bctElapsed, bctScore) => {
-    const sectionScores = {};
+    const section = assessmentSections[currentSection];
     
-    sections.forEach(section => {
-      let sum = 0;
-      let count = 0;
+    if (currentQuestionIndex < section.questions.length - 1) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
+    } else {
+      const currentSectionIndex = sectionOrder.indexOf(currentSection);
       
-      section.questions.forEach((q, idx) => {
-        const key = `${section.id}_q${idx}`;
-        const response = responses[key];
-        if (response) {
-          let value = response.value;
-          if (response.reverse) {
-            value = 4 - value;
-          }
-          sum += value;
-          count++;
-        }
-      });
-      
-      const rawScore = sum / count;
-      sectionScores[section.id] = rawScore;
-    });
+      if (currentSectionIndex < sectionOrder.length - 1) {
+        setCurrentSection(sectionOrder[currentSectionIndex + 1]);
+        setCurrentQuestionIndex(0);
+      } else {
+        setStage('breathCountingInstructions');
+      }
+    }
+  };
 
-    sectionScores.presence_test = bctScore;
+  const handlePrevious = () => {
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(currentQuestionIndex - 1);
+    } else {
+      const currentSectionIndex = sectionOrder.indexOf(currentSection);
+      if (currentSectionIndex > 0) {
+        const prevSection = sectionOrder[currentSectionIndex - 1];
+        setCurrentSection(prevSection);
+        setCurrentQuestionIndex(assessmentSections[prevSection].questions.length - 1);
+      }
+    }
+  };
 
-    const domainScores = {
-      regulation: sectionScores.calm_core,
-      awareness: sectionScores.observer_index,
-      outlook: sectionScores.vitality_index,
-      attention: (sectionScores.focus_diagnostic + sectionScores.presence_test) / 2
-    };
+  const calculateScores = (breathCountingScore) => {
+    // Calculate Calm Core (PSS-4) - lower is better, reverse scoring
+    const calmCoreRaw = ['cc1', 'cc2', 'cc3', 'cc4'].reduce((sum, id) => {
+      const q = assessmentSections.calmCore.questions.find(q => q.id === id);
+      const value = responses[id] || 0;
+      return sum + (q.scale.reverse ? (q.scale.max - value) : value);
+    }, 0);
+    const calmCore = ((16 - calmCoreRaw) / 16) * 5;
 
-    const sum = Object.values(domainScores).reduce((a, b) => a + b, 0);
-    const average = sum / 4;
-    const rewiredIndex = Math.round(average * 20);
+    // Calculate Observer Index (EQ-D) - average of 7 items
+    const observerRaw = ['oi1', 'oi2', 'oi3', 'oi4', 'oi5', 'oi6', 'oi7'].reduce((sum, id) => {
+      return sum + (responses[id] || 1);
+    }, 0);
+    const observer = (observerRaw / 7);
+    const observerNormalized = ((observer - 1) / 4) * 5;
 
+    // Calculate Vitality Index (WHO-5)
+    const vitalityRaw = ['vi1', 'vi2', 'vi3', 'vi4', 'vi5'].reduce((sum, id) => {
+      return sum + (responses[id] || 0);
+    }, 0);
+    const vitality = (vitalityRaw / 25) * 5;
+
+    // Calculate Focus Diagnostic (MWQ) - reverse scored
+    const focusRaw = ['fd1', 'fd2', 'fd3', 'fd4', 'fd5'].reduce((sum, id) => {
+      return sum + (responses[id] || 1);
+    }, 0);
+    const focus = ((30 - focusRaw) / 25) * 5;
+
+    // Attention domain = average of Focus Diagnostic and Breath Counting
+    const attention = (focus + breathCountingScore) / 2;
+
+    // Calculate REwired Index (0-100)
+    const rewiredIndex = ((calmCore + observerNormalized + vitality + attention) / 4) * 20;
+
+    // Determine tier
     let tier = '';
     if (rewiredIndex >= 81) tier = 'Integrated (Embodied)';
     else if (rewiredIndex >= 61) tier = 'Optimized (Coherent)';
@@ -208,130 +269,110 @@ export default function IOSBaselineAssessment() {
     else if (rewiredIndex >= 21) tier = 'Baseline Mode (Installing...)';
     else tier = 'System Offline (Critical)';
 
-    const resultsData = {
-      domainScores,
-      rewiredIndex,
-      tier,
-      bctElapsed,
-      bctScore,
-      timestamp: new Date().toISOString()
+    return {
+      regulation: calmCore,
+      awareness: observerNormalized,
+      outlook: vitality,
+      attention: attention,
+      focusDiagnostic: focus,
+      presenceTest: breathCountingScore,
+      rewiredIndex: rewiredIndex,
+      tier: tier
     };
+  };
 
-    await storeBaselineData(sectionScores, resultsData);
-    setResults(resultsData);
+  const handleBreathCountingComplete = async (breathScore) => {
+    const finalScores = calculateScores(breathScore);
+    setScores(finalScores);
+    await saveBaselineData({
+      responses,
+      scores: finalScores
+    });
     setStage('results');
   };
 
-const storeBaselineData = async (sectionScores, resultsData) => {
-  try {
-    console.log('🔄 Starting to store baseline data...');
-    console.log('User ID:', userId);
-    console.log('Supabase client:', supabase ? 'Available' : 'Undefined');
-    
-    // Store each piece of data
-    const dataToStore = [
-      { key: 'baseline:calm_core', value: sectionScores.calm_core },
-      { key: 'baseline:observer_index', value: sectionScores.observer_index },
-      { key: 'baseline:vitality_index', value: sectionScores.vitality_index },
-      { key: 'baseline:focus_diagnostic', value: sectionScores.focus_diagnostic },
-      { key: 'baseline:presence_test', value: sectionScores.presence_test },
-      { key: 'baseline:domain_scores', value: resultsData.domainScores },
-      { key: 'baseline:rewired_index', value: resultsData.rewiredIndex },
-      { key: 'baseline:tier', value: resultsData.tier },
-      { key: 'baseline:date', value: resultsData.timestamp },
-      { key: 'ios:system_initialized', value: true },
-      { key: 'ios:current_stage', value: 1 },
-      { key: 'ios:stage_start_date', value: resultsData.timestamp },
-      { key: 'ios:daily_log', value: [] },
-      { key: 'ios:weekly_deltas', value: [] }
-    ];
+  const startAssessment = () => {
+    setStage('assessment');
+    setCurrentSection(sectionOrder[0]);
+    setCurrentQuestionIndex(0);
+  };
 
-    for (const item of dataToStore) {
-      console.log(`📝 Storing ${item.key}...`);
-      
-      const { data, error } = await supabase
-        .from('storage')
-        .upsert({
-          user_id: userId,
-          key: item.key,
-          value: item.value
-        }, {
-          onConflict: 'user_id,key'
-        });
-
-      if (error) {
-        console.error(`❌ Error storing ${item.key}:`, error);
-      } else {
-        console.log(`✅ Stored ${item.key}`);
-      }
-    }
-    
-    console.log('✅ All baseline data stored successfully to Supabase');
-    
-  } catch (error) {
-    console.error('❌ Error storing baseline data:', error);
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Initializing assessment...</p>
+        </div>
+      </div>
+    );
   }
-};
+
   if (stage === 'welcome') {
     return (
-      <div className="min-h-screen bg-gray-900 text-white p-8 flex items-center justify-center">
-        <div className="max-w-2xl w-full">
-          <div className="text-center mb-8">
-            <img 
-              src="/logo.png" 
-              alt="IOS Logo" 
-              className="w-24 h-24 mx-auto mb-6"
-            />
-            <h1 className="text-4xl font-bold mb-4">IOS BASELINE ASSESSMENT</h1>
-            <p className="text-gray-400 text-lg mb-8">
-              Welcome to your neural and mental transformation diagnostic.
-            </p>
-          </div>
-
-          <div className="bg-gray-800 rounded-lg p-6 mb-8">
-            <p className="text-gray-300 mb-6">
-              This 8-minute assessment establishes your starting point across four core domains:
-            </p>
-            <div className="space-y-3 mb-6">
-              <div className="flex items-start">
-                <span className="text-orange-500 mr-3">•</span>
-                <div>
-                  <span className="font-semibold">Regulation</span>
-                  <span className="text-gray-400"> - nervous system stability</span>
-                </div>
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 p-8 flex items-center justify-center">
+        <div className="max-w-2xl bg-white rounded-lg shadow-lg p-8">
+          <h1 className="text-3xl font-bold text-gray-800 mb-4">IOS Baseline Assessment</h1>
+          <p className="text-gray-600 mb-6">
+            Before we start, we need to establish your baseline. This takes approximately 8 minutes and measures 4 domains:
+          </p>
+          <div className="space-y-3 mb-8">
+            <div className="flex items-start">
+              <div className="flex-shrink-0 w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
+                <span className="text-indigo-600 font-semibold">1</span>
               </div>
-              <div className="flex items-start">
-                <span className="text-orange-500 mr-3">•</span>
-                <div>
-                  <span className="font-semibold">Awareness</span>
-                  <span className="text-gray-400"> - meta-cognitive capacity</span>
-                </div>
-              </div>
-              <div className="flex items-start">
-                <span className="text-orange-500 mr-3">•</span>
-                <div>
-                  <span className="font-semibold">Outlook</span>
-                  <span className="text-gray-400"> - emotional baseline</span>
-                </div>
-              </div>
-              <div className="flex items-start">
-                <span className="text-orange-500 mr-3">•</span>
-                <div>
-                  <span className="font-semibold">Attention</span>
-                  <span className="text-gray-400"> - sustained focus ability</span>
-                </div>
+              <div>
+                <h3 className="font-semibold text-gray-800">Calm Core Assessment</h3>
+                <p className="text-sm text-gray-600">Regulation domain (~1 min)</p>
               </div>
             </div>
-            <p className="text-sm text-gray-500">
-              Answer honestly - there are no wrong answers. This establishes your transformation starting point.
+            <div className="flex items-start">
+              <div className="flex-shrink-0 w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
+                <span className="text-indigo-600 font-semibold">2</span>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-800">Observer Index</h3>
+                <p className="text-sm text-gray-600">Awareness domain (~2 min)</p>
+              </div>
+            </div>
+            <div className="flex items-start">
+              <div className="flex-shrink-0 w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
+                <span className="text-indigo-600 font-semibold">3</span>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-800">Vitality Index</h3>
+                <p className="text-sm text-gray-600">Outlook domain (~1 min)</p>
+              </div>
+            </div>
+            <div className="flex items-start">
+              <div className="flex-shrink-0 w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
+                <span className="text-indigo-600 font-semibold">4</span>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-800">Focus Diagnostic</h3>
+                <p className="text-sm text-gray-600">Attention domain (~1 min)</p>
+              </div>
+            </div>
+            <div className="flex items-start">
+              <div className="flex-shrink-0 w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
+                <span className="text-indigo-600 font-semibold">5</span>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-800">Presence Test</h3>
+                <p className="text-sm text-gray-600">Attention domain (~3 min)</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-blue-50 p-4 rounded-lg mb-6">
+            <p className="text-sm text-blue-900">
+              <strong>Important:</strong> Answer honestly - there are no wrong answers. This establishes your starting point for tracking transformation.
             </p>
           </div>
-
           <button
-            onClick={() => setStage('assessment')}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-6 rounded-lg transition-colors text-lg"
+            onClick={startAssessment}
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
           >
-            Begin Assessment
+            Begin Baseline Assessment
           </button>
         </div>
       </div>
@@ -339,193 +380,83 @@ const storeBaselineData = async (sectionScores, resultsData) => {
   }
 
   if (stage === 'assessment') {
-    const progress = ((currentQuestion + 1) / section.questions.length) * 100;
-    const overallProgress = ((currentSection * 100 + progress) / (sections.length * 100)) * 100;
+    const section = assessmentSections[currentSection];
+    const question = section.questions[currentQuestionIndex];
+    const currentResponse = responses[question.id];
+    const totalQuestions = sectionOrder.reduce((sum, key) => sum + assessmentSections[key].questions.length, 0);
+    const completedQuestions = sectionOrder.slice(0, sectionOrder.indexOf(currentSection)).reduce((sum, key) => sum + assessmentSections[key].questions.length, 0) + currentQuestionIndex;
+    const progress = ((completedQuestions / totalQuestions) * 100).toFixed(0);
 
     return (
-      <div className="min-h-screen bg-gray-900 text-white p-8">
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 p-8">
         <div className="max-w-3xl mx-auto">
           <div className="mb-6">
-            <div className="flex justify-between text-sm text-gray-400 mb-2">
-              <span>Overall Progress</span>
-              <span>Section {currentSection + 1} of {sections.length}</span>
+            <div className="flex justify-between text-sm text-gray-600 mb-2">
+              <span>{section.title}</span>
+              <span>{progress}% complete</span>
             </div>
-            <div className="w-full bg-gray-700 rounded-full h-2">
+            <div className="w-full bg-gray-200 rounded-full h-2">
               <div 
-                className="bg-orange-500 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${overallProgress}%` }}
+                className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${progress}%` }}
               />
             </div>
           </div>
 
-          <div className="bg-gray-800 rounded-lg p-6 mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-2xl font-bold">{section.name}</h2>
-              <span className="text-orange-500 text-sm font-semibold">{section.domain}</span>
-            </div>
-            <p className="text-gray-400 text-sm">{section.description}</p>
-          </div>
-
-          <div className="bg-gray-800 rounded-lg p-8">
+          <div className="bg-white rounded-lg shadow-lg p-8">
             <div className="mb-6">
-              <div className="text-sm text-gray-400 mb-4">
-                Question {currentQuestion + 1} of {section.questions.length}
-              </div>
-              <p className="text-xl mb-8">{question.text}</p>
+              <p className="text-sm text-indigo-600 font-semibold mb-2">{section.subtitle}</p>
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">{question.text}</h2>
             </div>
 
-            <div className="space-y-3 mb-8">
-              {section.scaleLabels.map((label, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleResponse(idx)}
-                  className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
-                    selectedValue === idx
-                      ? 'border-orange-500 bg-orange-500 bg-opacity-10'
-                      : 'border-gray-600 hover:border-gray-500'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span>{label}</span>
-                    {selectedValue === idx && (
-                      <span className="text-orange-500 text-xl">✓</span>
-                    )}
-                  </div>
-                </button>
-              ))}
+            <div className="space-y-3">
+              {question.scale.labels.map((label, index) => {
+                const value = question.scale.min + index;
+                const isSelected = currentResponse === value;
+                
+                return (
+                  <button
+                    key={index}
+                    onClick={() => handleResponse(question.id, value)}
+                    className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
+                      isSelected 
+                        ? 'border-indigo-600 bg-indigo-50' 
+                        : 'border-gray-200 hover:border-indigo-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-gray-800">{label}</span>
+                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                        isSelected ? 'border-indigo-600 bg-indigo-600' : 'border-gray-300'
+                      }`}>
+                        {isSelected && (
+                          <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
 
-            <div className="mb-6">
-              <div className="w-full bg-gray-700 rounded-full h-1">
-                <div 
-                  className="bg-orange-500 h-1 rounded-full transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </div>
-
-            <button
-              onClick={handleNext}
-              disabled={selectedValue === null}
-              className={`w-full py-4 px-6 rounded-lg font-bold transition-colors ${
-                selectedValue !== null
-                  ? 'bg-orange-500 hover:bg-orange-600 text-white'
-                  : 'bg-gray-700 text-gray-500 cursor-not-allowed'
-              }`}
-            >
-              {currentQuestion < section.questions.length - 1 ? 'Next Question' : 
-               currentSection < sections.length - 1 ? 'Continue to Next Section' : 'Complete Section'}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (stage === 'bct_intro') {
-    return (
-      <div className="min-h-screen bg-gray-900 text-white p-8 flex items-center justify-center">
-        <div className="max-w-2xl w-full">
-          <div className="bg-gray-800 rounded-lg p-8">
-            <div className="text-center mb-6">
-              <h2 className="text-3xl font-bold mb-2">Presence Test</h2>
-              <p className="text-orange-500 font-semibold">Section 5 of 5 - Final Assessment</p>
-            </div>
-
-            <div className="bg-gray-700 rounded-lg p-6 mb-6">
-              <h3 className="font-bold text-lg mb-4">Instructions:</h3>
-              <ol className="space-y-3 text-gray-300">
-                <li className="flex">
-                  <span className="font-bold text-orange-500 mr-3">1.</span>
-                  <span>Count breaths <strong>1 through 8</strong> silently in your mind</span>
-                </li>
-                <li className="flex">
-                  <span className="font-bold text-orange-500 mr-3">2.</span>
-                  <span>Press <strong>"Next Breath"</strong> for each breath (1-8)</span>
-                </li>
-                <li className="flex">
-                  <span className="font-bold text-orange-500 mr-3">3.</span>
-                  <span>After breath 8, press <strong>"Complete Cycle"</strong> to mark breath 9</span>
-                </li>
-                <li className="flex">
-                  <span className="font-bold text-orange-500 mr-3">4.</span>
-                  <span>Immediately start a new cycle (count restarts at 1)</span>
-                </li>
-                <li className="flex">
-                  <span className="font-bold text-orange-500 mr-3">5.</span>
-                  <span>If you lose count, press <strong>"Lost Count"</strong></span>
-                </li>
-              </ol>
-            </div>
-
-            <div className="bg-orange-500 bg-opacity-10 border border-orange-500 rounded-lg p-4 mb-6">
-              <p className="text-sm text-orange-300">
-                <strong>Note:</strong> The test runs for 3 minutes. One mistake ends the test. 
-                This measures your sustained attention capacity.
-              </p>
-            </div>
-
-            <button
-              onClick={startBCT}
-              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
-            >
-              <span className="text-xl">▶</span>
-              Start 3-Minute Test
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (stage === 'bct_active') {
-    return (
-      <div className="min-h-screen bg-gray-900 text-white p-8 flex items-center justify-center">
-        <div className="max-w-2xl w-full">
-          <div className="bg-gray-800 rounded-lg p-8">
-            <div className="text-center mb-8">
-              <div className="text-6xl font-bold text-orange-500 mb-2">
-                {formatTime(bctTime)}
-              </div>
-              <div className="text-gray-400">Time Remaining</div>
-            </div>
-
-            <div className="text-center mb-8">
-              <div className="text-4xl font-bold mb-2">{bctCycles}</div>
-              <div className="text-gray-400">Cycles Completed</div>
-            </div>
-
-            <div className="text-center mb-8">
-              <div className="text-gray-400 text-lg mb-2">
-                Count breaths 1-8 internally
-              </div>
-              <div className="text-sm text-gray-500">
-                One mistake ends the test
-              </div>
-            </div>
-
-            <div className="space-y-4">
+            <div className="flex justify-between mt-8">
               <button
-                onClick={handleBreath}
-                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-8 px-6 rounded-lg transition-all text-xl active:scale-95"
+                onClick={handlePrevious}
+                disabled={currentQuestionIndex === 0 && currentSection === sectionOrder[0]}
+                className="px-6 py-2 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed rounded-lg font-medium transition-colors"
               >
-                Next Breath
-                <div className="text-sm font-normal mt-1 opacity-90">Press for breaths 1-8</div>
+                Previous
               </button>
-
               <button
-                onClick={handleCompleteCycle}
-                className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-8 px-6 rounded-lg transition-all text-xl active:scale-95"
+                onClick={handleNext}
+                disabled={currentResponse === undefined}
+                className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
               >
-                Complete Cycle
-                <div className="text-sm font-normal mt-1 opacity-90">Press after breath 8 (marks breath 9)</div>
-              </button>
-
-              <button
-                onClick={handleLostCount}
-                className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-6 px-6 rounded-lg transition-all active:scale-95"
-              >
-                Lost Count
+                {currentQuestionIndex === section.questions.length - 1 && currentSection === sectionOrder[sectionOrder.length - 1]
+                  ? 'Continue to Presence Test'
+                  : 'Next'}
               </button>
             </div>
           </div>
@@ -534,70 +465,117 @@ const storeBaselineData = async (sectionScores, resultsData) => {
     );
   }
 
-  if (stage === 'results' && results) {
+  if (stage === 'breathCountingInstructions') {
     return (
-      <div className="min-h-screen bg-gray-900 text-white p-8">
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold mb-4">Baseline Assessment Complete</h1>
-            <p className="text-gray-400">Your transformation starting point has been established</p>
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 p-8 flex items-center justify-center">
+        <div className="max-w-2xl bg-white rounded-lg shadow-lg p-8">
+          <h1 className="text-3xl font-bold text-gray-800 mb-4">Presence Test</h1>
+          <p className="text-gray-600 mb-6">
+            Final assessment: A 3-minute breath counting task that measures sustained attention and meta-awareness.
+          </p>
+          
+          <div className="bg-blue-50 p-6 rounded-lg mb-6">
+            <h2 className="font-semibold text-lg mb-3">Instructions:</h2>
+            <ol className="list-decimal list-inside space-y-2 text-gray-700">
+              <li>Count breaths <strong>1 through 8</strong> silently in your mind</li>
+              <li>Press <strong>"Next Breath"</strong> for each breath (1-8)</li>
+              <li>After breath 8, press <strong>"Complete Cycle"</strong> to mark breath 9</li>
+              <li>Immediately start a new cycle (count restarts at 1)</li>
+              <li>If you lose count, press <strong>"Lost Count"</strong></li>
+            </ol>
           </div>
 
-          <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg p-8 mb-6 text-center">
-            <div className="text-sm font-semibold text-orange-100 mb-2">REwired Index</div>
-            <div className="text-7xl font-bold mb-2">{results.rewiredIndex}</div>
-            <div className="text-xl font-semibold text-orange-100">{results.tier}</div>
-          </div>
-
-          <div className="bg-gray-800 rounded-lg p-6 mb-6">
-            <h2 className="text-xl font-bold mb-6">Domain Breakdown</h2>
-            <div className="space-y-6">
-              {Object.entries(results.domainScores).map(([domain, score]) => (
-                <div key={domain}>
-                  <div className="flex justify-between mb-2">
-                    <span className="font-semibold capitalize">{domain}</span>
-                    <span className="text-orange-500">{score.toFixed(1)}/5.0</span>
-                  </div>
-                  <div className="w-full bg-gray-700 rounded-full h-3">
-                    <div 
-                      className="bg-orange-500 h-3 rounded-full transition-all"
-                      style={{ width: `${(score / 5) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-gray-800 rounded-lg p-6 mb-6">
-            <h2 className="text-xl font-bold mb-4">What This Means</h2>
-            <p className="text-gray-300 mb-4">
-              Your REwired Index of <strong className="text-orange-500">{results.rewiredIndex}</strong> represents 
-              your current baseline across nervous system regulation, meta-awareness, emotional outlook, and sustained attention.
-            </p>
-            <p className="text-gray-300">
-              This isn't good or bad - it's simply your starting point. The IOS is designed to systematically 
-              upgrade each domain through progressive stage unlocks.
-            </p>
-          </div>
-
-          <div className="bg-orange-500 bg-opacity-10 border border-orange-500 rounded-lg p-6 mb-6">
-            <h2 className="text-xl font-bold mb-4">What's Next</h2>
-            <p className="text-gray-300 mb-4">
-              You'll now begin <strong>Stage 1 (of 7): Neural Priming</strong> - where you'll install two daily 
-              rituals that teach your NOS to regulate and your mind to rest in awareness.
-            </p>
-            <p className="text-gray-300">
-              We will track your progress, and when ready you'll unlock the next stage.
+          <div className="bg-yellow-50 p-4 rounded-lg mb-6">
+            <p className="text-sm text-yellow-900">
+              <strong>Note:</strong> One mistake ends the test. Your score is based on how long you maintain accurate counting.
             </p>
           </div>
 
           <button
-            onClick={() => window.location.href = '/chat'}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-6 rounded-lg transition-colors text-lg"
+            onClick={() => setStage('breathCounting')}
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
           >
-            Continue to System Installer
+            Start Presence Test
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (stage === 'breathCounting') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 p-8">
+        <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-8">
+          <h2 className="text-2xl font-bold mb-4">Breath Counting Task</h2>
+          <p className="mb-4 text-gray-600">Import your BreathCountingTask component here</p>
+          <button
+            onClick={() => handleBreathCountingComplete(3.5)}
+            className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700"
+          >
+            Complete Test (Mock - 3.5 score)
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (stage === 'results' && scores) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 p-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">Baseline Assessment Complete!</h1>
+            <p className="text-gray-600 mb-6">Your transformation starting point has been established.</p>
+
+            <div className="bg-indigo-50 p-8 rounded-lg text-center mb-8">
+              <div className="text-7xl font-bold text-indigo-600 mb-3">
+                {scores.rewiredIndex.toFixed(1)}
+              </div>
+              <div className="text-xl text-gray-700 font-semibold mb-2">REwired Index</div>
+              <div className="text-lg text-indigo-600 font-medium">{scores.tier}</div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-8">
+              <div className="bg-blue-50 p-6 rounded-lg">
+                <div className="text-sm text-gray-600 mb-1">Regulation</div>
+                <div className="text-3xl font-bold text-blue-600">{scores.regulation.toFixed(2)}/5.0</div>
+              </div>
+              <div className="bg-purple-50 p-6 rounded-lg">
+                <div className="text-sm text-gray-600 mb-1">Awareness</div>
+                <div className="text-3xl font-bold text-purple-600">{scores.awareness.toFixed(2)}/5.0</div>
+              </div>
+              <div className="bg-green-50 p-6 rounded-lg">
+                <div className="text-sm text-gray-600 mb-1">Outlook</div>
+                <div className="text-3xl font-bold text-green-600">{scores.outlook.toFixed(2)}/5.0</div>
+              </div>
+              <div className="bg-orange-50 p-6 rounded-lg">
+                <div className="text-sm text-gray-600 mb-1">Attention</div>
+                <div className="text-3xl font-bold text-orange-600">{scores.attention.toFixed(2)}/5.0</div>
+                <div className="text-xs text-gray-500 mt-1">
+                  Focus: {scores.focusDiagnostic.toFixed(2)} | Presence: {scores.presenceTest.toFixed(2)}
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+              <p className="text-green-800 font-medium">
+                ✅ Baseline data saved to Supabase
+              </p>
+              <p className="text-sm text-green-700 mt-1">
+                User ID: {userId}
+              </p>
+              <p className="text-xs text-gray-600 mt-2">
+                (Falls back to localStorage if Supabase unavailable)
+              </p>
+            </div>
+
+            <button
+              onClick={() => window.location.href = '/'}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+            >
+              Continue to IOS Installation
+            </button>
+          </div>
         </div>
       </div>
     );
