@@ -222,46 +222,41 @@ export default function IOSBaselineAssessment() {
     setStage('results');
   };
 
-const storeBaselineData = async (sectionScores, resultsData) => {
-  try {
-    console.log('💾 Storing baseline data...');
-    console.log('📊 Section scores:', sectionScores);
-    console.log('📊 Results data:', resultsData);
-    
-    // Store individual assessment scores
-    await storage.set('baseline:calm_core', JSON.stringify(sectionScores.calm_core));
-    await storage.set('baseline:observer_index', JSON.stringify(sectionScores.observer_index));
-    await storage.set('baseline:vitality_index', JSON.stringify(sectionScores.vitality_index));
-    await storage.set('baseline:focus_diagnostic', JSON.stringify(sectionScores.focus_diagnostic));
-    await storage.set('baseline:presence_test', JSON.stringify(sectionScores.presence_test));
-    
-    // Store domain scores
-    await storage.set('baseline:domain_scores', JSON.stringify(resultsData.domainScores));
-    
-    // Store REwired Index and tier
-    await storage.set('baseline:rewired_index', JSON.stringify(resultsData.rewiredIndex));
-    await storage.set('baseline:tier', JSON.stringify(resultsData.tier));
-    await storage.set('baseline:date', JSON.stringify(resultsData.timestamp));
-    
-    // Store system state
-    await storage.set('ios:system_initialized', JSON.stringify(true));
-    await storage.set('ios:current_stage', JSON.stringify(1));
-    await storage.set('ios:stage_start_date', JSON.stringify(resultsData.timestamp));
-    await storage.set('ios:daily_log', JSON.stringify([]));
-    await storage.set('ios:weekly_deltas', JSON.stringify([]));
-    
-    console.log('✅ Baseline data stored successfully');
-    
-    // Verify critical keys
-    const verifyInit = await storage.get('ios:system_initialized');
-    const verifyIndex = await storage.get('baseline:rewired_index');
-    console.log('🔍 Verification - Initialized:', verifyInit);
-    console.log('🔍 Verification - REwired Index:', verifyIndex);
-    
-  } catch (error) {
-    console.error('❌ Error storing baseline data:', error);
-  }
-};
+const storeBaselineData = async (resultsData) => {
+     try {
+       const storage = window.storage;
+       const sectionScores = resultsData.sectionScores;
+       
+       // Use consistent key naming without 'ios:' prefix
+       await storage.set('baseline:calm_core', JSON.stringify(sectionScores.calm_core));
+       await storage.set('baseline:observer_index', JSON.stringify(sectionScores.observer_index));
+       await storage.set('baseline:vitality_index', JSON.stringify(sectionScores.vitality_index));
+       await storage.set('baseline:focus_diagnostic', JSON.stringify(sectionScores.focus_diagnostic));
+       await storage.set('baseline:presence_test', JSON.stringify(sectionScores.presence_test));
+       await storage.set('baseline:domain_scores', JSON.stringify(resultsData.domainScores));
+       await storage.set('baseline:rewired_index', JSON.stringify(resultsData.rewiredIndex));
+       await storage.set('baseline:tier', JSON.stringify(resultsData.tier));
+       await storage.set('baseline:date', JSON.stringify(resultsData.timestamp));
+       
+       // System state keys can keep 'ios:' prefix (these are different)
+       await storage.set('ios:system_initialized', JSON.stringify(true));
+       await storage.set('ios:current_stage', JSON.stringify(1));
+       await storage.set('ios:stage_start_date', JSON.stringify(resultsData.timestamp));
+       await storage.set('ios:daily_log', JSON.stringify([]));
+       await storage.set('ios:weekly_deltas', JSON.stringify([]));
+       
+       console.log('✅ Baseline data stored successfully');
+       
+       // Verify critical keys
+       const verifyInit = await storage.get('ios:system_initialized');
+       const verifyIndex = await storage.get('baseline:rewired_index');
+       console.log('🔍 Verification - Initialized:', verifyInit);
+       console.log('🔍 Verification - REwired Index:', verifyIndex);
+       
+     } catch (error) {
+       console.error('❌ Error storing baseline data:', error);
+     }
+   };
   
   setResults(resultsData);
   setStage('results');
