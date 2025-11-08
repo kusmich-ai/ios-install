@@ -248,7 +248,7 @@ const storeBaselineData = async (resultsData) => {
        console.log('✅ Baseline data stored successfully');
        
        // Verify critical keys
-       const verifyInit = await storage.get('ios:system_initialized');
+       const verifyInit = await storage.get('system_initialized');
        const verifyIndex = await storage.get('baseline:rewired_index');
        console.log('🔍 Verification - Initialized:', verifyInit);
        console.log('🔍 Verification - REwired Index:', verifyIndex);
