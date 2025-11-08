@@ -1,6 +1,219 @@
-import React, { useState, useEffect } from 'react';
-import { storage } from '../lib/storage'; // Named export, not default
+import React, { useState, useEffect, useRef } from 'react';
+import { storage } from '../lib/storage';
 
+// Embedded BreathCountingTask Component
+function BreathCountingTask({ onComplete, existingUserId }) {
+  const [stage, setStage] = useState('instructions'); // Skip setup since we have userId
+  const [breathsInCycle, setBreathsInCycle] = useState(0);
+  const [cyclesCompleted, setCyclesCompleted] = useState(0);
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const [timeRemaining, setTimeRemaining] = useState(3 * 60);
+  const [pressConfirmation, setPressConfirmation] = useState(null);
+  const timerRef = useRef(null);
+
+  // Timer countdown
+  useEffect(() => {
+    if (stage === 'task' && timeRemaining > 0) {
+      timerRef.current = setInterval(() => {
+        setTimeRemaining(prev => {
+          if (prev <= 1) {
+            endTask('perfect');
+            return 0;
+          }
+          return prev - 1;
+        });
+        setElapsedTime(prev => prev + 1);
+      }, 1000);
+      return () => clearInterval(timerRef.current);
+    }
+  }, [stage, timeRemaining]);
+
+  // Keyboard support
+  useEffect(() => {
+    if (stage !== 'task') return;
+    const handleKeyPress = (e) => {
+      if (e.key === ' ' || e.key === 'b') {
+        e.preventDefault();
+        handleBreathPress();
+      } else if (e.key === 'Enter' || e.key === 'c') {
+        e.preventDefault();
+        handleCompleteCycle();
+      } else if (e.key === 'r' || e.key === 'Escape') {
+        e.preventDefault();
+        handleLostCount();
+      }
+    };
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [stage, breathsInCycle]);
+
+  const startTask = () => {
+    setStage('task');
+    setBreathsInCycle(0);
+    setCyclesCompleted(0);
+    setElapsedTime(0);
+    setTimeRemaining(3 * 60);
+  };
+
+  const showConfirmation = (type) => {
+    setPressConfirmation(type);
+    setTimeout(() => setPressConfirmation(null), 200);
+  };
+
+  const handleBreathPress = () => {
+    if (breathsInCycle < 8) {
+      setBreathsInCycle(prev => prev + 1);
+      showConfirmation('breath');
+    } else {
+      endTask('miscount_extra_breath');
+    }
+  };
+
+  const handleCompleteCycle = () => {
+    if (breathsInCycle === 8) {
+      setCyclesCompleted(prev => prev + 1);
+      setBreathsInCycle(0);
+      showConfirmation('complete');
+    } else {
+      endTask('miscount_wrong_count');
+    }
+  };
+
+  const handleLostCount = () => {
+    endTask('lost_count');
+  };
+
+  const endTask = (reason) => {
+    clearInterval(timerRef.current);
+    const score = ((elapsedTime / 180) * 5);
+    
+    // Save session data
+    const sessionData = {
+      date: new Date().toISOString(),
+      elapsedSeconds: elapsedTime,
+      score: parseFloat(score.toFixed(2)),
+      cyclesCompleted,
+      failureReason: reason,
+      perfect: reason === 'perfect'
+    };
+    
+    // Call parent callback with score
+    onComplete(parseFloat(score.toFixed(2)));
+  };
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  if (stage === 'instructions') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-8 flex items-center justify-center">
+        <div className="max-w-2xl bg-white rounded-lg shadow-lg p-8">
+          <h1 className="text-3xl font-bold text-gray-800 mb-4">Breath Counting Task</h1>
+          <p className="text-lg text-gray-600 mb-6">
+            A standardized 3-minute mindfulness assessment measuring sustained attention and meta-awareness.
+          </p>
+          
+          <div className="bg-blue-50 p-4 rounded-lg mb-6">
+            <h2 className="font-semibold text-lg mb-2">How It Works:</h2>
+            <ol className="list-decimal list-inside space-y-2 text-gray-700">
+              <li>Count breaths <strong>1 through 8</strong> silently in your mind</li>
+              <li>Press <strong>"Next Breath"</strong> for each breath (1-8)</li>
+              <li>After breath 8, press <strong>"Complete Cycle"</strong> to mark breath 9</li>
+              <li>Immediately start a new cycle (count restarts at 1)</li>
+              <li>If you lose count, press <strong>"Lost Count"</strong></li>
+            </ol>
+          </div>
+
+          <p className="text-sm text-gray-600 mb-6">
+            <strong>Keyboard shortcuts:</strong> Space/B = Next Breath | Enter/C = Complete | R/Esc = Lost Count
+          </p>
+
+          <button
+            onClick={startTask}
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg flex items-center justify-center gap-2 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/>
+            </svg>
+            Start 3-Minute Test
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (stage === 'task') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 p-8 flex items-center justify-center">
+        <div className="max-w-3xl w-full bg-white rounded-lg shadow-lg p-8">
+          <div className="grid grid-cols-2 gap-4 mb-8">
+            <div className="text-center">
+              <div className="text-4xl font-bold text-indigo-600 mb-1">
+                {formatTime(elapsedTime)}
+              </div>
+              <div className="text-gray-500 text-sm">Elapsed Time</div>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl font-bold text-green-600 mb-1">
+                {cyclesCompleted}
+              </div>
+              <div className="text-gray-500 text-sm">Cycles Completed</div>
+            </div>
+          </div>
+
+          <div className="text-center mb-8">
+            <div className={`w-24 h-24 mx-auto rounded-full transition-all duration-200 flex items-center justify-center ${
+              pressConfirmation === 'breath' ? 'bg-blue-500 scale-110' :
+              pressConfirmation === 'complete' ? 'bg-green-500 scale-110' :
+              'bg-indigo-100 scale-100'
+            }`}>
+              {pressConfirmation === 'breath' && <span className="text-white text-2xl font-bold">•</span>}
+              {pressConfirmation === 'complete' && <span className="text-white text-2xl font-bold">✓</span>}
+            </div>
+            <div className="text-gray-500 mt-4 text-lg">
+              Count breaths 1-8 internally
+            </div>
+            <div className="text-sm text-gray-400 mt-1">
+              One mistake ends the test
+            </div>
+          </div>
+
+          <div className="space-y-4 mb-6">
+            <button
+              onClick={handleBreathPress}
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-8 px-6 rounded-lg transition-all text-xl active:scale-95"
+            >
+              Next Breath (Space/B)
+              <div className="text-sm font-normal mt-1 opacity-90">Press for breaths 1-8</div>
+            </button>
+
+            <button
+              onClick={handleCompleteCycle}
+              className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-8 px-6 rounded-lg transition-all text-xl active:scale-95"
+            >
+              Complete Cycle (Enter/C)
+              <div className="text-sm font-normal mt-1 opacity-90">Press after breath 8 (marks breath 9)</div>
+            </button>
+
+            <button
+              onClick={handleLostCount}
+              className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-6 px-6 rounded-lg transition-all active:scale-95"
+            >
+              Lost Count (R/Esc)
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+// Main IOSBaselineAssessment Component
 export default function IOSBaselineAssessment() {
   const [stage, setStage] = useState('welcome');
   const [currentSection, setCurrentSection] = useState(null);
@@ -10,14 +223,12 @@ export default function IOSBaselineAssessment() {
   const [isLoading, setIsLoading] = useState(true);
   const [scores, setScores] = useState(null);
 
-  // Load or initialize user on mount
   useEffect(() => {
     initializeUser();
   }, []);
 
   const initializeUser = async () => {
     try {
-      // Get user ID from localStorage (getUserId handles creation)
       let storedUserId = localStorage.getItem('ios_user_id');
       if (!storedUserId) {
         storedUserId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
@@ -37,21 +248,17 @@ export default function IOSBaselineAssessment() {
     if (!userId) return;
     
     try {
-      // Save to Supabase via your storage wrapper
-      // Your storage.js handles both Supabase AND localStorage automatically
       await storage.set(`baseline_${userId}`, JSON.stringify({
         ...data,
         timestamp: new Date().toISOString(),
         userId
       }));
-      
-      console.log('✅ Baseline data saved (Supabase primary, localStorage fallback)');
+      console.log('✅ Baseline data saved to Supabase');
     } catch (error) {
       console.error('❌ Error saving baseline data:', error);
     }
   };
 
-  // Assessment sections data
   const assessmentSections = {
     calmCore: {
       title: "Calm Core Assessment",
@@ -191,25 +398,20 @@ export default function IOSBaselineAssessment() {
   const sectionOrder = ['calmCore', 'observerIndex', 'vitalityIndex', 'focusDiagnostic'];
 
   const handleResponse = (questionId, value) => {
-    setResponses(prev => ({
-      ...prev,
-      [questionId]: value
-    }));
+    setResponses(prev => ({ ...prev, [questionId]: value }));
   };
 
   const handleNext = () => {
     const section = assessmentSections[currentSection];
-    
     if (currentQuestionIndex < section.questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else {
       const currentSectionIndex = sectionOrder.indexOf(currentSection);
-      
       if (currentSectionIndex < sectionOrder.length - 1) {
         setCurrentSection(sectionOrder[currentSectionIndex + 1]);
         setCurrentQuestionIndex(0);
       } else {
-        setStage('breathCountingInstructions');
+        setStage('breathCounting');
       }
     }
   };
@@ -228,7 +430,6 @@ export default function IOSBaselineAssessment() {
   };
 
   const calculateScores = (breathCountingScore) => {
-    // Calculate Calm Core (PSS-4) - lower is better, reverse scoring
     const calmCoreRaw = ['cc1', 'cc2', 'cc3', 'cc4'].reduce((sum, id) => {
       const q = assessmentSections.calmCore.questions.find(q => q.id === id);
       const value = responses[id] || 0;
@@ -236,32 +437,25 @@ export default function IOSBaselineAssessment() {
     }, 0);
     const calmCore = ((16 - calmCoreRaw) / 16) * 5;
 
-    // Calculate Observer Index (EQ-D) - average of 7 items
     const observerRaw = ['oi1', 'oi2', 'oi3', 'oi4', 'oi5', 'oi6', 'oi7'].reduce((sum, id) => {
       return sum + (responses[id] || 1);
     }, 0);
     const observer = (observerRaw / 7);
     const observerNormalized = ((observer - 1) / 4) * 5;
 
-    // Calculate Vitality Index (WHO-5)
     const vitalityRaw = ['vi1', 'vi2', 'vi3', 'vi4', 'vi5'].reduce((sum, id) => {
       return sum + (responses[id] || 0);
     }, 0);
     const vitality = (vitalityRaw / 25) * 5;
 
-    // Calculate Focus Diagnostic (MWQ) - reverse scored
     const focusRaw = ['fd1', 'fd2', 'fd3', 'fd4', 'fd5'].reduce((sum, id) => {
       return sum + (responses[id] || 1);
     }, 0);
     const focus = ((30 - focusRaw) / 25) * 5;
 
-    // Attention domain = average of Focus Diagnostic and Breath Counting
     const attention = (focus + breathCountingScore) / 2;
-
-    // Calculate REwired Index (0-100)
     const rewiredIndex = ((calmCore + observerNormalized + vitality + attention) / 4) * 20;
 
-    // Determine tier
     let tier = '';
     if (rewiredIndex >= 81) tier = 'Integrated (Embodied)';
     else if (rewiredIndex >= 61) tier = 'Optimized (Coherent)';
@@ -284,10 +478,7 @@ export default function IOSBaselineAssessment() {
   const handleBreathCountingComplete = async (breathScore) => {
     const finalScores = calculateScores(breathScore);
     setScores(finalScores);
-    await saveBaselineData({
-      responses,
-      scores: finalScores
-    });
+    await saveBaselineData({ responses, scores: finalScores });
     setStage('results');
   };
 
@@ -317,51 +508,23 @@ export default function IOSBaselineAssessment() {
             Before we start, we need to establish your baseline. This takes approximately 8 minutes and measures 4 domains:
           </p>
           <div className="space-y-3 mb-8">
-            <div className="flex items-start">
-              <div className="flex-shrink-0 w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
-                <span className="text-indigo-600 font-semibold">1</span>
+            {[
+              { num: 1, title: "Calm Core Assessment", subtitle: "Regulation domain (~1 min)" },
+              { num: 2, title: "Observer Index", subtitle: "Awareness domain (~2 min)" },
+              { num: 3, title: "Vitality Index", subtitle: "Outlook domain (~1 min)" },
+              { num: 4, title: "Focus Diagnostic", subtitle: "Attention domain (~1 min)" },
+              { num: 5, title: "Presence Test", subtitle: "Attention domain (~3 min)" }
+            ].map(item => (
+              <div key={item.num} className="flex items-start">
+                <div className="flex-shrink-0 w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
+                  <span className="text-indigo-600 font-semibold">{item.num}</span>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-800">{item.title}</h3>
+                  <p className="text-sm text-gray-600">{item.subtitle}</p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-semibold text-gray-800">Calm Core Assessment</h3>
-                <p className="text-sm text-gray-600">Regulation domain (~1 min)</p>
-              </div>
-            </div>
-            <div className="flex items-start">
-              <div className="flex-shrink-0 w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
-                <span className="text-indigo-600 font-semibold">2</span>
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-800">Observer Index</h3>
-                <p className="text-sm text-gray-600">Awareness domain (~2 min)</p>
-              </div>
-            </div>
-            <div className="flex items-start">
-              <div className="flex-shrink-0 w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
-                <span className="text-indigo-600 font-semibold">3</span>
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-800">Vitality Index</h3>
-                <p className="text-sm text-gray-600">Outlook domain (~1 min)</p>
-              </div>
-            </div>
-            <div className="flex items-start">
-              <div className="flex-shrink-0 w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
-                <span className="text-indigo-600 font-semibold">4</span>
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-800">Focus Diagnostic</h3>
-                <p className="text-sm text-gray-600">Attention domain (~1 min)</p>
-              </div>
-            </div>
-            <div className="flex items-start">
-              <div className="flex-shrink-0 w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
-                <span className="text-indigo-600 font-semibold">5</span>
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-800">Presence Test</h3>
-                <p className="text-sm text-gray-600">Attention domain (~3 min)</p>
-              </div>
-            </div>
+            ))}
           </div>
           <div className="bg-blue-50 p-4 rounded-lg mb-6">
             <p className="text-sm text-blue-900">
@@ -396,10 +559,7 @@ export default function IOSBaselineAssessment() {
               <span>{progress}% complete</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${progress}%` }}
-              />
+              <div className="bg-indigo-600 h-2 rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
             </div>
           </div>
 
@@ -419,9 +579,7 @@ export default function IOSBaselineAssessment() {
                     key={index}
                     onClick={() => handleResponse(question.id, value)}
                     className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
-                      isSelected 
-                        ? 'border-indigo-600 bg-indigo-50' 
-                        : 'border-gray-200 hover:border-indigo-300'
+                      isSelected ? 'border-indigo-600 bg-indigo-50' : 'border-gray-200 hover:border-indigo-300'
                     }`}
                   >
                     <div className="flex items-center justify-between">
@@ -465,58 +623,8 @@ export default function IOSBaselineAssessment() {
     );
   }
 
-  if (stage === 'breathCountingInstructions') {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 p-8 flex items-center justify-center">
-        <div className="max-w-2xl bg-white rounded-lg shadow-lg p-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-4">Presence Test</h1>
-          <p className="text-gray-600 mb-6">
-            Final assessment: A 3-minute breath counting task that measures sustained attention and meta-awareness.
-          </p>
-          
-          <div className="bg-blue-50 p-6 rounded-lg mb-6">
-            <h2 className="font-semibold text-lg mb-3">Instructions:</h2>
-            <ol className="list-decimal list-inside space-y-2 text-gray-700">
-              <li>Count breaths <strong>1 through 8</strong> silently in your mind</li>
-              <li>Press <strong>"Next Breath"</strong> for each breath (1-8)</li>
-              <li>After breath 8, press <strong>"Complete Cycle"</strong> to mark breath 9</li>
-              <li>Immediately start a new cycle (count restarts at 1)</li>
-              <li>If you lose count, press <strong>"Lost Count"</strong></li>
-            </ol>
-          </div>
-
-          <div className="bg-yellow-50 p-4 rounded-lg mb-6">
-            <p className="text-sm text-yellow-900">
-              <strong>Note:</strong> One mistake ends the test. Your score is based on how long you maintain accurate counting.
-            </p>
-          </div>
-
-          <button
-            onClick={() => setStage('breathCounting')}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-          >
-            Start Presence Test
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   if (stage === 'breathCounting') {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 p-8">
-        <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-8">
-          <h2 className="text-2xl font-bold mb-4">Breath Counting Task</h2>
-          <p className="mb-4 text-gray-600">Import your BreathCountingTask component here</p>
-          <button
-            onClick={() => handleBreathCountingComplete(3.5)}
-            className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700"
-          >
-            Complete Test (Mock - 3.5 score)
-          </button>
-        </div>
-      </div>
-    );
+    return <BreathCountingTask onComplete={handleBreathCountingComplete} existingUserId={userId} />;
   }
 
   if (stage === 'results' && scores) {
@@ -528,9 +636,7 @@ export default function IOSBaselineAssessment() {
             <p className="text-gray-600 mb-6">Your transformation starting point has been established.</p>
 
             <div className="bg-indigo-50 p-8 rounded-lg text-center mb-8">
-              <div className="text-7xl font-bold text-indigo-600 mb-3">
-                {scores.rewiredIndex.toFixed(1)}
-              </div>
+              <div className="text-7xl font-bold text-indigo-600 mb-3">{scores.rewiredIndex.toFixed(1)}</div>
               <div className="text-xl text-gray-700 font-semibold mb-2">REwired Index</div>
               <div className="text-lg text-indigo-600 font-medium">{scores.tier}</div>
             </div>
@@ -558,15 +664,8 @@ export default function IOSBaselineAssessment() {
             </div>
 
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-              <p className="text-green-800 font-medium">
-                ✅ Baseline data saved to Supabase
-              </p>
-              <p className="text-sm text-green-700 mt-1">
-                User ID: {userId}
-              </p>
-              <p className="text-xs text-gray-600 mt-2">
-                (Falls back to localStorage if Supabase unavailable)
-              </p>
+              <p className="text-green-800 font-medium">✅ Baseline data saved to Supabase</p>
+              <p className="text-sm text-green-700 mt-1">User ID: {userId}</p>
             </div>
 
             <button
