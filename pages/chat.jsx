@@ -9,7 +9,6 @@ export default function ChatPage() {
   const [userData, setUserData] = useState(null);
   const messagesEndRef = useRef(null);
 
-  // Scroll to bottom when new messages arrive
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -18,60 +17,56 @@ export default function ChatPage() {
     scrollToBottom();
   }, [messages]);
 
-  // Load baseline data and initialize conversation
   useEffect(() => {
     loadBaselineData();
   }, []);
 
   const loadBaselineData = async () => {
-  try {
-    // DEBUG: Log what we're getting from storage
-    console.log('🔍 Checking storage...');
-    const initializedData = await storage.get('ios:system_initialized');
-    console.log('📦 Initialized data:', initializedData);
-    
-    if (!initializedData || !initializedData.value) {
-      console.log('❌ No initialization data found');
+    try {
+      console.log('🔍 Checking storage...');
+      const initializedData = await storage.get('ios:system_initialized');
+      console.log('📦 Initialized data:', initializedData);
+      
+      if (!initializedData || !initializedData.value) {
+        console.log('❌ No initialization data found');
+        window.location.href = '/assessment';
+        return;
+      }
+      
+      const initialized = JSON.parse(initializedData.value);
+      console.log('✅ Parsed initialized:', initialized);
+      
+      if (!initialized) {
+        console.log('❌ Initialized is false');
+        window.location.href = '/assessment';
+        return;
+      }
+
+      console.log('📊 Loading baseline data...');
+      const rewiredIndex = JSON.parse((await storage.get('ios:baseline:rewired_index')).value);
+      const tier = JSON.parse((await storage.get('ios:baseline:tier')).value);
+      const domainScores = JSON.parse((await storage.get('ios:baseline:domain_scores')).value);
+      const currentStage = JSON.parse((await storage.get('ios:current_stage')).value);
+
+      console.log('✅ Loaded data:', { rewiredIndex, tier, domainScores, currentStage });
+
+      setUserData({
+        rewiredIndex,
+        tier,
+        domainScores,
+        currentStage
+      });
+
+      setIsLoading(false);
+      startOnboarding(rewiredIndex, tier, domainScores);
+
+    } catch (error) {
+      console.error('❌ Error loading baseline data:', error);
       window.location.href = '/assessment';
-      return;
     }
-    
-    const initialized = JSON.parse(initializedData.value);
-    console.log('✅ Parsed initialized:', initialized);
-    
-    if (!initialized) {
-      console.log('❌ Initialized is false');
-      window.location.href = '/assessment';
-      return;
-    }
-
-    // Load all baseline data
-    console.log('📊 Loading baseline data...');
-    const rewiredIndex = JSON.parse((await storage.get('ios:baseline:rewired_index')).value);
-    const tier = JSON.parse((await storage.get('ios:baseline:tier')).value);
-    const domainScores = JSON.parse((await storage.get('ios:baseline:domain_scores')).value);
-    const currentStage = JSON.parse((await storage.get('ios:current_stage')).value);
-
-    console.log('✅ Loaded data:', { rewiredIndex, tier, domainScores, currentStage });
-
-    setUserData({
-      rewiredIndex,
-      tier,
-      domainScores,
-      currentStage
-    });
-
-    setIsLoading(false);
-    startOnboarding(rewiredIndex, tier, domainScores);
-
-  } catch (error) {
-    console.error('❌ Error loading baseline data:', error);
-    window.location.href = '/assessment';
-  }
-};
+  };
 
   const startOnboarding = (rewiredIndex, tier, domainScores) => {
-    // Initial greeting
     addMessage('assistant', `Hey. I'm the IOS System Installer.
 
 Your baseline diagnostic is complete. Let's review what we found.`);
@@ -112,7 +107,6 @@ These four domains form your neural and mental operating system. We're going to 
     addMessage('user', userMessage);
     setInput('');
 
-    // Process based on conversation state
     processUserResponse(userMessage);
   };
 
@@ -168,7 +162,6 @@ That's it. Two practices. Every morning.`);
     setTimeout(() => {
       addMessage('assistant', `**Here's how this works:**
 
-Stage 1 taught regulation.
 You'll do these practices daily for at least 14 days.
 
 I'll track your adherence and progress through weekly check-ins.
