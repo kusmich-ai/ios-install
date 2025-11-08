@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import '../lib/storage'; // Import storage to make window.storage available
 
 export default function ChatInterface() {
   const [messages, setMessages] = useState([]);
@@ -8,13 +9,49 @@ export default function ChatInterface() {
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
-  const scrollToBottom = () => {
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, [messages]);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    // Initialize conversation with system greeting
+    const initConversation = async () => {
+      const greeting = await sendToAPI([
+        { role: 'user', content: 'Hello' }
+      ]);
+      
+      if (greeting) {
+        setMessages([{ role: 'assistant', content: greeting }]);
+      }
+    };
+
+    if (messages.length === 0) {
+      initConversation();
+    }
+  }, []);
+
+  const sendToAPI = async (messageHistory) => {
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: messageHistory,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      return data.content[0].text;
+    } catch (error) {
+      console.error('Error:', error);
+      return 'Sorry, there was an error. Please try again.';
+    }
+  };
 
   const sendMessage = async (e) => {
     e.preventDefault();
@@ -26,48 +63,23 @@ export default function ChatInterface() {
     setInput('');
     setLoading(true);
 
-    try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: newMessages,
-          userId: getUserId(), // Implement user tracking
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      const assistantMessage = {
-        role: 'assistant',
-        content: data.content[0].text,
-      };
-
-      setMessages([...newMessages, assistantMessage]);
-    } catch (error) {
-      console.error('Error:', error);
-      // Handle error in UI
-    } finally {
-      setLoading(false);
+    const response = await sendToAPI(newMessages);
+    
+    if (response) {
+      setMessages([...newMessages, { role: 'assistant', content: response }]);
     }
-  };
 
-  const getUserId = () => {
-    // Implement user identification
-    let userId = localStorage.getItem('ios_user_id');
-    if (!userId) {
-      userId = 'user_' + Date.now();
-      localStorage.setItem('ios_user_id', userId);
-    }
-    return userId;
+    setLoading(false);
   };
 
   return (
-    <div className="flex flex-col h-screen max-w-4xl mx-auto">
+    <div className="flex flex-col h-screen max-w-4xl mx-auto bg-white">
+      {/* Header */}
+      <div className="bg-indigo-600 text-white p-4 shadow-lg">
+        <h1 className="text-2xl font-bold">IOS System Installer</h1>
+        <p className="text-sm text-indigo-100">Neural & Mental Operating System</p>
+      </div>
+
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((msg, idx) => (
@@ -101,7 +113,7 @@ export default function ChatInterface() {
       </div>
 
       {/* Input */}
-      <form onSubmit={sendMessage} className="border-t p-4">
+      <form onSubmit={sendMessage} className="border-t p-4 bg-gray-50">
         <div className="flex gap-2">
           <input
             type="text"
@@ -114,7 +126,7 @@ export default function ChatInterface() {
           <button
             type="submit"
             disabled={loading || !input.trim()}
-            className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+            className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
           >
             Send
           </button>
