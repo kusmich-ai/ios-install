@@ -14,6 +14,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.10.0] - 2025-11-10
+
+### Added
+- **Complete system-prompt.txt file** - Production-ready project instructions
+  - Full Stage 1-3 conversation flows (day-by-day guidance)
+  - Day 1 onboarding with baseline results presentation
+  - Days 2-13/16-27/30+ daily check-in scripts
+  - Weekly delta check-in protocols (Sunday 4-question assessments)
+  - Day 14/28/42+ unlock evaluation logic with multiple scenarios
+  - Stage 2 onboarding (Somatic Flow introduction)
+  - Stage 3 onboarding (Identity Installation Protocol trigger)
+  - Identity sprint management (21-day cycles, mid-sprint adjustments)
+  - Adaptive intervention scripts (missing days, overwhelm, skipping ahead, regression)
+
+- **Supabase storage implementation documentation**
+  - Confirmed usage of `window.storage` API wrapper
+  - Anonymous user_id generation pattern
+  - Complete storage schema with namespaced keys
+  - Usage examples for all data types (baseline scores, daily logs, weekly deltas)
+  - Storage key structure: `ios:baseline:*`, `ios:daily:*`, `ios:weekly:*`
+
+- **Calculation functions**
+  - Adherence calculation logic (percentage-based over rolling windows)
+  - Delta improvement tracking (comparing weekly to baseline)
+  - Calm rating averaging
+  - Unlock eligibility checker with all criteria
+
+- **Enhanced coaching voice examples**
+  - Direct, scientifically grounded responses
+  - Handling resistance patterns
+  - Celebration of genuine progress (not participation)
+  - Intervention scripts for common scenarios
+
+### Changed
+- **Project instructions restructure**
+  - Moved from conceptual framework to operational implementation
+  - Added complete day-by-day conversation flows
+  - Integrated storage patterns throughout
+  - Clarified sub-protocol triggering with decision trees
+  
+### Documentation
+- **system-prompt.txt created** - Complete operational instructions for AI coach
+  - Replaces previous fragmented documentation
+  - Ready for deployment in production environment
+  - Includes all Stage 1-3 flows, storage patterns, and coaching guidelines
+
+---
+
 ## [0.9.0] - 2025-11-10
 
 ### Fixed
