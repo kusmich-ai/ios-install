@@ -10,6 +10,40 @@ export default function Assessment() {
   const [currentSection, setCurrentSection] = useState(0);
   const [responses, setResponses] = useState({});
   const [sectionScores, setSectionScores] = useState({});
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const supabase = createClientComponentClient();
+  const router = useRouter();
+  const { data: baseline } = await supabase
+        .from('baseline_assessments')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (baseline) {
+        router.push('/chat');
+        return;
+      }
+
+      setUser(user);
+      setLoading(false);
+    }
+
+    loadUser();
+  }, []);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  useEffect(() => {
+    async function loadUser() {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        router.push('/auth/signin');
+        return;
+      }
 
   // Assessment sections with questions
   const assessments = [
