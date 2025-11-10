@@ -1,4 +1,8 @@
+'use client';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
   return (
