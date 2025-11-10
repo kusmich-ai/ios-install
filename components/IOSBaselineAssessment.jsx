@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Play, Check, TrendingUp, User, ChevronRight, Brain, Eye, Heart, Target } from 'lucide-react';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useRouter } from 'next/router';
 
-export default function Assessment() {
+export default function IOSBaselineAssessment({ user }) {
+  const supabase = createClientComponentClient();
+  const router = useRouter();
   // Define orange accent color
   const orange = '#ff9e19';
   const orangeHover = '#e68a0f';
