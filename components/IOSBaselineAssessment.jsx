@@ -3,51 +3,21 @@ import { Play, Check, TrendingUp, User, ChevronRight, Brain, Eye, Heart, Target 
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useRouter } from 'next/router';
 
-export default function IOSBaselineAssessment({ user }) {
+export default function Assessment({ user }) {  // ← Accept user prop
   const supabase = createClientComponentClient();
   const router = useRouter();
+  
   // Define orange accent color
   const orange = '#ff9e19';
   const orangeHover = '#e68a0f';
   
-  const [stage, setStage] = useState('welcome'); // welcome, assessment, results
+  const [stage, setStage] = useState('welcome');
   const [currentSection, setCurrentSection] = useState(0);
   const [responses, setResponses] = useState({});
   const [sectionScores, setSectionScores] = useState({});
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const supabase = createClientComponentClient();
-  const router = useRouter();
-  const { data: baseline } = await supabase
-        .from('baseline_assessments')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (baseline) {
-        router.push('/chat');
-        return;
-      }
-
-      setUser(user);
-      setLoading(false);
-    }
-
-    loadUser();
-  }, []);
-
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  useEffect(() => {
-    async function loadUser() {
+        
       const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        router.push('/auth/signin');
-        return;
-      }
+
 
   // Assessment sections with questions
   const assessments = [
@@ -256,13 +226,51 @@ export default function IOSBaselineAssessment({ user }) {
     if (currentSection < totalSections - 1) {
       setCurrentSection(currentSection + 1);
     } else {
-      // Calculate and save final REwired Index
+      } else {
+      // Calculate and save final REwired Index to Supabase
       const rewiredIndex = calculateREwiredIndex(newScores);
-      await window.storage.set('baseline:rewired_index', JSON.stringify({
-        score: rewiredIndex,
-        domainScores: newScores,
-        completedDate: new Date().toISOString()
-      }));
+      
+      const regulation = newScores.calm_core || 0;
+      const awareness = newScores.observer_index || 0;
+      const outlook = newScores.vitality_index || 0;
+      const focusScore = newScores.focus_diagnostic || 0;
+      const presenceScore = newScores.presence_test || 0;
+      const attention = (focusScore + presenceScore) / 2;
+      
+      const determineTier = (score) => {
+        if (score >= 81) return 'Integrated';
+        if (score >= 61) return 'Optimized';
+        if (score >= 41) return 'Operational';
+        if (score >= 21) return 'Baseline Mode';
+        return 'System Offline';
+      };
+
+      // Save to Supabase
+      const { error } = await supabase
+        .from('baseline_assessments')
+        .insert({
+          user_id: user.id,
+          calm_core_score: regulation,
+          observer_index_score: awareness,
+          vitality_index_score: outlook,
+          focus_diagnostic_score: focusScore,
+          presence_test_score: presenceScore,
+          regulation_domain: regulation,
+          awareness_domain: awareness,
+          outlook_domain: outlook,
+          attention_domain: attention,
+          rewired_index: rewiredIndex,
+          rewired_tier: determineTier(rewiredIndex),
+          presence_test_elapsed_seconds: 0, // TODO: Get from BCT when integrated
+          presence_test_cycles_completed: 0, // TODO: Get from BCT when integrated
+        });
+
+      if (error) {
+        console.error('Error saving assessment:', error);
+        alert('Failed to save assessment. Please try again.');
+        return;
+      }
+
       setStage('results');
     }
   };
@@ -584,13 +592,13 @@ export default function IOSBaselineAssessment({ user }) {
               Your baseline is established. The IOS will now track your transformation across these domains as you progress through the 7 stages, measuring deltas weekly to show exactly how your nervous system and mental architecture are evolving.
             </p>
             <button
-              onClick={() => {/* Return to main chat */}}
-              style={{ backgroundColor: orange }}
-              className="w-full hover:opacity-90 text-black font-semibold py-4 px-6 rounded-lg transition-all flex items-center justify-center gap-2"
-            >
-              Begin Stage 1: Neural Priming
-              <ChevronRight className="w-5 h-5" />
-            </button>
+  onClick={() => router.push('/chat')}
+  style={{ backgroundColor: orange }}
+  className="w-full hover:opacity-90 text-black font-semibold py-4 px-6 rounded-lg transition-all flex items-center justify-center gap-2"
+>
+  Begin Stage 1: Neural Priming
+  <ChevronRight className="w-5 h-5" />
+</button>
           </div>
         </div>
       </div>
