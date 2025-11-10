@@ -1,52 +1,96 @@
-import React, { useState, useEffect } from 'react';
-import { Play, Check, TrendingUp, User, ChevronRight, Brain, Eye, Heart, Target } from 'lucide-react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { useRouter } from 'next/router';
+import React, { useState, useEffect, useRef } from 'react';
+import { ChevronRight, Check, Brain, Target, Sun, Focus, Clock } from 'lucide-react';
+import { createClient } from '@supabase/supabase-js';
 
-export default function Assessment({ user }) {  // ← Accept user prop
-  const supabase = createClientComponentClient();
-  const router = useRouter();
-  
-  // Define orange accent color
-  const orange = '#ff9e19';
-  const orangeHover = '#e68a0f';
-  
-  const [stage, setStage] = useState('welcome');
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
+
+const IOSBaselineAssessment = () => {
+  // State management
   const [currentSection, setCurrentSection] = useState(0);
+  const [currentQuestion, setCurrentQuestion] = useState(0);
   const [responses, setResponses] = useState({});
   const [sectionScores, setSectionScores] = useState({});
-        
-      const { data: { user } } = await supabase.auth.getUser();
+  
+  // User authentication state
+  const [userId, setUserId] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Get authenticated user
+  useEffect(() => {
+    const getUser = async () => {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) throw error;
+        if (user) {
+          setUserId(user.id);
+        }
+      } catch (error) {
+        console.error('Error getting user:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    getUser();
+  }, []);
 
 
   // Assessment sections with questions
-  const assessments = [
+  const sections = [
     {
       id: 'calm_core',
       name: 'Calm Core Assessment',
       domain: 'Regulation',
-      icon: Heart,
-      description: 'Measuring your baseline stress regulation and autonomic capacity',
+      icon: Brain,
+      color: 'blue',
+      description: 'Measures perceived stress and autonomic load',
       questions: [
         {
-          id: 'stress_handle',
-          text: 'In the last month, how often have you felt that you were unable to control the important things in your life?',
-          scale: ['Never', 'Almost Never', 'Sometimes', 'Fairly Often', 'Very Often']
-        },
-        {
-          id: 'stress_overcome',
-          text: 'In the last month, how often have you felt confident about your ability to handle your personal problems?',
-          scale: ['Very Often', 'Fairly Often', 'Sometimes', 'Almost Never', 'Never']
-        },
-        {
-          id: 'stress_going',
-          text: 'In the last month, how often have you felt that things were going your way?',
-          scale: ['Very Often', 'Fairly Often', 'Sometimes', 'Almost Never', 'Never']
-        },
-        {
           id: 'stress_cope',
-          text: 'In the last month, how often have you felt difficulties were piling up so high that you could not overcome them?',
-          scale: ['Never', 'Almost Never', 'Sometimes', 'Fairly Often', 'Very Often']
+          text: 'In the last week, how often have you felt that you were unable to control the important things in your life?',
+          scale: [
+            { value: 0, label: 'Never' },
+            { value: 1, label: 'Almost Never' },
+            { value: 2, label: 'Sometimes' },
+            { value: 3, label: 'Fairly Often' },
+            { value: 4, label: 'Very Often' }
+          ]
+        },
+        {
+          id: 'confidence_handle',
+          text: 'In the last week, how often have you felt confident about your ability to handle your personal problems?',
+          scale: [
+            { value: 4, label: 'Never' },
+            { value: 3, label: 'Almost Never' },
+            { value: 2, label: 'Sometimes' },
+            { value: 1, label: 'Fairly Often' },
+            { value: 0, label: 'Very Often' }
+          ]
+        },
+        {
+          id: 'things_going',
+          text: 'In the last week, how often have you felt that things were going your way?',
+          scale: [
+            { value: 4, label: 'Never' },
+            { value: 3, label: 'Almost Never' },
+            { value: 2, label: 'Sometimes' },
+            { value: 1, label: 'Fairly Often' },
+            { value: 0, label: 'Very Often' }
+          ]
+        },
+        {
+          id: 'difficulties_piling',
+          text: 'In the last week, how often have you felt difficulties were piling up so high that you could not overcome them?',
+          scale: [
+            { value: 0, label: 'Never' },
+            { value: 1, label: 'Almost Never' },
+            { value: 2, label: 'Sometimes' },
+            { value: 3, label: 'Fairly Often' },
+            { value: 4, label: 'Very Often' }
+          ]
         }
       ]
     },
@@ -54,33 +98,86 @@ export default function Assessment({ user }) {  // ← Accept user prop
       id: 'observer_index',
       name: 'Observer Index',
       domain: 'Awareness',
-      icon: Eye,
-      description: 'Assessing your meta-awareness and ability to observe thoughts',
+      icon: Target,
+      color: 'purple',
+      description: 'Measures meta-awareness and ability to observe thoughts',
       questions: [
         {
           id: 'aware_thoughts',
-          text: 'I can notice my thoughts without getting caught up in them.',
-          scale: ['Never', 'Rarely', 'Sometimes', 'Often', 'Always']
+          text: 'I am aware of my thoughts and feelings without necessarily reacting to them.',
+          scale: [
+            { value: 1, label: 'Strongly Disagree' },
+            { value: 2, label: 'Disagree' },
+            { value: 3, label: 'Neutral' },
+            { value: 4, label: 'Agree' },
+            { value: 5, label: 'Strongly Agree' }
+          ]
         },
         {
-          id: 'watch_feelings',
-          text: 'I can watch my feelings without needing to react to them.',
-          scale: ['Never', 'Rarely', 'Sometimes', 'Often', 'Always']
+          id: 'observe_thoughts',
+          text: 'I can observe my thoughts without getting caught up in them.',
+          scale: [
+            { value: 1, label: 'Strongly Disagree' },
+            { value: 2, label: 'Disagree' },
+            { value: 3, label: 'Neutral' },
+            { value: 4, label: 'Agree' },
+            { value: 5, label: 'Strongly Agree' }
+          ]
         },
         {
           id: 'step_back',
-          text: 'When I\'m upset, I can step back and observe the emotion.',
-          scale: ['Never', 'Rarely', 'Sometimes', 'Often', 'Always']
+          text: 'I can step back from my thoughts and see them as separate from myself.',
+          scale: [
+            { value: 1, label: 'Strongly Disagree' },
+            { value: 2, label: 'Disagree' },
+            { value: 3, label: 'Neutral' },
+            { value: 4, label: 'Agree' },
+            { value: 5, label: 'Strongly Agree' }
+          ]
         },
         {
-          id: 'perspective',
-          text: 'I can take a perspective on my thoughts and see them as just thoughts.',
-          scale: ['Never', 'Rarely', 'Sometimes', 'Often', 'Always']
+          id: 'notice_thinking',
+          text: 'I notice when I am lost in thought.',
+          scale: [
+            { value: 1, label: 'Strongly Disagree' },
+            { value: 2, label: 'Disagree' },
+            { value: 3, label: 'Neutral' },
+            { value: 4, label: 'Agree' },
+            { value: 5, label: 'Strongly Agree' }
+          ]
         },
         {
-          id: 'distance',
-          text: 'I can create distance between myself and my difficult thoughts.',
-          scale: ['Never', 'Rarely', 'Sometimes', 'Often', 'Always']
+          id: 'center_awareness',
+          text: 'I can center myself in awareness rather than in my thoughts.',
+          scale: [
+            { value: 1, label: 'Strongly Disagree' },
+            { value: 2, label: 'Disagree' },
+            { value: 3, label: 'Neutral' },
+            { value: 4, label: 'Agree' },
+            { value: 5, label: 'Strongly Agree' }
+          ]
+        },
+        {
+          id: 'witness_emotions',
+          text: 'I can witness my emotions without being overwhelmed by them.',
+          scale: [
+            { value: 1, label: 'Strongly Disagree' },
+            { value: 2, label: 'Disagree' },
+            { value: 3, label: 'Neutral' },
+            { value: 4, label: 'Agree' },
+            { value: 5, label: 'Strongly Agree' }
+          ]
+        },
+        {
+          id: 'metacognitive_awareness',
+          text: 'I am aware of being aware - I notice my own awareness.',
+          scale: [
+            { value: 1, label: 'Strongly Disagree' },
+            { value: 2, label: 'Disagree' },
+            { value: 3, label: 'Neutral' },
+            { value: 4, label: 'Agree' },
+            { value: 5, label: 'Strongly Agree' }
+          ]
         }
       ]
     },
@@ -88,33 +185,69 @@ export default function Assessment({ user }) {  // ← Accept user prop
       id: 'vitality_index',
       name: 'Vitality Index',
       domain: 'Outlook',
-      icon: TrendingUp,
-      description: 'Measuring your baseline positive affect and emotional well-being',
+      icon: Sun,
+      color: 'yellow',
+      description: 'Measures positive affect and well-being',
       questions: [
         {
-          id: 'cheerful',
-          text: 'Over the past two weeks, I have felt cheerful and in good spirits.',
-          scale: ['Never', 'Rarely', 'Sometimes', 'Often', 'Always']
+          id: 'cheerful_good_spirits',
+          text: 'Over the last two weeks, I have felt cheerful and in good spirits.',
+          scale: [
+            { value: 0, label: 'At no time' },
+            { value: 1, label: 'Some of the time' },
+            { value: 2, label: 'Less than half the time' },
+            { value: 3, label: 'More than half the time' },
+            { value: 4, label: 'Most of the time' },
+            { value: 5, label: 'All of the time' }
+          ]
         },
         {
           id: 'calm_relaxed',
-          text: 'Over the past two weeks, I have felt calm and relaxed.',
-          scale: ['Never', 'Rarely', 'Sometimes', 'Often', 'Always']
+          text: 'Over the last two weeks, I have felt calm and relaxed.',
+          scale: [
+            { value: 0, label: 'At no time' },
+            { value: 1, label: 'Some of the time' },
+            { value: 2, label: 'Less than half the time' },
+            { value: 3, label: 'More than half the time' },
+            { value: 4, label: 'Most of the time' },
+            { value: 5, label: 'All of the time' }
+          ]
         },
         {
           id: 'active_vigorous',
-          text: 'Over the past two weeks, I have felt active and vigorous.',
-          scale: ['Never', 'Rarely', 'Sometimes', 'Often', 'Always']
+          text: 'Over the last two weeks, I have felt active and vigorous.',
+          scale: [
+            { value: 0, label: 'At no time' },
+            { value: 1, label: 'Some of the time' },
+            { value: 2, label: 'Less than half the time' },
+            { value: 3, label: 'More than half the time' },
+            { value: 4, label: 'Most of the time' },
+            { value: 5, label: 'All of the time' }
+          ]
         },
         {
-          id: 'fresh_rested',
-          text: 'Over the past two weeks, I woke up feeling fresh and rested.',
-          scale: ['Never', 'Rarely', 'Sometimes', 'Often', 'Always']
+          id: 'woke_fresh',
+          text: 'Over the last two weeks, I woke up feeling fresh and rested.',
+          scale: [
+            { value: 0, label: 'At no time' },
+            { value: 1, label: 'Some of the time' },
+            { value: 2, label: 'Less than half the time' },
+            { value: 3, label: 'More than half the time' },
+            { value: 4, label: 'Most of the time' },
+            { value: 5, label: 'All of the time' }
+          ]
         },
         {
-          id: 'interesting',
-          text: 'Over the past two weeks, my daily life has been filled with things that interest me.',
-          scale: ['Never', 'Rarely', 'Sometimes', 'Often', 'Always']
+          id: 'daily_life_interesting',
+          text: 'Over the last two weeks, my daily life has been filled with things that interest me.',
+          scale: [
+            { value: 0, label: 'At no time' },
+            { value: 1, label: 'Some of the time' },
+            { value: 2, label: 'Less than half the time' },
+            { value: 3, label: 'More than half the time' },
+            { value: 4, label: 'Most of the time' },
+            { value: 5, label: 'All of the time' }
+          ]
         }
       ]
     },
@@ -122,28 +255,64 @@ export default function Assessment({ user }) {  // ← Accept user prop
       id: 'focus_diagnostic',
       name: 'Focus Diagnostic',
       domain: 'Attention',
-      icon: Target,
-      description: 'Evaluating your attentional control and mind-wandering tendencies',
+      icon: Focus,
+      color: 'green',
+      description: 'Measures attentional control and mind-wandering',
       questions: [
         {
-          id: 'task_unrelated',
-          text: 'I have difficulty maintaining focus on simple or repetitive tasks.',
-          scale: ['Never', 'Rarely', 'Sometimes', 'Often', 'Always']
+          id: 'thoughts_wander',
+          text: 'I have difficulty keeping my mind on task.',
+          scale: [
+            { value: 5, label: 'Almost Never' },
+            { value: 4, label: 'Sometimes' },
+            { value: 3, label: 'Often' },
+            { value: 2, label: 'Very Often' },
+            { value: 1, label: 'Almost Always' }
+          ]
         },
         {
-          id: 'mind_wander',
-          text: 'My mind wanders during conversations or meetings.',
-          scale: ['Never', 'Rarely', 'Sometimes', 'Often', 'Always']
+          id: 'distracted_easily',
+          text: 'I find myself getting distracted easily.',
+          scale: [
+            { value: 5, label: 'Almost Never' },
+            { value: 4, label: 'Sometimes' },
+            { value: 3, label: 'Often' },
+            { value: 2, label: 'Very Often' },
+            { value: 1, label: 'Almost Always' }
+          ]
+        },
+        {
+          id: 'lose_train',
+          text: 'I find myself losing my train of thought.',
+          scale: [
+            { value: 5, label: 'Almost Never' },
+            { value: 4, label: 'Sometimes' },
+            { value: 3, label: 'Often' },
+            { value: 2, label: 'Very Often' },
+            { value: 1, label: 'Almost Always' }
+          ]
+        },
+        {
+          id: 'concentrate_reading',
+          text: 'I have difficulty concentrating when reading.',
+          scale: [
+            { value: 5, label: 'Almost Never' },
+            { value: 4, label: 'Sometimes' },
+            { value: 3, label: 'Often' },
+            { value: 2, label: 'Very Often' },
+            { value: 1, label: 'Almost Always' }
+          ]
         },
         {
           id: 'daydream',
-          text: 'I find myself daydreaming when I should be concentrating.',
-          scale: ['Never', 'Rarely', 'Sometimes', 'Often', 'Always']
-        },
-        {
-          id: 'lose_focus',
-          text: 'I lose focus on tasks that require sustained attention.',
-          scale: ['Never', 'Rarely', 'Sometimes', 'Often', 'Always']
+          text: 'I find myself daydreaming.',
+          scale: [
+            { value: 5, label: 'Almost Never' },
+            { value: 4, label: 'Sometimes' },
+            { value: 3, label: 'Often' },
+            { value: 2, label: 'Very Often' },
+            { value: 1, label: 'Almost Always' }
+          ]
         }
       ]
     },
@@ -151,459 +320,313 @@ export default function Assessment({ user }) {  // ← Accept user prop
       id: 'presence_test',
       name: 'Presence Test',
       domain: 'Attention',
-      icon: Brain,
-      description: 'Embodied attention measurement through breath counting',
-      type: 'bct',
-      info: 'This is a 3-minute breath counting task. Count breaths 1-8 silently, press the button after breath 8 to complete a cycle, then immediately restart at 1. If you lose count, press "Lost Count". One mistake ends the test.'
+      icon: Clock,
+      color: 'indigo',
+      description: 'Embodied attention measurement (Breath Counting Task)',
+      isBCT: true
     }
   ];
 
-  const currentAssessment = assessments[currentSection];
-  const totalSections = assessments.length;
+  // Orange accent color constant for consistency
+  const orangeAccent = '#ff9e19';
 
-  // Calculate score for a completed section
-  const calculateSectionScore = (sectionId, answers) => {
-    const section = assessments.find(a => a.id === sectionId);
-    if (!section.questions) return 0;
-
-    const total = section.questions.reduce((sum, q) => {
-      const answer = answers[q.id];
-      return sum + (answer !== undefined ? answer : 0);
-    }, 0);
-
-    const maxScore = section.questions.length * 4;
-    return (total / maxScore) * 5;
-  };
-
-  // Calculate REwired Index from all domain scores
-  const calculateREwiredIndex = (scores) => {
-    const regulation = scores.calm_core || 0;
-    const awareness = scores.observer_index || 0;
-    const outlook = scores.vitality_index || 0;
+  // Calculate section score
+  const calculateSectionScore = (sectionId) => {
+    const section = sections.find(s => s.id === sectionId);
+    if (!section || section.isBCT) return 0;
     
-    // Attention is average of focus_diagnostic and presence_test
-    const focusScore = scores.focus_diagnostic || 0;
-    const presenceScore = scores.presence_test || 0;
-    const attention = (focusScore + presenceScore) / 2;
-
-    const average = (regulation + awareness + outlook + attention) / 4;
-    return Math.round(average * 20);
+    const questionIds = section.questions.map(q => q.id);
+    const sectionResponses = questionIds.map(id => responses[id] || 0);
+    
+    if (sectionResponses.length === 0) return 0;
+    
+    const sum = sectionResponses.reduce((acc, val) => acc + val, 0);
+    const maxPossible = questionIds.length * 5;
+    
+    return (sum / maxPossible) * 5;
   };
 
-  const getTierInfo = (score) => {
-    if (score >= 81) return { name: 'Integrated', status: 'Embodied', color: '#10b981' };
-    if (score >= 61) return { name: 'Optimized', status: 'Coherent', color: '#3b82f6' };
-    if (score >= 41) return { name: 'Operational', status: 'Stabilizing', color: orange };
-    if (score >= 21) return { name: 'Baseline Mode', status: 'Installing...', color: '#f59e0b' };
-    return { name: 'System Offline', status: 'Critical', color: '#ef4444' };
-  };
-
-  const handleAnswerSelect = (questionId, value) => {
-    setResponses({
-      ...responses,
+  // Handle answer selection
+  const handleAnswer = (questionId, value) => {
+    setResponses(prev => ({
+      ...prev,
       [questionId]: value
-    });
+    }));
   };
 
-  const handleSectionComplete = async () => {
-    // Calculate score for current section
-    const score = calculateSectionScore(currentAssessment.id, responses);
-    const newScores = {
-      ...sectionScores,
-      [currentAssessment.id]: score
-    };
-    setSectionScores(newScores);
-
-    // Save to storage
-    await window.storage.set(`baseline:${currentAssessment.id}`, JSON.stringify({
-      score,
-      responses: Object.keys(responses)
-        .filter(k => k.startsWith(currentAssessment.id) || currentAssessment.questions?.some(q => q.id === k))
-        .reduce((obj, k) => ({ ...obj, [k]: responses[k] }), {})
-    }));
-
-    // Move to next section or results
-    if (currentSection < totalSections - 1) {
-      setCurrentSection(currentSection + 1);
+  // Navigate to next question
+  const handleNext = () => {
+    const currentSectionData = sections[currentSection];
+    
+    if (currentSectionData.isBCT) {
+      // BCT section - move to results after completion
+      calculateAndStoreResults();
+      return;
+    }
+    
+    // Check if there are more questions in current section
+    if (currentQuestion < currentSectionData.questions.length - 1) {
+      setCurrentQuestion(currentQuestion + 1);
     } else {
+      // Move to next section
+      if (currentSection < sections.length - 1) {
+        const score = calculateSectionScore(currentSectionData.id);
+        setSectionScores(prev => ({
+          ...prev,
+          [currentSectionData.id]: score
+        }));
+        
+        setCurrentSection(currentSection + 1);
+        setCurrentQuestion(0);
       } else {
-      // Calculate and save final REwired Index to Supabase
-      const rewiredIndex = calculateREwiredIndex(newScores);
-      
-      const regulation = newScores.calm_core || 0;
-      const awareness = newScores.observer_index || 0;
-      const outlook = newScores.vitality_index || 0;
-      const focusScore = newScores.focus_diagnostic || 0;
-      const presenceScore = newScores.presence_test || 0;
-      const attention = (focusScore + presenceScore) / 2;
-      
-      const determineTier = (score) => {
-        if (score >= 81) return 'Integrated';
-        if (score >= 61) return 'Optimized';
-        if (score >= 41) return 'Operational';
-        if (score >= 21) return 'Baseline Mode';
-        return 'System Offline';
-      };
+        // All sections complete
+        calculateAndStoreResults();
+      }
+    }
+  };
 
-      // Save to Supabase
-      const { error } = await supabase
-        .from('baseline_assessments')
-        .insert({
-          user_id: user.id,
-          calm_core_score: regulation,
-          observer_index_score: awareness,
-          vitality_index_score: outlook,
-          focus_diagnostic_score: focusScore,
-          presence_test_score: presenceScore,
-          regulation_domain: regulation,
-          awareness_domain: awareness,
-          outlook_domain: outlook,
-          attention_domain: attention,
-          rewired_index: rewiredIndex,
-          rewired_tier: determineTier(rewiredIndex),
-          presence_test_elapsed_seconds: 0, // TODO: Get from BCT when integrated
-          presence_test_cycles_completed: 0, // TODO: Get from BCT when integrated
-        });
+  // Calculate and store final results
+  const calculateAndStoreResults = async () => {
+    const finalSectionScores = { ...sectionScores };
+    
+    // Calculate final section score if not BCT
+    const currentSectionData = sections[currentSection];
+    if (!currentSectionData.isBCT) {
+      const score = calculateSectionScore(currentSectionData.id);
+      finalSectionScores[currentSectionData.id] = score;
+    }
+    
+    // Calculate domain scores
+    const domainScores = {
+      regulation: finalSectionScores.calm_core || 0,
+      awareness: finalSectionScores.observer_index || 0,
+      outlook: finalSectionScores.vitality_index || 0,
+      attention: ((finalSectionScores.focus_diagnostic || 0) + (finalSectionScores.presence_test || 0)) / 2
+    };
+    
+    // Calculate REwired Index (0-100 scale)
+    const rewiredIndex = Math.round(
+      ((domainScores.regulation + domainScores.awareness + domainScores.outlook + domainScores.attention) / 4) * 20
+    );
+    
+    // Determine tier
+    let tier;
+    if (rewiredIndex >= 81) tier = 'Integrated (Embodied)';
+    else if (rewiredIndex >= 61) tier = 'Optimized (Coherent)';
+    else if (rewiredIndex >= 41) tier = 'Operational (Stabilizing)';
+    else if (rewiredIndex >= 21) tier = 'Baseline Mode (Installing...)';
+    else tier = 'System Offline (Critical)';
+    
+    const resultsData = {
+      sectionScores: finalSectionScores,
+      domainScores,
+      rewiredIndex,
+      tier,
+      timestamp: new Date().toISOString(),
+      userId
+    };
+    
+    // Store in Supabase
+    await storeBaselineData(resultsData);
+    
+    // Navigate to chat interface
+    window.location.href = '/chat';
+  };
 
-      if (error) {
-        console.error('Error saving assessment:', error);
-        alert('Failed to save assessment. Please try again.');
+  // Store baseline data in Supabase
+  const storeBaselineData = async (resultsData) => {
+    try {
+      console.log('💾 Storing baseline data for user:', userId);
+      
+      if (!userId) {
+        console.error('❌ No user ID available');
         return;
       }
-
-      setStage('results');
+      
+      // Store baseline assessment
+      const { error: assessmentError } = await supabase
+        .from('baseline_assessments')
+        .upsert({
+          user_id: userId,
+          regulation_score: resultsData.domainScores.regulation,
+          awareness_score: resultsData.domainScores.awareness,
+          outlook_score: resultsData.domainScores.outlook,
+          attention_score: resultsData.domainScores.attention,
+          rewired_index: resultsData.rewiredIndex,
+          tier: resultsData.tier,
+          section_scores: resultsData.sectionScores,
+          completed_at: resultsData.timestamp
+        });
+      
+      if (assessmentError) throw assessmentError;
+      
+      // Initialize user progress
+      const { error: progressError } = await supabase
+        .from('user_progress')
+        .upsert({
+          user_id: userId,
+          current_stage: 1,
+          stage_start_date: resultsData.timestamp,
+          system_initialized: true
+        });
+      
+      if (progressError) throw progressError;
+      
+      console.log('✅ Baseline data stored successfully');
+      
+    } catch (error) {
+      console.error('❌ Error storing baseline data:', error);
     }
   };
 
-  const allQuestionsAnswered = currentAssessment.questions?.every(q => 
-    responses[q.id] !== undefined
-  );
-
-  if (stage === 'welcome') {
+  // Loading state
+  if (loading) {
     return (
-      <div className="min-h-screen bg-zinc-950 p-8 flex items-center justify-center">
-        <div className="max-w-2xl w-full">
-          {/* Header */}
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-zinc-900 border border-zinc-800 rounded-full mb-6">
-              <Brain className="w-10 h-10" style={{ color: orange }} />
-            </div>
-            <h1 className="text-4xl font-bold text-white mb-3">
-              IOS Baseline Diagnostic
-            </h1>
-            <p className="text-zinc-400 text-lg">
-              Establish your starting point across 4 core domains
-            </p>
-          </div>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0a0a0a' }}>
+        <div className="text-white">Loading...</div>
+      </div>
+    );
+  }
 
-          {/* Info Card */}
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-8 mb-8">
-            <h2 className="text-xl font-semibold text-white mb-6">What We'll Measure</h2>
-            <div className="space-y-4">
-              {assessments.map((assessment, idx) => {
-                const Icon = assessment.icon;
-                return (
-                  <div key={assessment.id} className="flex items-start gap-4">
-                    <div className="w-10 h-10 bg-zinc-800 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Icon className="w-5 h-5" style={{ color: orange }} />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-1">
-                        <h3 className="text-white font-medium">{assessment.name}</h3>
-                        <span className="text-xs text-zinc-500 bg-zinc-800 px-2 py-1 rounded">
-                          {assessment.domain}
-                        </span>
-                      </div>
-                      <p className="text-sm text-zinc-400">
-                        {assessment.description}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            
-            <div className="mt-8 pt-6 border-t border-zinc-800">
-              <div className="flex items-center gap-2 text-sm text-zinc-400">
-                <Check className="w-4 h-4" style={{ color: orange }} />
-                <span>Total time: ~8 minutes</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-zinc-400 mt-2">
-                <Check className="w-4 h-4" style={{ color: orange }} />
-                <span>Results generate your REwired Index (0-100)</span>
-              </div>
-            </div>
-          </div>
+  // Get current section and question
+  const currentSectionData = sections[currentSection];
+  const currentQuestionData = currentSectionData.isBCT ? null : currentSectionData.questions[currentQuestion];
+  const IconComponent = currentSectionData.icon;
+  
+  // Check if current question is answered
+  const isAnswered = currentQuestionData ? responses[currentQuestionData.id] !== undefined : false;
 
-          {/* Get Started Button */}
-          <button
-            onClick={() => setStage('assessment')}
-            style={{ backgroundColor: orange }}
-            className="w-full hover:opacity-90 text-black font-semibold py-4 px-6 rounded-lg transition-all flex items-center justify-center gap-3"
-          >
-            <Play className="w-5 h-5" />
-            Begin Assessment
-          </button>
-
-          <p className="text-xs text-zinc-600 text-center mt-4">
-            Data stored locally in your browser
+  return (
+    <div className="min-h-screen p-4 sm:p-8" style={{ backgroundColor: '#0a0a0a' }}>
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">
+            IOS Baseline Assessment
+          </h1>
+          <p className="text-gray-400">
+            Establishing your neural and mental transformation starting point
           </p>
         </div>
-      </div>
-    );
-  }
 
-  if (stage === 'assessment') {
-    const Icon = currentAssessment.icon;
-    const progress = ((currentSection) / totalSections) * 100;
-
-    if (currentAssessment.type === 'bct') {
-      // BCT integration placeholder
-      return (
-        <div className="min-h-screen bg-zinc-950 p-8">
-          <div className="max-w-3xl mx-auto">
-            {/* Progress Bar */}
-            <div className="mb-8">
-              <div className="flex justify-between items-center mb-3">
-                <span className="text-sm font-medium text-zinc-400">
-                  Section {currentSection + 1} of {totalSections}
-                </span>
-                <span className="text-sm font-medium" style={{ color: orange }}>
-                  {Math.round(progress)}%
-                </span>
-              </div>
-              <div className="h-2 bg-zinc-900 rounded-full overflow-hidden">
-                <div 
-                  className="h-full transition-all duration-500"
-                  style={{ width: `${progress}%`, backgroundColor: orange }}
-                />
-              </div>
-            </div>
-
-            {/* BCT Instructions */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-8">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-12 h-12 bg-zinc-800 rounded-lg flex items-center justify-center">
-                  <Icon className="w-6 h-6" style={{ color: orange }} />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-white">{currentAssessment.name}</h2>
-                  <p className="text-zinc-400">{currentAssessment.domain} Domain</p>
-                </div>
-              </div>
-
-              <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-6 mb-6">
-                <p className="text-zinc-300 leading-relaxed">
-                  {currentAssessment.info}
-                </p>
-              </div>
-
-              <div className="text-center text-zinc-500 py-8">
-                [BCT Component Integration Here]
-              </div>
-
-              <button
-                onClick={handleSectionComplete}
-                style={{ backgroundColor: orange }}
-                className="w-full hover:opacity-90 text-black font-semibold py-4 px-6 rounded-lg transition-all flex items-center justify-center gap-2"
-              >
-                Complete & Continue
-                <ChevronRight className="w-5 h-5" />
-              </button>
-            </div>
+        {/* Progress Bar */}
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm text-gray-400">
+              Section {currentSection + 1} of {sections.length}
+            </span>
+            <span className="text-sm text-gray-400">
+              {Math.round(((currentSection * 100) + ((currentQuestion + 1) / (currentSectionData.questions?.length || 1) * 100)) / sections.length)}% Complete
+            </span>
           </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="min-h-screen bg-zinc-950 p-8">
-        <div className="max-w-3xl mx-auto">
-          {/* Progress Bar */}
-          <div className="mb-8">
-            <div className="flex justify-between items-center mb-3">
-              <span className="text-sm font-medium text-zinc-400">
-                Section {currentSection + 1} of {totalSections}
-              </span>
-              <span className="text-sm font-medium" style={{ color: orange }}>
-                {Math.round(progress)}%
-              </span>
-            </div>
-            <div className="h-2 bg-zinc-900 rounded-full overflow-hidden">
-              <div 
-                className="h-full transition-all duration-500"
-                style={{ width: `${progress}%`, backgroundColor: orange }}
-              />
-            </div>
-          </div>
-
-          {/* Section Header */}
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-zinc-800 rounded-lg flex items-center justify-center">
-                <Icon className="w-6 h-6" style={{ color: orange }} />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-white">{currentAssessment.name}</h2>
-                <p className="text-zinc-400">{currentAssessment.domain} Domain</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Questions */}
-          <div className="space-y-6">
-            {currentAssessment.questions.map((question, qIdx) => (
-              <div key={question.id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-                <div className="mb-4">
-                  <span className="text-xs font-medium text-zinc-500 bg-zinc-800 px-2 py-1 rounded">
-                    Question {qIdx + 1}/{currentAssessment.questions.length}
-                  </span>
-                </div>
-                <p className="text-white text-lg mb-6 leading-relaxed">
-                  {question.text}
-                </p>
-                <div className="grid grid-cols-5 gap-3">
-                  {question.scale.map((label, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => handleAnswerSelect(question.id, idx)}
-                      style={{
-                        backgroundColor: responses[question.id] === idx ? orange : undefined,
-                        borderColor: responses[question.id] === idx ? orange : undefined,
-                        color: responses[question.id] === idx ? 'black' : undefined
-                      }}
-                      className={`
-                        p-4 rounded-lg border-2 transition-all
-                        ${responses[question.id] === idx
-                          ? ''
-                          : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:border-zinc-700'
-                        }
-                      `}
-                    >
-                      <div className="text-sm font-medium mb-1">{idx}</div>
-                      <div className="text-xs">{label}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Navigation */}
-          <div className="mt-8 flex justify-end">
-            <button
-              onClick={handleSectionComplete}
-              disabled={!allQuestionsAnswered}
-              style={{
-                backgroundColor: allQuestionsAnswered ? orange : undefined,
-                color: allQuestionsAnswered ? 'black' : undefined
+          <div className="h-2 rounded-full" style={{ backgroundColor: '#1a1a1a' }}>
+            <div 
+              className="h-full rounded-full transition-all duration-300"
+              style={{ 
+                backgroundColor: orangeAccent,
+                width: `${((currentSection * 100) + ((currentQuestion + 1) / (currentSectionData.questions?.length || 1) * 100)) / sections.length}%`
               }}
-              className={`
-                px-8 py-4 rounded-lg font-semibold transition-all flex items-center gap-2
-                ${allQuestionsAnswered
-                  ? 'hover:opacity-90'
-                  : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
-                }
-              `}
-            >
-              {currentSection < totalSections - 1 ? 'Next Section' : 'Complete Assessment'}
-              <ChevronRight className="w-5 h-5" />
-            </button>
+            />
           </div>
         </div>
-      </div>
-    );
-  }
 
-  if (stage === 'results') {
-    const rewiredIndex = calculateREwiredIndex(sectionScores);
-    const tierInfo = getTierInfo(rewiredIndex);
-
-    return (
-      <div className="min-h-screen bg-zinc-950 p-8">
-        <div className="max-w-4xl mx-auto">
-          {/* Header */}
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-zinc-900 border border-zinc-800 rounded-full mb-6">
-              <Check className="w-10 h-10" style={{ color: orange }} />
+        {/* Section Header */}
+        <div className="p-6 rounded-lg mb-6" style={{ backgroundColor: '#111111', border: '1px solid #1a1a1a' }}>
+          <div className="flex items-center gap-4 mb-2">
+            <div 
+              className="w-12 h-12 rounded-lg flex items-center justify-center"
+              style={{ backgroundColor: '#1a1a1a' }}
+            >
+              <IconComponent size={24} style={{ color: orangeAccent }} />
             </div>
-            <h1 className="text-4xl font-bold text-white mb-3">
-              Baseline Established
-            </h1>
-            <p className="text-zinc-400">
-              Your transformation starting point
-            </p>
-          </div>
-
-          {/* REwired Index Card */}
-          <div className="bg-zinc-900 border-2 rounded-xl p-12 text-center mb-8" style={{ borderColor: orange }}>
-            <div className="text-7xl font-bold text-white mb-4">
-              {rewiredIndex}
-              <span className="text-3xl text-zinc-500">/100</span>
-            </div>
-            <div className="text-2xl font-semibold mb-2" style={{ color: tierInfo.color }}>
-              {tierInfo.name}
-            </div>
-            <div className="text-zinc-400 text-lg">
-              {tierInfo.status}
+            <div>
+              <h2 className="text-xl font-bold text-white">{currentSectionData.name}</h2>
+              <p className="text-sm text-gray-400">{currentSectionData.domain} Domain</p>
             </div>
           </div>
+          <p className="text-gray-300 text-sm">{currentSectionData.description}</p>
+        </div>
 
-          {/* Domain Scores */}
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-8 mb-8">
-            <h2 className="text-xl font-semibold text-white mb-6">Domain Breakdown</h2>
-            <div className="space-y-6">
-              {[
-                { key: 'calm_core', label: 'Regulation', icon: Heart },
-                { key: 'observer_index', label: 'Awareness', icon: Eye },
-                { key: 'vitality_index', label: 'Outlook', icon: TrendingUp },
-                { key: 'focus_diagnostic', label: 'Attention (Focus)', icon: Target },
-                { key: 'presence_test', label: 'Attention (Presence)', icon: Brain }
-              ].map(({ key, label, icon: Icon }) => {
-                const score = sectionScores[key] || 0;
-                const percentage = (score / 5) * 100;
+        {/* Question Card */}
+        {!currentSectionData.isBCT && currentQuestionData && (
+          <div className="p-8 rounded-lg shadow-lg mb-6" style={{ backgroundColor: '#111111', border: '1px solid #1a1a1a' }}>
+            <div className="mb-6">
+              <span className="text-sm font-medium text-gray-400 mb-2 block">
+                Question {currentQuestion + 1} of {currentSectionData.questions.length}
+              </span>
+              <p className="text-xl text-white leading-relaxed">
+                {currentQuestionData.text}
+              </p>
+            </div>
+
+            {/* Answer Options */}
+            <div className="space-y-3">
+              {currentQuestionData.scale.map((option, index) => {
+                const isSelected = responses[currentQuestionData.id] === option.value;
                 return (
-                  <div key={key}>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-3">
-                        <Icon className="w-5 h-5" style={{ color: orange }} />
-                        <span className="text-white font-medium">{label}</span>
-                      </div>
-                      <span className="font-semibold" style={{ color: orange }}>
-                        {score.toFixed(1)}/5.0
-                      </span>
-                    </div>
-                    <div className="h-3 bg-zinc-950 rounded-full overflow-hidden">
+                  <button
+                    key={index}
+                    onClick={() => handleAnswer(currentQuestionData.id, option.value)}
+                    className="w-full p-4 rounded-lg text-left transition-all duration-200 flex items-center justify-between group"
+                    style={{
+                      backgroundColor: isSelected ? '#1a1a1a' : '#111111',
+                      border: isSelected ? `2px solid ${orangeAccent}` : '1px solid #1a1a1a'
+                    }}
+                  >
+                    <span className={`text-lg ${isSelected ? 'text-white font-medium' : 'text-gray-300'}`}>
+                      {option.label}
+                    </span>
+                    {isSelected && (
                       <div 
-                        className="h-full transition-all duration-500"
-                        style={{ width: `${percentage}%`, backgroundColor: orange }}
-                      />
-                    </div>
-                  </div>
+                        className="w-6 h-6 rounded-full flex items-center justify-center"
+                        style={{ backgroundColor: orangeAccent }}
+                      >
+                        <Check size={16} className="text-white" />
+                      </div>
+                    )}
+                  </button>
                 );
               })}
             </div>
           </div>
+        )}
 
-          {/* Next Steps */}
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-8">
-            <h2 className="text-xl font-semibold text-white mb-4">What's Next</h2>
-            <p className="text-zinc-400 mb-6 leading-relaxed">
-              Your baseline is established. The IOS will now track your transformation across these domains as you progress through the 7 stages, measuring deltas weekly to show exactly how your nervous system and mental architecture are evolving.
+        {/* BCT Placeholder */}
+        {currentSectionData.isBCT && (
+          <div className="p-8 rounded-lg shadow-lg mb-6 text-center" style={{ backgroundColor: '#111111', border: '1px solid #1a1a1a' }}>
+            <Clock size={48} style={{ color: orangeAccent }} className="mx-auto mb-4" />
+            <h3 className="text-2xl font-bold text-white mb-4">Breath Counting Task</h3>
+            <p className="text-gray-300 mb-6">
+              The final assessment measures your sustained attention through a 3-minute breath counting exercise.
             </p>
             <button
-  onClick={() => router.push('/chat')}
-  style={{ backgroundColor: orange }}
-  className="w-full hover:opacity-90 text-black font-semibold py-4 px-6 rounded-lg transition-all flex items-center justify-center gap-2"
->
-  Begin Stage 1: Neural Priming
-  <ChevronRight className="w-5 h-5" />
-</button>
+              onClick={handleNext}
+              className="px-6 py-3 rounded-lg font-medium text-white transition-all"
+              style={{ backgroundColor: orangeAccent }}
+            >
+              Begin Presence Test
+            </button>
           </div>
-        </div>
-      </div>
-    );
-  }
+        )}
 
-  return null;
-}
+        {/* Navigation */}
+        {!currentSectionData.isBCT && (
+          <div className="flex justify-end">
+            <button
+              onClick={handleNext}
+              disabled={!isAnswered}
+              className="px-8 py-4 rounded-lg font-medium text-white transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ backgroundColor: orangeAccent }}
+            >
+              {currentQuestion < currentSectionData.questions.length - 1 ? 'Next Question' : 
+               currentSection < sections.length - 1 ? 'Next Section' : 'Complete Assessment'}
+              <ChevronRight size={20} />
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default IOSBaselineAssessment;
