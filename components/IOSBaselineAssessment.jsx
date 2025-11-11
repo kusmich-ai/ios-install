@@ -518,7 +518,7 @@ const IOSBaselineAssessment = () => {
             }}
           >
             <h3 className="text-lg font-bold text-white mb-3">
-              Welcome to Your Baseline Assessment
+              Start Here. Welcome to Your Baseline Assessment
             </h3>
             <div className="text-gray-300 space-y-2 text-sm">
               <p>
@@ -528,10 +528,10 @@ const IOSBaselineAssessment = () => {
               </p>
               <p>
                 This takes approximately <strong>8 minutes</strong> and measures your starting point. 
-                Your transformation progress will be tracked against these baseline scores.
+                Your transformation progress will be tracked against these baseline scores. Answer honestly for accurate results (there are no right or wrong answers). Scroll down to start and when finished you'll be taken to the Installer to start your program.
               </p>
               <p className="text-gray-400 text-xs mt-3">
-                ⏱️ 5 sections • ~8 minutes total • Answer honestly for accurate results
+                ⏱️ 5 sections • ~8 minutes total • 
               </p>
             </div>
           </div>
