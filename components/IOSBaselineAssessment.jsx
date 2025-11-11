@@ -37,6 +37,8 @@ const IOSBaselineAssessment = () => {
     getUser();
   }, []);
 
+  // Orange accent color constant for consistency
+  const orangeAccent = '#ff9e19';
 
   // Assessment sections with questions
   const sections = [
@@ -327,9 +329,6 @@ const IOSBaselineAssessment = () => {
     }
   ];
 
-  // Orange accent color constant for consistency
-  const orangeAccent = '#ff9e19';
-
   // Calculate section score
   const calculateSectionScore = (sectionId) => {
     const section = sections.find(s => s.id === sectionId);
@@ -354,12 +353,12 @@ const IOSBaselineAssessment = () => {
     }));
   };
 
-  // Navigate to next question
+  // Navigate to next question - FIXED VERSION
   const handleNext = () => {
     const currentSectionData = sections[currentSection];
     
+    // If we're on BCT, handle completion there
     if (currentSectionData.isBCT) {
-      // BCT section - move to results after completion
       calculateAndStoreResults();
       return;
     }
@@ -368,20 +367,20 @@ const IOSBaselineAssessment = () => {
     if (currentQuestion < currentSectionData.questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
     } else {
-      // Move to next section
+      // Save current section score
+      const score = calculateSectionScore(currentSectionData.id);
+      setSectionScores(prev => ({
+        ...prev,
+        [currentSectionData.id]: score
+      }));
+      
+      // Move to next section (including BCT)
       if (currentSection < sections.length - 1) {
-        const score = calculateSectionScore(currentSectionData.id);
-        setSectionScores(prev => ({
-          ...prev,
-          [currentSectionData.id]: score
-        }));
-        
         setCurrentSection(currentSection + 1);
         setCurrentQuestion(0);
-      } else {
-        // All sections complete
-        calculateAndStoreResults();
       }
+      // ✅ FIXED: Removed else block that was calling calculateAndStoreResults here
+      // The BCT section will handle final submission
     }
   };
 
@@ -508,6 +507,35 @@ const IOSBaselineAssessment = () => {
             Establishing your neural and mental transformation starting point
           </p>
         </div>
+
+        {/* Instructions Banner - Only show on first question of first section */}
+        {currentSection === 0 && currentQuestion === 0 && (
+          <div 
+            className="mb-6 p-6 rounded-lg"
+            style={{ 
+              backgroundColor: '#111111', 
+              border: `2px solid ${orangeAccent}` 
+            }}
+          >
+            <h3 className="text-lg font-bold text-white mb-3">
+              Welcome to Your Baseline Assessment
+            </h3>
+            <div className="text-gray-300 space-y-2 text-sm">
+              <p>
+                <strong>Why this assessment?</strong> Before we can install the IOS (Integrated Operating System), 
+                we need to establish your neural and mental baseline across 4 domains: 
+                <span style={{ color: orangeAccent }} className="font-medium"> Regulation, Awareness, Outlook, and Attention</span>.
+              </p>
+              <p>
+                This takes approximately <strong>8 minutes</strong> and measures your starting point. 
+                Your transformation progress will be tracked against these baseline scores.
+              </p>
+              <p className="text-gray-400 text-xs mt-3">
+                ⏱️ 5 sections • ~8 minutes total • Answer honestly for accurate results
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Progress Bar */}
         <div className="mb-8">
