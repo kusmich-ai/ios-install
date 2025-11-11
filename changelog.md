@@ -14,6 +14,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.10.1] - 2025-11-11
+
+### Fixed
+- **Critical build errors in Vercel deployment**
+  - Middleware export error resolved with compliant middleware.ts format
+  - Async/await syntax error in IOSBaselineAssessment.jsx fixed
+  - Moved Supabase auth call into proper useEffect hook with async handling
+
+- **Email confirmation redirect issues**
+  - Updated Supabase redirect URLs from localhost to production URLs
+  - Email confirmations now properly redirect to live deployment
+
+- **Assessment navigation flow**
+  - Fixed premature redirect after section 4 (was calling results before BCT)
+  - Assessment now properly progresses through all 5 sections including BCT
+  - Corrected navigation logic to prevent skipping Breath Counting Task
+
+- **User routing after baseline completion**
+  - Added middleware to check baseline completion status
+  - Returning users now properly routed to chat instead of re-assessment
+  - Baseline assessment only appears once per user
+
+### Added
+- **Instructional banner for first-time users**
+  - Appears only on first question of assessment
+  - Provides context: "This brief assessment establishes your starting point across four key domains"
+  - Improves onboarding clarity without cluttering repeat views
+
+### Changed
+- **IOSBaselineAssessment.jsx complete rewrite**
+  - Production-ready component with all fixes integrated
+  - Proper user flow management (one-time assessment)
+  - Dark theme styling with #ff9e19 orange accents maintained
+  - Correct navigation through all five sections
+
+---
+
 ## [0.10.0] - 2025-11-10
 
 ### Added
@@ -360,6 +397,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [ ] Design intervention scripts for resistance
 - [ ] Create unlock celebration messages
 - [ ] Behavioral consistency guidelines
+- [ ] **Develop and enable "coach" functionality after micro identity selection**
+- [ ] **Integration of coach with identity progression tracking**
 
 #### Stage 4-7 Implementation
 - [ ] Flow Block Integration mechanics
@@ -367,6 +406,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [ ] Intrapersonal Co-Regulation flow (Stage 5)
 - [ ] Nightly Debrief system (Stage 6)
 - [ ] Stage 7 application/qualification system
+
+#### Monetization & Access Control
+- [ ] **Implement paywall after certain stage (define which stage)**
+- [ ] Payment integration (Stripe/payment processor)
+- [ ] Subscription management system
+- [ ] Free trial tracking (7-day system currently toggled)
+- [ ] Upgrade prompts and conversion flows
+
+#### Security Implementation
+- [ ] **Security audit on all levels**
+- [ ] Row Level Security (RLS) policies in Supabase (currently basic implementation)
+- [ ] API route protection and authentication
+- [ ] Input validation and sanitization
+- [ ] Rate limiting on sensitive endpoints
+- [ ] Secure environment variable management
+- [ ] XSS and CSRF protection
+- [ ] Data encryption at rest and in transit
+- [ ] User session management and token security
+- [ ] Audit logging for sensitive operations
 
 ### Documentation Tasks
 - [ ] Create supplemental instructions doc after Stage 2 testing
