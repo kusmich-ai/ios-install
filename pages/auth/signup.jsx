@@ -103,8 +103,8 @@ export default function SignUp() {
           // But log it for monitoring
         }
 
-        setMessage('Account created successfully! Please check your email to verify your account.');
-        setTimeout(() => router.push('/assessment'), 2000);
+        setMessage('Account created successfully! Redirecting to legal agreements...');
+        setTimeout(() => router.push('/legal-agreements'), 2000);
       }
     } catch (err) {
       setError(err.message || 'An unexpected error occurred');
@@ -217,33 +217,20 @@ export default function SignUp() {
                   />
                 </div>
                 <span className="text-sm text-gray-300 leading-relaxed">
-                  I acknowledge that I have read and agree to the{' '}
-                  <Link 
-                    href="/privacy" 
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-semibold hover:opacity-80 transition-opacity inline-flex items-center gap-1"
-                    style={{ color: '#ff9e19' }}
-                  >
-                    Privacy Policy
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                  </Link>
-                  {' '}and{' '}
-                  <Link 
-                    href="/terms" 
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-semibold hover:opacity-80 transition-opacity inline-flex items-center gap-1"
-                    style={{ color: '#ff9e19' }}
-                  >
-                    Terms of Service
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                  </Link>
-                </span>
+  I acknowledge that I have read and agree to the{' '}
+  <Link 
+    href="/privacy" 
+    target="_blank"
+    rel="noopener noreferrer"
+    className="font-semibold hover:opacity-80 transition-opacity inline-flex items-center gap-1"
+    style={{ color: '#ff9e19' }}
+  >
+    Privacy Policy
+    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+    </svg>
+  </Link>
+</span>
               </label>
             </div>
 
