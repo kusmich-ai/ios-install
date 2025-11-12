@@ -8,6 +8,7 @@ export default function SignUp() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
@@ -29,6 +30,13 @@ export default function SignUp() {
     setError(null);
     setMessage(null);
 
+    // Privacy policy validation
+    if (!privacyAccepted) {
+      setError('You must accept the Privacy Policy to create an account');
+      setLoading(false);
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       setLoading(false);
@@ -43,31 +51,56 @@ export default function SignUp() {
     }
 
     try {
-      const { data, error } = await supabase.auth.signUp({
+      // Step 1: Create user account
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: { full_name: fullName },
+          data: { 
+            full_name: fullName,
+            privacy_policy_version: '1.0',
+            privacy_accepted_at: new Date().toISOString(),
+          },
           emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
-      if (error) {
-        setError(error.message);
+      if (signUpError) {
+        setError(signUpError.message);
+        setLoading(false);
         return;
       }
 
       if (data.user) {
         if (data.user.identities?.length === 0) {
           setError('An account with this email already exists');
+          setLoading(false);
           return;
         }
 
+        // Step 2: Update user profile if full name provided
         if (fullName) {
           await supabase
             .from('user_profiles')
             .update({ full_name: fullName })
             .eq('id', data.user.id);
+        }
+
+        // Step 3: Store privacy policy acceptance in separate table for audit trail
+        const { error: privacyError } = await supabase
+          .from('privacy_acceptances')
+          .insert({
+            user_id: data.user.id,
+            policy_version: '1.0',
+            accepted_at: new Date().toISOString(),
+            ip_address: null, // Optional: You can capture this server-side if needed
+            accepted_via: 'signup',
+          });
+
+        if (privacyError) {
+          console.error('Error storing privacy acceptance:', privacyError);
+          // Don't fail signup if privacy acceptance storage fails - already in user metadata
+          // But log it for monitoring
         }
 
         setMessage('Account created successfully! Please check your email to verify your account.');
@@ -166,9 +199,57 @@ export default function SignUp() {
               />
             </div>
 
+            {/* PRIVACY POLICY CHECKBOX - NEW */}
+            <div className="pt-4 pb-2">
+              <label className="flex items-start space-x-3 cursor-pointer group">
+                <div className="flex-shrink-0 mt-0.5">
+                  <input
+                    type="checkbox"
+                    checked={privacyAccepted}
+                    onChange={(e) => setPrivacyAccepted(e.target.checked)}
+                    className="w-5 h-5 rounded cursor-pointer"
+                    style={{ 
+                      accentColor: '#ff9e19',
+                      backgroundColor: privacyAccepted ? '#ff9e19' : '#1a1a1a',
+                      border: '1px solid #333'
+                    }}
+                    required
+                  />
+                </div>
+                <span className="text-sm text-gray-300 leading-relaxed">
+                  I acknowledge that I have read and agree to the{' '}
+                  <Link 
+                    href="/privacy" 
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold hover:opacity-80 transition-opacity inline-flex items-center gap-1"
+                    style={{ color: '#ff9e19' }}
+                  >
+                    Privacy Policy
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </Link>
+                  {' '}and{' '}
+                  <Link 
+                    href="/terms" 
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold hover:opacity-80 transition-opacity inline-flex items-center gap-1"
+                    style={{ color: '#ff9e19' }}
+                  >
+                    Terms of Service
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </Link>
+                </span>
+              </label>
+            </div>
+
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !privacyAccepted}
               className="w-full py-3 rounded font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ backgroundColor: '#ff9e19', color: '#0a0a0a' }}
             >
