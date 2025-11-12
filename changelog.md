@@ -14,6 +14,72 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.11.0] - 2025-11-12
+
+### Added
+- **Comprehensive Terms and Conditions package**
+  - Master Terms of Service with extensive disclaimers
+  - Safety screening criteria and eligibility requirements
+  - Assumption of risk clauses
+  - Liability limitations and legal protections
+  - Crisis protocols and professional resource referrals
+  - Dispute resolution mechanisms
+  - Age requirement: 18+ minimum
+  - International scope with GDPR compliance considerations
+  - Canadian corporation operation specifications
+
+- **Stage 7 separate agreement framework**
+  - Additional terms for advanced practices
+  - Enhanced screening for psychedelic-assisted protocols
+  - Supplemental liability protections
+
+- **Legal protection strategy**
+  - Clear distinction as educational self-development (not medical treatment)
+  - Mandatory professional consultation recommendations for various conditions
+  - Protection against misuse for healing/therapy purposes
+  - Insurance coverage recommendations documented
+
+### Documentation
+- **Legal compliance framework established**
+  - Ready for attorney review and finalization
+  - Positioned to minimize liability risks
+  - Supabase data storage compliance noted
+
+---
+
+## [0.10.2] - 2025-11-10
+
+### Added
+- **Authentication system implementation (Phase 1A)**
+  - Email/password authentication with Supabase Auth
+  - User registration before baseline assessment
+  - Session management and route protection
+  - Middleware for authenticated routes
+  - Database schema with Row Level Security policies
+  - 7-day free trial system (toggleable)
+  - Environment variable for payment requirement control
+
+- **Pages Router authentication structure**
+  - `/pages/auth/login.jsx` - Login page
+  - `/pages/auth/signup.jsx` - Registration page
+  - `/pages/auth/verify.jsx` - Email verification handler
+  - `middleware.js` - Route protection logic
+
+### Changed
+- **Assessment storage migration**
+  - Migrated from localStorage to Supabase database
+  - Baseline results now persist in `baseline_scores` table
+  - User-specific data with RLS policies
+  - Support for future payment integration architecture
+
+### Fixed
+- **Supabase package dependencies**
+  - Added `@supabase/supabase-js` to package.json
+  - Added `@supabase/auth-helpers-nextjs` for Pages Router support
+  - Resolved Vercel build errors from missing dependencies
+
+---
+
 ## [0.10.1] - 2025-11-11
 
 ### Fixed
