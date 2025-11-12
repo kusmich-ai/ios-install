@@ -175,10 +175,10 @@ function TermsOfService() {
     <>
       <h1>INTEGRATED OPERATING SYSTEM (IOS) - TERMS OF SERVICE</h1>
       <p className="text-sm text-slate-600">
-        Effective Date: [INSERT DATE]<br />
-        Last Updated: [INSERT DATE]<br />
-        Operator: [Your Canadian Corporation Name]<br />
-        Registered Address: [Your Address]
+        Effective Date: Jan 4 2025<br />
+        Last Updated: Jan 4 2025<br />
+        Operator: H2H Media Group<br />
+        Registered Address: 460 Doyle Ave. Kelowna, BC. V1Y 0C2
       </p>
 
       <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 my-6">
