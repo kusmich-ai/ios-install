@@ -96,7 +96,21 @@ export default function SignUp() {
             ip_address: null, // Optional: You can capture this server-side if needed
             accepted_via: 'signup',
           });
+// Step 4: Create user progress record
+const { error: progressError } = await supabase
+  .from('user_progress')
+  .insert({
+    user_id: data.user.id,
+    current_stage: 0,
+    legal_agreements_accepted: false,
+    baseline_completed: false,
+    created_at: new Date().toISOString()
+  });
 
+if (progressError) {
+  console.error('Error creating user progress:', progressError);
+  // Don't fail signup, but log it
+}
         if (privacyError) {
           console.error('Error storing privacy acceptance:', privacyError);
           // Don't fail signup if privacy acceptance storage fails - already in user metadata
