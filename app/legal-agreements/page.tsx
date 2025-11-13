@@ -501,10 +501,10 @@ function TermsOfService() {
 
       <h2>12. DISPUTE RESOLUTION</h2>
       <h3>12.1 Governing Law</h3>
-      <p>These Terms are governed by the laws of [Your Canadian Province], Canada, without regard to conflict of law principles.</p>
+      <p>These Terms are governed by the laws of British Columbia, Canada, without regard to conflict of law principles.</p>
 
       <h3>12.2 Arbitration Agreement</h3>
-      <p>Any dispute arising from these Terms or use of the System shall be resolved through binding arbitration in accordance with [Canadian Arbitration Association Rules / specify arbitration rules].</p>
+      <p>Any dispute arising from these Terms or use of the System shall be resolved through binding arbitration in accordance with Canadian Arbitration Association Rules.</p>
       <p className="font-bold">YOU WAIVE YOUR RIGHT TO:</p>
       <ul>
         <li>Jury trial</li>
@@ -522,7 +522,7 @@ function TermsOfService() {
       <p>These Terms, together with the Informed Consent Agreement, Screening Questionnaire, Privacy Policy, and Stage 7 Addendum (if applicable), constitute the entire agreement between you and the Operator.</p>
 
       <h2>15. ACKNOWLEDGMENT & ACCEPTANCE</h2>
-      <p className="font-bold">BY CLICKING "I AGREE" OR BY ACCESSING THE SYSTEM, YOU ACKNOWLEDGE THAT:</p>
+      <p className="font-bold">BY CLICKING THE ACCEPT AND CONTINUE TO BASELINE BUTTON OR BY ACCESSING THE SYSTEM, YOU ACKNOWLEDGE THAT:</p>
       <ul>
         <li>☐ You have read and understood these Terms in their entirety</li>
         <li>☐ You have had opportunity to consult legal counsel if desired</li>
@@ -533,16 +533,12 @@ function TermsOfService() {
         <li>☐ You agree to use crisis resources if experiencing emergency</li>
         <li>☐ You release the Operator from liability as outlined herein</li>
       </ul>
-
-      <h2>CONTACT INFORMATION</h2>
-      <p>
-        [Your Canadian Corporation Name]<br />
-        [Address]<br />
-        [Email]<br />
-        [Phone]<br />
-        For legal inquiries: [Legal contact email]<br />
-        For support: [Support email]
-      </p>
+      <div className="bg-green-50 border-l-4 border-green-400 p-4 my-6">
+        <p className="font-bold text-green-800">ELECTRONIC CONSENT</p>
+        <p className="text-green-800 text-sm mt-2">
+          Your acceptance via checkbox and button click constitutes your legally binding electronic signature on this Informed Consent & Assumption of Risk Agreement. This electronic acceptance is equivalent to a handwritten signature and will be recorded with a timestamp for our records.
+        </p>
+      </div>
     </>
   );
 }
@@ -554,7 +550,7 @@ function InformedConsent() {
       <h1>IOS SYSTEM - INFORMED CONSENT & ASSUMPTION OF RISK AGREEMENT</h1>
       <p className="text-sm text-slate-600">
         Effective Date: [INSERT DATE]<br />
-        Operator: [Your Canadian Corporation Name]
+        Operator: H2H Media Group Inc
       </p>
 
       <div className="bg-red-50 border-l-4 border-red-400 p-4 my-6">
