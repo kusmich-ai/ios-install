@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
+import { Mail, CheckCircle2 } from 'lucide-react';
 
 export default function SignUp() {
   const [email, setEmail] = useState('');
@@ -12,6 +13,7 @@ export default function SignUp() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
+  const [checkEmail, setCheckEmail] = useState(false); // NEW: for email confirmation screen
   
   const router = useRouter();
   const supabase = createClientComponentClient();
@@ -96,37 +98,107 @@ export default function SignUp() {
             ip_address: null, // Optional: You can capture this server-side if needed
             accepted_via: 'signup',
           });
-// Step 4: Create user progress record
-const { error: progressError } = await supabase
-  .from('user_progress')
-  .insert({
-    user_id: data.user.id,
-    current_stage: 0,
-    legal_agreements_accepted: false,
-    baseline_completed: false,
-    created_at: new Date().toISOString()
-  });
 
-if (progressError) {
-  console.error('Error creating user progress:', progressError);
-  // Don't fail signup, but log it
-}
+        // Step 4: Create user progress record
+        const { error: progressError } = await supabase
+          .from('user_progress')
+          .insert({
+            user_id: data.user.id,
+            current_stage: 0,
+            legal_agreements_accepted: false,
+            baseline_completed: false,
+            created_at: new Date().toISOString()
+          });
+
+        if (progressError) {
+          console.error('Error creating user progress:', progressError);
+          // Don't fail signup, but log it
+        }
+
         if (privacyError) {
           console.error('Error storing privacy acceptance:', privacyError);
           // Don't fail signup if privacy acceptance storage fails - already in user metadata
           // But log it for monitoring
         }
 
-        setMessage('Account created successfully! Redirecting to screening...');
-        setTimeout(() => router.push('/screening'), 2000);
+        // NEW: Check if email confirmation is required
+        if (data.session) {
+          // Email confirmation is DISABLED - user is automatically logged in
+          setMessage('Account created successfully! Redirecting to screening...');
+          setTimeout(() => router.push('/screening'), 2000);
+        } else {
+          // Email confirmation is ENABLED - show check email screen
+          setCheckEmail(true);
+          setLoading(false);
+        }
       }
     } catch (err) {
       setError(err.message || 'An unexpected error occurred');
-    } finally {
       setLoading(false);
     }
   };
 
+  // NEW: Show "Check Your Email" screen
+  if (checkEmail) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#0a0a0a' }}>
+        <div className="w-full max-w-md">
+          <div className="rounded-lg p-8" style={{ backgroundColor: '#111111' }}>
+            {/* Success Icon */}
+            <div className="flex justify-center mb-6">
+              <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)' }}>
+                <CheckCircle2 className="w-8 h-8" style={{ color: '#22c55e' }} />
+              </div>
+            </div>
+
+            {/* Message */}
+            <h1 className="text-2xl font-bold text-white text-center mb-2">
+              Check Your Email
+            </h1>
+            <p className="text-gray-400 text-center mb-6">
+              We've sent a confirmation link to:
+            </p>
+            <div className="rounded-lg p-4 mb-6" style={{ backgroundColor: '#1a1a1a', border: '1px solid #333' }}>
+              <div className="flex items-center gap-3">
+                <Mail className="w-5 h-5" style={{ color: '#ff9e19' }} />
+                <span className="text-white font-medium">{email}</span>
+              </div>
+            </div>
+
+            {/* Instructions */}
+            <div className="space-y-3 text-sm text-gray-400 mb-8">
+              <p>Please check your email and click the confirmation link to continue.</p>
+              <p>Once confirmed, you'll be redirected to complete your safety screening.</p>
+              <p className="text-gray-500 text-xs">
+                Didn't receive the email? Check your spam folder or{' '}
+                <button
+                  onClick={() => {
+                    setCheckEmail(false);
+                    setEmail('');
+                    setPassword('');
+                    setConfirmPassword('');
+                  }}
+                  className="hover:underline"
+                  style={{ color: '#ff9e19' }}
+                >
+                  try again
+                </button>
+              </p>
+            </div>
+
+            {/* Back to Sign In */}
+            <div className="text-center">
+              <Link href="/auth/signin" className="text-sm text-gray-400 hover:text-gray-300">
+                Back to sign in
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show signup form
   return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#0a0a0a' }}>
       <div className="w-full max-w-md">
@@ -163,6 +235,7 @@ if (progressError) {
                 className="w-full px-4 py-2 rounded text-white"
                 style={{ backgroundColor: '#1a1a1a', border: '1px solid #333' }}
                 placeholder="John Doe"
+                disabled={loading}
               />
             </div>
 
@@ -177,6 +250,7 @@ if (progressError) {
                 className="w-full px-4 py-2 rounded text-white"
                 style={{ backgroundColor: '#1a1a1a', border: '1px solid #333' }}
                 placeholder="you@example.com"
+                disabled={loading}
               />
             </div>
 
@@ -191,6 +265,7 @@ if (progressError) {
                 className="w-full px-4 py-2 rounded text-white"
                 style={{ backgroundColor: '#1a1a1a', border: '1px solid #333' }}
                 placeholder="••••••••"
+                disabled={loading}
               />
               <p className="mt-1 text-xs text-gray-500">
                 Must be 8+ characters with uppercase, lowercase, and number
@@ -210,10 +285,11 @@ if (progressError) {
                 className="w-full px-4 py-2 rounded text-white"
                 style={{ backgroundColor: '#1a1a1a', border: '1px solid #333' }}
                 placeholder="••••••••"
+                disabled={loading}
               />
             </div>
 
-            {/* PRIVACY POLICY CHECKBOX - NEW */}
+            {/* PRIVACY POLICY CHECKBOX */}
             <div className="pt-4 pb-2">
               <label className="flex items-start space-x-3 cursor-pointer group">
                 <div className="flex-shrink-0 mt-0.5">
@@ -228,23 +304,24 @@ if (progressError) {
                       border: '1px solid #333'
                     }}
                     required
+                    disabled={loading}
                   />
                 </div>
                 <span className="text-sm text-gray-300 leading-relaxed">
-  I acknowledge that I have read and agree to the{' '}
-  <Link 
-    href="/privacy" 
-    target="_blank"
-    rel="noopener noreferrer"
-    className="font-semibold hover:opacity-80 transition-opacity inline-flex items-center gap-1"
-    style={{ color: '#ff9e19' }}
-  >
-    Privacy Policy
-    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-    </svg>
-  </Link>
-</span>
+                  I acknowledge that I have read and agree to the{' '}
+                  <Link 
+                    href="/privacy" 
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold hover:opacity-80 transition-opacity inline-flex items-center gap-1"
+                    style={{ color: '#ff9e19' }}
+                  >
+                    Privacy Policy
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </Link>
+                </span>
               </label>
             </div>
 
