@@ -1,63 +1,121 @@
+import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 
 export async function middleware(request: NextRequest) {
   const res = NextResponse.next();
   const supabase = createMiddlewareClient({ req: request, res });
 
-  // Refresh session if expired
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
 
-  const { pathname } = request.nextUrl;
+  const path = request.nextUrl.pathname;
 
-  // Public routes that don't require auth
-  const publicRoutes = ['/', '/auth/signin', '/auth/signup', '/auth/forgot-password', '/auth/reset-password', '/privacy', '/terms', '/cookie-policy', '/contact', '/legal-agreements', '/screening',];
-  const isPublicRoute = publicRoutes.includes(pathname);
+  // Public routes that don't require authentication
+  const publicRoutes = [
+    '/',
+    '/auth/signin',
+    '/auth/signup',
+    '/auth/callback',
+    '/auth/reset-password',
+    '/privacy',
+    '/terms',
+  ];
 
-  // If not authenticated and trying to access protected route
+  // Check if current path is public
+  const isPublicRoute = publicRoutes.some(route => path.startsWith(route));
+
+  // If no session and trying to access protected route, redirect to signin
   if (!session && !isPublicRoute) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = '/auth/signin';
+    redirectUrl.searchParams.set('redirectTo', path);
     return NextResponse.redirect(redirectUrl);
   }
 
-  // If authenticated, check if they've completed baseline
+  // If user is authenticated, manage the flow progression
   if (session) {
-    try {
-      // Check if user has completed baseline assessment
-      const { data: progress, error } = await supabase
-        .from('user_progress')
-        .select('system_initialized')
-        .eq('user_id', session.user.id)
-        .single();
+    const userId = session.user.id;
 
-      const hasCompletedBaseline = progress?.system_initialized === true;
+    // Get user's current progress
+    const { data: screeningData } = await supabase
+      .from('screening_responses')
+      .select('clearance_status')
+      .eq('user_id', userId)
+      .single();
 
-      // If trying to access assessment but already completed
-      if (pathname === '/assessment' && hasCompletedBaseline) {
-        const redirectUrl = request.nextUrl.clone();
-        redirectUrl.pathname = '/chat';
-        return NextResponse.redirect(redirectUrl);
+    const { data: legalData } = await supabase
+      .from('legal_acceptances')
+      .select('accepted')
+      .eq('user_id', userId)
+      .order('accepted_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    const { data: baselineData } = await supabase
+      .from('baseline_assessments')
+      .select('id')
+      .eq('user_id', userId)
+      .single();
+
+    const hasCompletedScreening = screeningData && 
+      (screeningData.clearance_status === 'granted' || 
+       screeningData.clearance_status === 'granted_modified');
+    const hasAcceptedLegal = legalData && legalData.accepted;
+    const hasCompletedBaseline = !!baselineData;
+
+    // =====================================================
+    // FLOW ROUTING LOGIC
+    // =====================================================
+    
+    // Step 1: After signup, redirect to screening
+    if (!hasCompletedScreening && path !== '/screening' && !isPublicRoute) {
+      return NextResponse.redirect(new URL('/screening', request.url));
+    }
+
+    // Step 2: After screening (if granted), redirect to legal agreements
+    if (hasCompletedScreening && !hasAcceptedLegal && path !== '/legal-agreements' && path !== '/screening') {
+      return NextResponse.redirect(new URL('/legal-agreements', request.url));
+    }
+
+    // Step 3: After legal agreements, redirect to baseline assessment
+    if (hasCompletedScreening && hasAcceptedLegal && !hasCompletedBaseline && path !== '/assessment') {
+      return NextResponse.redirect(new URL('/assessment', request.url));
+    }
+
+    // Step 4: After baseline, redirect to chat (main app)
+    if (hasCompletedScreening && hasAcceptedLegal && hasCompletedBaseline) {
+      // If user is on any of the flow pages, redirect to chat
+      if (path === '/screening' || path === '/legal-agreements' || path === '/assessment') {
+        return NextResponse.redirect(new URL('/chat', request.url));
       }
+    }
 
-      // If trying to access chat but haven't completed baseline
-      if (pathname === '/chat' && !hasCompletedBaseline) {
-        const redirectUrl = request.nextUrl.clone();
-        redirectUrl.pathname = '/assessment';
-        return NextResponse.redirect(redirectUrl);
+    // Prevent accessing later steps without completing earlier ones
+    
+    // Can't access legal agreements without completing screening
+    if (path === '/legal-agreements' && !hasCompletedScreening) {
+      return NextResponse.redirect(new URL('/screening', request.url));
+    }
+
+    // Can't access assessment without completing legal agreements
+    if (path === '/assessment' && (!hasCompletedScreening || !hasAcceptedLegal)) {
+      if (!hasCompletedScreening) {
+        return NextResponse.redirect(new URL('/screening', request.url));
       }
+      return NextResponse.redirect(new URL('/legal-agreements', request.url));
+    }
 
-      // If authenticated and on public route, redirect based on baseline status
-      if (isPublicRoute && pathname !== '/') {
-        const redirectUrl = request.nextUrl.clone();
-        redirectUrl.pathname = hasCompletedBaseline ? '/chat' : '/assessment';
-        return NextResponse.redirect(redirectUrl);
+    // Can't access chat without completing baseline
+    if (path === '/chat' && (!hasCompletedScreening || !hasAcceptedLegal || !hasCompletedBaseline)) {
+      if (!hasCompletedScreening) {
+        return NextResponse.redirect(new URL('/screening', request.url));
       }
-
-    } catch (error) {
-      console.error('Middleware error:', error);
-      // On error, allow the request through
+      if (!hasAcceptedLegal) {
+        return NextResponse.redirect(new URL('/legal-agreements', request.url));
+      }
+      return NextResponse.redirect(new URL('/assessment', request.url));
     }
   }
 
@@ -67,12 +125,13 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
+     * Match all request paths except:
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - public folder
+     * - api routes
      */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$|api/).*)',
   ],
 };
