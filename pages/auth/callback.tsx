@@ -80,12 +80,3 @@ export default function AuthCallback() {
     </div>
   );
 }
-```
-
-## Fix 3: Verify Supabase Redirect URL Configuration
-
-1. Go to **Supabase Dashboard** → **Authentication** → **URL Configuration**
-2. Make sure your redirect URLs include:
-```
-   https://www.unbecoming.app/auth/callback
-   http://localhost:3000/auth/callback
