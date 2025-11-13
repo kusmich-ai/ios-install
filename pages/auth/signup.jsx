@@ -117,8 +117,8 @@ if (progressError) {
           // But log it for monitoring
         }
 
-        setMessage('Account created successfully! Redirecting to legal agreements...');
-        setTimeout(() => router.push('/legal-agreements'), 2000);
+        setMessage('Account created successfully! Redirecting to screening...');
+        setTimeout(() => router.push('/screening'), 2000);
       }
     } catch (err) {
       setError(err.message || 'An unexpected error occurred');
