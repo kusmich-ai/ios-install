@@ -1250,16 +1250,16 @@ function InformedConsent() {
       <h2>SECTION 10: FINAL CONSENT STATEMENT</h2>
       <p className="font-bold">By accepting below, I affirm that:</p>
       <ul>
-        <li>I have read and understood this entire Informed Consent Agreement</li>
-        <li>I have received satisfactory answers to all my questions</li>
-        <li>I understand the nature, purpose, risks, and limitations of the IOS System</li>
-        <li>I understand this is NOT medical or mental health treatment</li>
-        <li>I have consulted (or will consult) appropriate professionals regarding any health conditions</li>
-        <li>I voluntarily assume all risks described in this document</li>
-        <li>I agree to all responsibilities outlined in this document</li>
-        <li>I release the Operator from liability as described in the Terms of Service</li>
-        <li>I will seek immediate professional help for any crisis or emergency situation</li>
-        <li>I understand I can discontinue participation at any time</li>
+        <li>☐ I have read and understood this entire Informed Consent Agreement</li>
+        <li>☐ I have received satisfactory answers to all my questions</li>
+        <li>☐ I understand the nature, purpose, risks, and limitations of the IOS System</li>
+        <li>☐ I understand this is NOT medical or mental health treatment</li>
+        <li>☐ I have consulted (or will consult) appropriate professionals regarding any health conditions</li>
+        <li>☐ I voluntarily assume all risks described in this document</li>
+        <li>☐ I agree to all responsibilities outlined in this document</li>
+        <li>☐ I release the Operator from liability as described in the Terms of Service</li>
+        <li>☐ I will seek immediate professional help for any crisis or emergency situation</li>
+        <li>☐ I understand I can discontinue participation at any time</li>
       </ul>
 
       <div className="bg-green-50 border-l-4 border-green-400 p-4 my-6">
