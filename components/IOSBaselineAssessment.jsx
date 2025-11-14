@@ -435,7 +435,7 @@ const IOSBaselineAssessment = ({ user }) => {
     await storeBaselineData(resultsData);
     
     // Navigate to chat interface
-    window.location.href = '/chat';
+    window.location.href = '/bct';
   };
 
   // Store baseline data in Supabase
