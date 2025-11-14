@@ -86,8 +86,11 @@ export default function ScreeningPage() {
   const [clearanceResult, setClearanceResult] = useState<ClearanceResult | null>(null);
   const [showResults, setShowResults] = useState(false);
 
-  useEffect(() => {
-    async function checkAuth() {
+  // Replace the useEffect in your screening page with this:
+
+useEffect(() => {
+  async function checkAuth() {
+    try {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
@@ -96,23 +99,34 @@ export default function ScreeningPage() {
       }
 
       // Check if already completed screening
-      const { data: screening } = await supabase
-        .from('screening_responses')
-        .select('clearance_status')
-        .eq('user_id', user.id)
-        .single();
+      // Wrap in try-catch to handle missing table gracefully
+      try {
+        const { data: screening, error } = await supabase
+          .from('screening_responses')
+          .select('clearance_status')
+          .eq('user_id', user.id)
+          .single();
 
-      if (screening && screening.clearance_status === 'granted') {
-        router.push('/legal-agreements');
-        return;
+        // Only redirect if we successfully got data AND status is granted
+        if (!error && screening && screening.clearance_status === 'granted') {
+          router.push('/legal-agreements');
+          return;
+        }
+      } catch (tableError) {
+        // Table doesn't exist or other error - just continue to show the form
+        console.log('Could not check screening status (table may not exist yet):', tableError);
       }
 
       setUser(user);
       setLoading(false);
+    } catch (error) {
+      console.error('Auth check error:', error);
+      router.push('/auth/signin');
     }
+  }
 
-    checkAuth();
-  }, [router]);
+  checkAuth();
+}, [router]);
 
   const handleCheckboxChange = (field: keyof ScreeningResponse, value: any) => {
     setResponses(prev => ({ ...prev, [field]: value }));
