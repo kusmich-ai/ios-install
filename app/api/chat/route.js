@@ -51,8 +51,7 @@ async function getSystemPrompt() {
 }
 
 export async function POST(req) {
-  try {
-    const { messages } = await req.json();
+  const { messages, userId, baselineData } = await req.json();
 
     // Fetch system prompt
     const systemPrompt = await getSystemPrompt();
