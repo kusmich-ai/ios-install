@@ -172,14 +172,8 @@ export default function LegalAgreements() {
 // Terms of Service Component
 function TermsOfService() {
   return (
-        <div className="text-gray-800">
+    <div className="text-gray-800">
       <h1 className="text-gray-900">INTEGRATED OPERATING SYSTEM (IOS) - TERMS OF SERVICE</h1>
-      {/* rest of content */}
-    </div>
-  );
-}
-    <>
-      <h1>INTEGRATED OPERATING SYSTEM (IOS) - TERMS OF SERVICE</h1>
       <p className="text-sm text-slate-600">
         Effective Date: Jan 4 2025<br />
         Last Updated: Jan 4 2025<br />
