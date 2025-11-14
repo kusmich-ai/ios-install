@@ -14,36 +14,266 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.12.1] - 2025-11-14
+
+### Fixed
+- **Middleware redirect loop on /screening page**
+  - Root cause: Missing `path !== '/screening'` check causing infinite redirects
+  - Added path exclusion checks for all onboarding pages (/screening, /legal-agreement, /assessment)
+  - Users can now access pages they're being redirected to without loops
+
+- **Middleware syntax error causing build failure**
+  - Missing closing brace after screening/legal/assessment checks
+  - Added proper code block closure on line 73
+  - Build now completes successfully
+
+- **Table name mismatch in middleware**
+  - Corrected `baseline_scores` → `baseline_assessments` (actual table name)
+  - Changed column check from `rewired_index` → `id` for baseline validation
+  - Middleware now queries correct database tables
+
+- **Landing page redirect loop for authenticated users**
+  - Implemented Option 1: Allow authenticated users to view landing page
+  - Added `path !== '/'` check to prevent auto-redirect from home page
+  - Authenticated users can now visit `/` without being forced into app flow
+
+- **Email confirmation redirect configuration**
+  - Updated Supabase redirect URLs to point to `/screening` instead of `/signin`
+  - New users now properly routed to screening after email confirmation
+  - Configured callback route to handle post-confirmation flow
+
+### Changed
+- **Middleware flow enforcement improvements**
+  - More granular path checking to prevent redirect loops
+  - Proper page access during onboarding steps
+  - Cleaner logic for determining user's current stage
+
+### Technical Details
+- **Database table references corrected:**
+  - `screening_responses` - verified exists ✅
+  - `legal_acceptances` - verified exists ✅
+  - `baseline_assessments` - corrected from `baseline_scores` ✅
+
+- **Middleware config:**
+  - Matcher pattern excludes static files and images
+  - Public routes: `/`, `/auth/*` paths, `/auth/callback`
+  - Protected routes: `/screening`, `/legal-agreement`, `/assessment`, `/chat`
+  - Sequential enforcement: screening → legal → assessment → chat
+
+---
+
+## [0.12.0] - 2025-11-14
+
+### Changed - BREAKING
+- **Complete migration from Pages Router to App Router**
+  - Rewrote all authentication pages for App Router architecture
+  - Changed `next/router` → `next/navigation` throughout application
+  - Added `'use client'` directives to all client components
+  - Updated imports and routing patterns to App Router conventions
+  - Removed dependency on `@supabase/auth-helpers-react` (Pages Router only)
+  - Simplified layout structure (no SessionContextProvider needed)
+
+### Added
+- **Screening questionnaire system**
+  - Medical and psychiatric safety screening before signup
+  - Comprehensive risk assessment questionnaire
+  - Database table `screening_responses` with RLS policies
+  - Automated clearance evaluation logic
+  - Crisis indicator detection (suicide, psychosis, recent hospitalization)
+  - Medical condition checks (cardiovascular, epilepsy, pregnancy)
+  - Medication and substance use screening
+  - Helper functions for checking user clearance status
+  - Triggers for updating user metadata
+  - Four clearance levels: Granted, Granted with Modifications, Pending Medical Review, Denied
+
+- **Legal agreements integration**
+  - Terms of Service with 7-stage coverage
+  - Informed Consent & Assumption of Risk Agreement
+  - Risk disclosures for each practice type (breathwork, meditation, cold exposure, movement)
+  - Tabbed navigation component for document review
+  - Database table `legal_acceptances` with version tracking
+  - Timestamped acceptance records with audit trail
+
+- **Sequential onboarding flow**
+  - Step 1: Signup (email/password)
+  - Step 2: Medical Screening
+  - Step 3: Legal Agreements (after screening clearance)
+  - Step 4: Baseline Assessment
+  - Step 5: Main App (Chat)
+  - Middleware enforcement preventing step-skipping
+  - Automatic redirect to appropriate stage for returning users
+
+### Fixed
+- **Sign-in redirect loop issue**
+  - Root cause: Hybrid routing (Pages + App Router) causing auth state conflicts
+  - Solution: Complete App Router migration for consistent auth handling
+  - Middleware now properly recognizes authenticated sessions
+  - No more redirect back to signin after successful authentication
+
+### File Structure Changes
+- **App Router structure created:**
+  ```
+  app/
+  ├── layout.tsx (replaces _app.js)
+  ├── auth/
+  │   ├── signin/page.tsx
+  │   ├── signup/page.tsx
+  │   ├── forgot-password/page.tsx
+  │   ├── reset-password/page.tsx
+  │   └── callback/route.ts
+  ├── screening/page.tsx (NEW)
+  ├── legal/page.tsx (NEW)
+  ├── assessment/page.tsx
+  └── chat/page.tsx
+  ```
+- **Deprecated:** `pages/` directory (can be removed after migration)
+- **Deprecated:** `styles/` directory (globals.css moved to `app/`)
+
+### Documentation
+- **COMPLETE-INSTALLATION-GUIDE.md created**
+  - Step-by-step migration instructions
+  - Database setup for screening and legal tables
+  - Testing procedures
+  - Deployment checklist
+  - Troubleshooting guide
+
+### Database Changes
+- **New tables:**
+  - `screening_responses` - Medical/psychiatric screening data
+  - `legal_acceptances` - Terms and consent tracking
+- **New helper functions:**
+  - `check_user_clearance(user_id)` - Returns clearance status
+  - `evaluate_clearance(screening_data)` - Automated risk assessment
+- **New triggers:**
+  - Auto-update user metadata with clearance status
+  - Timestamp management for screening updates
+
+---
+
+## [0.11.1] - 2025-11-12
+
+### Added
+- **Privacy Policy webpage deployment**
+  - Created `/pages/privacy.tsx` (or `/privacy.html`) for Vercel deployment
+  - Mobile-responsive design with sticky table of contents
+  - Print-friendly CSS formatting
+  - Accessibility features (semantic HTML, proper headings, ARIA labels)
+  - URL structure: `https://yourdomain.com/privacy`
+  - Version control support for policy updates
+
+- **Privacy acceptance tracking system**
+  - Supabase table `privacy_acceptances` created
+  - Columns: user_id, policy_version, accepted_at, ip_address, accepted_via, created_at, updated_at
+  - Row Level Security (RLS) policies implemented
+  - Database indexes for query optimization
+  - Auto-updating timestamp triggers
+
+- **Signup flow integration**
+  - Checkbox consent mechanism (unchecked by default)
+  - Clickable Privacy Policy link opening in new tab
+  - Cannot proceed without acceptance
+  - Acceptance timestamp logging
+  - IP address capture for audit trail (optional)
+
+### Implementation Details
+- **Legal consent requirements met**
+  - Clear, conspicuous link to full policy
+  - Timestamped acceptance records
+  - Version tracking per user
+  - Re-acceptance mechanism for major updates
+  - 30-day notice requirement for policy changes
+
+- **Database setup**
+  - SQL script for one-click table creation
+  - `IF NOT EXISTS` clauses for safe multiple runs
+  - Cascade deletion on user removal
+  - Foreign key constraints to auth.users
+
+### Documentation
+- **Implementation guide created**
+  - Step-by-step Supabase SQL Editor instructions
+  - Visual guide for database setup
+  - Verification checklist
+  - Common error troubleshooting
+  - Additional pages roadmap (/terms, /cookies, /consent)
+
+### Changed
+- **Privacy compliance approach**
+  - From conceptual to deployed implementation
+  - Added version control for policy updates
+  - Integrated acceptance tracking into user flow
+
+---
+
 ## [0.11.0] - 2025-11-12
 
 ### Added
-- **Comprehensive Terms and Conditions package**
-  - Master Terms of Service with extensive disclaimers
-  - Safety screening criteria and eligibility requirements
-  - Assumption of risk clauses
-  - Liability limitations and legal protections
-  - Crisis protocols and professional resource referrals
-  - Dispute resolution mechanisms
+- **Complete Legal Protection Package (6 Documents)**
+  1. **Master Terms of Service** - Main agreement covering Stages 1-6
+     - Comprehensive definitions and scope
+     - Clear "not medical treatment" disclaimers
+     - Assumption of risk clauses
+     - Liability limitations and waivers
+     - Dispute resolution and arbitration agreement
+     - Severability and entire agreement clauses
+     - User acknowledgment checkboxes
+  
+  2. **Informed Consent & Assumption of Risk** - Detailed separate document
+     - Explicit risk acknowledgments
+     - Medical consultation requirements
+     - Emergency protocols
+     - Voluntary participation confirmation
+  
+  3. **Medical/Psychiatric Screening Questionnaire** - Auto-exclusion logic
+     - Hard exclusions for high-risk conditions
+     - Conditional warnings with professional consultation requirements
+     - Age verification (18+ minimum)
+     - Current mental health status assessment
+  
+  4. **Stage 7 Addendum** - Separate agreement for advanced practices
+     - Additional screening criteria
+     - Enhanced liability protections
+     - Medical supervision requirements
+     - Psychedelic protocol safeguards
+  
+  5. **Privacy Policy** - GDPR/Canadian PIPEDA compliant
+     - International data handling
+     - Supabase storage specifications
+     - User rights and data protection
+  
+  6. **In-System Crisis Protocols** - AI display requirements
+     - Immediate crisis resource information
+     - Professional referral triggers
+     - Emergency contact protocols
+
+- **Safety screening criteria and eligibility requirements**
+  - Hard exclusions: active psychosis, suicidal ideation, recent psychiatric hospitalization, certain cardiac conditions, pregnancy (for cold exposure), epilepsy (for breathwork)
+  - Medical clearance encouraged for users on psychiatric medications
   - Age requirement: 18+ minimum
   - International scope with GDPR compliance considerations
   - Canadian corporation operation specifications
-
-- **Stage 7 separate agreement framework**
-  - Additional terms for advanced practices
-  - Enhanced screening for psychedelic-assisted protocols
-  - Supplemental liability protections
 
 - **Legal protection strategy**
   - Clear distinction as educational self-development (not medical treatment)
   - Mandatory professional consultation recommendations for various conditions
   - Protection against misuse for healing/therapy purposes
+  - Conservative/safest approach to liability
   - Insurance coverage recommendations documented
+  - Crisis resource integration requirements
 
 ### Documentation
-- **Legal compliance framework established**
+- **Comprehensive legal framework established**
   - Ready for attorney review and finalization
+  - Multi-jurisdiction considerations (international)
   - Positioned to minimize liability risks
   - Supabase data storage compliance noted
+  - All 6 documents production-ready
+
+### Changed
+- **Risk management approach**
+  - From implicit to explicit legal protections
+  - Tiered agreement system (general + Stage 7)
+  - Screening before access vs. warnings during use
 
 ---
 
