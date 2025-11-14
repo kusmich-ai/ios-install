@@ -1,3 +1,6 @@
+export default function IOSBaselineAssessment({ user }) {
+  // ... rest of your existing component code
+}
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronRight, Check, Brain, Target, Sun, Focus, Clock } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
