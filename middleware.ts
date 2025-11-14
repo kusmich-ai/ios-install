@@ -1,4 +1,4 @@
-// middleware.ts - TEMPORARY DEBUGGING VERSION
+// middleware.ts
 import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
@@ -32,14 +32,53 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(redirectUrl)
   }
 
-  // SIMPLIFIED: Just let authenticated users access any protected page
-  // We'll add back the flow checks once we confirm tables exist
-  
-  return res
-}
+  // If authenticated, enforce the flow: screening → legal → assessment → chat
+  if (session && !isPublicRoute) {
+    
+    // Check screening completion
+    const { data: screening } = await supabase
+      .from('screening_responses')
+      .select('clearance_level')
+      .eq('user_id', session.user.id)
+      .single()
 
-export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-  ],
-}
+    // Only redirect if NOT on screening page AND screening not complete
+    if (!screening?.clearance_level && path !== '/screening') {
+      return NextResponse.redirect(new URL('/screening', req.url))
+    }
+
+    // Check legal agreement acceptance
+    const { data: legal } = await supabase
+      .from('legal_acceptances')
+      .select('accepted_at')
+      .eq('user_id', session.user.id)
+      .single()
+
+    // Only redirect if NOT on legal page AND screening done but legal not accepted
+    if (screening?.clearance_level && !legal?.accepted_at && path !== '/legal-agreement') {
+      return NextResponse.redirect(new URL('/legal-agreement', req.url))
+    }
+
+    // Check baseline completion - FIXED TABLE NAME
+    const { data: baseline } = await supabase
+      .from('baseline_assessments') // ✅ Changed from baseline_scores
+      .select('id')
+      .eq('user_id', session.user.id)
+      .single()
+
+    // Only redirect if NOT on assessment page AND legal done but baseline not complete
+    if (legal?.accepted_at && !baseline?.id && path !== '/assessment') {
+      return NextResponse.redirect(new URL('/assessment', req.url))
+    }
+  }
+
+  // If authenticated and on auth pages (except callback and landing page), redirect based on progress
+  if (session && isPublicRoute && !path.includes('/callback') && path !== '/') {
+    const { data: screening } = await supabase
+      .from('screening_responses')
+      .select('clearance_level')
+      .eq('user_id', session.user.id)
+      .single()
+
+    if (!screening?.clearance_level) {
+      return NextResponse.redirect(new URL('/screening', req.url))
