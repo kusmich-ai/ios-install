@@ -14,11 +14,6 @@ import {
   Pill,
   User
 } from 'lucide-react';
-
-// Initialize Supabase client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
 interface ScreeningResponse {
@@ -70,6 +65,7 @@ interface ClearanceResult {
 
 export default function ScreeningPage() {
   const router = useRouter();
+const supabase = createClientComponentClient(); 
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [currentSection, setCurrentSection] = useState(1);
