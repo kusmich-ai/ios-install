@@ -452,10 +452,6 @@ const IOSBaselineAssessment = ({ user }) => {
     handleBctComplete(bctElapsedTime, bctCycleCount, 'lost_count');
   };
 
-  const handleBctLostCount = () => {
-    handleBctComplete(bctElapsedTime, bctCycleCount, 'lost_count');
-  };
-
   const handleBctComplete = async (finalTime, finalCycles, reason) => {
     setBctCompleted(true);
 
