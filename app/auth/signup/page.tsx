@@ -1,4 +1,4 @@
-// app/auth/signup/page.tsx
+// app/auth/signup/page.tsx - DARK THEME VERSION
 'use client'
 
 import { useState } from 'react'
@@ -55,24 +55,26 @@ export default function SignUp() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow">
+    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0a0a0a' }}>
+      <div className="max-w-md w-full space-y-8 p-8 rounded-lg shadow-lg" style={{ backgroundColor: '#111111' }}>
         <div>
-          <h2 className="text-3xl font-bold text-center">Create Account</h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+          <h2 className="text-3xl font-bold text-center" style={{ color: '#ff9e19' }}>
+            Create Account
+          </h2>
+          <p className="mt-2 text-center text-sm text-gray-400">
             Join the IOS transformation journey
           </p>
         </div>
         
         {error && (
-          <div className="bg-red-50 text-red-600 p-3 rounded">
+          <div className="p-3 rounded" style={{ backgroundColor: '#ff9e1920', color: '#ff9e19', border: '1px solid #ff9e19' }}>
             {error}
           </div>
         )}
 
         <form onSubmit={handleSignUp} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium mb-1">
+            <label htmlFor="email" className="block text-sm font-medium mb-1 text-gray-300">
               Email Address
             </label>
             <input
@@ -80,7 +82,12 @@ export default function SignUp() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 rounded focus:outline-none focus:ring-2"
+              style={{ 
+                backgroundColor: '#0a0a0a', 
+                color: '#ffffff',
+                border: '1px solid #2a2a2a'
+              }}
               placeholder="you@example.com"
               required
               disabled={loading}
@@ -88,7 +95,7 @@ export default function SignUp() {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium mb-1">
+            <label htmlFor="password" className="block text-sm font-medium mb-1 text-gray-300">
               Password
             </label>
             <input
@@ -96,7 +103,12 @@ export default function SignUp() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 rounded focus:outline-none focus:ring-2"
+              style={{ 
+                backgroundColor: '#0a0a0a', 
+                color: '#ffffff',
+                border: '1px solid #2a2a2a'
+              }}
               placeholder="At least 6 characters"
               minLength={6}
               required
@@ -105,7 +117,7 @@ export default function SignUp() {
           </div>
 
           <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium mb-1">
+            <label htmlFor="confirmPassword" className="block text-sm font-medium mb-1 text-gray-300">
               Confirm Password
             </label>
             <input
@@ -113,7 +125,12 @@ export default function SignUp() {
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 rounded focus:outline-none focus:ring-2"
+              style={{ 
+                backgroundColor: '#0a0a0a', 
+                color: '#ffffff',
+                border: '1px solid #2a2a2a'
+              }}
               placeholder="Confirm your password"
               minLength={6}
               required
@@ -124,15 +141,19 @@ export default function SignUp() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full py-3 rounded font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ 
+              backgroundColor: '#ff9e19',
+              color: '#0a0a0a'
+            }}
           >
             {loading ? 'Creating account...' : 'Sign Up'}
           </button>
         </form>
 
-        <p className="text-center text-sm">
+        <p className="text-center text-sm text-gray-400">
           Already have an account?{' '}
-          <Link href="/auth/signin" className="text-blue-600 hover:underline">
+          <Link href="/auth/signin" className="hover:underline" style={{ color: '#ff9e19' }}>
             Sign in
           </Link>
         </p>
