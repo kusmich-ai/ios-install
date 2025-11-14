@@ -9,9 +9,8 @@ export async function GET(request: Request) {
 
   if (code) {
     try {
-      // Await cookies in Next.js 15+
-      const cookieStore = await cookies()
-      const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+      // In Next.js 16, cookies() is NOT async - don't await it
+      const supabase = createRouteHandlerClient({ cookies })
       
       // Exchange code for session
       const { error } = await supabase.auth.exchangeCodeForSession(code)
