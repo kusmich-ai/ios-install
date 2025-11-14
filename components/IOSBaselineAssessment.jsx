@@ -21,6 +21,7 @@ const IOSBaselineAssessment = ({ user }) => {
   const [bctCycleCount, setBctCycleCount] = useState(0);
   const [bctElapsedTime, setBctElapsedTime] = useState(0);
   const [bctScore, setBctScore] = useState(null);
+  const [bctButtonPressed, setBctButtonPressed] = useState(null); // For visual feedback
   
   // User authentication state
   const [userId, setUserId] = useState(user?.id || null);
@@ -415,7 +416,13 @@ const IOSBaselineAssessment = ({ user }) => {
   };
 
   // BCT Handlers
+  const showButtonFeedback = (buttonType) => {
+    setBctButtonPressed(buttonType);
+    setTimeout(() => setBctButtonPressed(null), 200);
+  };
+
   const handleBctNextBreath = () => {
+    showButtonFeedback('next');
     if (bctBreathCount < 9) {
       setBctBreathCount(prev => prev + 1);
     }
@@ -423,6 +430,7 @@ const IOSBaselineAssessment = ({ user }) => {
   };
 
   const handleBctCompleteCycle = () => {
+    showButtonFeedback('complete');
     if (bctBreathCount === 9) {
       // Valid cycle completion
       const newCycleCount = bctCycleCount + 1;
@@ -437,6 +445,11 @@ const IOSBaselineAssessment = ({ user }) => {
       // Clicked complete cycle at wrong count - test ends (miscount)
       handleBctComplete(bctElapsedTime, bctCycleCount, 'miscount_wrong_count');
     }
+  };
+
+  const handleBctLostCount = () => {
+    showButtonFeedback('lost');
+    handleBctComplete(bctElapsedTime, bctCycleCount, 'lost_count');
   };
 
   const handleBctLostCount = () => {
@@ -663,6 +676,9 @@ const IOSBaselineAssessment = ({ user }) => {
                   <h3 className="font-bold text-white mb-3">Instructions - Read Carefully:</h3>
                   <ol className="space-y-3 list-decimal list-inside">
                     <li className="leading-relaxed">
+                      <strong>Breathe naturally:</strong> Take long, slow, deep breaths throughout
+                    </li>
+                    <li className="leading-relaxed">
                       <strong>Count silently in your mind:</strong> Count each breath from 1 to 9
                     </li>
                     <li className="leading-relaxed">
@@ -678,14 +694,6 @@ const IOSBaselineAssessment = ({ user }) => {
                       <strong>Lost count?</strong> Click "Lost Count" immediately - the test ends when you lose track
                     </li>
                   </ol>
-                </div>
-
-                <div className="p-4 rounded-lg" style={{ backgroundColor: '#1a1a1a', border: `1px solid ${orangeAccent}` }}>
-                  <p className="text-sm" style={{ color: orangeAccent }}>
-                    <strong>Important:</strong> You must keep track of the count entirely in your mind. 
-                    There will be no on-screen counter helping you. If you click the wrong button at the wrong time, 
-                    the test ends immediately.
-                  </p>
                 </div>
 
                 <p className="text-sm text-gray-400">
@@ -745,18 +753,24 @@ const IOSBaselineAssessment = ({ user }) => {
             <div className="max-w-md mx-auto space-y-4">
               <button
                 onClick={handleBctNextBreath}
-                className="w-full px-6 py-6 rounded-lg font-semibold text-white text-xl transition-all"
-                style={{ backgroundColor: orangeAccent }}
+                className="w-full px-6 py-6 rounded-lg font-semibold text-white text-xl transition-all transform"
+                style={{ 
+                  backgroundColor: orangeAccent,
+                  transform: bctButtonPressed === 'next' ? 'scale(0.95)' : 'scale(1)',
+                  opacity: bctButtonPressed === 'next' ? 0.8 : 1
+                }}
               >
                 Next Breath
               </button>
 
               <button
                 onClick={handleBctCompleteCycle}
-                className="w-full px-6 py-6 rounded-lg font-semibold text-white text-xl transition-all"
+                className="w-full px-6 py-6 rounded-lg font-semibold text-white text-xl transition-all transform"
                 style={{ 
                   backgroundColor: '#10b981',
-                  border: '2px solid #10b981'
+                  border: '2px solid #10b981',
+                  transform: bctButtonPressed === 'complete' ? 'scale(0.95)' : 'scale(1)',
+                  opacity: bctButtonPressed === 'complete' ? 0.8 : 1
                 }}
               >
                 Complete Cycle
@@ -764,11 +778,13 @@ const IOSBaselineAssessment = ({ user }) => {
 
               <button
                 onClick={handleBctLostCount}
-                className="w-full px-6 py-4 rounded-lg font-semibold transition-all"
+                className="w-full px-6 py-4 rounded-lg font-semibold transition-all transform"
                 style={{ 
                   backgroundColor: '#1a1a1a',
                   color: '#ff4444',
-                  border: '2px solid #ff4444'
+                  border: '2px solid #ff4444',
+                  transform: bctButtonPressed === 'lost' ? 'scale(0.95)' : 'scale(1)',
+                  opacity: bctButtonPressed === 'lost' ? 0.8 : 1
                 }}
               >
                 Lost Count
