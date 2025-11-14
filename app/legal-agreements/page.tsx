@@ -175,9 +175,9 @@ function TermsOfService() {
     <div className="text-gray-800">
       <h1 className="text-gray-900">INTEGRATED OPERATING SYSTEM (IOS) - TERMS OF SERVICE</h1>
       <p className="text-sm text-slate-600">
-        Effective Date: Jan 4 2025<br />
-        Last Updated: Jan 4 2025<br />
-        Operator: H2H Media Group<br />
+        Effective Date: January 4, 2025<br />
+        Last Updated: January 4, 2025<br />
+        Operator: H2H Media Group Inc.<br />
         Registered Address: 460 Doyle Ave. Kelowna, BC. V1Y 0C2
       </p>
 
@@ -194,12 +194,10 @@ function TermsOfService() {
       <h2>1. DEFINITIONS</h2>
       <p><strong>1.1</strong> "System" or "IOS" means the Integrated Operating System, including all associated software, protocols, AI coaching interfaces, assessment tools, and related materials.</p>
       <p><strong>1.2</strong> "User" or "you" means any individual accessing or using the System.</p>
-      <p><strong>1.3</strong> "Operator" or "we" means [Your Canadian Corporation Name] and its affiliates, officers, directors, employees, and agents.</p>
+      <p><strong>1.3</strong> "Operator" or "we" means H2H Media Group Inc. and its affiliates, officers, directors, employees, and agents.</p>
       <p><strong>1.4</strong> "Protocols" means the neural and mental practices, exercises, and techniques provided through the System.</p>
       <p><strong>1.5</strong> "Stage 7" means the Accelerated Expansion tier, which requires separate agreement and involves advanced integration techniques.</p>
 
-      {/* REST OF TERMS OF SERVICE CONTENT - keeping all the existing content exactly as is */}
-      
       <h2>2. NATURE OF SERVICE - CRITICAL DISCLAIMERS</h2>
       <h3>2.1 NOT MEDICAL OR MENTAL HEALTH TREATMENT</h3>
       <p className="font-bold">THE IOS SYSTEM IS NOT:</p>
@@ -219,14 +217,290 @@ function TermsOfService() {
         <li>Designed for generally healthy individuals seeking performance enhancement</li>
       </ul>
 
-      {/* ... ALL OTHER TERMS OF SERVICE SECTIONS ... */}
-      {/* I'm keeping all your existing TOS content exactly as you had it */}
-      {/* Just showing the structure - you have all this content already */}
+      <h3>2.2 AI COACHING LIMITATIONS</h3>
+      <p>The System uses artificial intelligence to provide coaching and guidance. You acknowledge that:</p>
+      <ul>
+        <li>AI cannot replace human clinical judgment</li>
+        <li>AI may provide inaccurate or inappropriate guidance</li>
+        <li>AI cannot detect all crisis situations or contraindications</li>
+        <li>You are solely responsible for determining appropriateness of practices</li>
+        <li>AI responses are not medical, therapeutic, or professional advice</li>
+      </ul>
+
+      <h2>3. ELIGIBILITY & USER REQUIREMENTS</h2>
+      <h3>3.1 Age Requirement</h3>
+      <p>You must be at least 18 years old to use this System. By accessing the System, you represent and warrant that you are 18 years of age or older.</p>
+
+      <h3>3.2 Medical & Psychiatric Screening</h3>
+      <p>You must complete mandatory medical and psychiatric screening before accessing the System. Providing false information may result in:</p>
+      <ul>
+        <li>Immediate termination of access</li>
+        <li>Voiding of all liability protections</li>
+        <li>Potential harm to yourself</li>
+      </ul>
+
+      <h3>3.3 Contraindications</h3>
+      <p>You must NOT use this System if you have:</p>
+      <ul>
+        <li>Active suicidal ideation or intent</li>
+        <li>Active psychosis or hallucinations</li>
+        <li>Severe untreated mental health conditions</li>
+        <li>Recent psychiatric hospitalization (within 6 months without clearance)</li>
+        <li>Severe cardiovascular disease without medical clearance</li>
+        <li>Uncontrolled hypertension</li>
+        <li>Epilepsy or seizure disorders (for certain practices)</li>
+        <li>Pregnancy (for certain practices without medical clearance)</li>
+      </ul>
+
+      <h3>3.4 Professional Consultation Requirement</h3>
+      <p>You agree to consult with appropriate licensed professionals before starting if you have ANY:</p>
+      <ul>
+        <li>Mental health conditions</li>
+        <li>Medical conditions</li>
+        <li>Are taking psychiatric or cardiovascular medications</li>
+        <li>Have concerns about your ability to safely engage in the practices</li>
+      </ul>
+
+      <h2>4. ASSUMPTION OF RISK</h2>
+      <h3>4.1 Voluntary Participation</h3>
+      <p>Your participation in the IOS System is entirely voluntary. You acknowledge and accept all risks associated with:</p>
+      <ul>
+        <li>Breathwork and respiratory exercises</li>
+        <li>Meditation and awareness practices</li>
+        <li>Physical movement protocols</li>
+        <li>Cold and heat exposure (if applicable)</li>
+        <li>Sustained attention training</li>
+        <li>Psychological inquiry and self-reflection practices</li>
+        <li>Identity and belief examination techniques</li>
+      </ul>
+
+      <h3>4.2 Known Risks</h3>
+      <p>You acknowledge awareness of potential risks, including but not limited to:</p>
+      
+      <p className="font-bold">Psychological Risks:</p>
+      <ul>
+        <li>Temporary increase in anxiety or emotional distress</li>
+        <li>Surfacing of difficult memories or emotions</li>
+        <li>Psychological destabilization if practices are misapplied</li>
+        <li>Discomfort during decentering or identity inquiry practices</li>
+        <li>Increased awareness of distressing thought patterns</li>
+      </ul>
+
+      <p className="font-bold">Physical Risks:</p>
+      <ul>
+        <li>Lightheadedness, dizziness, or hyperventilation from breathwork</li>
+        <li>Cardiovascular stress from cold exposure</li>
+        <li>Muscle strain from movement practices</li>
+        <li>Fatigue from sustained attention training</li>
+        <li>Exacerbation of pre-existing conditions</li>
+      </ul>
+
+      <h3>4.3 Assumption of All Risks</h3>
+      <p className="font-bold">YOU EXPRESSLY ASSUME ALL RISKS, KNOWN AND UNKNOWN, ARISING FROM YOUR USE OF THE SYSTEM.</p>
+      <p>You acknowledge that the Operator has recommended consulting with licensed professionals and that you bear sole responsibility for any consequences of choosing to proceed without such consultation.</p>
+
+      <h2>5. LIMITATIONS OF LIABILITY</h2>
+      <h3>5.1 Maximum Liability</h3>
+      <p className="font-bold">TO THE FULLEST EXTENT PERMITTED BY LAW, THE OPERATOR'S TOTAL LIABILITY FOR ANY CLAIMS ARISING FROM YOUR USE OF THE SYSTEM SHALL NOT EXCEED THE AMOUNT YOU PAID FOR ACCESS TO THE SYSTEM IN THE 12 MONTHS PRECEDING THE CLAIM.</p>
+
+      <h3>5.2 No Consequential Damages</h3>
+      <p>IN NO EVENT SHALL THE OPERATOR BE LIABLE FOR:</p>
+      <ul>
+        <li>Indirect, incidental, special, or consequential damages</li>
+        <li>Loss of profits, revenue, or business opportunities</li>
+        <li>Personal injury or wrongful death (except where prohibited by law)</li>
+        <li>Psychiatric injury or psychological harm</li>
+        <li>Exacerbation of pre-existing conditions</li>
+        <li>Damages arising from AI coaching errors or inaccuracies</li>
+      </ul>
+
+      <h3>5.3 Release of Claims</h3>
+      <p className="font-bold">YOU HEREBY RELEASE, WAIVE, AND FOREVER DISCHARGE THE OPERATOR, ITS AFFILIATES, OFFICERS, DIRECTORS, EMPLOYEES, AGENTS, AND REPRESENTATIVES FROM ANY AND ALL CLAIMS, DEMANDS, LIABILITIES, ACTIONS, OR CAUSES OF ACTION ARISING FROM YOUR USE OF THE SYSTEM.</p>
+
+      <h2>6. USER OBLIGATIONS</h2>
+      <h3>6.1 Honest Disclosure</h3>
+      <p>You agree to provide accurate and complete information during all screening, assessment, and interaction with the System.</p>
+
+      <h3>6.2 Self-Monitoring</h3>
+      <p>You agree to:</p>
+      <ul>
+        <li>Monitor yourself for adverse effects</li>
+        <li>Discontinue practices that cause distress or harm</li>
+        <li>Seek professional help if concerning symptoms emerge</li>
+        <li>Not ignore warning signs or "push through" harmful experiences</li>
+      </ul>
+
+      <h3>6.3 Emergency Protocols</h3>
+      <p>You agree to seek immediate professional help if you experience:</p>
+      <ul>
+        <li>Suicidal or self-harm thoughts</li>
+        <li>Psychotic symptoms</li>
+        <li>Severe anxiety or panic attacks</li>
+        <li>Dissociation or depersonalization</li>
+        <li>Severe emotional destabilization</li>
+        <li>Any medical emergency</li>
+      </ul>
+
+      <h2>7. CRISIS PROTOCOLS</h2>
+      <h3>7.1 System Limitations</h3>
+      <p className="font-bold">THE SYSTEM IS NOT DESIGNED FOR CRISIS INTERVENTION.</p>
+      <p>The AI coach is programmed to recognize certain crisis indicators, but it:</p>
+      <ul>
+        <li>Cannot replace human clinical judgment</li>
+        <li>May fail to detect all crisis situations</li>
+        <li>Cannot provide emergency intervention</li>
+        <li>Is not monitored 24/7 by human professionals</li>
+      </ul>
+
+      <h3>7.2 Emergency Resources</h3>
+      <p>If you are experiencing a mental health crisis:</p>
+      <p className="font-bold">Immediate Danger:</p>
+      <ul>
+        <li>Call 911 (US/Canada) or local emergency services</li>
+        <li>Go to nearest emergency room</li>
+      </ul>
+      <p className="font-bold">Suicidal Thoughts or Crisis:</p>
+      <ul>
+        <li>National Suicide Prevention Lifeline: 988 (US)</li>
+        <li>Crisis Text Line: Text HOME to 741741</li>
+        <li>Canada Suicide Prevention Service: 1-833-456-4566</li>
+      </ul>
+      <p className="font-bold">International:</p>
+      <ul>
+        <li>International Association for Suicide Prevention: https://www.iasp.info/resources/Crisis_Centres/</li>
+      </ul>
+
+      <h3>7.3 Discontinuation Requirement</h3>
+      <p>You agree to immediately discontinue use and seek professional help if you experience any acute psychiatric or medical symptoms.</p>
+
+      <h2>8. DATA & PRIVACY</h2>
+      <h3>8.1 Data Collection</h3>
+      <p>The System collects and stores:</p>
+      <ul>
+        <li>Assessment responses and baseline scores</li>
+        <li>Daily practice adherence data</li>
+        <li>Self-reported ratings and reflections</li>
+        <li>Performance metrics</li>
+        <li>AI conversation logs</li>
+      </ul>
+
+      <h3>8.2 Data Use</h3>
+      <p>Your data is used to:</p>
+      <ul>
+        <li>Track your progress through stages</li>
+        <li>Provide personalized coaching</li>
+        <li>Calculate metrics and unlock eligibility</li>
+        <li>Improve System functionality</li>
+      </ul>
+
+      <h3>8.3 Data Security</h3>
+      <p>Data is stored on secure cloud infrastructure (Supabase). While we implement industry-standard security measures, no system is 100% secure. You acknowledge the inherent risks of internet-based data storage.</p>
+
+      <h3>8.4 Full Privacy Policy</h3>
+      <p>Complete data handling practices are detailed in our separate Privacy Policy, which is incorporated by reference into these Terms.</p>
+
+      <h2>9. INTELLECTUAL PROPERTY</h2>
+      <h3>9.1 Ownership</h3>
+      <p>All content, protocols, software, and materials within the System are owned by the Operator and protected by intellectual property laws.</p>
+
+      <h3>9.2 Limited License</h3>
+      <p>You are granted a limited, non-exclusive, non-transferable license to access and use the System for personal, non-commercial purposes only.</p>
+
+      <h3>9.3 Restrictions</h3>
+      <p>You may NOT:</p>
+      <ul>
+        <li>Copy, modify, or distribute System content</li>
+        <li>Reverse engineer or attempt to extract source code</li>
+        <li>Use the System for commercial purposes</li>
+        <li>Share your account access with others</li>
+        <li>Create derivative works</li>
+      </ul>
+
+      <h2>10. PAYMENT & REFUNDS</h2>
+      <h3>10.1 Fees</h3>
+      <p>Access fees are as stated on the website. You agree to pay all fees associated with your chosen subscription or access tier.</p>
+
+      <h3>10.2 Refund Policy</h3>
+      <p>Due to the nature of digital services and immediate access upon payment:</p>
+      <ul>
+        <li>No refunds after 7 days of access</li>
+        <li>Refunds within first 7 days at Operator's discretion</li>
+        <li>Partial refunds may be considered for extenuating circumstances</li>
+      </ul>
+
+      <h3>10.3 Cancellation</h3>
+      <p>You may cancel your subscription at any time. Cancellation takes effect at the end of the current billing period. No prorated refunds for partial months.</p>
+
+      <h2>11. TERMINATION</h2>
+      <h3>11.1 Operator's Right to Terminate</h3>
+      <p>We may suspend or terminate your access immediately if:</p>
+      <ul>
+        <li>You violate these Terms</li>
+        <li>You provide false information during screening</li>
+        <li>Your continued participation poses safety concerns</li>
+        <li>You engage in abusive or inappropriate behavior</li>
+        <li>Payment obligations are not met</li>
+      </ul>
+
+      <h3>11.2 User's Right to Terminate</h3>
+      <p>You may discontinue use at any time by canceling your account.</p>
+
+      <h3>11.3 Effects of Termination</h3>
+      <p>Upon termination:</p>
+      <ul>
+        <li>Your access to the System will cease</li>
+        <li>No refunds will be provided (except as specified in Section 10.2)</li>
+        <li>Your data may be retained as specified in Privacy Policy</li>
+        <li>Provisions regarding liability, indemnification, and dispute resolution survive</li>
+      </ul>
+
+      <h2>12. DISPUTE RESOLUTION</h2>
+      <h3>12.1 Governing Law</h3>
+      <p>These Terms are governed by the laws of British Columbia, Canada, without regard to conflict of law principles.</p>
+
+      <h3>12.2 Arbitration Agreement</h3>
+      <p className="font-bold">Any dispute arising from these Terms or use of the System shall be resolved through binding arbitration in accordance with the Arbitration Act (British Columbia).</p>
+      <p className="font-bold">YOU WAIVE YOUR RIGHT TO:</p>
+      <ul>
+        <li>Jury trial</li>
+        <li>Court litigation</li>
+        <li>Class action participation</li>
+      </ul>
+
+      <h3>12.3 Exception for Emergency Relief</h3>
+      <p>Either party may seek emergency injunctive relief in court if necessary to prevent immediate harm.</p>
+
+      <h2>13. SEVERABILITY</h2>
+      <p>If any provision of these Terms is found unenforceable, the remaining provisions remain in full force and effect.</p>
+
+      <h2>14. ENTIRE AGREEMENT</h2>
+      <p>These Terms, together with the Informed Consent Agreement, Screening Questionnaire, Privacy Policy, and Stage 7 Addendum (if applicable), constitute the entire agreement between you and the Operator.</p>
+
+      <h2>15. ACKNOWLEDGMENT & ACCEPTANCE</h2>
+      <p className="font-bold">BY CLICKING "I AGREE" OR BY ACCESSING THE SYSTEM, YOU ACKNOWLEDGE THAT:</p>
+      <ul>
+        <li>☐ You have read and understood these Terms in their entirety</li>
+        <li>☐ You have had opportunity to consult legal counsel if desired</li>
+        <li>☐ You meet all eligibility requirements</li>
+        <li>☐ You understand this is NOT medical or mental health treatment</li>
+        <li>☐ You understand the risks and assume them voluntarily</li>
+        <li>☐ You agree to seek professional help for any medical or psychiatric concerns</li>
+        <li>☐ You agree to use crisis resources if experiencing emergency</li>
+        <li>☐ You release the Operator from liability as outlined herein</li>
+      </ul>
+
+      <h2>CONTACT INFORMATION</h2>
+      <p>
+        H2H Media Group Inc.<br />
+        460 Doyle Ave. Kelowna, BC. V1Y 0C2<br />
+        Email: support@unbecoming.app<br />
+        For legal inquiries: legal@unbecoming.app
+      </p>
 
       <div className="bg-green-50 border-l-4 border-green-400 p-4 my-6">
         <p className="font-bold text-green-800">ELECTRONIC CONSENT</p>
         <p className="text-green-800 text-sm mt-2">
-          Your acceptance via checkbox and button click constitutes your legally binding electronic signature on this Informed Consent & Assumption of Risk Agreement. This electronic acceptance is equivalent to a handwritten signature and will be recorded with a timestamp for our records.
+          Your acceptance via checkbox and button click constitutes your legally binding electronic signature on these Terms of Service. This electronic acceptance is equivalent to a handwritten signature and will be recorded with a timestamp for our records.
         </p>
       </div>
     </div>
@@ -239,12 +513,557 @@ function InformedConsent() {
     <div className="text-gray-800">
       <h1 className="text-gray-900">IOS SYSTEM - INFORMED CONSENT & ASSUMPTION OF RISK AGREEMENT</h1>
       <p className="text-sm text-slate-600">
-        Effective Date: Jsn 2026<br />
-        Operator: H2H Media Group Inc
+        Effective Date: January 4, 2025<br />
+        Operator: H2H Media Group Inc.
       </p>
 
-      {/* ALL YOUR INFORMED CONSENT CONTENT GOES HERE */}
-      {/* Keep all the sections exactly as you had them */}
+      <div className="bg-red-50 border-l-4 border-red-400 p-4 my-6">
+        <p className="font-bold text-red-800">PURPOSE OF THIS DOCUMENT</p>
+        <p className="text-red-800 text-sm mt-2">
+          This Informed Consent Agreement provides detailed information about the IOS System practices, associated risks, and your responsibilities as a participant. This is a legally binding document. Please read it carefully and ask questions if anything is unclear.
+        </p>
+        <p className="text-red-800 text-sm font-bold mt-2">
+          You must accept this agreement separately from the Terms of Service to access the System.
+        </p>
+      </div>
+
+      <h2>SECTION 1: UNDERSTANDING THE IOS SYSTEM</h2>
+
+      <h3>1.1 What the IOS System Is</h3>
+      <p>The Integrated Operating System (IOS) is a self-directed educational program designed to train nervous system regulation, cognitive flexibility, and sustained attention through systematic daily practices.</p>
+
+      <p className="font-bold">The System includes:</p>
+      <ul>
+        <li>7 progressive stages (Neural Priming → Integration → Accelerated Expansion)</li>
+        <li>Daily rituals including breathwork, meditation, movement, and reflection</li>
+        <li>AI-powered coaching and guidance</li>
+        <li>Assessment tools and progress tracking</li>
+        <li>Stage-specific protocols that increase in complexity</li>
+      </ul>
+
+      <h3>1.2 What the IOS System Is NOT</h3>
+      <p className="font-bold">This System is NOT:</p>
+      <ul>
+        <li>Medical treatment or therapy</li>
+        <li>Mental health counseling or psychotherapy</li>
+        <li>Supervised by licensed healthcare professionals (Stages 1-6)</li>
+        <li>A substitute for professional care</li>
+        <li>Designed to treat, diagnose, or cure any condition</li>
+      </ul>
+
+      <p className="font-bold">If you need medical or psychiatric treatment, this System is not the appropriate intervention. Seek professional care.</p>
+
+      <h3>1.3 Educational Nature</h3>
+      <p>The information and practices provided are educational in nature. All decisions about whether and how to apply this information are YOUR responsibility.</p>
+      
+      <p className="font-bold">You are encouraged to:</p>
+      <ul>
+        <li>Consult licensed healthcare providers about any medical or mental health concerns</li>
+        <li>Discuss these practices with your doctor if you have any health conditions</li>
+        <li>Seek professional guidance if you experience adverse effects</li>
+        <li>Use your own judgment about what practices are appropriate for you</li>
+      </ul>
+
+      <h2>SECTION 2: DETAILED RISK DISCLOSURE</h2>
+
+      <h3>2.1 Breathwork & Respiratory Practices (HRVB, Resonance Breathing)</h3>
+      <p className="font-bold">What These Practices Involve:</p>
+      <ul>
+        <li>Controlled breathing at specific rhythms (typically 4-second inhale, 6-second exhale)</li>
+        <li>5-7 minute daily sessions</li>
+        <li>Designed to increase heart rate variability and vagal tone</li>
+      </ul>
+
+      <p className="font-bold">Potential Risks:</p>
+      <ul>
+        <li>Lightheadedness or dizziness</li>
+        <li>Hyperventilation if rhythm is not followed correctly</li>
+        <li>Tingling sensations in extremities</li>
+        <li>Temporary anxiety or emotional release</li>
+        <li>Exacerbation of respiratory conditions</li>
+        <li>Rare: Fainting, panic response</li>
+      </ul>
+
+      <p className="font-bold">Contraindications - Do NOT perform breathwork if you have:</p>
+      <ul>
+        <li>Severe asthma or COPD</li>
+        <li>Recent pneumothorax (collapsed lung)</li>
+        <li>Severe cardiovascular disease</li>
+        <li>Pregnancy (without medical clearance)</li>
+        <li>Epilepsy or seizure disorders</li>
+        <li>Severe anxiety or panic disorder (without professional guidance)</li>
+      </ul>
+
+      <p className="font-bold">Safety Guidelines:</p>
+      <ul>
+        <li>Always practice seated or lying down</li>
+        <li>Stop immediately if you feel faint, dizzy, or experience chest pain</li>
+        <li>Never practice while driving or operating machinery</li>
+        <li>Breathe through your nose when possible</li>
+        <li>If you have respiratory or cardiac conditions, consult your doctor first</li>
+      </ul>
+
+      <h3>2.2 Awareness & Meditation Practices (Awareness Rep, Decentering)</h3>
+      <p className="font-bold">What These Practices Involve:</p>
+      <ul>
+        <li>2-5 minute guided awareness exercises</li>
+        <li>Training attention on present-moment experience</li>
+        <li>Observing thoughts and sensations without engagement</li>
+        <li>Inquiry into the nature of identity and awareness</li>
+      </ul>
+
+      <p className="font-bold">Potential Risks:</p>
+      <ul>
+        <li>Increased awareness of uncomfortable thoughts or emotions</li>
+        <li>Temporary increase in anxiety as suppressed material surfaces</li>
+        <li>Disorientation or depersonalization</li>
+        <li>Existential distress or identity confusion</li>
+        <li>Resurfacing of traumatic memories</li>
+        <li>Temporary emotional dysregulation</li>
+      </ul>
+
+      <p className="font-bold">Contraindications - Caution advised if you have:</p>
+      <ul>
+        <li>Active psychosis or severe mental illness</li>
+        <li>Recent trauma (within 6 months)</li>
+        <li>Dissociative disorders</li>
+        <li>Severe anxiety or panic disorder</li>
+        <li>History of derealization/depersonalization</li>
+      </ul>
+
+      <p className="font-bold">Safety Guidelines:</p>
+      <ul>
+        <li>Start with shorter sessions (2 minutes)</li>
+        <li>If distressing material arises, open your eyes and ground yourself</li>
+        <li>Don't force insights or experiences</li>
+        <li>Maintain therapeutic support if dealing with trauma</li>
+        <li>Discontinue if experiencing persistent dissociation</li>
+      </ul>
+
+      <h3>2.3 Movement Practices (Somatic Flow, Exercise)</h3>
+      <p className="font-bold">What These Practices Involve:</p>
+      <ul>
+        <li>Gentle movement sequences (Cat-Cow, Squat-to-Reach)</li>
+        <li>Daily exercise (20+ minutes, 5x per week)</li>
+        <li>Optional cold/heat exposure (Stage 2+)</li>
+      </ul>
+
+      <p className="font-bold">Potential Risks:</p>
+      <ul>
+        <li>Muscle strain or injury</li>
+        <li>Cardiovascular stress during exercise</li>
+        <li>Exacerbation of existing injuries</li>
+        <li>Overexertion or fatigue</li>
+      </ul>
+
+      <p className="font-bold">Safety Guidelines:</p>
+      <ul>
+        <li>Start slowly and progress gradually</li>
+        <li>Stop if you experience pain (not just discomfort)</li>
+        <li>Modify movements for your body's limitations</li>
+        <li>Consult a physician if you have any physical health conditions</li>
+      </ul>
+
+      <h3>2.4 Cold & Heat Exposure (Optional, Stage 2+)</h3>
+      <p className="font-bold">What These Practices Involve:</p>
+      <ul>
+        <li>Cold exposure: 2-5 minutes at 50-59°F (cold plunge)</li>
+        <li>Heat exposure: 20-25 minutes in sauna (IR 120-150°F or traditional 150-195°F)</li>
+        <li>1-2x per week</li>
+      </ul>
+
+      <p className="font-bold">Potential Risks:</p>
+      
+      <p className="italic">Cold Exposure:</p>
+      <ul>
+        <li>Cardiovascular stress (increased heart rate and blood pressure)</li>
+        <li>Shock response</li>
+        <li>Numbness or frostbite (if temperature too low)</li>
+        <li>Exacerbation of Raynaud's disease</li>
+      </ul>
+
+      <p className="italic">Heat Exposure:</p>
+      <ul>
+        <li>Dehydration</li>
+        <li>Heat exhaustion or heat stroke</li>
+        <li>Cardiovascular stress</li>
+        <li>Dizziness or fainting</li>
+        <li>Burns from hot surfaces</li>
+      </ul>
+
+      <p className="font-bold">ABSOLUTE CONTRAINDICATIONS - Do NOT practice if you have:</p>
+      <ul>
+        <li>Cardiovascular disease, heart conditions, or recent cardiac events</li>
+        <li>Uncontrolled hypertension</li>
+        <li>Pregnancy</li>
+        <li>Raynaud's disease or severe circulation problems</li>
+        <li>History of frostbite</li>
+        <li>Cold urticaria (allergic reaction to cold)</li>
+      </ul>
+
+      <p className="font-bold">Relative Contraindications - Consult physician first:</p>
+      <ul>
+        <li>Any heart condition</li>
+        <li>High or low blood pressure</li>
+        <li>Diabetes</li>
+        <li>Peripheral neuropathy</li>
+        <li>Autoimmune conditions</li>
+      </ul>
+
+      <p className="font-bold">Safety Guidelines:</p>
+      <ul>
+        <li>Start conservatively (shorter duration, less extreme temperature)</li>
+        <li>Never practice alone if possible</li>
+        <li>Have warm-up protocol ready for cold exposure</li>
+        <li>Stay hydrated for heat exposure</li>
+        <li>Exit immediately if feeling faint, nauseated, or experiencing chest discomfort</li>
+        <li>Gradual temperature changes (don't jump from sauna into ice water)</li>
+      </ul>
+
+      <h3>2.5 Sustained Attention & Flow State Training (Stage 4+)</h3>
+      <p className="font-bold">What These Practices Involve:</p>
+      <ul>
+        <li>60-90 minute blocks of single-task focused work</li>
+        <li>Elimination of distractions (no phone, notifications off)</li>
+        <li>Progressive difficulty calibration</li>
+        <li>Daily practice 5x per week</li>
+      </ul>
+
+      <p className="font-bold">Potential Risks:</p>
+      <ul>
+        <li>Mental fatigue or burnout</li>
+        <li>Eye strain from screen work</li>
+        <li>Neglect of other responsibilities</li>
+        <li>Obsessive focus or perfectionism</li>
+        <li>Stress from performance pressure</li>
+      </ul>
+
+      <p className="font-bold">Safety Guidelines:</p>
+      <ul>
+        <li>Take regular breaks</li>
+        <li>Balance flow work with rest and recovery</li>
+        <li>Don't use flow blocks to avoid life responsibilities</li>
+        <li>Monitor for signs of burnout or obsession</li>
+      </ul>
+
+      <h2>SECTION 3: SPECIAL POPULATIONS & CONSIDERATIONS</h2>
+
+      <h3>3.1 Mental Health Conditions</h3>
+      <p>If you have ANY mental health condition, professional guidance is strongly recommended before starting.</p>
+
+      <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 my-3">
+        <p className="font-bold text-yellow-900">Depression & Anxiety Disorders:</p>
+        <ul className="text-yellow-900 text-sm">
+          <li>May benefit from practices BUT require professional monitoring</li>
+          <li>Watch for increased symptoms during identity work</li>
+          <li>Decentering practices may initially increase anxiety</li>
+        </ul>
+      </div>
+
+      <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 my-3">
+        <p className="font-bold text-yellow-900">Bipolar Disorder:</p>
+        <ul className="text-yellow-900 text-sm">
+          <li>High risk of mania with intensive practices</li>
+          <li>Requires close psychiatric monitoring</li>
+          <li>Medication management essential</li>
+          <li>Coordinate with psychiatrist</li>
+        </ul>
+      </div>
+
+      <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 my-3">
+        <p className="font-bold text-yellow-900">Psychotic Disorders:</p>
+        <ul className="text-yellow-900 text-sm">
+          <li>Meditation and decentering practices may worsen symptoms</li>
+          <li>Reality testing may be compromised</li>
+          <li>Generally not recommended without close psychiatric supervision</li>
+        </ul>
+      </div>
+
+      <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 my-3">
+        <p className="font-bold text-yellow-900">Dissociative Disorders:</p>
+        <ul className="text-yellow-900 text-sm">
+          <li>High risk of destabilization with awareness practices</li>
+          <li>Not recommended without specialized therapeutic support</li>
+        </ul>
+      </div>
+
+      <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 my-3">
+        <p className="font-bold text-yellow-900">OCD:</p>
+        <ul className="text-yellow-900 text-sm">
+          <li>Flow state practices may feed compulsive patterns</li>
+          <li>Meta-reflection may become rumination</li>
+          <li>Professional guidance strongly recommended</li>
+        </ul>
+      </div>
+
+      <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 my-3">
+        <p className="font-bold text-yellow-900">Eating Disorders:</p>
+        <ul className="text-yellow-900 text-sm">
+          <li>Identity work and performance tracking may trigger disordered patterns</li>
+          <li>Requires concurrent professional treatment</li>
+        </ul>
+      </div>
+
+      <h3>3.2 Medications</h3>
+      <p className="font-bold">If you are taking ANY psychiatric medications, you MUST:</p>
+      <ul>
+        <li>✓ Consult your prescribing physician before starting</li>
+        <li>✓ Be aware of potential interactions (especially with breathwork, cold exposure)</li>
+        <li>✓ Monitor for any changes in medication effects</li>
+        <li>✓ NEVER adjust medication dosage based on System recommendations</li>
+      </ul>
+
+      <p className="font-bold">Medications of Particular Concern:</p>
+      
+      <div className="bg-blue-50 border-l-4 border-blue-400 p-3 my-3">
+        <p className="font-bold text-blue-900">SSRIs / SNRIs / Antidepressants:</p>
+        <ul className="text-blue-900 text-sm">
+          <li>May interact with intensive breathwork</li>
+          <li>Identity work may affect self-perception; do not adjust medication without medical guidance</li>
+        </ul>
+      </div>
+
+      <div className="bg-blue-50 border-l-4 border-blue-400 p-3 my-3">
+        <p className="font-bold text-blue-900">Benzodiazepines:</p>
+        <ul className="text-blue-900 text-sm">
+          <li>Cold exposure may affect cardiovascular response</li>
+          <li>Do not discontinue medication based on improved regulation</li>
+        </ul>
+      </div>
+
+      <div className="bg-blue-50 border-l-4 border-blue-400 p-3 my-3">
+        <p className="font-bold text-blue-900">Stimulants (ADHD medications):</p>
+        <ul className="text-blue-900 text-sm">
+          <li>May affect heart rate during breathwork and cold exposure</li>
+          <li>Flow state training may feel different on vs off medication</li>
+        </ul>
+      </div>
+
+      <div className="bg-blue-50 border-l-4 border-blue-400 p-3 my-3">
+        <p className="font-bold text-blue-900">Antipsychotics:</p>
+        <ul className="text-blue-900 text-sm">
+          <li>Meditation practices may affect symptom perception</li>
+          <li>Close monitoring essential</li>
+        </ul>
+      </div>
+
+      <div className="bg-blue-50 border-l-4 border-blue-400 p-3 my-3">
+        <p className="font-bold text-blue-900">Beta Blockers / Blood Pressure Medications:</p>
+        <ul className="text-blue-900 text-sm">
+          <li>Cold exposure and breathwork affect cardiovascular system</li>
+          <li>Medical clearance required</li>
+        </ul>
+      </div>
+
+      <h3>3.3 Physical Health Conditions</h3>
+      <p className="font-bold">Consult your physician before starting if you have:</p>
+      
+      <p className="italic font-semibold">Cardiovascular:</p>
+      <ul>
+        <li>Any heart condition (arrhythmia, CAD, heart failure, etc.)</li>
+        <li>High or low blood pressure</li>
+        <li>History of stroke or TIA</li>
+        <li>Peripheral vascular disease</li>
+      </ul>
+
+      <p className="italic font-semibold">Respiratory:</p>
+      <ul>
+        <li>Asthma or COPD</li>
+        <li>Sleep apnea</li>
+        <li>Any chronic respiratory condition</li>
+      </ul>
+
+      <p className="italic font-semibold">Neurological:</p>
+      <ul>
+        <li>Epilepsy or seizure disorders</li>
+        <li>Migraine disorders</li>
+        <li>Multiple sclerosis</li>
+        <li>Parkinson's disease</li>
+      </ul>
+
+      <p className="italic font-semibold">Other:</p>
+      <ul>
+        <li>Diabetes (especially for cold/heat exposure)</li>
+        <li>Thyroid disorders</li>
+        <li>Autoimmune conditions</li>
+        <li>Chronic pain conditions</li>
+        <li>Pregnancy or breastfeeding</li>
+      </ul>
+
+      <h2>SECTION 4: YOUR RESPONSIBILITIES</h2>
+
+      <h3>4.1 Honest Disclosure</h3>
+      <p className="font-bold">You agree to:</p>
+      <ul>
+        <li>☐ Provide accurate information during all screenings and assessments</li>
+        <li>☐ Disclose all relevant medical and psychiatric conditions</li>
+        <li>☐ Disclose all medications you are taking</li>
+        <li>☐ Update your information if your health status changes</li>
+        <li>☐ Not withhold information that might affect your safety</li>
+      </ul>
+      
+      <p className="font-bold">Providing false information may result in:</p>
+      <ul>
+        <li>Serious harm to yourself</li>
+        <li>Immediate termination of access</li>
+        <li>Voiding of all liability protections</li>
+      </ul>
+
+      <h3>4.2 Active Monitoring</h3>
+      <p className="font-bold">You agree to:</p>
+      <ul>
+        <li>☐ Monitor yourself for adverse effects during and after practices</li>
+        <li>☐ Track any changes in physical or mental health symptoms</li>
+        <li>☐ Discontinue practices that cause distress or harm</li>
+        <li>☐ Seek professional evaluation if concerning symptoms emerge</li>
+        <li>☐ Not ignore warning signs or "push through" harmful experiences</li>
+      </ul>
+
+      <div className="bg-red-50 border-l-4 border-red-400 p-4 my-4">
+        <p className="font-bold text-red-900">DISCONTINUE IMMEDIATELY AND SEEK HELP IF YOU EXPERIENCE:</p>
+        <ul className="text-red-900 text-sm">
+          <li>Suicidal or self-harm thoughts</li>
+          <li>Psychotic symptoms (hallucinations, delusions)</li>
+          <li>Severe anxiety, panic, or emotional crisis</li>
+          <li>Persistent dissociation or depersonalization</li>
+          <li>Chest pain, difficulty breathing, or cardiovascular symptoms</li>
+          <li>Seizures or neurological symptoms</li>
+          <li>Any medical emergency</li>
+        </ul>
+      </div>
+
+      <h3>4.3 Professional Consultation</h3>
+      <p className="font-bold">You agree to:</p>
+      <ul>
+        <li>☐ Consult appropriate professionals before starting (if applicable)</li>
+        <li>☐ Maintain ongoing professional care if you have medical/psychiatric conditions</li>
+        <li>☐ Not discontinue professional treatment based on System progress</li>
+        <li>☐ Inform your healthcare providers that you are using this System</li>
+      </ul>
+
+      <h3>4.4 Appropriate Use</h3>
+      <p className="font-bold">You agree to:</p>
+      <ul>
+        <li>☐ Follow all safety guidelines provided</li>
+        <li>☐ Progress through stages at appropriate pace (not rushing)</li>
+        <li>☐ Not use the System as substitute for needed professional care</li>
+        <li>☐ Seek crisis resources immediately if needed (not relying on System)</li>
+      </ul>
+
+      <h2>SECTION 5: LIMITATIONS & BOUNDARIES</h2>
+
+      <h3>5.1 What This System Cannot Provide</h3>
+      <p className="font-bold">This System CANNOT:</p>
+      <ul>
+        <li>Diagnose or treat medical conditions</li>
+        <li>Provide emergency crisis intervention</li>
+        <li>Replace therapy or psychiatric care</li>
+        <li>Guarantee any specific outcomes</li>
+        <li>Prevent adverse events</li>
+        <li>Detect all contraindications or risks</li>
+        <li>Provide 24/7 human monitoring</li>
+      </ul>
+
+      <h3>5.2 AI Coach Limitations</h3>
+      <p>The AI coach:</p>
+      <ul>
+        <li>Is not a licensed therapist, counselor, or medical professional</li>
+        <li>Cannot replace human clinical judgment</li>
+        <li>May provide inaccurate or inappropriate guidance</li>
+        <li>May fail to detect crisis situations</li>
+        <li>Cannot provide personalized medical advice</li>
+        <li>Is a tool, not a treatment</li>
+      </ul>
+
+      <h3>5.3 Not Monitored 24/7</h3>
+      <p>You understand that:</p>
+      <ul>
+        <li>No human professionals are monitoring your sessions in real-time</li>
+        <li>Crisis detection is automated and may fail</li>
+        <li>You are responsible for your own safety</li>
+        <li>Emergency resources must be used for actual emergencies</li>
+      </ul>
+
+      <h2>SECTION 6: STAGE 7 (ACCELERATED EXPANSION)</h2>
+      <p>Stage 7 involves advanced practices including supplements, nootropics, and potentially psychedelics (where legal). This stage:</p>
+      <ul>
+        <li>Requires separate agreement and additional screening</li>
+        <li>Involves significantly elevated risks</li>
+        <li>May require medical supervision (depending on protocols selected)</li>
+        <li>Is optional - you can complete Stages 1-6 without ever entering Stage 7</li>
+        <li>Will have additional contraindications and eligibility requirements</li>
+      </ul>
+
+      <p className="font-bold">You will be presented with Stage 7 Addendum before accessing that tier.</p>
+
+      <h2>SECTION 7: VOLUNTARY PARTICIPATION</h2>
+
+      <h3>7.1 Freedom to Discontinue</h3>
+      <p className="font-bold">You understand that:</p>
+      <ul>
+        <li>☐ Participation is completely voluntary</li>
+        <li>☐ You may discontinue use at any time without penalty</li>
+        <li>☐ You may skip any practices that feel inappropriate for you</li>
+        <li>☐ You may proceed at your own pace</li>
+        <li>☐ No one will pressure you to continue if you wish to stop</li>
+      </ul>
+
+      <h3>7.2 No Coercion</h3>
+      <p className="font-bold">You affirm that:</p>
+      <ul>
+        <li>☐ You are participating of your own free will</li>
+        <li>☐ No one has coerced or pressured you to use this System</li>
+        <li>☐ You have had adequate time to consider this decision</li>
+        <li>☐ You have had opportunity to ask questions</li>
+        <li>☐ You have had opportunity to consult with professionals or advisors</li>
+      </ul>
+
+      <h2>SECTION 8: ACKNOWLEDGMENT OF ALTERNATIVES</h2>
+      <p className="font-bold">You understand that alternatives to this System include:</p>
+      <ul>
+        <li>Traditional psychotherapy or counseling</li>
+        <li>Medical treatment for mental health conditions</li>
+        <li>Conventional fitness and wellness programs</li>
+        <li>Meditation or mindfulness classes with human instructors</li>
+        <li>Other self-development programs or books</li>
+        <li>Professional coaching with licensed practitioners</li>
+      </ul>
+
+      <h2>SECTION 9: QUESTIONS & UNDERSTANDING</h2>
+      <p className="font-bold">Before accepting, ask yourself:</p>
+      <ul>
+        <li>Do I understand what the IOS System is and is not?</li>
+        <li>Do I understand the risks involved in the practices?</li>
+        <li>Have I disclosed all relevant medical and psychiatric information?</li>
+        <li>Do I understand my responsibilities as a participant?</li>
+        <li>Do I understand that this is not medical or mental health treatment?</li>
+        <li>Am I comfortable assuming the risks described?</li>
+        <li>Do I have questions I need answered before proceeding?</li>
+      </ul>
+
+      <p>If you have questions or concerns, contact: support@unbecoming.app</p>
+
+      <h2>SECTION 10: FINAL CONSENT STATEMENT</h2>
+      <p className="font-bold">By accepting below, I affirm that:</p>
+      <ul>
+        <li>I have read and understood this entire Informed Consent Agreement</li>
+        <li>I have received satisfactory answers to all my questions</li>
+        <li>I understand the nature, purpose, risks, and limitations of the IOS System</li>
+        <li>I understand this is NOT medical or mental health treatment</li>
+        <li>I have consulted (or will consult) appropriate professionals regarding any health conditions</li>
+        <li>I voluntarily assume all risks described in this document</li>
+        <li>I agree to all responsibilities outlined in this document</li>
+        <li>I release the Operator from liability as described in the Terms of Service</li>
+        <li>I will seek immediate professional help for any crisis or emergency situation</li>
+        <li>I understand I can discontinue participation at any time</li>
+      </ul>
+
+      <div className="bg-green-50 border-l-4 border-green-400 p-4 my-6">
+        <p className="font-bold text-green-800">ELECTRONIC CONSENT</p>
+        <p className="text-green-800 text-sm mt-2">
+          Your acceptance via checkbox and button click constitutes your legally binding electronic signature on this Informed Consent & Assumption of Risk Agreement. This electronic acceptance is equivalent to a handwritten signature and will be recorded with a timestamp for our records.
+        </p>
+      </div>
 
       <p className="text-sm text-center italic text-slate-600 mt-8">
         KEEP A COPY OF THIS DOCUMENT FOR YOUR RECORDS<br />
