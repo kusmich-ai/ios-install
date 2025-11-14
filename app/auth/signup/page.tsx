@@ -1,4 +1,4 @@
-// app/auth/signup/page.tsx - HANDLES BOTH EMAIL CONFIRMATION SCENARIOS
+// app/auth/signup/page.tsx - WITH NAME & STRONG PASSWORD
 'use client'
 
 import { useState } from 'react'
@@ -9,6 +9,7 @@ import Link from 'next/link'
 export default function SignUp() {
   const router = useRouter()
   const supabase = createClientComponentClient()
+  const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -16,14 +17,36 @@ export default function SignUp() {
   const [loading, setLoading] = useState(false)
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false)
 
+  // Password strength validation
+  const validatePassword = (pwd: string) => {
+    const minLength = pwd.length >= 8
+    const hasUpperCase = /[A-Z]/.test(pwd)
+    const hasNumber = /[0-9]/.test(pwd)
+    
+    return {
+      minLength,
+      hasUpperCase,
+      hasNumber,
+      isValid: minLength && hasUpperCase && hasNumber
+    }
+  }
+
+  const passwordValidation = validatePassword(password)
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
 
     // Validation
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters')
+    if (!fullName.trim()) {
+      setError('Please enter your name')
+      setLoading(false)
+      return
+    }
+
+    if (!passwordValidation.isValid) {
+      setError('Password must be at least 8 characters with 1 uppercase letter and 1 number')
       setLoading(false)
       return
     }
@@ -40,6 +63,9 @@ export default function SignUp() {
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
+          data: {
+            full_name: fullName.trim(),
+          }
         },
       })
 
@@ -102,7 +128,7 @@ export default function SignUp() {
           </div>
 
           <p className="text-sm text-gray-500 pt-4">
-            Didn't receive the email? Check your spam folder or contact support.
+            Didn't receive the email? Check your spam folder.
           </p>
         </div>
       </div>
@@ -111,8 +137,8 @@ export default function SignUp() {
 
   // Show signup form
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0a0a0a' }}>
-      <div className="max-w-md w-full space-y-8 p-8 rounded-lg shadow-lg" style={{ backgroundColor: '#111111' }}>
+    <div className="min-h-screen flex items-center justify-center py-8" style={{ backgroundColor: '#0a0a0a' }}>
+      <div className="max-w-md w-full space-y-6 p-8 rounded-lg shadow-lg" style={{ backgroundColor: '#111111' }}>
         <div>
           <h2 className="text-3xl font-bold text-center" style={{ color: '#ff9e19' }}>
             Create Account
@@ -123,12 +149,35 @@ export default function SignUp() {
         </div>
         
         {error && (
-          <div className="p-3 rounded" style={{ backgroundColor: '#ff9e1920', color: '#ff9e19', border: '1px solid #ff9e19' }}>
+          <div className="p-3 rounded text-sm" style={{ backgroundColor: '#ff9e1920', color: '#ff9e19', border: '1px solid #ff9e19' }}>
             {error}
           </div>
         )}
 
         <form onSubmit={handleSignUp} className="space-y-4">
+          {/* Full Name Field */}
+          <div>
+            <label htmlFor="fullName" className="block text-sm font-medium mb-1 text-gray-300">
+              Full Name
+            </label>
+            <input
+              id="fullName"
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              className="w-full px-3 py-2 rounded focus:outline-none focus:ring-2"
+              style={{ 
+                backgroundColor: '#0a0a0a', 
+                color: '#ffffff',
+                border: '1px solid #2a2a2a'
+              }}
+              placeholder="John Doe"
+              required
+              disabled={loading}
+            />
+          </div>
+
+          {/* Email Field */}
           <div>
             <label htmlFor="email" className="block text-sm font-medium mb-1 text-gray-300">
               Email Address
@@ -150,6 +199,7 @@ export default function SignUp() {
             />
           </div>
 
+          {/* Password Field */}
           <div>
             <label htmlFor="password" className="block text-sm font-medium mb-1 text-gray-300">
               Password
@@ -165,13 +215,29 @@ export default function SignUp() {
                 color: '#ffffff',
                 border: '1px solid #2a2a2a'
               }}
-              placeholder="At least 6 characters"
-              minLength={6}
+              placeholder="Min 8 characters"
+              minLength={8}
               required
               disabled={loading}
             />
+            
+            {/* Password Strength Indicators */}
+            {password && (
+              <div className="mt-2 space-y-1 text-xs">
+                <div className={passwordValidation.minLength ? 'text-green-400' : 'text-gray-500'}>
+                  {passwordValidation.minLength ? '✓' : '○'} At least 8 characters
+                </div>
+                <div className={passwordValidation.hasUpperCase ? 'text-green-400' : 'text-gray-500'}>
+                  {passwordValidation.hasUpperCase ? '✓' : '○'} One uppercase letter
+                </div>
+                <div className={passwordValidation.hasNumber ? 'text-green-400' : 'text-gray-500'}>
+                  {passwordValidation.hasNumber ? '✓' : '○'} One number
+                </div>
+              </div>
+            )}
           </div>
 
+          {/* Confirm Password Field */}
           <div>
             <label htmlFor="confirmPassword" className="block text-sm font-medium mb-1 text-gray-300">
               Confirm Password
@@ -188,7 +254,7 @@ export default function SignUp() {
                 border: '1px solid #2a2a2a'
               }}
               placeholder="Confirm your password"
-              minLength={6}
+              minLength={8}
               required
               disabled={loading}
             />
@@ -196,7 +262,7 @@ export default function SignUp() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !passwordValidation.isValid}
             className="w-full py-3 rounded font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ 
               backgroundColor: '#ff9e19',
