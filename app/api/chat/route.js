@@ -1,70 +1,59 @@
+// app/api/chat/route.js - CORRECTED VERSION
+
 import Anthropic from '@anthropic-ai/sdk';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-// GitHub raw URL to your instructions file
-const INSTRUCTIONS_URL = 'https://raw.githubusercontent.com/kusmich-ai/ios-install/main/instructions/system-prompt.txt';
+// Your complete IOS System Installer instructions
+const SYSTEM_PROMPT = `[PASTE YOUR ENTIRE PROJECT INSTRUCTIONS HERE]
 
-// Cache the prompt so we don't fetch it every time
-let cachedSystemPrompt = null;
-let lastFetchTime = 0;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+Your job is to guide users through the IOS (Integrated Operating System) installation - a neural and mental transformation protocol.
 
-async function getSystemPrompt() {
-  const now = Date.now();
-  
-  // Return cached version if still fresh
-  if (cachedSystemPrompt && (now - lastFetchTime) < CACHE_DURATION) {
-    return cachedSystemPrompt;
-  }
-  
-  try {
-    console.log('Fetching system prompt from GitHub...');
-    const response = await fetch(INSTRUCTIONS_URL, {
-      headers: {
-        'Cache-Control': 'no-cache',
-      },
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch instructions: ${response.status}`);
-    }
-    
-    cachedSystemPrompt = await response.text();
-    lastFetchTime = now;
-    console.log('System prompt loaded successfully');
-    
-    return cachedSystemPrompt;
-  } catch (error) {
-    console.error('Error fetching system prompt:', error);
-    
-    // Fallback: use cached version even if expired
-    if (cachedSystemPrompt) {
-      console.log('Using cached system prompt as fallback');
-      return cachedSystemPrompt;
-    }
-    
-    throw error;
-  }
-}
+You are witty, ruthless when needed, empowering, and scientifically grounded. You don't coddle - you hold standards while respecting the user's intelligence.
+
+The system has 7 progressive stages that unlock based on competence, not time. Each stage adds new practices that stack on previous ones.
+
+You track adherence, calculate deltas, and determine when users are ready to unlock the next stage.`;
 
 export async function POST(req) {
-  const { messages, userId, baselineData } = await req.json();
+  try {
+    const { messages, userId, baselineData } = await req.json();
 
-    // Fetch system prompt
-    const systemPrompt = await getSystemPrompt();
+    // Build context about user's baseline if available
+    let systemContext = SYSTEM_PROMPT;
+    
+    if (baselineData) {
+      systemContext += `\n\n=== CURRENT USER CONTEXT ===
+User ID: ${userId}
+REwired Index: ${baselineData.rewiredIndex}/100
+Tier: ${baselineData.tier}
+Current Stage: ${baselineData.currentStage}
+
+Domain Scores:
+- Regulation: ${baselineData.domainScores.regulation}/5
+- Awareness: ${baselineData.domainScores.awareness}/5
+- Outlook: ${baselineData.domainScores.outlook}/5
+- Attention: ${baselineData.domainScores.attention}/5
+
+Use this baseline data to contextualize your coaching and track their progress.`;
+    }
 
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 8192,
-      system: systemPrompt,
+      system: systemContext,
       messages: messages,
     });
 
     return Response.json({
       content: response.content,
+      id: response.id,
+      model: response.model,
+      role: response.role,
+      stop_reason: response.stop_reason,
+      usage: response.usage,
     });
 
   } catch (error) {
