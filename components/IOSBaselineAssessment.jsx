@@ -478,7 +478,7 @@ const IOSBaselineAssessment = ({ user }) => {
       presence_test: normalizedScore
     }));
 
-    // Wait a moment for state to update, then calculate final results
+    // Calculate and store results immediately (no redirect, user clicks button)
     setTimeout(() => {
       calculateAndStoreResults(normalizedScore, finalTime, finalCycles);
     }, 100);
@@ -536,8 +536,7 @@ const IOSBaselineAssessment = ({ user }) => {
     // Store in Supabase
     await storeBaselineData(resultsData);
     
-    // Navigate to chat interface
-    window.location.href = '/chat';
+    // User will manually click "Start Your IOS Install Now" button to go to /chat
   };
 
   // Store baseline data in Supabase
@@ -799,66 +798,220 @@ const IOSBaselineAssessment = ({ user }) => {
       );
     }
 
-    // BCT Completed - Show Results
+    // BCT Completed - Show Full Assessment Results
     if (bctCompleted && bctScore) {
-      const percentage = (bctScore.normalizedScore / 5) * 100;
+      // Calculate all domain scores for display
+      const calmCoreScore = sectionScores.calm_core || calculateSectionScore('calm_core');
+      const observerScore = sectionScores.observer_index || calculateSectionScore('observer_index');
+      const vitalityScore = sectionScores.vitality_index || calculateSectionScore('vitality_index');
+      const focusScore = sectionScores.focus_diagnostic || calculateSectionScore('focus_diagnostic');
+      const presenceScore = bctScore.normalizedScore;
+      
+      const domainScores = {
+        regulation: calmCoreScore,
+        awareness: observerScore,
+        outlook: vitalityScore,
+        attention: (focusScore + presenceScore) / 2
+      };
+      
+      const rewiredIndex = Math.round(
+        ((domainScores.regulation + domainScores.awareness + domainScores.outlook + domainScores.attention) / 4) * 20
+      );
+      
+      let tier;
+      if (rewiredIndex >= 81) tier = 'Integrated (Embodied)';
+      else if (rewiredIndex >= 61) tier = 'Optimized (Coherent)';
+      else if (rewiredIndex >= 41) tier = 'Operational (Stabilizing)';
+      else if (rewiredIndex >= 21) tier = 'Baseline Mode (Installing...)';
+      else tier = 'System Offline (Critical)';
       
       return (
         <div className="min-h-screen p-4 sm:p-8" style={{ backgroundColor: '#0a0a0a' }}>
-          <div className="max-w-2xl mx-auto">
-            <div className="p-8 rounded-lg shadow-lg" style={{ backgroundColor: '#111111', border: '1px solid #1a1a1a' }}>
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: orangeAccent }}>
-                  <Check size={32} className="text-white" />
+          <div className="max-w-4xl mx-auto">
+            <div className="p-8 rounded-lg shadow-lg mb-6" style={{ backgroundColor: '#111111', border: '1px solid #1a1a1a' }}>
+              
+              {/* Header */}
+              <div className="text-center mb-8">
+                <div className="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: orangeAccent }}>
+                  <Check size={40} className="text-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-white mb-2">Assessment Complete</h2>
-                <p className="text-gray-400">Calculating your REwired Index...</p>
+                <h1 className="text-3xl font-bold text-white mb-2">Baseline Assessment Complete</h1>
+                <p className="text-gray-400">Your neural and mental operating system starting point</p>
               </div>
 
-              <div className="p-6 rounded-lg mb-6" style={{ backgroundColor: '#0a0a0a' }}>
-                <div className="text-center mb-4">
-                  {bctScore.perfect && (
-                    <div className="mb-4">
-                      <div className="text-2xl font-bold" style={{ color: orangeAccent }}>
-                        🎉 PERFECT SCORE
-                      </div>
-                      <p className="text-sm text-gray-400">You completed all 5 cycles!</p>
-                    </div>
-                  )}
-                  
-                  <div className="text-5xl font-bold text-white mb-2">
-                    {bctScore.normalizedScore}<span className="text-2xl text-gray-500">/5</span>
-                  </div>
-                  <div className="text-lg font-semibold" style={{ color: orangeAccent }}>
-                    Sustained Attention Score
-                  </div>
+              {/* REwired Index - Hero Score */}
+              <div className="p-8 rounded-lg mb-8 text-center" style={{ backgroundColor: '#0a0a0a', border: `2px solid ${orangeAccent}` }}>
+                <div className="text-sm text-gray-400 mb-2">YOUR REWIRED INDEX</div>
+                <div className="text-7xl font-bold mb-3" style={{ color: orangeAccent }}>
+                  {rewiredIndex}
                 </div>
-
-                <div className="w-full rounded-full h-4 mb-4" style={{ backgroundColor: '#1a1a1a' }}>
+                <div className="text-2xl font-semibold text-white mb-2">{tier}</div>
+                <div className="w-full rounded-full h-3 mt-4" style={{ backgroundColor: '#1a1a1a' }}>
                   <div 
-                    className="h-4 rounded-full transition-all duration-500"
+                    className="h-3 rounded-full transition-all duration-500"
                     style={{ 
                       backgroundColor: orangeAccent,
-                      width: `${percentage}%`
+                      width: `${rewiredIndex}%`
                     }}
                   />
                 </div>
+              </div>
 
-                <div className="text-sm text-gray-400 space-y-2">
-                  <div className="flex justify-between">
-                    <span>Attention Duration:</span>
-                    <span className="font-semibold text-white">{formatTime(bctScore.timeToFailure)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Cycles Completed:</span>
-                    <span className="font-semibold text-white">{bctScore.cyclesCompleted} / 5</span>
-                  </div>
+              {/* Commentary */}
+              <div className="mb-8 p-6 rounded-lg" style={{ backgroundColor: '#0a0a0a' }}>
+                <h2 className="text-xl font-bold text-white mb-4">What This Means</h2>
+                <div className="text-gray-300 space-y-3 text-sm leading-relaxed">
+                  <p>
+                    Your REwired Index of <strong style={{ color: orangeAccent }}>{rewiredIndex}</strong> represents 
+                    your current baseline across four critical domains: regulation, awareness, outlook, and attention.
+                  </p>
+                  <p>
+                    {rewiredIndex < 41 && "Your system is currently operating below optimal capacity. The IOS will systematically upgrade each domain through progressive stage unlocks."}
+                    {rewiredIndex >= 41 && rewiredIndex < 61 && "You have a functional baseline with room for significant optimization. The IOS will build on your existing capacity."}
+                    {rewiredIndex >= 61 && rewiredIndex < 81 && "You're operating at a coherent level with established self-regulation. The IOS will refine and expand your capabilities."}
+                    {rewiredIndex >= 81 && "You have strong baseline capacity. The IOS will focus on advanced integration and performance expansion."}
+                  </p>
+                  <p>
+                    This score isn't a judgment—it's a starting coordinate. The system tracks your progress 
+                    from this point as you install each stage of the IOS.
+                  </p>
                 </div>
               </div>
 
-              <div className="text-center text-sm text-gray-400">
-                Redirecting to IOS Installer...
+              {/* Domain Breakdown */}
+              <div className="mb-8">
+                <h2 className="text-xl font-bold text-white mb-4">Domain Scores</h2>
+                <div className="space-y-4">
+                  
+                  {/* Regulation */}
+                  <div className="p-4 rounded-lg" style={{ backgroundColor: '#0a0a0a' }}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-3">
+                        <Brain size={24} className="text-blue-500" />
+                        <div>
+                          <div className="font-semibold text-white">Regulation</div>
+                          <div className="text-xs text-gray-400">Stress management & autonomic control</div>
+                        </div>
+                      </div>
+                      <div className="text-2xl font-bold text-white">{domainScores.regulation.toFixed(1)}<span className="text-sm text-gray-500">/5</span></div>
+                    </div>
+                    <div className="w-full rounded-full h-2" style={{ backgroundColor: '#1a1a1a' }}>
+                      <div 
+                        className="h-2 rounded-full transition-all duration-500"
+                        style={{ 
+                          backgroundColor: '#3b82f6',
+                          width: `${(domainScores.regulation / 5) * 100}%`
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Awareness */}
+                  <div className="p-4 rounded-lg" style={{ backgroundColor: '#0a0a0a' }}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-3">
+                        <Target size={24} className="text-purple-500" />
+                        <div>
+                          <div className="font-semibold text-white">Awareness</div>
+                          <div className="text-xs text-gray-400">Meta-awareness & decentering capacity</div>
+                        </div>
+                      </div>
+                      <div className="text-2xl font-bold text-white">{domainScores.awareness.toFixed(1)}<span className="text-sm text-gray-500">/5</span></div>
+                    </div>
+                    <div className="w-full rounded-full h-2" style={{ backgroundColor: '#1a1a1a' }}>
+                      <div 
+                        className="h-2 rounded-full transition-all duration-500"
+                        style={{ 
+                          backgroundColor: '#a855f7',
+                          width: `${(domainScores.awareness / 5) * 100}%`
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Outlook */}
+                  <div className="p-4 rounded-lg" style={{ backgroundColor: '#0a0a0a' }}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-3">
+                        <Sun size={24} className="text-yellow-500" />
+                        <div>
+                          <div className="font-semibold text-white">Outlook</div>
+                          <div className="text-xs text-gray-400">Positive affect & vitality</div>
+                        </div>
+                      </div>
+                      <div className="text-2xl font-bold text-white">{domainScores.outlook.toFixed(1)}<span className="text-sm text-gray-500">/5</span></div>
+                    </div>
+                    <div className="w-full rounded-full h-2" style={{ backgroundColor: '#1a1a1a' }}>
+                      <div 
+                        className="h-2 rounded-full transition-all duration-500"
+                        style={{ 
+                          backgroundColor: '#eab308',
+                          width: `${(domainScores.outlook / 5) * 100}%`
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Attention */}
+                  <div className="p-4 rounded-lg" style={{ backgroundColor: '#0a0a0a' }}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-3">
+                        <Focus size={24} className="text-green-500" />
+                        <div>
+                          <div className="font-semibold text-white">Attention</div>
+                          <div className="text-xs text-gray-400">Focus quality & sustained attention</div>
+                        </div>
+                      </div>
+                      <div className="text-2xl font-bold text-white">{domainScores.attention.toFixed(1)}<span className="text-sm text-gray-500">/5</span></div>
+                    </div>
+                    <div className="w-full rounded-full h-2" style={{ backgroundColor: '#1a1a1a' }}>
+                      <div 
+                        className="h-2 rounded-full transition-all duration-500"
+                        style={{ 
+                          backgroundColor: '#22c55e',
+                          width: `${(domainScores.attention / 5) * 100}%`
+                        }}
+                      />
+                    </div>
+                    <div className="text-xs text-gray-500 mt-2">
+                      Focus Diagnostic: {focusScore.toFixed(1)} • Presence Test: {presenceScore.toFixed(1)}
+                    </div>
+                  </div>
+
+                </div>
               </div>
+
+              {/* Presence Test Highlight */}
+              {bctScore.perfect && (
+                <div className="p-6 rounded-lg mb-8" style={{ backgroundColor: '#0a0a0a', border: '2px solid #10b981' }}>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-500 mb-2">🎉 Perfect Attention Score</div>
+                    <p className="text-gray-300 text-sm">
+                      You completed all 5 breath counting cycles without losing count—exceptional sustained attention capacity.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Next Steps */}
+              <div className="p-6 rounded-lg mb-6" style={{ backgroundColor: '#0a0a0a' }}>
+                <h2 className="text-xl font-bold text-white mb-3">What Happens Next</h2>
+                <p className="text-gray-300 text-sm leading-relaxed">
+                  The IOS Installer will guide you through 7 progressive stages, starting with Stage 1: Neural Priming. 
+                  Each stage unlocks when your nervous system demonstrates readiness through adherence and delta improvements. 
+                  You'll track progress daily, with weekly check-ins measuring transformation from this baseline.
+                </p>
+              </div>
+
+              {/* CTA Button */}
+              <button
+                onClick={() => window.location.href = '/chat'}
+                className="w-full px-8 py-6 rounded-lg font-bold text-white text-xl transition-all transform hover:scale-105"
+                style={{ backgroundColor: orangeAccent }}
+              >
+                Start Your IOS Install Now
+              </button>
+
             </div>
           </div>
         </div>
