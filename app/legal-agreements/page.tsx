@@ -539,7 +539,8 @@ function TermsOfService() {
           Your acceptance via checkbox and button click constitutes your legally binding electronic signature on this Informed Consent & Assumption of Risk Agreement. This electronic acceptance is equivalent to a handwritten signature and will be recorded with a timestamp for our records.
         </p>
       </div>
-  );
+      </div>
+    );
 }
 
 // Informed Consent Component
