@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import '@/lib/storage-client'; // ✅ Import the client version
 
 export default function ChatInterface({ user, baselineData }) {
   const [messages, setMessages] = useState([]);
@@ -11,47 +10,72 @@ export default function ChatInterface({ user, baselineData }) {
   const messagesEndRef = useRef(null);
   const hasInitialized = useRef(false);
 
+  // Debug logging
+  useEffect(() => {
+    console.log('ChatInterface mounted');
+    console.log('User:', user);
+    console.log('Baseline Data:', baselineData);
+  }, []);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   useEffect(() => {
-    // Prevent double initialization
-    if (hasInitialized.current) return;
+    if (hasInitialized.current) {
+      console.log('Already initialized, skipping');
+      return;
+    }
     
     const initConversation = async () => {
       try {
-        // Validate baselineData exists
+        console.log('Initializing conversation...');
+        
         if (!baselineData) {
+          console.error('No baseline data provided');
           setError('Baseline data not found. Please complete the assessment.');
           return;
         }
 
-        // Create initialization message with baseline context
+        if (!user) {
+          console.error('No user provided');
+          setError('User not found. Please sign in.');
+          return;
+        }
+
         const initMessage = `Hello. I've completed my baseline assessment. My REwired Index is ${baselineData.rewiredIndex}/100 (${baselineData.tier}). My domain scores are: Regulation ${baselineData.domainScores.regulation}/5, Awareness ${baselineData.domainScores.awareness}/5, Outlook ${baselineData.domainScores.outlook}/5, Attention ${baselineData.domainScores.attention}/5. I'm currently at Stage ${baselineData.currentStage}.`;
+
+        console.log('Sending initial message:', initMessage);
 
         const greeting = await sendToAPI([
           { role: 'user', content: initMessage }
         ]);
         
         if (greeting) {
+          console.log('Received greeting:', greeting.substring(0, 100) + '...');
           setMessages([{ role: 'assistant', content: greeting }]);
         }
         
         hasInitialized.current = true;
+        console.log('Initialization complete');
       } catch (error) {
         console.error('Error initializing conversation:', error);
-        setError('Failed to initialize conversation. Please refresh the page.');
+        setError(`Failed to initialize: ${error.message}`);
       }
     };
 
     if (user && baselineData) {
+      console.log('Starting initialization...');
       initConversation();
+    } else {
+      console.log('Missing requirements:', { hasUser: !!user, hasBaseline: !!baselineData });
     }
-  }, [user, baselineData]); // Added proper dependencies
+  }, [user, baselineData]);
 
   const sendToAPI = async (messageHistory) => {
     try {
+      console.log('Sending to API:', messageHistory);
+      
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -62,11 +86,16 @@ export default function ChatInterface({ user, baselineData }) {
         }),
       });
 
+      console.log('API response status:', response.status);
+
       if (!response.ok) {
-        throw new Error(`API request failed: ${response.status}`);
+        const errorText = await response.text();
+        console.error('API error response:', errorText);
+        throw new Error(`API request failed: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
+      console.log('API response data:', data);
 
       if (data.error) {
         throw new Error(data.error);
@@ -74,8 +103,8 @@ export default function ChatInterface({ user, baselineData }) {
 
       return data.content[0].text;
     } catch (error) {
-      console.error('Error:', error);
-      setError('Sorry, there was an error. Please try again.');
+      console.error('sendToAPI error:', error);
+      setError(`API error: ${error.message}`);
       return null;
     }
   };
@@ -84,7 +113,9 @@ export default function ChatInterface({ user, baselineData }) {
     e.preventDefault();
     if (!input.trim() || loading) return;
 
-    setError(null); // Clear any previous errors
+    console.log('Sending message:', input);
+    setError(null);
+    
     const userMessage = { role: 'user', content: input };
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
@@ -101,7 +132,10 @@ export default function ChatInterface({ user, baselineData }) {
   };
 
   const renderBaselineDashboard = () => {
-    if (!baselineData) return null;
+    if (!baselineData) {
+      console.log('No baseline data to render');
+      return null;
+    }
 
     const orangeAccent = '#ff9e19';
 
@@ -157,37 +191,44 @@ export default function ChatInterface({ user, baselineData }) {
     );
   };
 
-  // Show error state if initialization failed
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-screen" style={{ backgroundColor: '#0a0a0a' }}>
-        <div className="text-red-500 mb-4">{error}</div>
-        <button
-          onClick={() => window.location.reload()}
-          className="px-6 py-2 text-white rounded-lg"
-          style={{ backgroundColor: '#ff9e19' }}
-        >
-          Reload Page
-        </button>
+        <div className="max-w-md p-8 rounded-lg" style={{ backgroundColor: '#111111' }}>
+          <h2 className="text-xl font-bold mb-4" style={{ color: '#ff9e19' }}>Error</h2>
+          <p className="text-gray-400 mb-4">{error}</p>
+          <div className="space-y-2">
+            <button
+              onClick={() => window.location.reload()}
+              className="w-full px-6 py-2 text-white rounded-lg"
+              style={{ backgroundColor: '#ff9e19' }}
+            >
+              Reload Page
+            </button>
+            <button
+              onClick={() => window.location.href = '/assessment'}
+              className="w-full px-6 py-2 text-white rounded-lg bg-gray-600"
+            >
+              Back to Assessment
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col h-screen max-w-4xl mx-auto" style={{ backgroundColor: '#0a0a0a' }}>
-      {/* Header */}
       <div className="p-4 shadow-lg" style={{ backgroundColor: '#111111' }}>
         <h1 className="text-2xl font-bold" style={{ color: '#ff9e19' }}>IOS System Installer</h1>
         <p className="text-sm text-gray-400">Neural & Mental Operating System</p>
         {user && <p className="text-xs text-gray-500 mt-1">{user.email}</p>}
       </div>
 
-      {/* Baseline Dashboard */}
       <div className="p-4">
         {renderBaselineDashboard()}
       </div>
 
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((msg, idx) => (
           <div
@@ -220,7 +261,6 @@ export default function ChatInterface({ user, baselineData }) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
       <form onSubmit={sendMessage} className="border-t p-4" style={{ backgroundColor: '#111111', borderColor: '#1a1a1a' }}>
         <div className="flex gap-2">
           <input
