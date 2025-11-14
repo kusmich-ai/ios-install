@@ -59,9 +59,9 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL('/legal-agreement', req.url))
     }
 
-    // Check baseline completion - FIXED TABLE NAME
+    // Check baseline completion
     const { data: baseline } = await supabase
-      .from('baseline_assessments') // ✅ Changed from baseline_scores
+      .from('baseline_assessments')
       .select('id')
       .eq('user_id', session.user.id)
       .single()
@@ -70,7 +70,7 @@ export async function middleware(req: NextRequest) {
     if (legal?.accepted_at && !baseline?.id && path !== '/assessment') {
       return NextResponse.redirect(new URL('/assessment', req.url))
     }
-  }
+  } // ✅ This closing brace was missing!
 
   // If authenticated and on auth pages (except callback and landing page), redirect based on progress
   if (session && isPublicRoute && !path.includes('/callback') && path !== '/') {
@@ -82,3 +82,38 @@ export async function middleware(req: NextRequest) {
 
     if (!screening?.clearance_level) {
       return NextResponse.redirect(new URL('/screening', req.url))
+    }
+
+    const { data: legal } = await supabase
+      .from('legal_acceptances')
+      .select('accepted_at')
+      .eq('user_id', session.user.id)
+      .single()
+
+    if (!legal?.accepted_at) {
+      return NextResponse.redirect(new URL('/legal-agreement', req.url))
+    }
+
+    // Check baseline completion
+    const { data: baseline } = await supabase
+      .from('baseline_assessments')
+      .select('id')
+      .eq('user_id', session.user.id)
+      .single()
+
+    if (!baseline?.id) {
+      return NextResponse.redirect(new URL('/assessment', req.url))
+    }
+
+    // Everything complete, go to chat
+    return NextResponse.redirect(new URL('/chat', req.url))
+  }
+
+  return res
+}
+
+export const config = {
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
+}
