@@ -52,7 +52,7 @@ export default function LegalAgreements() {
       if (progressError) throw progressError;
 
       // Proceed to baseline assessment
-      router.push('/baseline');
+      router.push('/assessment');
     } catch (err) {
       console.error('Error accepting agreements:', err);
       setError('Failed to save your acceptance. Please try again.');
