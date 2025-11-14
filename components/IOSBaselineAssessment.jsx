@@ -96,24 +96,24 @@ const IOSBaselineAssessment = ({ user }) => {
         },
         {
           id: 'confidence_handle',
-          text: 'In the last week, how often have you felt confident about your ability to handle your personal problems?',
+          text: 'In the last week, how often have you felt unable to handle your personal problems?',
           scale: [
-            { value: 4, label: 'Never' },
-            { value: 3, label: 'Almost Never' },
+            { value: 0, label: 'Never' },
+            { value: 1, label: 'Almost Never' },
             { value: 2, label: 'Sometimes' },
-            { value: 1, label: 'Fairly Often' },
-            { value: 0, label: 'Very Often' }
+            { value: 3, label: 'Fairly Often' },
+            { value: 4, label: 'Very Often' }
           ]
         },
         {
           id: 'things_going',
-          text: 'In the last week, how often have you felt that things were going your way?',
+          text: 'In the last week, how often have you felt that things were NOT going your way?',
           scale: [
-            { value: 4, label: 'Never' },
-            { value: 3, label: 'Almost Never' },
+            { value: 0, label: 'Never' },
+            { value: 1, label: 'Almost Never' },
             { value: 2, label: 'Sometimes' },
-            { value: 1, label: 'Fairly Often' },
-            { value: 0, label: 'Very Often' }
+            { value: 3, label: 'Fairly Often' },
+            { value: 4, label: 'Very Often' }
           ]
         },
         {
@@ -362,31 +362,32 @@ const IOSBaselineAssessment = ({ user }) => {
     }
   ];
 
-  // Calculate section score
-const calculateSectionScore = (sectionId) => {
-  const section = sections.find(s => s.id === sectionId);
-  if (!section || section.isBCT) return 0;
-  
-  const questionIds = section.questions.map(q => q.id);
-  const sectionResponses = questionIds.map(id => responses[id] || 0);
-  
-  if (sectionResponses.length === 0) return 0;
-  
-  const sum = sectionResponses.reduce((acc, val) => acc + val, 0);
-  
-  // Special handling for Calm Core Assessment (Regulation domain)
-  // The questions measure STRESS, so we need to invert for REGULATION score
-  if (sectionId === 'calm_core') {
-    const maxStress = questionIds.length * 4; // Max possible stress (0-16 for 4 questions)
-    const stressPercentage = sum / maxStress; // 0-1 scale
-    const regulationScore = (1 - stressPercentage) * 5; // Inverted to 0-5
-    return parseFloat(regulationScore.toFixed(2));
-  }
-  
-  // For all other sections, use standard calculation
-  const maxPossible = questionIds.length * 5;
-  return parseFloat(((sum / maxPossible) * 5).toFixed(2));
-};
+  // Calculate section score - CORRECTED VERSION
+  const calculateSectionScore = (sectionId) => {
+    const section = sections.find(s => s.id === sectionId);
+    if (!section || section.isBCT) return 0;
+    
+    const questionIds = section.questions.map(q => q.id);
+    const sectionResponses = questionIds.map(id => responses[id] || 0);
+    
+    if (sectionResponses.length === 0) return 0;
+    
+    const sum = sectionResponses.reduce((acc, val) => acc + val, 0);
+    
+    // Special handling for Calm Core Assessment (Regulation domain)
+    // All questions now measure STRESS (0-4 scale, higher = more stress)
+    // We need to invert for REGULATION score (higher = better regulation)
+    if (sectionId === 'calm_core') {
+      const maxStress = questionIds.length * 4; // 4 questions × 4 max = 16
+      const stressPercentage = sum / maxStress; // 0-1 scale (0 = no stress, 1 = max stress)
+      const regulationScore = (1 - stressPercentage) * 5; // Inverted to 0-5 (0 = poor regulation, 5 = excellent)
+      return parseFloat(regulationScore.toFixed(2));
+    }
+    
+    // For all other sections, use standard calculation
+    const maxPossible = questionIds.length * 5;
+    return parseFloat(((sum / maxPossible) * 5).toFixed(2));
+  };
 
   // Handle answer selection
   const handleAnswer = (questionId, value) => {
