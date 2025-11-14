@@ -1,8 +1,6 @@
 'use client';
+
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { useRouter } from 'next/navigation';
 
 export default function Home() {
   return (
@@ -35,7 +33,7 @@ export default function Home() {
             Sign In
           </Link>
         </div>
-
+        
         <p className="text-sm text-gray-500 mt-8">
           7-day free trial • No credit card required
         </p>
