@@ -1,4 +1,4 @@
-// app/auth/signup/page.tsx - DARK THEME VERSION
+// app/auth/signup/page.tsx - HANDLES BOTH EMAIL CONFIRMATION SCENARIOS
 'use client'
 
 import { useState } from 'react'
@@ -14,6 +14,7 @@ export default function SignUp() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false)
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -34,7 +35,7 @@ export default function SignUp() {
     }
 
     try {
-      const { error: signUpError } = await supabase.auth.signUp({
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -44,8 +45,18 @@ export default function SignUp() {
 
       if (signUpError) throw signUpError
 
-      // Redirect to signin after successful signup
-      router.push('/auth/signin?message=Account created! Please sign in.')
+      // Check if user has a session (email confirmation disabled)
+      if (data.session) {
+        // Email confirmation is DISABLED - user is auto-logged in
+        console.log('✅ Auto-signed in, redirecting to screening...')
+        router.refresh()
+        setTimeout(() => router.push('/screening'), 100)
+      } else {
+        // Email confirmation is ENABLED - show confirmation message
+        console.log('📧 Email confirmation required')
+        setAwaitingConfirmation(true)
+        setLoading(false)
+      }
       
     } catch (error: any) {
       console.error('Sign up error:', error)
@@ -54,6 +65,51 @@ export default function SignUp() {
     }
   }
 
+  // Show email confirmation screen
+  if (awaitingConfirmation) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0a0a0a' }}>
+        <div className="max-w-md w-full space-y-6 p-8 rounded-lg shadow-lg text-center" style={{ backgroundColor: '#111111' }}>
+          <div className="text-6xl mb-4" style={{ color: '#ff9e19' }}>📧</div>
+          
+          <h2 className="text-3xl font-bold" style={{ color: '#ff9e19' }}>
+            Check Your Email
+          </h2>
+          
+          <div className="space-y-4 text-gray-300">
+            <p>
+              We've sent a confirmation link to:
+            </p>
+            <p className="font-semibold text-white text-lg">
+              {email}
+            </p>
+            <p className="text-sm">
+              Click the link in the email to verify your account, then sign in to continue.
+            </p>
+          </div>
+
+          <div className="pt-4">
+            <Link
+              href="/auth/signin"
+              className="inline-block px-8 py-3 rounded-lg font-semibold transition-all"
+              style={{ 
+                backgroundColor: '#ff9e19',
+                color: '#0a0a0a'
+              }}
+            >
+              Go to Sign In
+            </Link>
+          </div>
+
+          <p className="text-sm text-gray-500 pt-4">
+            Didn't receive the email? Check your spam folder or contact support.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show signup form
   return (
     <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0a0a0a' }}>
       <div className="max-w-md w-full space-y-8 p-8 rounded-lg shadow-lg" style={{ backgroundColor: '#111111' }}>
