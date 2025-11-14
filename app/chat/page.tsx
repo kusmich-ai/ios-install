@@ -1,5 +1,4 @@
-// app/chat/page.tsx - FIXED VERSION with proper null checks
-
+// app/chat/page.tsx
 import { redirect } from 'next/navigation';
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
@@ -16,85 +15,75 @@ export default async function ChatPage() {
     redirect('/auth/signin');
   }
 
-  // Try to load baseline data with proper null checks
   let baselineData = null;
   
   try {
     console.log('📊 Loading baseline data for user:', user.id);
     
-    // Query all baseline data with proper error handling
-    const { data: rewiredIndexData, error: rewiredError } = await supabase
+    // Query all baseline data in a single query for efficiency
+    const { data: allUserData, error } = await supabase
       .from('user_data')
-      .select('value')
+      .select('key, value')
       .eq('user_id', user.id)
-      .eq('key', 'ios:baseline:rewired_index')
-      .single();
-    
-    const { data: tierData, error: tierError } = await supabase
-      .from('user_data')
-      .select('value')
-      .eq('user_id', user.id)
-      .eq('key', 'ios:baseline:tier')
-      .single();
-    
-    const { data: domainScoresData, error: domainError } = await supabase
-      .from('user_data')
-      .select('value')
-      .eq('user_id', user.id)
-      .eq('key', 'ios:baseline:domain_scores')
-      .single();
-    
-    const { data: currentStageData, error: stageError } = await supabase
-      .from('user_data')
-      .select('value')
-      .eq('user_id', user.id)
-      .eq('key', 'ios:current_stage')
-      .single();
-    
-    // Check if ALL data exists before parsing
-    if (
-      rewiredIndexData?.value && 
-      tierData?.value && 
-      domainScoresData?.value && 
-      currentStageData?.value
-    ) {
-      // Parse with try-catch for extra safety
-      try {
-        const rewiredIndex = JSON.parse(rewiredIndexData.value);
-        const tier = JSON.parse(tierData.value);
-        const domainScores = JSON.parse(domainScoresData.value);
-        const currentStage = JSON.parse(currentStageData.value);
-        
-        baselineData = {
-          rewiredIndex,
-          tier,
-          domainScores,
-          currentStage
-        };
-        
-        console.log('✅ Baseline data loaded successfully:', baselineData);
-      } catch (parseError) {
-        console.error('❌ Error parsing baseline data:', parseError);
-      }
-    } else {
-      console.log('⚠️ Incomplete baseline data - user needs to complete assessment');
-      console.log('Missing:', {
-        rewiredIndex: !rewiredIndexData?.value,
-        tier: !tierData?.value,
-        domainScores: !domainScoresData?.value,
-        currentStage: !currentStageData?.value
-      });
-      
-      // If they haven't completed baseline, redirect to assessment
+      .in('key', [
+        'ios:baseline:rewired_index',
+        'ios:baseline:tier',
+        'ios:baseline:domain_scores',
+        'ios:current_stage'
+      ]);
+
+    if (error) {
+      console.error('❌ Error fetching baseline data:', error);
       redirect('/assessment');
     }
+
+    if (!allUserData || allUserData.length === 0) {
+      console.log('⚠️ No baseline data found - redirecting to assessment');
+      redirect('/assessment');
+    }
+
+    // Convert array to object for easier access
+    const dataMap = allUserData.reduce((acc, item) => {
+      acc[item.key] = item.value;
+      return acc;
+    }, {} as Record<string, string>);
+
+    // Check if all required keys exist
+    const requiredKeys = [
+      'ios:baseline:rewired_index',
+      'ios:baseline:tier',
+      'ios:baseline:domain_scores',
+      'ios:current_stage'
+    ];
+
+    const missingKeys = requiredKeys.filter(key => !dataMap[key]);
+    
+    if (missingKeys.length > 0) {
+      console.log('⚠️ Incomplete baseline data. Missing:', missingKeys);
+      redirect('/assessment');
+    }
+
+    // Parse all data
+    try {
+      baselineData = {
+        rewiredIndex: JSON.parse(dataMap['ios:baseline:rewired_index']),
+        tier: JSON.parse(dataMap['ios:baseline:tier']),
+        domainScores: JSON.parse(dataMap['ios:baseline:domain_scores']),
+        currentStage: JSON.parse(dataMap['ios:current_stage'])
+      };
+      
+      console.log('✅ Baseline data loaded successfully:', baselineData);
+    } catch (parseError) {
+      console.error('❌ Error parsing baseline data:', parseError);
+      redirect('/assessment');
+    }
+
   } catch (error) {
-    console.error('❌ Error loading baseline data:', error);
-    // If error loading baseline, redirect to assessment
+    console.error('❌ Unexpected error loading baseline data:', error);
     redirect('/assessment');
   }
 
-  // If we got here but baselineData is still null, redirect to assessment
+  // Final null check
   if (!baselineData) {
     redirect('/assessment');
   }
