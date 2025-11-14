@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import '@/lib/storage'; // Fixed import path
+import '@/lib/storage-client'; // ✅ Import the client version
 
 export default function ChatInterface({ user, baselineData }) {
   const [messages, setMessages] = useState([]);
