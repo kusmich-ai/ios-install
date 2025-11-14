@@ -103,7 +103,7 @@ export default async function ChatPage() {
     console.error('💥 Unexpected error in chat page:', error);
     console.error('Stack:', error instanceof Error ? error.stack : 'No stack');
     
-    // Instead of redirecting, show the error
+    // Return error component instead of JSX with issues
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-900">
         <div className="max-w-md p-8 bg-gray-800 rounded-lg">
