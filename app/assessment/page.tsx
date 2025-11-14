@@ -1,3 +1,4 @@
+// app/assessment/page.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -52,5 +53,6 @@ export default function AssessmentPage() {
   }
 
   // Pass user to component so it can save to Supabase
+  // @ts-ignore - Component accepts user prop but types not updated
   return <IOSBaselineAssessment user={user} />
 }
