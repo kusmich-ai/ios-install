@@ -1,39 +1,54 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import '../lib/storage'; // Import storage to make window.storage available
+import '@/lib/storage'; // Fixed import path
 
 export default function ChatInterface({ user, baselineData }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const messagesEndRef = useRef(null);
+  const hasInitialized = useRef(false);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   useEffect(() => {
-    // Initialize conversation with baseline data context
+    // Prevent double initialization
+    if (hasInitialized.current) return;
+    
     const initConversation = async () => {
-      // Create initialization message with baseline context
-      const initMessage = baselineData 
-        ? `Hello. I've completed my baseline assessment. My REwired Index is ${baselineData.rewiredIndex}/100 (${baselineData.tier}). My domain scores are: Regulation ${baselineData.domainScores.regulation}/5, Awareness ${baselineData.domainScores.awareness}/5, Outlook ${baselineData.domainScores.outlook}/5, Attention ${baselineData.domainScores.attention}/5. I'm currently at Stage ${baselineData.currentStage}.`
-        : 'Hello';
+      try {
+        // Validate baselineData exists
+        if (!baselineData) {
+          setError('Baseline data not found. Please complete the assessment.');
+          return;
+        }
 
-      const greeting = await sendToAPI([
-        { role: 'user', content: initMessage }
-      ]);
-      
-      if (greeting) {
-        setMessages([{ role: 'assistant', content: greeting }]);
+        // Create initialization message with baseline context
+        const initMessage = `Hello. I've completed my baseline assessment. My REwired Index is ${baselineData.rewiredIndex}/100 (${baselineData.tier}). My domain scores are: Regulation ${baselineData.domainScores.regulation}/5, Awareness ${baselineData.domainScores.awareness}/5, Outlook ${baselineData.domainScores.outlook}/5, Attention ${baselineData.domainScores.attention}/5. I'm currently at Stage ${baselineData.currentStage}.`;
+
+        const greeting = await sendToAPI([
+          { role: 'user', content: initMessage }
+        ]);
+        
+        if (greeting) {
+          setMessages([{ role: 'assistant', content: greeting }]);
+        }
+        
+        hasInitialized.current = true;
+      } catch (error) {
+        console.error('Error initializing conversation:', error);
+        setError('Failed to initialize conversation. Please refresh the page.');
       }
     };
 
-    if (messages.length === 0 && user) {
+    if (user && baselineData) {
       initConversation();
     }
-  }, [user, baselineData]);
+  }, [user, baselineData]); // Added proper dependencies
 
   const sendToAPI = async (messageHistory) => {
     try {
@@ -43,9 +58,13 @@ export default function ChatInterface({ user, baselineData }) {
         body: JSON.stringify({
           messages: messageHistory,
           userId: user?.id,
-          baselineData: baselineData, // Send baseline context with each message
+          baselineData: baselineData,
         }),
       });
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`);
+      }
 
       const data = await response.json();
 
@@ -56,7 +75,8 @@ export default function ChatInterface({ user, baselineData }) {
       return data.content[0].text;
     } catch (error) {
       console.error('Error:', error);
-      return 'Sorry, there was an error. Please try again.';
+      setError('Sorry, there was an error. Please try again.');
+      return null;
     }
   };
 
@@ -64,6 +84,7 @@ export default function ChatInterface({ user, baselineData }) {
     e.preventDefault();
     if (!input.trim() || loading) return;
 
+    setError(null); // Clear any previous errors
     const userMessage = { role: 'user', content: input };
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
@@ -79,7 +100,6 @@ export default function ChatInterface({ user, baselineData }) {
     setLoading(false);
   };
 
-  // Show baseline dashboard at top
   const renderBaselineDashboard = () => {
     if (!baselineData) return null;
 
@@ -136,6 +156,22 @@ export default function ChatInterface({ user, baselineData }) {
       </div>
     );
   };
+
+  // Show error state if initialization failed
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen" style={{ backgroundColor: '#0a0a0a' }}>
+        <div className="text-red-500 mb-4">{error}</div>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-6 py-2 text-white rounded-lg"
+          style={{ backgroundColor: '#ff9e19' }}
+        >
+          Reload Page
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-screen max-w-4xl mx-auto" style={{ backgroundColor: '#0a0a0a' }}>
