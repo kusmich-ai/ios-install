@@ -37,43 +37,43 @@ export async function middleware(req: NextRequest) {
     
     // Check screening completion
     const { data: screening } = await supabase
-      .from('screening_responses') // ✅ Changed from 'screenings' to match your actual table
+      .from('screening_responses')
       .select('clearance_level')
       .eq('user_id', session.user.id)
       .single()
 
-    // ✅ FIXED: Only redirect if NOT on screening page AND screening not complete
+    // Only redirect if NOT on screening page AND screening not complete
     if (!screening?.clearance_level && path !== '/screening') {
       return NextResponse.redirect(new URL('/screening', req.url))
     }
 
     // Check legal agreement acceptance
     const { data: legal } = await supabase
-      .from('legal_acceptances') // ✅ Changed from 'legal_agreements' to match your actual table
+      .from('legal_acceptances')
       .select('accepted_at')
       .eq('user_id', session.user.id)
       .single()
 
-    // ✅ FIXED: Only redirect if NOT on legal page AND screening done but legal not accepted
+    // Only redirect if NOT on legal page AND screening done but legal not accepted
     if (screening?.clearance_level && !legal?.accepted_at && path !== '/legal-agreement') {
       return NextResponse.redirect(new URL('/legal-agreement', req.url))
     }
 
     // Check baseline completion
     const { data: baseline } = await supabase
-      .from('baseline_scores') // ✅ Changed to match your actual table
+      .from('baseline_scores')
       .select('rewired_index')
       .eq('user_id', session.user.id)
       .single()
 
-    // ✅ FIXED: Only redirect if NOT on assessment page AND legal done but baseline not complete
+    // Only redirect if NOT on assessment page AND legal done but baseline not complete
     if (legal?.accepted_at && !baseline?.rewired_index && path !== '/assessment') {
       return NextResponse.redirect(new URL('/assessment', req.url))
     }
   }
 
-  // If authenticated and on auth pages (except callback), redirect based on progress
-  if (session && isPublicRoute && !path.includes('/callback')) {
+  // If authenticated and on auth pages (except callback and landing page), redirect based on progress
+  if (session && isPublicRoute && !path.includes('/callback') && path !== '/') {
     const { data: screening } = await supabase
       .from('screening_responses')
       .select('clearance_level')
