@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation'; // CHANGED: next/navigation instead of next/router
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase-client'
 import { 
   AlertCircle, 
   CheckCircle2, 
@@ -64,7 +64,7 @@ interface ClearanceResult {
 
 export default function ScreeningPage() {
   const router = useRouter();
-const supabase = createClientComponentClient(); 
+const supabase = createClient() 
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [currentSection, setCurrentSection] = useState(1);
