@@ -490,8 +490,14 @@ useEffect(() => {
                   <p className="text-zinc-400">These questions help ensure the IOS System is safe for you right now.</p>
                 </div>
               </div>
-
-              <div className="space-y-4">
+{/* ADD THIS NEW INSTRUCTION BANNER */}
+    <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-6">
+      <p className="text-blue-400 font-medium mb-1">Instructions:</p>
+      <p className="text-zinc-300 text-sm">
+        Check any boxes that apply to you. If none apply, leave them all unchecked and click "Next Section" below.
+      </p>
+    </div>
+               <div className="space-y-4">
                 <label className="flex items-start gap-3 p-4 bg-zinc-800/50 rounded-lg cursor-pointer hover:bg-zinc-800 transition-colors">
                   <input
                     type="checkbox"
