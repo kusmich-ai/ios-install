@@ -416,8 +416,15 @@ const IOSBaselineAssessment = ({ user }) => {
 
   // BCT Handlers
   const handleBctNextBreath = () => {
+    if (bctBreathCount < 9) {
+      setBctBreathCount(prev => prev + 1);
+    }
+    // After 9th breath, user must click "Complete Cycle"
+  };
+
+  const handleBctCompleteCycle = () => {
     if (bctBreathCount === 9) {
-      // Completed a cycle
+      // Valid cycle completion
       const newCycleCount = bctCycleCount + 1;
       setBctCycleCount(newCycleCount);
       setBctBreathCount(1);
@@ -427,7 +434,8 @@ const IOSBaselineAssessment = ({ user }) => {
         handleBctComplete(bctElapsedTime, newCycleCount, 'perfect');
       }
     } else {
-      setBctBreathCount(prev => prev + 1);
+      // Clicked complete cycle at wrong count - test ends (miscount)
+      handleBctComplete(bctElapsedTime, bctCycleCount, 'miscount_wrong_count');
     }
   };
 
@@ -647,19 +655,37 @@ const IOSBaselineAssessment = ({ user }) => {
               </div>
 
               <div className="space-y-4 text-gray-300 mb-6">
-                <p className="text-lg">
+                <p className="text-lg font-semibold">
                   This final assessment measures your sustained attention through breath counting.
                 </p>
 
                 <div className="p-4 rounded-lg" style={{ backgroundColor: '#0a0a0a' }}>
-                  <h3 className="font-bold text-white mb-3">How It Works:</h3>
-                  <ol className="space-y-2 list-decimal list-inside">
-                    <li>Count each breath from 1 to 9, then start over at 1</li>
-                    <li>Click "Next Breath" after each breath</li>
-                    <li>After the 9th breath, the cycle completes automatically</li>
-                    <li>If you lose count, click "Lost Count" immediately</li>
-                    <li>Maximum time: 3 minutes</li>
+                  <h3 className="font-bold text-white mb-3">Instructions - Read Carefully:</h3>
+                  <ol className="space-y-3 list-decimal list-inside">
+                    <li className="leading-relaxed">
+                      <strong>Count silently in your mind:</strong> Count each breath from 1 to 9
+                    </li>
+                    <li className="leading-relaxed">
+                      <strong>For breaths 1-8:</strong> After each breath, click the "Next Breath" button
+                    </li>
+                    <li className="leading-relaxed">
+                      <strong>After breath 9:</strong> Click "Complete Cycle" - this marks the end of the cycle and restarts your count at 1
+                    </li>
+                    <li className="leading-relaxed">
+                      <strong>Repeat:</strong> Continue cycles until you complete 5 full cycles or reach 3 minutes
+                    </li>
+                    <li className="leading-relaxed">
+                      <strong>Lost count?</strong> Click "Lost Count" immediately - the test ends when you lose track
+                    </li>
                   </ol>
+                </div>
+
+                <div className="p-4 rounded-lg" style={{ backgroundColor: '#1a1a1a', border: `1px solid ${orangeAccent}` }}>
+                  <p className="text-sm" style={{ color: orangeAccent }}>
+                    <strong>Important:</strong> You must keep track of the count entirely in your mind. 
+                    There will be no on-screen counter helping you. If you click the wrong button at the wrong time, 
+                    the test ends immediately.
+                  </p>
                 </div>
 
                 <p className="text-sm text-gray-400">
@@ -698,11 +724,8 @@ const IOSBaselineAssessment = ({ user }) => {
 
             {/* Timer Display */}
             <div className="text-center mb-8">
-              <div className="text-6xl font-bold mb-4" style={{ color: orangeAccent }}>
-                {bctBreathCount}
-              </div>
-              <div className="text-gray-400 mb-4">
-                Breath {bctBreathCount} of 9 (Cycle {bctCycleCount + 1}/5)
+              <div className="text-gray-400 mb-6">
+                Cycle {bctCycleCount + 1} of 5
               </div>
               <div className="text-2xl font-mono text-gray-300 mb-4">
                 {formatTime(bctElapsedTime)} / 3:00
@@ -729,6 +752,17 @@ const IOSBaselineAssessment = ({ user }) => {
               </button>
 
               <button
+                onClick={handleBctCompleteCycle}
+                className="w-full px-6 py-6 rounded-lg font-semibold text-white text-xl transition-all"
+                style={{ 
+                  backgroundColor: '#10b981',
+                  border: '2px solid #10b981'
+                }}
+              >
+                Complete Cycle
+              </button>
+
+              <button
                 onClick={handleBctLostCount}
                 className="w-full px-6 py-4 rounded-lg font-semibold transition-all"
                 style={{ 
@@ -742,7 +776,7 @@ const IOSBaselineAssessment = ({ user }) => {
             </div>
 
             <p className="text-center text-sm text-gray-500 mt-6">
-              Click "Next Breath" after each breath. Be honest - click "Lost Count" the moment you drift.
+              Count silently in your mind. Click "Next Breath" for breaths 1-8, then "Complete Cycle" after breath 9.
             </p>
           </div>
         </div>
