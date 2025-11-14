@@ -1,17 +1,22 @@
-// middleware.ts
+// middleware.ts - SIMPLIFIED (No database checks)
 import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next()
+  const path = req.nextUrl.pathname
+  
+  // Add logging to help debug
+  console.log('🔍 Middleware:', path)
+  
   const supabase = createMiddlewareClient({ req, res })
 
   const {
     data: { session },
   } = await supabase.auth.getSession()
 
-  const path = req.nextUrl.pathname
+  console.log('🔐 Session:', session ? 'YES' : 'NO')
 
   // Public routes that don't require authentication
   const publicRoutes = [
@@ -27,88 +32,20 @@ export async function middleware(req: NextRequest) {
 
   // If not authenticated and trying to access protected route
   if (!session && !isPublicRoute) {
+    console.log('❌ No session, redirecting to signin')
     const redirectUrl = new URL('/auth/signin', req.url)
     redirectUrl.searchParams.set('redirectTo', path)
     return NextResponse.redirect(redirectUrl)
   }
 
-  // If authenticated, enforce the flow: screening → legal → assessment → chat
-  if (session && !isPublicRoute) {
-    
-    // Check screening completion
-    const { data: screening } = await supabase
-      .from('screening_responses')
-      .select('clearance_level')
-      .eq('user_id', session.user.id)
-      .single()
-
-    // Only redirect if NOT on screening page AND screening not complete
-    if (!screening?.clearance_level && path !== '/screening') {
-      return NextResponse.redirect(new URL('/screening', req.url))
-    }
-
-    // Check legal agreement acceptance
-    const { data: legal } = await supabase
-      .from('legal_acceptances')
-      .select('accepted_at')
-      .eq('user_id', session.user.id)
-      .single()
-
-    // Only redirect if NOT on legal page AND screening done but legal not accepted
-    if (screening?.clearance_level && !legal?.accepted_at && path !== '/legal-agreement') {
-      return NextResponse.redirect(new URL('/legal-agreement', req.url))
-    }
-
-    // Check baseline completion
-    const { data: baseline } = await supabase
-      .from('baseline_assessments')
-      .select('id')
-      .eq('user_id', session.user.id)
-      .single()
-
-    // Only redirect if NOT on assessment page AND legal done but baseline not complete
-    if (legal?.accepted_at && !baseline?.id && path !== '/assessment') {
-      return NextResponse.redirect(new URL('/assessment', req.url))
-    }
-  } // ✅ This closing brace was missing!
-
-  // If authenticated and on auth pages (except callback and landing page), redirect based on progress
-  if (session && isPublicRoute && !path.includes('/callback') && path !== '/') {
-    const { data: screening } = await supabase
-      .from('screening_responses')
-      .select('clearance_level')
-      .eq('user_id', session.user.id)
-      .single()
-
-    if (!screening?.clearance_level) {
-      return NextResponse.redirect(new URL('/screening', req.url))
-    }
-
-    const { data: legal } = await supabase
-      .from('legal_acceptances')
-      .select('accepted_at')
-      .eq('user_id', session.user.id)
-      .single()
-
-    if (!legal?.accepted_at) {
-      return NextResponse.redirect(new URL('/legal-agreement', req.url))
-    }
-
-    // Check baseline completion
-    const { data: baseline } = await supabase
-      .from('baseline_assessments')
-      .select('id')
-      .eq('user_id', session.user.id)
-      .single()
-
-    if (!baseline?.id) {
-      return NextResponse.redirect(new URL('/assessment', req.url))
-    }
-
-    // Everything complete, go to chat
-    return NextResponse.redirect(new URL('/chat', req.url))
+  // If authenticated and on auth pages (except callback)
+  if (session && isPublicRoute && !path.includes('/callback')) {
+    console.log('✅ Has session but on auth page, redirecting to screening')
+    return NextResponse.redirect(new URL('/screening', req.url))
   }
 
+  // For all other authenticated requests, let pages handle their own logic
+  console.log('✅ Allowing through')
   return res
 }
 
