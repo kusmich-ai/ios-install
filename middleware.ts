@@ -1,13 +1,39 @@
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
+import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-export async function middleware(req: NextRequest) {
-  const res = NextResponse.next()
-  const supabase = createMiddlewareClient({ req, res })
+export async function middleware(request: NextRequest) {
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  })
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          )
+          response = NextResponse.next({
+            request,
+          })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          )
+        },
+      },
+    }
+  )
 
   // Get current path
-  const path = req.nextUrl.pathname
+  const path = request.nextUrl.pathname
 
   // CRITICAL: Refresh session before checking auth
   const { data: { session } } = await supabase.auth.getSession()
@@ -34,11 +60,11 @@ export async function middleware(req: NextRequest) {
           .from('screening_responses')
           .select('clearance_status')
           .eq('user_id', session.user.id)
-          .maybeSingle() // Use maybeSingle instead of single to avoid errors if no record
+          .maybeSingle()
 
         if (!screening) {
           // No screening completed - send to screening
-          return NextResponse.redirect(new URL('/screening', req.url))
+          return NextResponse.redirect(new URL('/screening', request.url))
         }
 
         // Has screening - check legal
@@ -51,7 +77,7 @@ export async function middleware(req: NextRequest) {
 
         if (!legal) {
           // No legal acceptance - send to legal
-          return NextResponse.redirect(new URL('/legal-agreements', req.url))
+          return NextResponse.redirect(new URL('/legal-agreements', request.url))
         }
 
         // Has legal - check baseline
@@ -63,20 +89,20 @@ export async function middleware(req: NextRequest) {
 
         if (!baseline) {
           // No baseline - send to assessment
-          return NextResponse.redirect(new URL('/assessment', req.url))
+          return NextResponse.redirect(new URL('/assessment', request.url))
         }
 
         // Everything complete - send to chat
-        return NextResponse.redirect(new URL('/chat', req.url))
+        return NextResponse.redirect(new URL('/chat', request.url))
       } catch (error) {
         console.error('Error checking user progress:', error)
         // On error, send to screening (safest default)
-        return NextResponse.redirect(new URL('/screening', req.url))
+        return NextResponse.redirect(new URL('/screening', request.url))
       }
     }
 
     // Public route, not authenticated or not on auth page - allow access
-    return res
+    return response
   }
 
   // ============================================
@@ -85,7 +111,7 @@ export async function middleware(req: NextRequest) {
   
   if (!session) {
     // Not authenticated - redirect to signin
-    return NextResponse.redirect(new URL('/auth/signin', req.url))
+    return NextResponse.redirect(new URL('/auth/signin', request.url))
   }
 
   // User is authenticated - check if they're on the right step
@@ -101,7 +127,7 @@ export async function middleware(req: NextRequest) {
 
       if (screening && screening.clearance_status === 'granted') {
         // Already passed screening - send to legal
-        return NextResponse.redirect(new URL('/legal-agreements', req.url))
+        return NextResponse.redirect(new URL('/legal-agreements', request.url))
       }
     } catch (error) {
       console.error('Error checking screening:', error)
@@ -120,7 +146,7 @@ export async function middleware(req: NextRequest) {
 
       if (legal) {
         // Already accepted legal - send to assessment
-        return NextResponse.redirect(new URL('/assessment', req.url))
+        return NextResponse.redirect(new URL('/assessment', request.url))
       }
     } catch (error) {
       console.error('Error checking legal:', error)
@@ -138,7 +164,7 @@ export async function middleware(req: NextRequest) {
 
       if (baseline) {
         // Already completed assessment - send to chat
-        return NextResponse.redirect(new URL('/chat', req.url))
+        return NextResponse.redirect(new URL('/chat', request.url))
       }
     } catch (error) {
       console.error('Error checking baseline:', error)
@@ -146,7 +172,7 @@ export async function middleware(req: NextRequest) {
   }
 
   // Allow access to current route
-  return res
+  return response
 }
 
 export const config = {
@@ -158,6 +184,4 @@ export const config = {
      * - favicon.ico (favicon file)
      * - public files (images, etc)
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-  ],
-}
+    '/((?!_next/static|_next/image|favicon.ico
