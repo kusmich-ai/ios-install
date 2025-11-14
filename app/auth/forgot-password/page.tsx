@@ -2,11 +2,11 @@
 'use client'
 
 import { useState } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase-client'
 import Link from 'next/link'
 
 export default function ForgotPassword() {
-  const supabase = createClientComponentClient()
+  const supabase = createClient()
   const [email, setEmail] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
