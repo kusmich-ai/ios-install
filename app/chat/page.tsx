@@ -10,7 +10,7 @@ export default function ChatPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [conversationState, setConversationState] = useState('init')
   const [userData, setUserData] = useState(null)
-  const messagesEndRef = useRef(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
