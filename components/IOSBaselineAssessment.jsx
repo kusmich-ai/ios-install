@@ -363,20 +363,30 @@ const IOSBaselineAssessment = ({ user }) => {
   ];
 
   // Calculate section score
-  const calculateSectionScore = (sectionId) => {
-    const section = sections.find(s => s.id === sectionId);
-    if (!section || section.isBCT) return 0;
-    
-    const questionIds = section.questions.map(q => q.id);
-    const sectionResponses = questionIds.map(id => responses[id] || 0);
-    
-    if (sectionResponses.length === 0) return 0;
-    
-    const sum = sectionResponses.reduce((acc, val) => acc + val, 0);
-    const maxPossible = questionIds.length * 5;
-    
-    return (sum / maxPossible) * 5;
-  };
+const calculateSectionScore = (sectionId) => {
+  const section = sections.find(s => s.id === sectionId);
+  if (!section || section.isBCT) return 0;
+  
+  const questionIds = section.questions.map(q => q.id);
+  const sectionResponses = questionIds.map(id => responses[id] || 0);
+  
+  if (sectionResponses.length === 0) return 0;
+  
+  const sum = sectionResponses.reduce((acc, val) => acc + val, 0);
+  
+  // Special handling for Calm Core Assessment (Regulation domain)
+  // The questions measure STRESS, so we need to invert for REGULATION score
+  if (sectionId === 'calm_core') {
+    const maxStress = questionIds.length * 4; // Max possible stress (0-16 for 4 questions)
+    const stressPercentage = sum / maxStress; // 0-1 scale
+    const regulationScore = (1 - stressPercentage) * 5; // Inverted to 0-5
+    return parseFloat(regulationScore.toFixed(2));
+  }
+  
+  // For all other sections, use standard calculation
+  const maxPossible = questionIds.length * 5;
+  return parseFloat(((sum / maxPossible) * 5).toFixed(2));
+};
 
   // Handle answer selection
   const handleAnswer = (questionId, value) => {
