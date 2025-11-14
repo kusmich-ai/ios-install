@@ -1,8 +1,10 @@
-// app/chat/page.tsx
 import { redirect } from 'next/navigation';
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import ChatInterface from '@/components/ChatInterface';
+
+// ✅ ADD THIS LINE - Forces dynamic rendering
+export const dynamic = 'force-dynamic';
 
 export default async function ChatPage() {
   const supabase = createServerComponentClient({ cookies });
@@ -20,7 +22,7 @@ export default async function ChatPage() {
   try {
     console.log('📊 Loading baseline data for user:', user.id);
     
-    // Query all baseline data in a single query for efficiency
+    // Query all baseline data in a single query
     const { data: allUserData, error } = await supabase
       .from('user_data')
       .select('key, value')
@@ -83,7 +85,6 @@ export default async function ChatPage() {
     redirect('/assessment');
   }
 
-  // Final null check
   if (!baselineData) {
     redirect('/assessment');
   }
