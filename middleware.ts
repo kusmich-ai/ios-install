@@ -33,12 +33,14 @@ export async function middleware(req: NextRequest) {
   }
 
   // If authenticated and on auth pages (except callback), redirect to screening
+  // Let the screening page itself handle checking completion status
   if (session && isPublicRoute && !path.includes('/callback')) {
     return NextResponse.redirect(new URL('/screening', req.url))
   }
 
-  // For authenticated users on protected pages, let them through
-  // The individual pages will handle their own flow logic
+  // For all other authenticated requests to protected pages:
+  // Just let them through - the individual pages will handle their own flow logic
+  // This prevents the middleware from causing redirect loops by checking the database
   return res
 }
 
