@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation' // ← App Router: next/navigation
 import IOSBaselineAssessment from '@/components/IOSBaselineAssessment'
 
 export default function AssessmentPage() {
-  const [user, setUser] = useState(null)
+  const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const supabase = createClientComponentClient()
   const router = useRouter()
