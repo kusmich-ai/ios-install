@@ -101,11 +101,12 @@ export default function LegalAgreements() {
         </div>
 
         {/* Document Display */}
-        <div className="bg-white rounded-lg shadow-xl overflow-hidden mb-6">
-          <div className="h-[500px] overflow-y-auto p-8 prose prose-slate max-w-none">
-            {activeTab === 'tos' ? <TermsOfService /> : <InformedConsent />}
-          </div>
-        </div>
+        {/* Document Display */}
+<div className="bg-white rounded-lg shadow-xl overflow-hidden mb-6">
+  <div className="h-[500px] overflow-y-auto p-8 prose prose-gray max-w-none text-gray-800">
+    {activeTab === 'tos' ? <TermsOfService /> : <InformedConsent />}
+  </div>
+</div>
 
         {/* Acceptance Checkboxes */}
         <div className="bg-slate-800 rounded-lg p-6 mb-6">
