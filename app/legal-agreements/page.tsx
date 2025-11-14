@@ -101,7 +101,6 @@ export default function LegalAgreements() {
         </div>
 
         {/* Document Display */}
-        {/* Document Display */}
 <div className="bg-white rounded-lg shadow-xl overflow-hidden mb-6">
   <div className="h-[500px] overflow-y-auto p-8 prose prose-gray max-w-none text-gray-800">
     {activeTab === 'tos' ? <TermsOfService /> : <InformedConsent />}
@@ -173,6 +172,12 @@ export default function LegalAgreements() {
 // Terms of Service Component
 function TermsOfService() {
   return (
+        <div className="text-gray-800">
+      <h1 className="text-gray-900">INTEGRATED OPERATING SYSTEM (IOS) - TERMS OF SERVICE</h1>
+      {/* rest of content */}
+    </div>
+  );
+}
     <>
       <h1>INTEGRATED OPERATING SYSTEM (IOS) - TERMS OF SERVICE</h1>
       <p className="text-sm text-slate-600">
@@ -548,6 +553,12 @@ function TermsOfService() {
 function InformedConsent() {
   return (
     <>
+          <div className="text-gray-800">
+      <h1 className="text-gray-900">IOS SYSTEM - INFORMED CONSENT & ASSUMPTION OF RISK AGREEMENT</h1>
+      {/* rest of content */}
+    </div>
+  );
+}
       <h1>IOS SYSTEM - INFORMED CONSENT & ASSUMPTION OF RISK AGREEMENT</h1>
       <p className="text-sm text-slate-600">
         Effective Date: [INSERT DATE]<br />
