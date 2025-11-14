@@ -19,8 +19,8 @@ export async function middleware(req: NextRequest) {
     '/auth/signup', 
     '/auth/forgot-password',
     '/auth/reset-password',
-    '/auth/callback', // IMPORTANT: Allow callback
-    '/', // Landing page
+    '/auth/callback',
+    '/',
   ]
   
   const isPublicRoute = publicRoutes.some(route => path.startsWith(route))
@@ -37,74 +37,70 @@ export async function middleware(req: NextRequest) {
     
     // Check screening completion
     const { data: screening } = await supabase
-      .from('screenings')
-      .select('completed')
+      .from('screening_responses') // ✅ Changed from 'screenings' to match your actual table
+      .select('clearance_level')
       .eq('user_id', session.user.id)
       .single()
 
-    // If no screening and not on screening page, redirect to screening
-    if (!screening?.completed && path !== '/screening') {
+    // ✅ FIXED: Only redirect if NOT on screening page AND screening not complete
+    if (!screening?.clearance_level && path !== '/screening') {
       return NextResponse.redirect(new URL('/screening', req.url))
     }
 
     // Check legal agreement acceptance
     const { data: legal } = await supabase
-      .from('legal_agreements')
-      .select('accepted')
+      .from('legal_acceptances') // ✅ Changed from 'legal_agreements' to match your actual table
+      .select('accepted_at')
       .eq('user_id', session.user.id)
       .single()
 
-    // If screening done but no legal agreement and not on legal page
-    if (screening?.completed && !legal?.accepted && path !== '/legal-agreement') {
+    // ✅ FIXED: Only redirect if NOT on legal page AND screening done but legal not accepted
+    if (screening?.clearance_level && !legal?.accepted_at && path !== '/legal-agreement') {
       return NextResponse.redirect(new URL('/legal-agreement', req.url))
     }
 
     // Check baseline completion
     const { data: baseline } = await supabase
-      .from('baseline_assessments')
-      .select('id')
+      .from('baseline_scores') // ✅ Changed to match your actual table
+      .select('rewired_index')
       .eq('user_id', session.user.id)
       .single()
 
-    // If legal done but no baseline and not on assessment page
-    if (legal?.accepted && !baseline && path !== '/assessment') {
+    // ✅ FIXED: Only redirect if NOT on assessment page AND legal done but baseline not complete
+    if (legal?.accepted_at && !baseline?.rewired_index && path !== '/assessment') {
       return NextResponse.redirect(new URL('/assessment', req.url))
     }
-
-    // If everything is complete, allow access to chat
-    // (This is automatic - no redirect needed)
   }
 
   // If authenticated and on auth pages (except callback), redirect based on progress
   if (session && isPublicRoute && !path.includes('/callback')) {
-    // Check where they are in the flow
     const { data: screening } = await supabase
-      .from('screenings')
-      .select('completed')
+      .from('screening_responses')
+      .select('clearance_level')
       .eq('user_id', session.user.id)
       .single()
 
-    if (!screening?.completed) {
+    if (!screening?.clearance_level) {
       return NextResponse.redirect(new URL('/screening', req.url))
     }
 
     const { data: legal } = await supabase
-      .from('legal_agreements')
-      .select('accepted')
+      .from('legal_acceptances')
+      .select('accepted_at')
       .eq('user_id', session.user.id)
       .single()
 
-    if (!legal?.accepted) {
+    if (!legal?.accepted_at) {
       return NextResponse.redirect(new URL('/legal-agreement', req.url))
     }
 
     const { data: baseline } = await supabase
-      .from('baseline_assessments')
-      .select('id')
+      .from('baseline_scores')
+      .select('rewired_index')
       .eq('user_id', session.user.id)
       .single()
 
-    if (!baseline) {
+    if (!baseline?.rewired_index) {
       return NextResponse.redirect(new URL('/assessment', req.url))
     }
 
@@ -117,13 +113,6 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public files (public folder)
-     */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
