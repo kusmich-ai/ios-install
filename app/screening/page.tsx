@@ -14,7 +14,6 @@ import {
   Pill,
   User
 } from 'lucide-react';
-);
 
 interface ScreeningResponse {
   // Crisis Indicators (B1)
