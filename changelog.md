@@ -14,6 +14,96 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.12.2] - 2025-11-14
+
+### Added
+- **BCT (Breath Counting Task) full integration into baseline assessment**
+  - Integrated as 5th assessment section (Presence Test) instead of standalone page
+  - Manual cycle completion after breath 8 (no auto-cycling)
+  - Mental counting requirement - all visual breath count displays removed
+  - Enhanced instructions emphasizing "long, slow, deep breaths throughout"
+  - Visual button feedback with scale animations on press
+  - Proper data flow to Supabase with all required fields:
+    - `presence_test_score`
+    - `presence_test_elapsed_seconds`
+    - `presence_test_cycles_completed`
+    - Calculated `attention_domain` scores
+
+- **Comprehensive results summary page**
+  - Displays calculated REwired Index (0-100 scale)
+  - Domain breakdowns with personalized commentary
+  - Tier classification display
+  - Manual "Start Your IOS Install Now" button
+  - Routes to `/chat` for Stage 1 onboarding (no auto-redirect)
+
+- **Email confirmation support**
+  - Intelligent detection of Supabase email confirmation setting
+  - Handles both scenarios (confirmation enabled/disabled)
+  - Enhanced signup flow with email verification messaging
+
+- **Full name field in signup**
+  - Added to user profile collection
+  - Stored in Supabase user metadata
+
+### Fixed
+- **Chat page server-side exception**
+  - Added comprehensive null checks for storage API results
+  - Proper validation before accessing `.value` properties
+  - Error handling for missing baseline data
+
+- **Layout.tsx forcing dynamic rendering**
+  - Removed auth checks from root layout
+  - Eliminated middleware conflicts on public pages
+  - Individual pages now handle their own authentication
+
+- **useSearchParams Suspense boundary error**
+  - Wrapped signin page searchParams usage in Suspense component
+  - Added appropriate fallback UI during parameter loading
+  - Build now completes without Next.js 13+ warnings
+
+- **Legal agreements text contrast**
+  - Changed text colors from light gray to dark gray (`text-gray-800`, `text-gray-900`)
+  - Added `prose-gray` for better readability
+  - White sections now have proper contrast
+
+- **Assessment routing flow**
+  - Corrected `/legal-agreements` redirect from `/baseline` → `/assessment`
+  - Assessment now properly includes BCT before completion
+  - Removed auto-redirect to `/chat`, replaced with manual button in results
+
+- **Screening page loading state**
+  - Fixed Supabase client initialization
+  - Changed from `createClient` to `createClientComponentClient`
+  - Preserved all existing screening functionality (5 sections, clearance logic, crisis resources)
+
+### Changed
+- **Authentication pages styling consistency**
+  - Updated signin/signup pages to match dark theme
+  - Applied orange accent color (#ff9e19) throughout
+  - Consistent UI/UX across all auth flows
+
+- **Password validation enhancement**
+  - Minimum 8 characters required
+  - Must include uppercase letter
+  - Must include number
+  - Real-time visual feedback on requirements
+
+- **Assessment flow architecture**
+  - BCT integrated as final assessment section (not separate page)
+  - Results page with manual progression (not auto-routing)
+  - Clearer user control over flow progression
+
+### Documentation
+- **Updated application flow:**
+  1. Signup → Email confirmation (if enabled)
+  2. Screening (5 sections with clearance evaluation)
+  3. Legal Agreements (Terms + Informed Consent)
+  4. Baseline Assessment (5 assessments including BCT)
+  5. Results Summary (REwired Index display)
+  6. Chat (Stage 1 onboarding)
+
+---
+
 ## [0.12.1] - 2025-11-14
 
 ### Fixed
