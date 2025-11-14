@@ -1,4 +1,4 @@
-// app/auth/signin/page.tsx - FIXED VERSION
+// app/auth/signin/page.tsx - DARK THEME VERSION
 'use client'
 
 import { useState, Suspense } from 'react'
@@ -44,24 +44,26 @@ function SignInForm() {
   }
 
   return (
-    <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow">
-      <h2 className="text-3xl font-bold text-center">Sign In</h2>
+    <div className="max-w-md w-full space-y-8 p-8 rounded-lg shadow-lg" style={{ backgroundColor: '#111111' }}>
+      <h2 className="text-3xl font-bold text-center" style={{ color: '#ff9e19' }}>
+        Sign In
+      </h2>
       
       {message && (
-        <div className="bg-green-50 text-green-600 p-3 rounded">
+        <div className="p-3 rounded" style={{ backgroundColor: '#22c55e20', color: '#22c55e', border: '1px solid #22c55e' }}>
           {message}
         </div>
       )}
 
       {error && (
-        <div className="bg-red-50 text-red-600 p-3 rounded">
+        <div className="p-3 rounded" style={{ backgroundColor: '#ff9e1920', color: '#ff9e19', border: '1px solid #ff9e19' }}>
           {error}
         </div>
       )}
 
       <form onSubmit={handleSignIn} className="space-y-4">
         <div>
-          <label htmlFor="email" className="block text-sm font-medium mb-1">
+          <label htmlFor="email" className="block text-sm font-medium mb-1 text-gray-300">
             Email
           </label>
           <input
@@ -69,14 +71,19 @@ function SignInForm() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 rounded focus:outline-none focus:ring-2"
+            style={{ 
+              backgroundColor: '#0a0a0a', 
+              color: '#ffffff',
+              border: '1px solid #2a2a2a'
+            }}
             required
             disabled={loading}
           />
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-sm font-medium mb-1">
+          <label htmlFor="password" className="block text-sm font-medium mb-1 text-gray-300">
             Password
           </label>
           <input
@@ -84,7 +91,12 @@ function SignInForm() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 rounded focus:outline-none focus:ring-2"
+            style={{ 
+              backgroundColor: '#0a0a0a', 
+              color: '#ffffff',
+              border: '1px solid #2a2a2a'
+            }}
             required
             disabled={loading}
           />
@@ -93,7 +105,8 @@ function SignInForm() {
         <div className="flex items-center justify-end">
           <Link 
             href="/auth/forgot-password" 
-            className="text-sm text-blue-600 hover:underline"
+            className="text-sm hover:underline"
+            style={{ color: '#ff9e19' }}
           >
             Forgot password?
           </Link>
@@ -102,15 +115,19 @@ function SignInForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="w-full py-3 rounded font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{ 
+            backgroundColor: '#ff9e19',
+            color: '#0a0a0a'
+          }}
         >
           {loading ? 'Signing in...' : 'Sign In'}
         </button>
       </form>
 
-      <p className="text-center text-sm">
+      <p className="text-center text-sm text-gray-400">
         Don't have an account?{' '}
-        <Link href="/auth/signup" className="text-blue-600 hover:underline">
+        <Link href="/auth/signup" className="hover:underline" style={{ color: '#ff9e19' }}>
           Sign up
         </Link>
       </p>
@@ -121,10 +138,10 @@ function SignInForm() {
 // Main component with Suspense boundary
 export default function SignIn() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0a0a0a' }}>
       <Suspense fallback={
-        <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow">
-          <div className="text-center">Loading...</div>
+        <div className="max-w-md w-full space-y-8 p-8 rounded-lg shadow-lg" style={{ backgroundColor: '#111111' }}>
+          <div className="text-center" style={{ color: '#ff9e19' }}>Loading...</div>
         </div>
       }>
         <SignInForm />
