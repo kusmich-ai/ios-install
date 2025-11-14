@@ -1,6 +1,3 @@
-export default function IOSBaselineAssessment({ user }) {
-  // ... rest of your existing component code
-}
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronRight, Check, Brain, Target, Sun, Focus, Clock } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
@@ -10,25 +7,31 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
-const IOSBaselineAssessment = () => {
+const IOSBaselineAssessment = ({ user }) => {
   // State management
   const [currentSection, setCurrentSection] = useState(0);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [responses, setResponses] = useState({});
   const [sectionScores, setSectionScores] = useState({});
   
-  // User authentication state
-  const [userId, setUserId] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // User authentication state - NOW USES PROP
+  const [userId, setUserId] = useState(user?.id || null);
+  const [loading, setLoading] = useState(!user);
 
-  // Get authenticated user
+  // Get authenticated user - ONLY if not passed as prop
   useEffect(() => {
+    if (user) {
+      setUserId(user.id);
+      setLoading(false);
+      return;
+    }
+
     const getUser = async () => {
       try {
-        const { data: { user }, error } = await supabase.auth.getUser();
+        const { data: { user: authUser }, error } = await supabase.auth.getUser();
         if (error) throw error;
-        if (user) {
-          setUserId(user.id);
+        if (authUser) {
+          setUserId(authUser.id);
         }
       } catch (error) {
         console.error('Error getting user:', error);
@@ -38,7 +41,7 @@ const IOSBaselineAssessment = () => {
     };
     
     getUser();
-  }, []);
+  }, [user]);
 
   // Orange accent color constant for consistency
   const orangeAccent = '#ff9e19';
