@@ -8,7 +8,7 @@ export default async function ChatPage() {
   try {
     console.log('Chat page starting...');
     
-    const supabase = createClient();
+    const supabase = await createClient();
     
     const {
       data: { user },
