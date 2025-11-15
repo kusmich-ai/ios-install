@@ -1,5 +1,5 @@
 // lib/subscription.ts
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/lib/supabase-client';
 
 /**
  * Checks if user has active subscription or valid trial
@@ -23,7 +23,7 @@ export async function checkSubscriptionStatus(userId: string): Promise<{
     };
   }
 
-  const supabase = createClientComponentClient();
+  cconst supabase = createClient();
 
   try {
     const { data, error } = await supabase
