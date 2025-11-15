@@ -23,7 +23,7 @@ export async function checkSubscriptionStatus(userId: string): Promise<{
     };
   }
 
-  cconst supabase = createClient();
+  const supabase = createClient(); // ✅ FIXED: removed extra 'c'
 
   try {
     const { data, error } = await supabase
@@ -103,7 +103,7 @@ export async function requireSubscription(userId: string): Promise<boolean> {
  * Get subscription details for display in UI
  */
 export async function getSubscriptionDetails(userId: string) {
-  const supabase = createClientComponentClient();
+  const supabase = createClient(); // ✅ FIXED: now using createClient()
 
   const { data, error } = await supabase
     .from('user_subscriptions')
@@ -120,37 +120,3 @@ export async function getSubscriptionDetails(userId: string) {
     trialEndsAt: data.trial_ends_at,
     currentPeriodStart: data.current_period_start,
     currentPeriodEnd: data.current_period_end,
-    stripeCustomerId: data.stripe_customer_id,
-    stripeSubscriptionId: data.stripe_subscription_id,
-  };
-}
-
-/**
- * Check if user needs to complete baseline assessment
- */
-export async function needsBaselineAssessment(userId: string): Promise<boolean> {
-  const supabase = createClientComponentClient();
-
-  const { data, error } = await supabase
-    .from('baseline_assessments')
-    .select('id')
-    .eq('user_id', userId)
-    .single();
-
-  return !data; // true if no baseline exists
-}
-
-/**
- * Get user's current stage from progress table
- */
-export async function getUserStage(userId: string): Promise<number> {
-  const supabase = createClientComponentClient();
-
-  const { data, error } = await supabase
-    .from('user_progress')
-    .select('current_stage')
-    .eq('user_id', userId)
-    .single();
-
-  return data?.current_stage || 1;
-}
