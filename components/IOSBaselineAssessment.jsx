@@ -546,17 +546,21 @@ const IOSBaselineAssessment = ({ user }) => {
     // User will manually click "Start Your IOS Install Now" button to go to /chat
   };
 
-  // Store baseline data in Supabase
+  // ✅ FIXED: Store baseline data in BOTH tables
   const storeBaselineData = async (resultsData) => {
     try {
       console.log('💾 Storing baseline data for user:', userId);
       
       if (!userId) {
         console.error('❌ No user ID available');
+        alert('Error: No user ID found. Please sign in again.');
         return;
       }
       
-      // Store baseline assessment with ALL fields
+      // ✅ CRITICAL FIX: Store in BOTH baseline_assessments AND user_data tables
+      
+      // 1. Store in baseline_assessments table (for historical record)
+      console.log('📝 Storing in baseline_assessments table...');
       const { error: assessmentError } = await supabase
         .from('baseline_assessments')
         .upsert({
@@ -582,9 +586,57 @@ const IOSBaselineAssessment = ({ user }) => {
           completed_at: resultsData.timestamp
         });
       
-      if (assessmentError) throw assessmentError;
+      if (assessmentError) {
+        console.error('❌ Error storing in baseline_assessments:', assessmentError);
+        throw assessmentError;
+      }
       
-      // Initialize user progress
+      console.log('✅ Stored in baseline_assessments table');
+      
+      // 2. Store in user_data table (for chat page to read)
+      console.log('📝 Storing in user_data table...');
+      const userDataEntries = [
+        {
+          user_id: userId,
+          key: 'ios:baseline:rewired_index',
+          value: JSON.stringify(resultsData.rewiredIndex)
+        },
+        {
+          user_id: userId,
+          key: 'ios:baseline:tier',
+          value: JSON.stringify(resultsData.tier)
+        },
+        {
+          user_id: userId,
+          key: 'ios:baseline:domain_scores',
+          value: JSON.stringify(resultsData.domainScores)
+        },
+        {
+          user_id: userId,
+          key: 'ios:current_stage',
+          value: JSON.stringify(1) // Start at Stage 1
+        }
+      ];
+      
+      // Upsert each entry individually to handle conflicts properly
+      for (const entry of userDataEntries) {
+        console.log(`  → Storing ${entry.key}...`);
+        const { error: dataError } = await supabase
+          .from('user_data')
+          .upsert(entry, {
+            onConflict: 'user_id,key' // Only upsert if user_id + key combo exists
+          });
+        
+        if (dataError) {
+          console.error(`❌ Error storing ${entry.key}:`, dataError);
+          throw dataError;
+        }
+      }
+      
+      console.log('✅ Stored in user_data table');
+      
+      // 3. Initialize user progress
+      console.log('📝 Initializing user progress...');
       const { error: progressError } = await supabase
         .from('user_progress')
         .upsert({
@@ -594,12 +646,18 @@ const IOSBaselineAssessment = ({ user }) => {
           system_initialized: true
         });
       
-      if (progressError) throw progressError;
+      if (progressError) {
+        console.error('❌ Error storing in user_progress:', progressError);
+        throw progressError;
+      }
       
-      console.log('✅ Baseline data stored successfully');
+      console.log('✅ Stored in user_progress table');
+      console.log('🎉 All baseline data stored successfully!');
       
     } catch (error) {
       console.error('❌ Error storing baseline data:', error);
+      // Show error to user
+      alert('Error saving assessment results. Please try again or contact support. Check console for details.');
     }
   };
 
