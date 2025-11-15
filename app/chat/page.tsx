@@ -95,6 +95,17 @@ export default async function ChatPage() {
     return <ChatInterface user={user} baselineData={baselineData} />;
 
   } catch (error) {
+    // ✅ CRITICAL FIX: Check if this is a redirect error and re-throw it
+    if (error && typeof error === 'object' && 'digest' in error) {
+      const digest = (error as any).digest;
+      // Next.js redirect errors have a digest that starts with "NEXT_REDIRECT"
+      if (typeof digest === 'string' && digest.startsWith('NEXT_REDIRECT')) {
+        console.log('Re-throwing redirect error:', digest);
+        throw error; // Re-throw to allow Next.js to handle the redirect
+      }
+    }
+
+    // For all other errors, show error UI
     console.error('Unexpected error in chat page:', error);
     
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -105,10 +116,16 @@ export default async function ChatPage() {
           <h1 className="text-xl font-bold text-red-500 mb-4">Error Loading Chat</h1>
           <p className="text-gray-300 mb-4">{errorMessage}</p>
           <div className="space-y-2">
-            <a href="/assessment" className="block w-full px-4 py-2 text-center bg-orange-500 text-white rounded-lg hover:bg-orange-600">
+            <a 
+              href="/assessment" 
+              className="block w-full px-4 py-2 text-center bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+            >
               Go to Assessment
             </a>
-            <a href="/auth/signin" className="block w-full px-4 py-2 text-center bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+            <a 
+              href="/auth/signin" 
+              className="block w-full px-4 py-2 text-center bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+            >
               Sign In
             </a>
           </div>
