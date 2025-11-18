@@ -14,6 +14,114 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.12.4] - 2025-11-15
+
+### Changed - BREAKING
+- **Migrated from deprecated `@supabase/auth-helpers-nextjs` to `@supabase/ssr`**
+  - Old package incompatible with Next.js 16's new cookie handling
+  - Created separate server and client-side Supabase utilities
+  - New files created:
+    - `lib/supabase-server.ts` - Server-side Supabase client
+    - `lib/supabase-client.ts` - Client-side Supabase client
+  - Updated all authentication flows to use new package
+
+### Fixed
+- **Chat page server-side exception after assessment completion**
+  - Error: "Dynamic server usage: Route /chat couldn't be rendered statically"
+  - Added `export const dynamic = 'force-dynamic'` to force server-side rendering
+  - Fixed static generation attempting to render dynamic page using `cookies()`
+
+- **15 consecutive deployment failures causing auto-deploy suspension**
+  - Root cause: Missing `@supabase/auth-helpers-nextjs` package in dependencies
+  - Fixed by adding package to `package.json`
+  - Then migrated to `@supabase/ssr` for Next.js 16 compatibility
+  - Vercel's safety mechanism had paused auto-deployments after threshold
+  - Manual re-enable required in Vercel dashboard: Settings → Git → Resume Automatic Deployments
+
+- **Supabase authentication middleware incompatibility**
+  - Updated middleware to use `createServerClient` from `@supabase/ssr`
+  - Fixed cookie handling for Next.js 16 compatibility
+  - Proper server-side auth state management
+
+### Updated Files
+- `package.json` - Added/migrated Supabase dependencies
+- `lib/supabase-server.ts` - NEW server utility
+- `lib/supabase-client.ts` - NEW client utility  
+- `app/chat/page.tsx` - Dynamic rendering, new Supabase client
+- `app/auth/signin/page.tsx` - New client integration
+- `app/auth/signup/page.tsx` - New client integration
+- `app/auth/callback/route.ts` - Server-side auth handling
+- `middleware.ts` - Updated to use `@supabase/ssr`
+- All assessment and screening pages - Client utility migration
+
+### Documentation
+- **Deployment troubleshooting**
+  - How to re-enable auto-deployments after failure threshold
+  - Vercel safety mechanism documentation (15 failure limit)
+  - Process: Settings → Git → Resume Automatic Deployments
+
+- **Git workflow without terminal**
+  - Committing changes through VS Code Source Control
+  - Pushing changes through GitHub Desktop
+  - Verifying changes pushed to GitHub
+
+### Technical Details
+- **Next.js 16 cookie handling changes**
+  - Static generation incompatible with `cookies()` usage
+  - Dynamic routes must explicitly declare `dynamic = 'force-dynamic'`
+  - Server vs client component separation critical
+
+- **Supabase client patterns:**
+  - Server components: Use `createServerClient` with cookies
+  - Client components: Use `createBrowserClient`
+  - Middleware: Use `createServerClient` with request/response cookies
+
+---
+
+## [0.12.3] - 2025-11-14
+
+### Fixed
+- **JSX syntax errors in chat page causing build failures**
+  - Fixed malformed `>` characters on lines 118 and 124 in `/app/chat/page.tsx`
+  - Characters were orphaned on separate lines instead of being part of anchor element opening tags
+  - Turbopack JSX parser now successfully compiles the file
+
+- **Vercel auto-deployment stopped working**
+  - Root cause: Missing GitHub webhooks after repository reconnection
+  - Webhooks were not created automatically when reconnecting repository
+  - Solution: Reinstalled Vercel GitHub App through GitHub application settings
+  - Verified proper repository access permissions
+  - Manual deploy hooks configured as backup
+
+### Changed
+- **Vercel-GitHub integration maintenance**
+  - Documented webhook verification process
+  - Added troubleshooting steps for future deployment issues
+  - Established monitoring for webhook presence at `/settings/hooks`
+
+### Documentation
+- **Deployment troubleshooting guide**
+  - How to verify GitHub-Vercel webhook configuration
+  - Steps to reinstall Vercel GitHub App
+  - Manual deploy hook creation as fallback
+  - Git email configuration verification through GitHub web interface
+
+### Known Issues
+- **Next.js middleware deprecation warning**
+  - Current: Using "middleware" file convention
+  - Warning: "middleware" convention deprecated in Next.js 16.0.1 (Turbopack)
+  - Action required: Migrate to "proxy" convention
+  - Reference: https://nextjs.org/docs/messages/middleware-to-proxy
+  - Status: To be addressed in future release
+
+### Technical Notes
+- Build machine: Washington, D.C., USA (East) - iad1
+- Configuration: 2 cores, 8 GB RAM
+- Next.js version: 16.0.1 (Turbopack)
+- Repository: github.com/kusmich-ai/ios-install (Branch: main)
+
+---
+
 ## [0.12.2] - 2025-11-14
 
 ### Added
