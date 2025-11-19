@@ -1,3 +1,5 @@
+// auth/callback/route.ts
+
 import { createClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
@@ -57,15 +59,11 @@ export async function GET(request: NextRequest) {
 
         // Everything complete - send to chat
         return NextResponse.redirect(new URL('/chat', origin))
-
+        
       } catch (error) {
         console.error('Error checking user progress:', error)
-        // On error, default to screening
+        // On error, default to screening (they have a session)
         return NextResponse.redirect(new URL('/screening', origin))
       }
     }
   }
-
-  // ✅ Default: redirect to screening page
-  return NextResponse.redirect(new URL('/screening', origin))
-}
