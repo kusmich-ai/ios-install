@@ -13,5 +13,5 @@ export async function GET(request: NextRequest) {
   }
 
   // Redirect to the medical screening page after successful auth
-  return NextResponse.redirect(`${origin}/medical-screening`)
+  return NextResponse.redirect(`${origin}/screening`)
 }
