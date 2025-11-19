@@ -1,5 +1,3 @@
-// auth/callback/route.ts
-
 import { createClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
@@ -67,3 +65,7 @@ export async function GET(request: NextRequest) {
       }
     }
   }
+
+  // No code = invalid callback, send to sign-in
+  return NextResponse.redirect(new URL('/auth/signin?error=Invalid authentication callback', origin))
+}
