@@ -23,7 +23,7 @@ interface ScreeningResponse {
   acuteCrisis: boolean;
   recentHospitalization: boolean;
   currentlyHospitalized: boolean;
-  noCrisisIndicators: boolean; // NEW
+  noCrisisIndicators: boolean;
   
   // Psychiatric Diagnoses (B2)
   diagnoses: string[];
@@ -33,21 +33,21 @@ interface ScreeningResponse {
   
   // Medical Conditions (C)
   cardiovascular: string[];
-  noCardiovascular: boolean; // NEW
+  noCardiovascular: boolean;
   respiratory: string[];
-  noRespiratory: boolean; // NEW
+  noRespiratory: boolean;
   neurological: string[];
-  noNeurological: boolean; // NEW
+  noNeurological: boolean;
   otherMedical: string[];
-  noOtherMedical: boolean; // NEW
+  noOtherMedical: boolean;
   
   // Medications (D)
   medications: string[];
-  noMedications: boolean; // NEW
+  noMedications: boolean;
   alcoholUse: string;
   substanceUse: string[];
   addiction: string;
-  noSubstanceIssues: boolean; // NEW
+  noSubstanceIssues: boolean;
   
   // Comprehension & Consent (G)
   understandsNotTreatment: boolean;
@@ -124,7 +124,6 @@ export default function ScreeningPage() {
 
   // Validation functions for each section
   const isSection1Valid = () => {
-    // Section 1 is valid if either "none of above" is checked OR at least one condition is checked
     return responses.noCrisisIndicators || 
            responses.suicidalThoughts || 
            responses.hallucinations || 
@@ -135,12 +134,10 @@ export default function ScreeningPage() {
   };
 
   const isSection2Valid = () => {
-    // Section 2 requires both dropdown selections
     return !!(responses.currentTreatment && responses.traumaHistory);
   };
 
   const isSection3Valid = () => {
-    // Section 3 is valid if all "none of above" are checked OR at least one condition in each category
     const cardioValid = responses.noCardiovascular || (responses.cardiovascular && responses.cardiovascular.length > 0);
     const respValid = responses.noRespiratory || (responses.respiratory && responses.respiratory.length > 0);
     const neuroValid = responses.noNeurological || (responses.neurological && responses.neurological.length > 0);
@@ -149,7 +146,6 @@ export default function ScreeningPage() {
   };
 
   const isSection4Valid = () => {
-    // Section 4 requires both dropdown selections AND medication/substance acknowledgment
     const medsValid = responses.noMedications || (responses.medications && responses.medications.length > 0);
     const substanceValid = responses.noSubstanceIssues || !!(responses.alcoholUse && responses.addiction);
     return medsValid && substanceValid;
@@ -180,7 +176,6 @@ export default function ScreeningPage() {
     setResponses(prev => {
       const newResponses = { ...prev, [field]: value };
       
-      // If "none of above" is checked in Section 1, uncheck all crisis indicators
       if (field === 'noCrisisIndicators' && value) {
         newResponses.suicidalThoughts = false;
         newResponses.hallucinations = false;
@@ -190,12 +185,10 @@ export default function ScreeningPage() {
         newResponses.currentlyHospitalized = false;
       }
       
-      // If any crisis indicator is checked, uncheck "none of above"
       if (['suicidalThoughts', 'hallucinations', 'delusions', 'acuteCrisis', 'recentHospitalization', 'currentlyHospitalized'].includes(field) && value) {
         newResponses.noCrisisIndicators = false;
       }
 
-      // Handle Section 3 "none of above" checkboxes
       if (field === 'noCardiovascular' && value) {
         newResponses.cardiovascular = [];
       }
@@ -209,7 +202,6 @@ export default function ScreeningPage() {
         newResponses.otherMedical = [];
       }
 
-      // Handle Section 4 "none of above" checkboxes
       if (field === 'noMedications' && value) {
         newResponses.medications = [];
       }
@@ -231,7 +223,6 @@ export default function ScreeningPage() {
       
       const newResponses = { ...prev, [field]: newArray };
 
-      // If any condition is checked, uncheck corresponding "none of above"
       if (newArray.length > 0) {
         if (field === 'cardiovascular') newResponses.noCardiovascular = false;
         if (field === 'respiratory') newResponses.noRespiratory = false;
@@ -253,7 +244,6 @@ export default function ScreeningPage() {
       requiresAction: []
     };
 
-    // HARD STOPS - Auto-exclusion
     if (responses.suicidalThoughts || responses.hallucinations || responses.delusions || 
         responses.acuteCrisis || responses.recentHospitalization || responses.currentlyHospitalized) {
       result.status = 'denied';
@@ -261,7 +251,6 @@ export default function ScreeningPage() {
       return result;
     }
 
-    // Psychotic disorders
     if (responses.diagnoses?.some(d => 
       ['schizophrenia', 'schizoaffective', 'psychotic', 'did'].includes(d.toLowerCase())
     )) {
@@ -270,14 +259,12 @@ export default function ScreeningPage() {
       return result;
     }
 
-    // Active addiction
     if (responses.addiction === 'active') {
       result.status = 'denied';
       result.reasons.push('Active addiction detected - specialized treatment required first');
       return result;
     }
 
-    // Cardiovascular hard stops
     if (responses.cardiovascular?.some(c => 
       ['recent_heart_attack', 'recent_surgery', 'uncontrolled_hypertension'].includes(c)
     )) {
@@ -287,7 +274,6 @@ export default function ScreeningPage() {
       return result;
     }
 
-    // Respiratory hard stops
     if (responses.respiratory?.some(r => 
       ['poorly_controlled_asthma', 'copd', 'emphysema', 'pneumothorax'].includes(r)
     )) {
@@ -297,7 +283,6 @@ export default function ScreeningPage() {
       return result;
     }
 
-    // Neurological hard stops
     if (responses.neurological?.includes('epilepsy') || 
         responses.neurological?.includes('recent_concussion')) {
       result.status = 'pending';
@@ -306,7 +291,6 @@ export default function ScreeningPage() {
       return result;
     }
 
-    // STRONG WARNINGS - Granted with modifications
     const highRiskDiagnoses = ['bipolar', 'ptsd', 'cptsd', 'bpd', 'personality', 'dissociative', 'eating'];
     if (responses.diagnoses?.some(d => highRiskDiagnoses.some(risk => d.toLowerCase().includes(risk)))) {
       result.status = 'granted_modified';
@@ -315,7 +299,6 @@ export default function ScreeningPage() {
       result.modifications.push('Enable trauma-sensitive modifications');
     }
 
-    // Cardiovascular warnings
     if (responses.cardiovascular && responses.cardiovascular.length > 0 && 
         !responses.cardiovascular.some(c => ['recent_heart_attack', 'recent_surgery', 'uncontrolled_hypertension'].includes(c))) {
       result.status = result.status === 'granted' ? 'granted_modified' : result.status;
@@ -324,7 +307,6 @@ export default function ScreeningPage() {
       result.modifications.push('Modify breathwork - shorter duration, gentler rhythm');
     }
 
-    // Pregnancy
     if (responses.otherMedical?.includes('pregnancy')) {
       result.status = result.status === 'granted' ? 'granted_modified' : result.status;
       result.warnings.push('Pregnancy detected - cold/heat exposure contraindicated');
@@ -332,13 +314,11 @@ export default function ScreeningPage() {
       result.modifications.push('Gentle breathwork only');
     }
 
-    // Recent trauma
     if (responses.traumaHistory === 'recent') {
       result.warnings.push('Recent trauma - trauma-informed approach recommended');
       result.modifications.push('Enable trauma-sensitive mode with shorter practices');
     }
 
-    // Medications
     if (responses.medications && responses.medications.length > 0) {
       result.warnings.push('Current medications may interact with practices');
       result.modifications.push('Do not adjust medications based on IOS progress');
@@ -352,7 +332,6 @@ export default function ScreeningPage() {
     const clearance = evaluateClearance();
     setClearanceResult(clearance);
 
-    // Save to database
     try {
       const { error } = await supabase
         .from('screening_responses')
@@ -369,7 +348,6 @@ export default function ScreeningPage() {
 
       if (error) throw error;
 
-      // Update user metadata
       await supabase.auth.updateUser({
         data: { screening_completed: true, clearance_status: clearance.status }
       });
@@ -400,7 +378,6 @@ export default function ScreeningPage() {
       <div className="min-h-screen bg-zinc-950 text-zinc-100 p-8">
         <div className="max-w-3xl mx-auto">
           <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-8">
-            {/* Status Icon */}
             <div className="flex justify-center mb-6">
               {clearanceResult.status === 'granted' && (
                 <div className="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center">
@@ -424,7 +401,6 @@ export default function ScreeningPage() {
               )}
             </div>
 
-            {/* Status Title */}
             <h1 className="text-3xl font-bold text-center mb-4">
               {clearanceResult.status === 'granted' && 'Access Granted'}
               {clearanceResult.status === 'granted_modified' && 'Access Granted with Modifications'}
@@ -432,7 +408,6 @@ export default function ScreeningPage() {
               {clearanceResult.status === 'denied' && 'Access Denied'}
             </h1>
 
-            {/* Status Message */}
             <div className="mb-8">
               {clearanceResult.status === 'granted' && (
                 <p className="text-zinc-400 text-center">
@@ -456,7 +431,6 @@ export default function ScreeningPage() {
               )}
             </div>
 
-            {/* Reasons */}
             {clearanceResult.reasons.length > 0 && (
               <div className="mb-6 bg-red-500/10 border border-red-500/20 rounded-lg p-4">
                 <h3 className="font-semibold text-red-400 mb-2">Important:</h3>
@@ -468,7 +442,6 @@ export default function ScreeningPage() {
               </div>
             )}
 
-            {/* Warnings */}
             {clearanceResult.warnings.length > 0 && (
               <div className="mb-6 bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
                 <h3 className="font-semibold text-yellow-400 mb-2">Cautions:</h3>
@@ -480,7 +453,6 @@ export default function ScreeningPage() {
               </div>
             )}
 
-            {/* Modifications */}
             {clearanceResult.modifications.length > 0 && (
               <div className="mb-6 bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
                 <h3 className="font-semibold text-blue-400 mb-2">Required Modifications:</h3>
@@ -492,7 +464,6 @@ export default function ScreeningPage() {
               </div>
             )}
 
-            {/* Actions Required */}
             {clearanceResult.requiresAction.length > 0 && (
               <div className="mb-8 bg-zinc-800 border border-zinc-700 rounded-lg p-4">
                 <h3 className="font-semibold text-zinc-200 mb-2">Next Steps:</h3>
@@ -504,7 +475,6 @@ export default function ScreeningPage() {
               </div>
             )}
 
-            {/* Crisis Resources (if denied) */}
             {clearanceResult.status === 'denied' && clearanceResult.reasons.some(r => r.includes('crisis')) && (
               <div className="mb-8 bg-red-500/10 border border-red-500/20 rounded-lg p-6">
                 <h3 className="font-semibold text-red-400 mb-4">Immediate Resources:</h3>
@@ -526,7 +496,6 @@ export default function ScreeningPage() {
               </div>
             )}
 
-            {/* Action Button */}
             {(clearanceResult.status === 'granted' || clearanceResult.status === 'granted_modified') && (
               <button
                 onClick={handleContinue}
@@ -553,11 +522,9 @@ export default function ScreeningPage() {
     );
   }
 
-  // Main screening form
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 p-8">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-4">Safety Screening</h1>
           <p className="text-zinc-400 text-lg">
@@ -568,7 +535,6 @@ export default function ScreeningPage() {
           </p>
         </div>
 
-        {/* Progress */}
         <div className="mb-8">
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm text-zinc-400">Section {currentSection} of 5</span>
@@ -582,10 +548,8 @@ export default function ScreeningPage() {
           </div>
         </div>
 
-        {/* Form Content */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-8">
           
-          {/* SECTION 1: Crisis Indicators */}
           {currentSection === 1 && (
             <div className="space-y-6">
               <div className="flex items-start gap-3 mb-6">
@@ -678,8 +642,8 @@ export default function ScreeningPage() {
                   </div>
                 </label>
 
-                {/* NONE OF THE ABOVE */}
-                <label className="flex items-start gap-3 p-4 bg-green-500/10 border-2 border-green-500/30 rounded-lg cursor-pointer hover:bg-green-500/20 transition-colors">
+                {/* FIXED: Removed green styling */}
+                <label className="flex items-start gap-3 p-4 bg-zinc-800/50 rounded-lg cursor-pointer hover:bg-zinc-800 transition-colors">
                   <input
                     type="checkbox"
                     checked={responses.noCrisisIndicators || false}
@@ -687,14 +651,13 @@ export default function ScreeningPage() {
                     className="mt-1 w-5 h-5 rounded border-zinc-700 text-[#ff9e19] focus:ring-[#ff9e19] focus:ring-offset-zinc-900"
                   />
                   <div className="flex-1">
-                    <div className="font-medium text-green-400">None of the above apply to me</div>
+                    <div className="font-medium text-zinc-200">None of the above apply to me</div>
                   </div>
                 </label>
               </div>
             </div>
           )}
 
-          {/* SECTION 2: Psychiatric History */}
           {currentSection === 2 && (
             <div className="space-y-6">
               <div className="flex items-start gap-3 mb-6">
@@ -776,7 +739,6 @@ export default function ScreeningPage() {
             </div>
           )}
 
-          {/* SECTION 3: Medical Conditions */}
           {currentSection === 3 && (
             <div className="space-y-6">
               <div className="flex items-start gap-3 mb-6">
@@ -812,15 +774,15 @@ export default function ScreeningPage() {
                     </label>
                   ))}
                   
-                  {/* NONE OF THE ABOVE */}
-                  <label className="flex items-center gap-3 p-3 bg-green-500/10 border-2 border-green-500/30 rounded-lg cursor-pointer hover:bg-green-500/20 transition-colors">
+                  {/* FIXED: Removed green styling */}
+                  <label className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg cursor-pointer hover:bg-zinc-800 transition-colors">
                     <input
                       type="checkbox"
                       checked={responses.noCardiovascular || false}
                       onChange={(e) => handleCheckboxChange('noCardiovascular', e.target.checked)}
                       className="w-5 h-5 rounded border-zinc-700 text-[#ff9e19] focus:ring-[#ff9e19] focus:ring-offset-zinc-900"
                     />
-                    <span className="text-sm text-green-400 font-medium">None of the above</span>
+                    <span className="text-sm text-zinc-200 font-medium">None of the above</span>
                   </label>
                 </div>
               </div>
@@ -846,15 +808,15 @@ export default function ScreeningPage() {
                     </label>
                   ))}
                   
-                  {/* NONE OF THE ABOVE */}
-                  <label className="flex items-center gap-3 p-3 bg-green-500/10 border-2 border-green-500/30 rounded-lg cursor-pointer hover:bg-green-500/20 transition-colors">
+                  {/* FIXED: Removed green styling */}
+                  <label className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg cursor-pointer hover:bg-zinc-800 transition-colors">
                     <input
                       type="checkbox"
                       checked={responses.noRespiratory || false}
                       onChange={(e) => handleCheckboxChange('noRespiratory', e.target.checked)}
                       className="w-5 h-5 rounded border-zinc-700 text-[#ff9e19] focus:ring-[#ff9e19] focus:ring-offset-zinc-900"
                     />
-                    <span className="text-sm text-green-400 font-medium">None of the above</span>
+                    <span className="text-sm text-zinc-200 font-medium">None of the above</span>
                   </label>
                 </div>
               </div>
@@ -879,15 +841,15 @@ export default function ScreeningPage() {
                     </label>
                   ))}
                   
-                  {/* NONE OF THE ABOVE */}
-                  <label className="flex items-center gap-3 p-3 bg-green-500/10 border-2 border-green-500/30 rounded-lg cursor-pointer hover:bg-green-500/20 transition-colors">
+                  {/* FIXED: Removed green styling */}
+                  <label className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg cursor-pointer hover:bg-zinc-800 transition-colors">
                     <input
                       type="checkbox"
                       checked={responses.noNeurological || false}
                       onChange={(e) => handleCheckboxChange('noNeurological', e.target.checked)}
                       className="w-5 h-5 rounded border-zinc-700 text-[#ff9e19] focus:ring-[#ff9e19] focus:ring-offset-zinc-900"
                     />
-                    <span className="text-sm text-green-400 font-medium">None of the above</span>
+                    <span className="text-sm text-zinc-200 font-medium">None of the above</span>
                   </label>
                 </div>
               </div>
@@ -912,22 +874,21 @@ export default function ScreeningPage() {
                     </label>
                   ))}
                   
-                  {/* NONE OF THE ABOVE */}
-                  <label className="flex items-center gap-3 p-3 bg-green-500/10 border-2 border-green-500/30 rounded-lg cursor-pointer hover:bg-green-500/20 transition-colors">
+                  {/* FIXED: Removed green styling */}
+                  <label className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg cursor-pointer hover:bg-zinc-800 transition-colors">
                     <input
                       type="checkbox"
                       checked={responses.noOtherMedical || false}
                       onChange={(e) => handleCheckboxChange('noOtherMedical', e.target.checked)}
                       className="w-5 h-5 rounded border-zinc-700 text-[#ff9e19] focus:ring-[#ff9e19] focus:ring-offset-zinc-900"
                     />
-                    <span className="text-sm text-green-400 font-medium">None of the above</span>
+                    <span className="text-sm text-zinc-200 font-medium">None of the above</span>
                   </label>
                 </div>
               </div>
             </div>
           )}
 
-          {/* SECTION 4: Medications & Substances */}
           {currentSection === 4 && (
             <div className="space-y-6">
               <div className="flex items-start gap-3 mb-6">
@@ -965,15 +926,15 @@ export default function ScreeningPage() {
                     </label>
                   ))}
                   
-                  {/* NONE OF THE ABOVE */}
-                  <label className="flex items-center gap-3 p-3 bg-green-500/10 border-2 border-green-500/30 rounded-lg cursor-pointer hover:bg-green-500/20 transition-colors">
+                  {/* FIXED: Removed green styling */}
+                  <label className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg cursor-pointer hover:bg-zinc-800 transition-colors">
                     <input
                       type="checkbox"
                       checked={responses.noMedications || false}
                       onChange={(e) => handleCheckboxChange('noMedications', e.target.checked)}
                       className="w-5 h-5 rounded border-zinc-700 text-[#ff9e19] focus:ring-[#ff9e19] focus:ring-offset-zinc-900"
                     />
-                    <span className="text-sm text-green-400 font-medium">None of the above</span>
+                    <span className="text-sm text-zinc-200 font-medium">None of the above</span>
                   </label>
                 </div>
               </div>
@@ -1016,7 +977,6 @@ export default function ScreeningPage() {
             </div>
           )}
 
-          {/* SECTION 5: Consent */}
           {currentSection === 5 && (
             <div className="space-y-6">
               <div className="flex items-start gap-3 mb-6">
@@ -1093,7 +1053,6 @@ export default function ScreeningPage() {
             </div>
           )}
 
-          {/* Navigation Buttons */}
           <div className="flex justify-between mt-8 pt-6 border-t border-zinc-800">
             <button
               onClick={() => setCurrentSection(prev => Math.max(1, prev - 1))}
