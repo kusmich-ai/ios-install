@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation'; // CHANGED: next/navigation instead of next/router
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase-client'
 import { 
   AlertCircle, 
@@ -23,6 +23,7 @@ interface ScreeningResponse {
   acuteCrisis: boolean;
   recentHospitalization: boolean;
   currentlyHospitalized: boolean;
+  noCrisisIndicators: boolean; // NEW
   
   // Psychiatric Diagnoses (B2)
   diagnoses: string[];
@@ -32,17 +33,21 @@ interface ScreeningResponse {
   
   // Medical Conditions (C)
   cardiovascular: string[];
+  noCardiovascular: boolean; // NEW
   respiratory: string[];
+  noRespiratory: boolean; // NEW
   neurological: string[];
+  noNeurological: boolean; // NEW
   otherMedical: string[];
+  noOtherMedical: boolean; // NEW
   
   // Medications (D)
   medications: string[];
-  
-  // Substance Use (F)
+  noMedications: boolean; // NEW
   alcoholUse: string;
   substanceUse: string[];
   addiction: string;
+  noSubstanceIssues: boolean; // NEW
   
   // Comprehension & Consent (G)
   understandsNotTreatment: boolean;
@@ -64,7 +69,7 @@ interface ClearanceResult {
 
 export default function ScreeningPage() {
   const router = useRouter();
-const supabase = createClient() 
+  const supabase = createClient() 
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [currentSection, setCurrentSection] = useState(1);
@@ -81,50 +86,140 @@ const supabase = createClient()
   const [clearanceResult, setClearanceResult] = useState<ClearanceResult | null>(null);
   const [showResults, setShowResults] = useState(false);
 
-  // Replace the useEffect in your screening page with this:
-
-useEffect(() => {
-  async function checkAuth() {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        router.push('/auth/signin');
-        return;
-      }
-
-      // Check if already completed screening
-      // Wrap in try-catch to handle missing table gracefully
+  useEffect(() => {
+    async function checkAuth() {
       try {
-        const { data: screening, error } = await supabase
-          .from('screening_responses')
-          .select('clearance_status')
-          .eq('user_id', user.id)
-          .single();
-
-        // Only redirect if we successfully got data AND status is granted
-        if (!error && screening && screening.clearance_status === 'granted') {
-          router.push('/legal-agreements');
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          router.push('/auth/signin');
           return;
         }
-      } catch (tableError) {
-        // Table doesn't exist or other error - just continue to show the form
-        console.log('Could not check screening status (table may not exist yet):', tableError);
+
+        try {
+          const { data: screening, error } = await supabase
+            .from('screening_responses')
+            .select('clearance_status')
+            .eq('user_id', user.id)
+            .single();
+
+          if (!error && screening && screening.clearance_status === 'granted') {
+            router.push('/legal-agreements');
+            return;
+          }
+        } catch (tableError) {
+          console.log('Could not check screening status (table may not exist yet):', tableError);
+        }
+
+        setUser(user);
+        setLoading(false);
+      } catch (error) {
+        console.error('Auth check error:', error);
+        router.push('/auth/signin');
       }
-
-      setUser(user);
-      setLoading(false);
-    } catch (error) {
-      console.error('Auth check error:', error);
-      router.push('/auth/signin');
     }
-  }
 
-  checkAuth();
-}, [router]);
+    checkAuth();
+  }, [router]);
+
+  // Validation functions for each section
+  const isSection1Valid = () => {
+    // Section 1 is valid if either "none of above" is checked OR at least one condition is checked
+    return responses.noCrisisIndicators || 
+           responses.suicidalThoughts || 
+           responses.hallucinations || 
+           responses.delusions || 
+           responses.acuteCrisis || 
+           responses.recentHospitalization || 
+           responses.currentlyHospitalized;
+  };
+
+  const isSection2Valid = () => {
+    // Section 2 requires both dropdown selections
+    return !!(responses.currentTreatment && responses.traumaHistory);
+  };
+
+  const isSection3Valid = () => {
+    // Section 3 is valid if all "none of above" are checked OR at least one condition in each category
+    const cardioValid = responses.noCardiovascular || (responses.cardiovascular && responses.cardiovascular.length > 0);
+    const respValid = responses.noRespiratory || (responses.respiratory && responses.respiratory.length > 0);
+    const neuroValid = responses.noNeurological || (responses.neurological && responses.neurological.length > 0);
+    const otherValid = responses.noOtherMedical || (responses.otherMedical && responses.otherMedical.length > 0);
+    return cardioValid && respValid && neuroValid && otherValid;
+  };
+
+  const isSection4Valid = () => {
+    // Section 4 requires both dropdown selections AND medication/substance acknowledgment
+    const medsValid = responses.noMedications || (responses.medications && responses.medications.length > 0);
+    const substanceValid = responses.noSubstanceIssues || !!(responses.alcoholUse && responses.addiction);
+    return medsValid && substanceValid;
+  };
+
+  const isSection5Valid = () => {
+    return !!(
+      responses.understandsNotTreatment && 
+      responses.understandsConsultProfessionals && 
+      responses.understandsResponsibility && 
+      responses.understandsCrisisUse && 
+      responses.certifiesHonesty
+    );
+  };
+
+  const canProceedToNextSection = () => {
+    switch (currentSection) {
+      case 1: return isSection1Valid();
+      case 2: return isSection2Valid();
+      case 3: return isSection3Valid();
+      case 4: return isSection4Valid();
+      case 5: return isSection5Valid();
+      default: return false;
+    }
+  };
 
   const handleCheckboxChange = (field: keyof ScreeningResponse, value: any) => {
-    setResponses(prev => ({ ...prev, [field]: value }));
+    setResponses(prev => {
+      const newResponses = { ...prev, [field]: value };
+      
+      // If "none of above" is checked in Section 1, uncheck all crisis indicators
+      if (field === 'noCrisisIndicators' && value) {
+        newResponses.suicidalThoughts = false;
+        newResponses.hallucinations = false;
+        newResponses.delusions = false;
+        newResponses.acuteCrisis = false;
+        newResponses.recentHospitalization = false;
+        newResponses.currentlyHospitalized = false;
+      }
+      
+      // If any crisis indicator is checked, uncheck "none of above"
+      if (['suicidalThoughts', 'hallucinations', 'delusions', 'acuteCrisis', 'recentHospitalization', 'currentlyHospitalized'].includes(field) && value) {
+        newResponses.noCrisisIndicators = false;
+      }
+
+      // Handle Section 3 "none of above" checkboxes
+      if (field === 'noCardiovascular' && value) {
+        newResponses.cardiovascular = [];
+      }
+      if (field === 'noRespiratory' && value) {
+        newResponses.respiratory = [];
+      }
+      if (field === 'noNeurological' && value) {
+        newResponses.neurological = [];
+      }
+      if (field === 'noOtherMedical' && value) {
+        newResponses.otherMedical = [];
+      }
+
+      // Handle Section 4 "none of above" checkboxes
+      if (field === 'noMedications' && value) {
+        newResponses.medications = [];
+      }
+      if (field === 'noSubstanceIssues' && value) {
+        newResponses.alcoholUse = 'never';
+        newResponses.addiction = 'none';
+      }
+
+      return newResponses;
+    });
   };
 
   const handleArrayToggle = (field: keyof ScreeningResponse, value: string) => {
@@ -133,7 +228,19 @@ useEffect(() => {
       const newArray = currentArray.includes(value)
         ? currentArray.filter(item => item !== value)
         : [...currentArray, value];
-      return { ...prev, [field]: newArray };
+      
+      const newResponses = { ...prev, [field]: newArray };
+
+      // If any condition is checked, uncheck corresponding "none of above"
+      if (newArray.length > 0) {
+        if (field === 'cardiovascular') newResponses.noCardiovascular = false;
+        if (field === 'respiratory') newResponses.noRespiratory = false;
+        if (field === 'neurological') newResponses.noNeurological = false;
+        if (field === 'otherMedical') newResponses.noOtherMedical = false;
+        if (field === 'medications') newResponses.noMedications = false;
+      }
+
+      return newResponses;
     });
   };
 
@@ -490,14 +597,15 @@ useEffect(() => {
                   <p className="text-zinc-400">These questions help ensure the IOS System is safe for you right now.</p>
                 </div>
               </div>
-{/* ADD THIS NEW INSTRUCTION BANNER */}
-    <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-6">
-      <p className="text-blue-400 font-medium mb-1">Instructions:</p>
-      <p className="text-zinc-300 text-sm">
-        Check any boxes that apply to you. If none apply, leave them all unchecked and click "Next Section" below.
-      </p>
-    </div>
-               <div className="space-y-4">
+
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-6">
+                <p className="text-blue-400 font-medium mb-1">Instructions:</p>
+                <p className="text-zinc-300 text-sm">
+                  Check any boxes that apply to you. If none apply, check "None of the above" below.
+                </p>
+              </div>
+
+              <div className="space-y-4">
                 <label className="flex items-start gap-3 p-4 bg-zinc-800/50 rounded-lg cursor-pointer hover:bg-zinc-800 transition-colors">
                   <input
                     type="checkbox"
@@ -569,6 +677,19 @@ useEffect(() => {
                     <div className="font-medium text-zinc-200">I am currently in a psychiatric hospital or crisis facility</div>
                   </div>
                 </label>
+
+                {/* NONE OF THE ABOVE */}
+                <label className="flex items-start gap-3 p-4 bg-green-500/10 border-2 border-green-500/30 rounded-lg cursor-pointer hover:bg-green-500/20 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={responses.noCrisisIndicators || false}
+                    onChange={(e) => handleCheckboxChange('noCrisisIndicators', e.target.checked)}
+                    className="mt-1 w-5 h-5 rounded border-zinc-700 text-[#ff9e19] focus:ring-[#ff9e19] focus:ring-offset-zinc-900"
+                  />
+                  <div className="flex-1">
+                    <div className="font-medium text-green-400">None of the above apply to me</div>
+                  </div>
+                </label>
               </div>
             </div>
           )}
@@ -619,7 +740,7 @@ useEffect(() => {
 
               <div className="mt-6">
                 <label className="block text-sm font-medium text-zinc-300 mb-2">
-                  Current Mental Health Treatment
+                  Current Mental Health Treatment <span className="text-red-400">*</span>
                 </label>
                 <select
                   value={responses.currentTreatment || ''}
@@ -637,7 +758,7 @@ useEffect(() => {
 
               <div>
                 <label className="block text-sm font-medium text-zinc-300 mb-2">
-                  Trauma History
+                  Trauma History <span className="text-red-400">*</span>
                 </label>
                 <select
                   value={responses.traumaHistory || ''}
@@ -690,6 +811,17 @@ useEffect(() => {
                       <span className="text-sm text-zinc-200">{condition.label}</span>
                     </label>
                   ))}
+                  
+                  {/* NONE OF THE ABOVE */}
+                  <label className="flex items-center gap-3 p-3 bg-green-500/10 border-2 border-green-500/30 rounded-lg cursor-pointer hover:bg-green-500/20 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={responses.noCardiovascular || false}
+                      onChange={(e) => handleCheckboxChange('noCardiovascular', e.target.checked)}
+                      className="w-5 h-5 rounded border-zinc-700 text-[#ff9e19] focus:ring-[#ff9e19] focus:ring-offset-zinc-900"
+                    />
+                    <span className="text-sm text-green-400 font-medium">None of the above</span>
+                  </label>
                 </div>
               </div>
 
@@ -713,6 +845,17 @@ useEffect(() => {
                       <span className="text-sm text-zinc-200">{condition.label}</span>
                     </label>
                   ))}
+                  
+                  {/* NONE OF THE ABOVE */}
+                  <label className="flex items-center gap-3 p-3 bg-green-500/10 border-2 border-green-500/30 rounded-lg cursor-pointer hover:bg-green-500/20 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={responses.noRespiratory || false}
+                      onChange={(e) => handleCheckboxChange('noRespiratory', e.target.checked)}
+                      className="w-5 h-5 rounded border-zinc-700 text-[#ff9e19] focus:ring-[#ff9e19] focus:ring-offset-zinc-900"
+                    />
+                    <span className="text-sm text-green-400 font-medium">None of the above</span>
+                  </label>
                 </div>
               </div>
 
@@ -735,6 +878,17 @@ useEffect(() => {
                       <span className="text-sm text-zinc-200">{condition.label}</span>
                     </label>
                   ))}
+                  
+                  {/* NONE OF THE ABOVE */}
+                  <label className="flex items-center gap-3 p-3 bg-green-500/10 border-2 border-green-500/30 rounded-lg cursor-pointer hover:bg-green-500/20 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={responses.noNeurological || false}
+                      onChange={(e) => handleCheckboxChange('noNeurological', e.target.checked)}
+                      className="w-5 h-5 rounded border-zinc-700 text-[#ff9e19] focus:ring-[#ff9e19] focus:ring-offset-zinc-900"
+                    />
+                    <span className="text-sm text-green-400 font-medium">None of the above</span>
+                  </label>
                 </div>
               </div>
 
@@ -757,6 +911,17 @@ useEffect(() => {
                       <span className="text-sm text-zinc-200">{condition.label}</span>
                     </label>
                   ))}
+                  
+                  {/* NONE OF THE ABOVE */}
+                  <label className="flex items-center gap-3 p-3 bg-green-500/10 border-2 border-green-500/30 rounded-lg cursor-pointer hover:bg-green-500/20 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={responses.noOtherMedical || false}
+                      onChange={(e) => handleCheckboxChange('noOtherMedical', e.target.checked)}
+                      className="w-5 h-5 rounded border-zinc-700 text-[#ff9e19] focus:ring-[#ff9e19] focus:ring-offset-zinc-900"
+                    />
+                    <span className="text-sm text-green-400 font-medium">None of the above</span>
+                  </label>
                 </div>
               </div>
             </div>
@@ -799,12 +964,23 @@ useEffect(() => {
                       <span className="text-sm text-zinc-200">{med.label}</span>
                     </label>
                   ))}
+                  
+                  {/* NONE OF THE ABOVE */}
+                  <label className="flex items-center gap-3 p-3 bg-green-500/10 border-2 border-green-500/30 rounded-lg cursor-pointer hover:bg-green-500/20 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={responses.noMedications || false}
+                      onChange={(e) => handleCheckboxChange('noMedications', e.target.checked)}
+                      className="w-5 h-5 rounded border-zinc-700 text-[#ff9e19] focus:ring-[#ff9e19] focus:ring-offset-zinc-900"
+                    />
+                    <span className="text-sm text-green-400 font-medium">None of the above</span>
+                  </label>
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-zinc-300 mb-2">
-                  Alcohol Use Frequency
+                  Alcohol Use Frequency <span className="text-red-400">*</span>
                 </label>
                 <select
                   value={responses.alcoholUse || ''}
@@ -823,7 +999,7 @@ useEffect(() => {
 
               <div>
                 <label className="block text-sm font-medium text-zinc-300 mb-2">
-                  Substance Use Disorder / Addiction Status
+                  Substance Use Disorder / Addiction Status <span className="text-red-400">*</span>
                 </label>
                 <select
                   value={responses.addiction || ''}
@@ -930,17 +1106,24 @@ useEffect(() => {
             {currentSection < 5 ? (
               <button
                 onClick={() => setCurrentSection(prev => prev + 1)}
-                className="px-6 py-3 bg-[#ff9e19] hover:bg-[#ff9e19]/90 text-zinc-950 font-semibold rounded-lg transition-colors"
+                disabled={!canProceedToNextSection()}
+                className={`px-6 py-3 font-semibold rounded-lg transition-colors ${
+                  canProceedToNextSection()
+                    ? 'bg-[#ff9e19] hover:bg-[#ff9e19]/90 text-zinc-950 cursor-pointer'
+                    : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
+                }`}
               >
                 Next Section
               </button>
             ) : (
               <button
                 onClick={handleSubmit}
-                disabled={!responses.understandsNotTreatment || !responses.understandsConsultProfessionals || 
-                          !responses.understandsResponsibility || !responses.understandsCrisisUse || 
-                          !responses.certifiesHonesty}
-                className="px-8 py-3 bg-[#ff9e19] hover:bg-[#ff9e19]/90 disabled:bg-zinc-700 disabled:text-zinc-500 disabled:cursor-not-allowed text-zinc-950 font-semibold rounded-lg transition-colors"
+                disabled={!isSection5Valid()}
+                className={`px-8 py-3 font-semibold rounded-lg transition-colors ${
+                  isSection5Valid()
+                    ? 'bg-[#ff9e19] hover:bg-[#ff9e19]/90 text-zinc-950 cursor-pointer'
+                    : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
+                }`}
               >
                 Submit Screening
               </button>
