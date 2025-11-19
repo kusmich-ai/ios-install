@@ -27,7 +27,7 @@ export default function AssessmentPage() {
         .from('baseline_assessments')
         .select('id')
         .eq('user_id', user.id)
-        .single()
+        .maybeSingle()
 
       if (baseline) {
         // Already completed - redirect to chat
