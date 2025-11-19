@@ -26,6 +26,10 @@ const IOSBaselineAssessment = ({ user }) => {
   // User authentication state
   const [userId, setUserId] = useState(user?.id || null);
   const [loading, setLoading] = useState(!user);
+  
+  // ✅ NEW: Track if data save was successful
+  const [dataSaved, setDataSaved] = useState(false);
+  const [saveError, setSaveError] = useState(null);
 
   // Get authenticated user if not passed as prop
   useEffect(() => {
@@ -542,17 +546,16 @@ const IOSBaselineAssessment = ({ user }) => {
     
     // Store in Supabase
     await storeBaselineData(resultsData);
-    
-    // User will manually click "Start Your IOS Install Now" button to go to /chat
   };
 
-  // ✅ FIXED: Store baseline data in BOTH tables
+  // ✅ FIXED: Store baseline data in BOTH tables with proper error handling
   const storeBaselineData = async (resultsData) => {
     try {
       console.log('💾 Storing baseline data for user:', userId);
       
       if (!userId) {
         console.error('❌ No user ID available');
+        setSaveError('No user ID found. Please sign in again.');
         alert('Error: No user ID found. Please sign in again.');
         return;
       }
@@ -654,10 +657,51 @@ const IOSBaselineAssessment = ({ user }) => {
       console.log('✅ Stored in user_progress table');
       console.log('🎉 All baseline data stored successfully!');
       
+      // ✅ Mark as successfully saved
+      setDataSaved(true);
+      setSaveError(null);
+      
     } catch (error) {
       console.error('❌ Error storing baseline data:', error);
+      setSaveError(error.message || 'Unknown error occurred');
       // Show error to user
       alert('Error saving assessment results. Please try again or contact support. Check console for details.');
+    }
+  };
+
+  // ✅ NEW: Handle redirect to chat with verification
+  const handleStartIOS = async () => {
+    // If data was already marked as saved, just redirect
+    if (dataSaved) {
+      window.location.href = '/chat';
+      return;
+    }
+
+    // Otherwise, verify it was saved before redirecting
+    try {
+      console.log('🔍 Verifying baseline data before redirect...');
+      
+      const { data: baseline, error } = await supabase
+        .from('baseline_assessments')
+        .select('id, rewired_index')
+        .eq('user_id', userId)
+        .single();
+      
+      if (error) {
+        console.error('❌ Error verifying baseline:', error);
+        throw error;
+      }
+      
+      if (baseline && baseline.rewired_index) {
+        console.log('✅ Baseline verified! Redirecting to chat...');
+        window.location.href = '/chat';
+      } else {
+        console.error('❌ Baseline data not found or incomplete');
+        alert('Assessment data not saved properly. Please refresh the page and try again, or contact support.');
+      }
+    } catch (error) {
+      console.error('❌ Error verifying save:', error);
+      alert('Could not verify assessment was saved. Please try again or contact support. Error: ' + error.message);
     }
   };
 
@@ -904,6 +948,21 @@ const IOSBaselineAssessment = ({ user }) => {
                 <p className="text-gray-400">Your neural and mental operating system starting point</p>
               </div>
 
+              {/* ✅ Show Save Status */}
+              {saveError && (
+                <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: '#ff444410', border: '2px solid #ff4444' }}>
+                  <p className="text-red-400 font-semibold">⚠️ Error Saving Data</p>
+                  <p className="text-sm text-gray-300 mt-2">{saveError}</p>
+                  <p className="text-xs text-gray-400 mt-2">Please contact support or try refreshing the page.</p>
+                </div>
+              )}
+
+              {dataSaved && (
+                <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: '#10b98110', border: '2px solid #10b981' }}>
+                  <p className="text-green-400 font-semibold">✅ Assessment Saved Successfully</p>
+                </div>
+              )}
+
               {/* REwired Index - Hero Score */}
               <div className="p-8 rounded-lg mb-8 text-center" style={{ backgroundColor: '#0a0a0a', border: `2px solid ${orangeAccent}` }}>
                 <div className="text-sm text-gray-400 mb-2">YOUR REWIRED INDEX</div>
@@ -1068,13 +1127,14 @@ const IOSBaselineAssessment = ({ user }) => {
                 </p>
               </div>
 
-              {/* CTA Button */}
+              {/* ✅ FIXED CTA Button with verification */}
               <button
-                onClick={() => window.location.href = '/chat'}
-                className="w-full px-8 py-6 rounded-lg font-bold text-white text-xl transition-all transform hover:scale-105"
+                onClick={handleStartIOS}
+                disabled={!!saveError}
+                className="w-full px-8 py-6 rounded-lg font-bold text-white text-xl transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ backgroundColor: orangeAccent }}
               >
-                Start Your IOS Install Now
+                {saveError ? 'Fix Errors Before Continuing' : 'Start Your IOS Install Now'}
               </button>
 
             </div>
