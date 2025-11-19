@@ -3,6 +3,7 @@ import { ChevronRight, Check, Brain, Target, Sun, Focus, Wind } from 'lucide-rea
 import { createClient } from '@/lib/supabase-client';
 
 const IOSBaselineAssessment = ({ user }) => {
+  const supabase = createClient();
   // State management
   const [currentSection, setCurrentSection] = useState(0);
   const [currentQuestion, setCurrentQuestion] = useState(0);
