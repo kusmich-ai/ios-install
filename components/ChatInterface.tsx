@@ -213,6 +213,66 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
               />
             </div>
           </div>
+{/* Domain Scores */}
+<div className="space-y-3">
+  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Domain Scores</h3>
+  
+  {/* Regulation */}
+  <div>
+    <div className="flex items-center justify-between mb-1">
+      <span className="text-sm text-gray-300">Regulation</span>
+      <span className="text-sm font-semibold text-[#3b82f6]">{baselineData.domainScores.regulation.toFixed(1)}/5</span>
+    </div>
+    <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
+      <div 
+        className="h-2 rounded-full transition-all bg-[#3b82f6]"
+        style={{ width: `${(baselineData.domainScores.regulation / 5) * 100}%` }}
+      />
+    </div>
+  </div>
+
+  {/* Awareness */}
+  <div>
+    <div className="flex items-center justify-between mb-1">
+      <span className="text-sm text-gray-300">Awareness</span>
+      <span className="text-sm font-semibold text-[#10b981]">{baselineData.domainScores.awareness.toFixed(1)}/5</span>
+    </div>
+    <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
+      <div 
+        className="h-2 rounded-full transition-all bg-[#10b981]"
+        style={{ width: `${(baselineData.domainScores.awareness / 5) * 100}%` }}
+      />
+    </div>
+  </div>
+
+  {/* Outlook */}
+  <div>
+    <div className="flex items-center justify-between mb-1">
+      <span className="text-sm text-gray-300">Outlook</span>
+      <span className="text-sm font-semibold text-[#f59e0b]">{baselineData.domainScores.outlook.toFixed(1)}/5</span>
+    </div>
+    <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
+      <div 
+        className="h-2 rounded-full transition-all bg-[#f59e0b]"
+        style={{ width: `${(baselineData.domainScores.outlook / 5) * 100}%` }}
+      />
+    </div>
+  </div>
+
+  {/* Attention */}
+  <div>
+    <div className="flex items-center justify-between mb-1">
+      <span className="text-sm text-gray-300">Attention</span>
+      <span className="text-sm font-semibold text-[#8b5cf6]">{baselineData.domainScores.attention.toFixed(1)}/5</span>
+    </div>
+    <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
+      <div 
+        className="h-2 rounded-full transition-all bg-[#8b5cf6]"
+        style={{ width: `${(baselineData.domainScores.attention / 5) * 100}%` }}
+      />
+    </div>
+  </div>
+</div>
         </div>
       </aside>
 
