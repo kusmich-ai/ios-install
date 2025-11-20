@@ -58,23 +58,6 @@ export default function SignUp() {
       return
     }
 
-    try {
-      const fullName = `${firstName.trim()} ${lastName.trim()}`.trim()
-      
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-          data: {
-            first_name: firstName.trim(),   // ← ChatInterface uses this
-            last_name: lastName.trim(),     // ← Optional but good to have
-            full_name: fullName,            // ← For display purposes
-          }
-        },
-      })
-
-      if (signUpError) throw signUpError
 try {
   // Split full name into first and last
   const nameParts = fullName.trim().split(' ')
@@ -88,13 +71,34 @@ try {
       emailRedirectTo: `${window.location.origin}/auth/callback`,
       data: {
         full_name: fullName.trim(),
-        first_name: firstName,     // ← Added
-        last_name: lastName,       // ← Added
+        first_name: firstName,      // ← Store in user_metadata
+        last_name: lastName,        // ← Store in user_metadata
       }
     },
   })
 
   if (signUpError) throw signUpError
+
+  // Create user_profiles record if signup successful
+  if (data.user) {
+    const { error: profileError } = await supabase
+      .from('user_profiles')  // ← Using your actual table name
+      .upsert({
+        id: data.user.id,
+        first_name: firstName,
+        last_name: lastName,
+        full_name: fullName.trim(),
+        updated_at: new Date().toISOString(),
+      })
+    
+    if (profileError) {
+      console.error('Profile creation error:', profileError)
+      // Don't throw - auth succeeded, profile can be fixed later
+    }
+  }
+
+  // Check if user has a session (email confirmation disabled)
+  if (data.session) {
 
   // ↓↓↓ ADD PROFILES CODE HERE ↓↓↓
   // Create profile record if signup successful
