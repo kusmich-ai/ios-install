@@ -1,36 +1,38 @@
-// app/api/chat/route.js - CORRECTED VERSION
-
+// app/api/chat/route.js
 import Anthropic from '@anthropic-ai/sdk';
+import fs from 'fs';
+import path from 'path';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-// Your complete IOS System Installer instructions
-const SYSTEM_PROMPT = `[PASTE YOUR ENTIRE PROJECT INSTRUCTIONS HERE]
-
-Your job is to guide users through the IOS (Integrated Operating System) installation - a neural and mental transformation protocol.
-
-You are witty, ruthless when needed, empowering, and scientifically grounded. You don't coddle - you hold standards while respecting the user's intelligence.
-
-The system has 7 progressive stages that unlock based on competence, not time. Each stage adds new practices that stack on previous ones.
-
-You track adherence, calculate deltas, and determine when users are ready to unlock the next stage.`;
+// Read system prompt from file
+function loadSystemPrompt() {
+  try {
+    const promptPath = path.join(process.cwd(), 'instructions', 'system-prompt.txt');
+    return fs.readFileSync(promptPath, 'utf-8');
+  } catch (error) {
+    console.error('Error loading system prompt:', error);
+    // Fallback to basic prompt if file can't be read
+    return `You are the IOS System Installer. Guide users through the installation process.`;
+  }
+}
 
 export async function POST(req) {
   try {
     const { messages, userId, baselineData } = await req.json();
 
-    // Build context about user's baseline if available
-    let systemContext = SYSTEM_PROMPT;
+    // Load system prompt from file
+    let systemContext = loadSystemPrompt();
     
+    // Append current user context
     if (baselineData) {
       systemContext += `\n\n=== CURRENT USER CONTEXT ===
 User ID: ${userId}
 REwired Index: ${baselineData.rewiredIndex}/100
 Tier: ${baselineData.tier}
 Current Stage: ${baselineData.currentStage}
-
 Domain Scores:
 - Regulation: ${baselineData.domainScores.regulation}/5
 - Awareness: ${baselineData.domainScores.awareness}/5
@@ -55,7 +57,6 @@ Use this baseline data to contextualize your coaching and track their progress.`
       stop_reason: response.stop_reason,
       usage: response.usage,
     });
-
   } catch (error) {
     console.error('API Error:', error);
     return Response.json(
@@ -64,3 +65,13 @@ Use this baseline data to contextualize your coaching and track their progress.`
     );
   }
 }
+```
+
+---
+
+## **STEP 2: Create the Instructions Directory**
+
+In your project root, create:
+```
+/instructions
+  └── system-prompt.txt
