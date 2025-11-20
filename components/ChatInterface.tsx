@@ -6,7 +6,22 @@ import { useUserProgress } from '@/app/hooks/useUserProgress';
 import ToolsSidebar from '@/components/ToolsSidebar';
 import FloatingActionButton from '@/components/FloatingActionButton';
 
-export default function ChatInterface({ user, baselineData }) {
+interface ChatInterfaceProps {
+  user: any; // You can make this more specific later
+  baselineData: {
+    rewiredIndex: number;
+    tier: string;
+    domainScores: {
+      regulation: number;
+      awareness: number;
+      outlook: number;
+      attention: number;
+    };
+    currentStage: number;
+  };
+}
+
+export default function ChatInterface({ user, baselineData }: ChatInterfaceProps) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
