@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/lib/supabase-client'; // ← Using your existing setup
 
 export interface UserProgress {
   currentStage: number;
@@ -31,7 +31,7 @@ export function useUserProgress() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  const supabase = createClientComponentClient();
+  const supabase = createClient(); // ← Using your existing client
 
   useEffect(() => {
     fetchProgress();
@@ -70,7 +70,7 @@ export function useUserProgress() {
         .from('practice_logs')
         .select('*')
         .eq('user_id', user.id)
-        .gte('practice_date', today); // Get today's practices
+        .gte('practice_date', today);
 
       if (practicesError) {
         console.error('Error fetching practices:', practicesError);
@@ -142,3 +142,34 @@ export function useUserProgress() {
 
       setLoading(false);
     } catch (err) {
+      console.error('Error in fetchProgress:', err);
+      setError(err instanceof Error ? err.message : 'Unknown error');
+      setLoading(false);
+    }
+  };
+
+  const refetchProgress = () => {
+    fetchProgress();
+  };
+
+  return { progress, loading, error, refetchProgress };
+}
+
+// Helper function to determine unlocked tools based on stage
+function getUnlockedTools(stage: number): string[] {
+  const tools: string[] = ['decentering']; // Unlocked from Stage 1
+  
+  if (stage >= 2) {
+    tools.push('meta_reflection');
+  }
+  
+  if (stage >= 3) {
+    tools.push('reframe');
+  }
+  
+  if (stage >= 4) {
+    tools.push('thought_hygiene');
+  }
+  
+  return tools;
+}
