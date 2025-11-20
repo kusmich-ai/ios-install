@@ -1,4 +1,3 @@
-// app/auth/signup/page.tsx - WITH FIRST/LAST NAME & STRONG PASSWORD
 'use client'
 
 import { useState } from 'react'
@@ -58,75 +57,43 @@ export default function SignUp() {
       return
     }
 
-try {
-  // Split full name into first and last
-  const nameParts = fullName.trim().split(' ')
-  const firstName = nameParts[0] || ''
-  const lastName = nameParts.slice(1).join(' ') || ''
+    try {
+      // Create full name from first + last
+      const fullName = `${firstName.trim()} ${lastName.trim()}`.trim()
 
-  const { data, error: signUpError } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      emailRedirectTo: `${window.location.origin}/auth/callback`,
-      data: {
-        full_name: fullName.trim(),
-        first_name: firstName,      // ← Store in user_metadata
-        last_name: lastName,        // ← Store in user_metadata
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          data: {
+            full_name: fullName,
+            first_name: firstName.trim(),
+            last_name: lastName.trim(),
+          }
+        },
+      })
+
+      if (signUpError) throw signUpError
+
+      // Create user_profiles record if signup successful
+      if (data.user) {
+        const { error: profileError } = await supabase
+          .from('user_profiles')
+          .upsert({
+            id: data.user.id,
+            first_name: firstName.trim(),
+            last_name: lastName.trim(),
+            full_name: fullName,
+            updated_at: new Date().toISOString(),
+          })
+        
+        if (profileError) {
+          console.error('Profile creation error:', profileError)
+          // Don't throw - auth succeeded, profile can be fixed later
+        }
       }
-    },
-  })
 
-  if (signUpError) throw signUpError
-
-  // Create user_profiles record if signup successful
-  if (data.user) {
-    const { error: profileError } = await supabase
-      .from('user_profiles')  // ← Using your actual table name
-      .upsert({
-        id: data.user.id,
-        first_name: firstName,
-        last_name: lastName,
-        full_name: fullName.trim(),
-        updated_at: new Date().toISOString(),
-      })
-    
-    if (profileError) {
-      console.error('Profile creation error:', profileError)
-      // Don't throw - auth succeeded, profile can be fixed later
-    }
-  }
-
-  // Check if user has a session (email confirmation disabled)
-  if (data.session) {
-
-  // ↓↓↓ ADD PROFILES CODE HERE ↓↓↓
-  // Create profile record if signup successful
-  if (data.user) {
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .upsert({
-        id: data.user.id,
-        first_name: firstName,
-        last_name: lastName,
-        full_name: fullName.trim(),
-        updated_at: new Date().toISOString(),
-      })
-    
-    if (profileError) {
-      console.error('Profile update error:', profileError)
-      // Don't throw - auth succeeded, profile can be fixed later
-    }
-  }
-  // ↑↑↑ END OF PROFILES CODE ↑↑↑
-
-  // Check if user has a session (email confirmation disabled)
-  if (data.session) {
-    // Email confirmation is DISABLED - user is auto-logged in
-    console.log('✅ Auto-signed in, redirecting to screening...')
-    router.refresh()
-    setTimeout(() => router.push('/screening'), 100)
-  } else {
       // Check if user has a session (email confirmation disabled)
       if (data.session) {
         // Email confirmation is DISABLED - user is auto-logged in
