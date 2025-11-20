@@ -20,7 +20,10 @@ interface ChatInterfaceProps {
     currentStage: number;
   };
 }
-
+type Message = {
+  role: string;
+  content: string;
+};
 export default function ChatInterface({ user, baselineData }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState<string>('');
@@ -76,7 +79,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
     }
   }, [user, baselineData]);
 
-  const sendToAPI = async (messageHistory) => {
+  const sendToAPI = async (messageHistory: Message[]) => {
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -102,7 +105,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
 }
   };
 
-  const sendMessage = async (e) => {
+  const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || loading) return;
 
