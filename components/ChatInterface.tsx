@@ -26,9 +26,9 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const messagesEndRef = useRef(null);
-  const textareaRef = useRef(null);
-  const hasInitialized = useRef(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+const textareaRef = useRef<HTMLTextAreaElement>(null);
+const hasInitialized = useRef(false);
 
   const isMobile = useIsMobile();
   const { progress, loading: progressLoading, error: progressError } = useUserProgress();
