@@ -175,148 +175,193 @@ export default function ChatInterface({ user, baselineData }) {
     );
   }
 
+  // Get user's first name from profile or email
+  const getUserName = () => {
+    if (user?.user_metadata?.first_name) {
+      return user.user_metadata.first_name;
+    }
+    // Fallback to email username if no first name
+    if (user?.email) {
+      return user.email.split('@')[0];
+    }
+    return 'User';
+  };
+
+  // Calculate days in current stage (placeholder - you'll need to implement actual logic)
+  const getDaysInStage = () => {
+    // TODO: Calculate from stage_start_date in user_progress table
+    // For now, returning placeholder
+    return 3; // Replace with actual calculation
+  };
+
+  const daysInStage = getDaysInStage();
+  const daysRemaining = 14 - daysInStage; // 14 days required for stage completion
+  const stageProgress = (daysInStage / 14) * 100;
+
   return (
-    <div className="flex flex-col h-screen bg-[#0a0a0a]">
-      {/* System Status Header */}
-      <header className="border-b border-gray-800 bg-[#111111]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          {/* Title Row */}
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-white mb-1">IOS System Installer</h1>
-              <p className="text-sm text-gray-400">Neural & Mental Operating System</p>
-              {user?.email && <p className="text-xs text-gray-500 mt-1">{user.email}</p>}
-            </div>
-            <div className="px-4 py-2 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+    <div className="flex h-screen bg-[#0a0a0a]">
+      {/* Compact Sidebar Dashboard */}
+      <aside className="w-80 border-r border-gray-800 bg-[#111111] overflow-y-auto flex-shrink-0">
+        <div className="p-4">
+          {/* Header */}
+          <div className="mb-6">
+            <h1 className="text-xl font-bold text-white mb-1">IOS System Installer</h1>
+            <p className="text-xs text-gray-400 mb-2">Neural & Mental Operating System</p>
+            <p className="text-sm font-medium text-white">{getUserName()}</p>
+          </div>
+
+          {/* Stage Badge with Day Counter */}
+          <div className="mb-6 p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+            <div className="flex items-center justify-between mb-2">
               <span className="text-[#ff9e19] font-semibold">Stage {baselineData.currentStage}</span>
+              <span className="text-xs text-gray-400">Day {daysInStage}</span>
+            </div>
+            {/* Progress bar to next stage */}
+            <div className="w-full rounded-full h-1.5 mb-2" style={{ backgroundColor: '#1a1a1a' }}>
+              <div 
+                className="h-1.5 rounded-full transition-all"
+                style={{ 
+                  backgroundColor: '#ff9e19',
+                  width: `${Math.min(stageProgress, 100)}%`
+                }}
+              />
+            </div>
+            <p className="text-xs text-gray-400">
+              {daysRemaining > 0 ? `${daysRemaining} days to unlock eligibility` : 'Ready for evaluation'}
+            </p>
+          </div>
+
+          {/* REwired Index - Compact */}
+          <div className="mb-6 p-4 rounded-lg text-center border-2" style={{ backgroundColor: '#0a0a0a', borderColor: '#ff9e19' }}>
+            <div className="text-xs text-gray-400 mb-1 uppercase tracking-wide">REwired Index</div>
+            <div className="text-4xl font-bold mb-1" style={{ color: '#ff9e19' }}>
+              {baselineData.rewiredIndex}
+            </div>
+            <div className={`text-xs font-semibold mb-2 ${getTierColor(baselineData.tier)}`}>
+              {baselineData.tier}
+            </div>
+            <div className="w-full rounded-full h-1.5" style={{ backgroundColor: '#1a1a1a' }}>
+              <div 
+                className="h-1.5 rounded-full transition-all duration-500"
+                style={{ 
+                  backgroundColor: '#ff9e19',
+                  width: `${baselineData.rewiredIndex}%`
+                }}
+              />
             </div>
           </div>
 
-          {/* Status Grid - Matching Assessment Results Style */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* REwired Index - Hero Card */}
-            <div className="p-6 rounded-lg text-center border-2" style={{ backgroundColor: '#0a0a0a', borderColor: '#ff9e19' }}>
-              <div className="text-xs text-gray-400 mb-2 uppercase tracking-wide">Your REwired Index</div>
-              <div className="text-6xl font-bold mb-2" style={{ color: '#ff9e19' }}>
-                {baselineData.rewiredIndex}
+          {/* Domain Scores - Compact Stack */}
+          <div className="space-y-3">
+            {/* Regulation - Blue */}
+            <div className="p-3 rounded-lg" style={{ backgroundColor: '#0a0a0a' }}>
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4" style={{ color: '#3b82f6' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                  <span className="text-sm font-semibold text-white">Regulation</span>
+                </div>
+                <span className="text-lg font-bold text-white">
+                  {baselineData.domainScores.regulation.toFixed(1)}
+                  <span className="text-xs text-gray-500">/5</span>
+                </span>
               </div>
-              <div className={`text-lg font-semibold mb-3 ${getTierColor(baselineData.tier)}`}>
-                {baselineData.tier}
-              </div>
-              <div className="w-full rounded-full h-2" style={{ backgroundColor: '#1a1a1a' }}>
+              <div className="w-full rounded-full h-1.5" style={{ backgroundColor: '#1a1a1a' }}>
                 <div 
-                  className="h-2 rounded-full transition-all duration-500"
+                  className="h-1.5 rounded-full transition-all"
                   style={{ 
-                    backgroundColor: '#ff9e19',
-                    width: `${baselineData.rewiredIndex}%`
+                    backgroundColor: '#3b82f6',
+                    width: `${(baselineData.domainScores.regulation / 5) * 100}%`
                   }}
                 />
               </div>
             </div>
 
-            {/* Domain Scores - 2x2 Grid with Icons and Colors */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* Regulation - Blue */}
-              <div className="p-4 rounded-lg" style={{ backgroundColor: '#0a0a0a' }}>
-                <div className="flex items-center gap-2 mb-2">
-                  <svg className="w-5 h-5" style={{ color: '#3b82f6' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                  </svg>
-                  <div className="font-semibold text-white text-sm">Regulation</div>
-                </div>
-                <div className="text-2xl font-bold text-white mb-1">
-                  {baselineData.domainScores.regulation.toFixed(1)}
-                  <span className="text-sm text-gray-500">/5</span>
-                </div>
-                <div className="w-full rounded-full h-2" style={{ backgroundColor: '#1a1a1a' }}>
-                  <div 
-                    className="h-2 rounded-full transition-all"
-                    style={{ 
-                      backgroundColor: '#3b82f6',
-                      width: `${(baselineData.domainScores.regulation / 5) * 100}%`
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Awareness - Purple */}
-              <div className="p-4 rounded-lg" style={{ backgroundColor: '#0a0a0a' }}>
-                <div className="flex items-center gap-2 mb-2">
-                  <svg className="w-5 h-5" style={{ color: '#a855f7' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {/* Awareness - Purple */}
+            <div className="p-3 rounded-lg" style={{ backgroundColor: '#0a0a0a' }}>
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4" style={{ color: '#a855f7' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                   </svg>
-                  <div className="font-semibold text-white text-sm">Awareness</div>
+                  <span className="text-sm font-semibold text-white">Awareness</span>
                 </div>
-                <div className="text-2xl font-bold text-white mb-1">
+                <span className="text-lg font-bold text-white">
                   {baselineData.domainScores.awareness.toFixed(1)}
-                  <span className="text-sm text-gray-500">/5</span>
-                </div>
-                <div className="w-full rounded-full h-2" style={{ backgroundColor: '#1a1a1a' }}>
-                  <div 
-                    className="h-2 rounded-full transition-all"
-                    style={{ 
-                      backgroundColor: '#a855f7',
-                      width: `${(baselineData.domainScores.awareness / 5) * 100}%`
-                    }}
-                  />
-                </div>
+                  <span className="text-xs text-gray-500">/5</span>
+                </span>
               </div>
+              <div className="w-full rounded-full h-1.5" style={{ backgroundColor: '#1a1a1a' }}>
+                <div 
+                  className="h-1.5 rounded-full transition-all"
+                  style={{ 
+                    backgroundColor: '#a855f7',
+                    width: `${(baselineData.domainScores.awareness / 5) * 100}%`
+                  }}
+                />
+              </div>
+            </div>
 
-              {/* Outlook - Yellow */}
-              <div className="p-4 rounded-lg" style={{ backgroundColor: '#0a0a0a' }}>
-                <div className="flex items-center gap-2 mb-2">
-                  <svg className="w-5 h-5" style={{ color: '#eab308' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {/* Outlook - Yellow */}
+            <div className="p-3 rounded-lg" style={{ backgroundColor: '#0a0a0a' }}>
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4" style={{ color: '#eab308' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                   </svg>
-                  <div className="font-semibold text-white text-sm">Outlook</div>
+                  <span className="text-sm font-semibold text-white">Outlook</span>
                 </div>
-                <div className="text-2xl font-bold text-white mb-1">
+                <span className="text-lg font-bold text-white">
                   {baselineData.domainScores.outlook.toFixed(1)}
-                  <span className="text-sm text-gray-500">/5</span>
-                </div>
-                <div className="w-full rounded-full h-2" style={{ backgroundColor: '#1a1a1a' }}>
-                  <div 
-                    className="h-2 rounded-full transition-all"
-                    style={{ 
-                      backgroundColor: '#eab308',
-                      width: `${(baselineData.domainScores.outlook / 5) * 100}%`
-                    }}
-                  />
-                </div>
+                  <span className="text-xs text-gray-500">/5</span>
+                </span>
               </div>
+              <div className="w-full rounded-full h-1.5" style={{ backgroundColor: '#1a1a1a' }}>
+                <div 
+                  className="h-1.5 rounded-full transition-all"
+                  style={{ 
+                    backgroundColor: '#eab308',
+                    width: `${(baselineData.domainScores.outlook / 5) * 100}%`
+                  }}
+                />
+              </div>
+            </div>
 
-              {/* Attention - Green */}
-              <div className="p-4 rounded-lg" style={{ backgroundColor: '#0a0a0a' }}>
-                <div className="flex items-center gap-2 mb-2">
-                  <svg className="w-5 h-5" style={{ color: '#22c55e' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            {/* Attention - Green */}
+            <div className="p-3 rounded-lg" style={{ backgroundColor: '#0a0a0a' }}>
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4" style={{ color: '#22c55e' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  <div className="font-semibold text-white text-sm">Attention</div>
+                  <span className="text-sm font-semibold text-white">Attention</span>
                 </div>
-                <div className="text-2xl font-bold text-white mb-1">
+                <span className="text-lg font-bold text-white">
                   {baselineData.domainScores.attention.toFixed(1)}
-                  <span className="text-sm text-gray-500">/5</span>
-                </div>
-                <div className="w-full rounded-full h-2" style={{ backgroundColor: '#1a1a1a' }}>
-                  <div 
-                    className="h-2 rounded-full transition-all"
-                    style={{ 
-                      backgroundColor: '#22c55e',
-                      width: `${(baselineData.domainScores.attention / 5) * 100}%`
-                    }}
-                  />
-                </div>
+                  <span className="text-xs text-gray-500">/5</span>
+                </span>
+              </div>
+              <div className="w-full rounded-full h-1.5" style={{ backgroundColor: '#1a1a1a' }}>
+                <div 
+                  className="h-1.5 rounded-full transition-all"
+                  style={{ 
+                    backgroundColor: '#22c55e',
+                    width: `${(baselineData.domainScores.attention / 5) * 100}%`
+                  }}
+                />
               </div>
             </div>
           </div>
         </div>
-      </header>
+      </aside>
 
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col">
+        {/* Messages Area */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
           {messages.map((msg, idx) => (
             <div
               key={idx}
@@ -381,6 +426,7 @@ export default function ChatInterface({ user, baselineData }) {
             Press Enter to send, Shift+Enter for new line
           </p>
         </div>
+      </div>
       </div>
     </div>
   );
