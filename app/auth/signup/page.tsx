@@ -58,16 +58,23 @@ export default function SignUp() {
     }
 
     try {
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-          data: {
-            full_name: fullName.trim(),
-          }
-        },
-      })
+// Split full name into first and last
+const nameParts = fullName.trim().split(' ')
+const firstName = nameParts[0] || ''
+const lastName = nameParts.slice(1).join(' ') || '' // Handle multiple last names
+
+const { data, error: signUpError } = await supabase.auth.signUp({
+  email,
+  password,
+  options: {
+    emailRedirectTo: `${window.location.origin}/auth/callback`,
+    data: {
+      full_name: fullName.trim(),    // Keep for legacy/display
+      first_name: firstName,          // ← ChatInterface uses this
+      last_name: lastName,            // ← Optional but good to have
+    }
+  },
+})
 
       if (signUpError) throw signUpError
 
