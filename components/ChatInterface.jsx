@@ -1,6 +1,10 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useIsMobile } from '@/app/hooks/useIsMobile';
+import { useUserProgress } from '@/app/hooks/useUserProgress';
+import ToolsSidebar from '@/app/components/ToolsSidebar';
+import FloatingActionButton from '@/app/components/FloatingActionButton';
 
 export default function ChatInterface({ user, baselineData }) {
   const [messages, setMessages] = useState([]);
@@ -11,12 +15,18 @@ export default function ChatInterface({ user, baselineData }) {
   const textareaRef = useRef(null);
   const hasInitialized = useRef(false);
 
+  // New hooks for responsive design and user progress
+  const isMobile = useIsMobile();
+  const { progress, loading: progressLoading, error: progressError, refetchProgress } = useUserProgress();
+
   // Debug logging
   useEffect(() => {
     console.log('ChatInterface mounted');
     console.log('User:', user);
     console.log('Baseline Data:', baselineData);
-  }, []);
+    console.log('Is Mobile:', isMobile);
+    console.log('User Progress:', progress);
+  }, [user, baselineData, isMobile, progress]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -141,6 +151,46 @@ export default function ChatInterface({ user, baselineData }) {
     setLoading(false);
   };
 
+  // Handler for when user clicks a practice in sidebar/FAB
+  const handlePracticeClick = async (practiceId: string) => {
+    console.log('Practice clicked:', practiceId);
+    
+    // Send message to AI to start practice
+    const practiceMessage = `I want to do the ${practiceId} practice now.`;
+    const userMessage = { role: 'user', content: practiceMessage };
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
+    setLoading(true);
+
+    const response = await sendToAPI(newMessages);
+    
+    if (response) {
+      setMessages([...newMessages, { role: 'assistant', content: response }]);
+    }
+
+    setLoading(false);
+  };
+
+  // Handler for when user clicks an on-demand tool
+  const handleToolClick = async (toolId: string) => {
+    console.log('Tool clicked:', toolId);
+    
+    // Send message to AI to start tool/protocol
+    const toolMessage = `I want to run the ${toolId} protocol.`;
+    const userMessage = { role: 'user', content: toolMessage };
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
+    setLoading(true);
+
+    const response = await sendToAPI(newMessages);
+    
+    if (response) {
+      setMessages([...newMessages, { role: 'assistant', content: response }]);
+    }
+
+    setLoading(false);
+  };
+
   const getTierColor = (tier) => {
     const tierLower = tier?.toLowerCase() || '';
     if (tierLower.includes('integrated') || tierLower.includes('embodied')) return 'text-purple-400';
@@ -150,12 +200,12 @@ export default function ChatInterface({ user, baselineData }) {
     return 'text-red-400';
   };
 
-  if (error) {
+  if (error || progressError) {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-[#0a0a0a]">
         <div className="max-w-md p-8 rounded-lg bg-[#111111] border border-gray-800">
           <h2 className="text-xl font-bold mb-4 text-[#ff9e19]">Error</h2>
-          <p className="text-gray-400 mb-4">{error}</p>
+          <p className="text-gray-400 mb-4">{error || progressError}</p>
           <div className="space-y-2">
             <button
               onClick={() => window.location.reload()}
@@ -175,31 +225,27 @@ export default function ChatInterface({ user, baselineData }) {
     );
   }
 
-  // Get user's first name from profile or email
+  // Get user's first name
   const getUserName = () => {
-    // First check user_metadata (set during signup)
     if (user?.user_metadata?.first_name) {
       return user.user_metadata.first_name;
     }
-    // Check raw_user_meta_data (alternative location)
     if (user?.raw_user_meta_data?.first_name) {
       return user.raw_user_meta_data.first_name;
     }
-    // TODO: You'll need to fetch from profiles table in Supabase
-    // For now, fallback to email username
     if (user?.email) {
       return user.email.split('@')[0];
     }
     return 'User';
   };
 
-  // Calculate stage progress (out of 7 total stages)
-  const stageProgress = ((baselineData.currentStage - 1) / 6) * 100; // Stage 1-7, so 6 intervals
+  // Calculate stage progress
+  const stageProgress = ((baselineData.currentStage - 1) / 6) * 100;
 
   return (
     <div className="flex h-screen bg-[#0a0a0a]">
-      {/* Compact Sidebar Dashboard */}
-      <aside className="w-80 border-r border-gray-800 bg-[#111111] overflow-y-auto flex-shrink-0">
+      {/* Desktop Sidebar Dashboard - Hidden on mobile */}
+      <aside className="hidden md:block w-80 border-r border-gray-800 bg-[#111111] overflow-y-auto flex-shrink-0">
         <div className="p-4">
           {/* Header */}
           <div className="mb-6">
@@ -208,14 +254,13 @@ export default function ChatInterface({ user, baselineData }) {
             <p className="text-sm font-medium text-white">{getUserName()}</p>
           </div>
 
-          {/* Simplified Stage Progress */}
+          {/* Stage Progress */}
           <div className="mb-6 p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-[#ff9e19] font-semibold">
                 Stage {baselineData.currentStage} of 7
               </span>
             </div>
-            {/* Progress bar through all stages */}
             <div className="w-full rounded-full h-1.5" style={{ backgroundColor: '#1a1a1a' }}>
               <div 
                 className="h-1.5 rounded-full transition-all"
@@ -227,7 +272,7 @@ export default function ChatInterface({ user, baselineData }) {
             </div>
           </div>
 
-          {/* REwired Index - Compact */}
+          {/* REwired Index */}
           <div className="mb-6 p-4 rounded-lg text-center border-2" style={{ backgroundColor: '#0a0a0a', borderColor: '#ff9e19' }}>
             <div className="text-xs text-gray-400 mb-1 uppercase tracking-wide">REwired Index</div>
             <div className="text-4xl font-bold mb-1" style={{ color: '#ff9e19' }}>
@@ -247,183 +292,8 @@ export default function ChatInterface({ user, baselineData }) {
             </div>
           </div>
 
-          {/* Domain Scores - Compact Stack */}
+          {/* Domain Scores */}
           <div className="space-y-3">
-            {/* Regulation - Blue */}
+            {/* Regulation */}
             <div className="p-3 rounded-lg" style={{ backgroundColor: '#0a0a0a' }}>
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4" style={{ color: '#3b82f6' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                  </svg>
-                  <span className="text-sm font-semibold text-white">Regulation</span>
-                </div>
-                <span className="text-lg font-bold text-white">
-                  {baselineData.domainScores.regulation.toFixed(1)}
-                  <span className="text-xs text-gray-500">/5</span>
-                </span>
-              </div>
-              <div className="w-full rounded-full h-1.5" style={{ backgroundColor: '#1a1a1a' }}>
-                <div 
-                  className="h-1.5 rounded-full transition-all"
-                  style={{ 
-                    backgroundColor: '#3b82f6',
-                    width: `${(baselineData.domainScores.regulation / 5) * 100}%`
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Awareness - Purple */}
-            <div className="p-3 rounded-lg" style={{ backgroundColor: '#0a0a0a' }}>
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4" style={{ color: '#a855f7' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                  <span className="text-sm font-semibold text-white">Awareness</span>
-                </div>
-                <span className="text-lg font-bold text-white">
-                  {baselineData.domainScores.awareness.toFixed(1)}
-                  <span className="text-xs text-gray-500">/5</span>
-                </span>
-              </div>
-              <div className="w-full rounded-full h-1.5" style={{ backgroundColor: '#1a1a1a' }}>
-                <div 
-                  className="h-1.5 rounded-full transition-all"
-                  style={{ 
-                    backgroundColor: '#a855f7',
-                    width: `${(baselineData.domainScores.awareness / 5) * 100}%`
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Outlook - Yellow */}
-            <div className="p-3 rounded-lg" style={{ backgroundColor: '#0a0a0a' }}>
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4" style={{ color: '#eab308' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </svg>
-                  <span className="text-sm font-semibold text-white">Outlook</span>
-                </div>
-                <span className="text-lg font-bold text-white">
-                  {baselineData.domainScores.outlook.toFixed(1)}
-                  <span className="text-xs text-gray-500">/5</span>
-                </span>
-              </div>
-              <div className="w-full rounded-full h-1.5" style={{ backgroundColor: '#1a1a1a' }}>
-                <div 
-                  className="h-1.5 rounded-full transition-all"
-                  style={{ 
-                    backgroundColor: '#eab308',
-                    width: `${(baselineData.domainScores.outlook / 5) * 100}%`
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Attention - Green */}
-            <div className="p-3 rounded-lg" style={{ backgroundColor: '#0a0a0a' }}>
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4" style={{ color: '#22c55e' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <span className="text-sm font-semibold text-white">Attention</span>
-                </div>
-                <span className="text-lg font-bold text-white">
-                  {baselineData.domainScores.attention.toFixed(1)}
-                  <span className="text-xs text-gray-500">/5</span>
-                </span>
-              </div>
-              <div className="w-full rounded-full h-1.5" style={{ backgroundColor: '#1a1a1a' }}>
-                <div 
-                  className="h-1.5 rounded-full transition-all"
-                  style={{ 
-                    backgroundColor: '#22c55e',
-                    width: `${(baselineData.domainScores.attention / 5) * 100}%`
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
-        {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-          {messages.map((msg, idx) => (
-            <div
-              key={idx}
-              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-[85%] rounded-2xl px-6 py-4 ${
-                  msg.role === 'user'
-                    ? 'bg-[#ff9e19] text-white'
-                    : 'bg-gray-800 text-gray-100 border border-gray-700'
-                }`}
-              >
-                <div className="whitespace-pre-wrap leading-relaxed">{msg.content}</div>
-              </div>
-            </div>
-          ))}
-          
-          {loading && (
-            <div className="flex justify-start">
-              <div className="bg-gray-800 border border-gray-700 rounded-2xl px-6 py-4">
-                <div className="flex gap-2">
-                  <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                </div>
-              </div>
-            </div>
-          )}
-          
-          <div ref={messagesEndRef} />
-        </div>
-      </div>
-
-      {/* Input Area */}
-      <div className="border-t border-gray-800 bg-[#0a0a0a]">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <form onSubmit={sendMessage} className="flex gap-3">
-            <textarea
-              ref={textareaRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  sendMessage(e);
-                }
-              }}
-              placeholder="Type your message..."
-              disabled={loading}
-              rows={1}
-              className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#ff9e19] focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed resize-none min-h-[52px] max-h-[200px]"
-            />
-            <button
-              type="submit"
-              disabled={!input.trim() || loading}
-              className="px-6 py-3 bg-[#ff9e19] text-white rounded-xl font-semibold hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-[#ff9e19] focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              Send
-            </button>
-          </form>
-          <p className="text-xs text-gray-500 mt-2 text-center">
-            Press Enter to send, Shift+Enter for new line
-          </p>
-        </div>
-      </div>
-      </div>
-    </div>
-  );
-}
+              <div className="flex items-c
