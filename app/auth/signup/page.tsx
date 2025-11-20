@@ -75,7 +75,54 @@ export default function SignUp() {
       })
 
       if (signUpError) throw signUpError
+try {
+  // Split full name into first and last
+  const nameParts = fullName.trim().split(' ')
+  const firstName = nameParts[0] || ''
+  const lastName = nameParts.slice(1).join(' ') || ''
 
+  const { data, error: signUpError } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: `${window.location.origin}/auth/callback`,
+      data: {
+        full_name: fullName.trim(),
+        first_name: firstName,     // ← Added
+        last_name: lastName,       // ← Added
+      }
+    },
+  })
+
+  if (signUpError) throw signUpError
+
+  // ↓↓↓ ADD PROFILES CODE HERE ↓↓↓
+  // Create profile record if signup successful
+  if (data.user) {
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .upsert({
+        id: data.user.id,
+        first_name: firstName,
+        last_name: lastName,
+        full_name: fullName.trim(),
+        updated_at: new Date().toISOString(),
+      })
+    
+    if (profileError) {
+      console.error('Profile update error:', profileError)
+      // Don't throw - auth succeeded, profile can be fixed later
+    }
+  }
+  // ↑↑↑ END OF PROFILES CODE ↑↑↑
+
+  // Check if user has a session (email confirmation disabled)
+  if (data.session) {
+    // Email confirmation is DISABLED - user is auto-logged in
+    console.log('✅ Auto-signed in, redirecting to screening...')
+    router.refresh()
+    setTimeout(() => router.push('/screening'), 100)
+  } else {
       // Check if user has a session (email confirmation disabled)
       if (data.session) {
         // Email confirmation is DISABLED - user is auto-logged in
