@@ -65,13 +65,3 @@ Use this baseline data to contextualize your coaching and track their progress.`
     );
   }
 }
-```
-
----
-
-## **STEP 2: Create the Instructions Directory**
-
-In your project root, create:
-```
-/instructions
-  └── system-prompt.txt
