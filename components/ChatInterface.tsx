@@ -3,8 +3,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useIsMobile } from '@/app/hooks/useIsMobile';
 import { useUserProgress } from '@/app/hooks/useUserProgress';
-import ToolsSidebar from '@/app/components/ToolsSidebar';
-import FloatingActionButton from '@/app/components/FloatingActionButton';
+import ToolsSidebar from '@/components/ToolsSidebar';
+import FloatingActionButton from '@/components/FloatingActionButton';
 
 export default function ChatInterface({ user, baselineData }) {
   const [messages, setMessages] = useState([]);
