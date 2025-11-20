@@ -178,7 +178,7 @@ export default function ChatInterface({ user, baselineData }) {
   return (
     <div className="flex flex-col h-screen bg-[#0a0a0a]">
       {/* System Status Header */}
-      <header className="border-b border-gray-800 bg-[#0a0a0a]">
+      <header className="border-b border-gray-800 bg-[#111111]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           {/* Title Row */}
           <div className="flex items-center justify-between mb-6">
@@ -192,53 +192,121 @@ export default function ChatInterface({ user, baselineData }) {
             </div>
           </div>
 
-          {/* Status Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            {/* REwired Index - Takes 2 columns on desktop */}
-            <div className="md:col-span-2 bg-gradient-to-br from-orange-500/10 to-orange-600/5 border border-orange-500/20 rounded-lg p-4">
-              <div className="text-sm text-gray-400 mb-1">REwired Index</div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-bold text-[#ff9e19]">
-                  {baselineData.rewiredIndex}
-                </span>
-                <span className="text-xl text-gray-500">/100</span>
+          {/* Status Grid - Matching Assessment Results Style */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* REwired Index - Hero Card */}
+            <div className="p-6 rounded-lg text-center border-2" style={{ backgroundColor: '#0a0a0a', borderColor: '#ff9e19' }}>
+              <div className="text-xs text-gray-400 mb-2 uppercase tracking-wide">Your REwired Index</div>
+              <div className="text-6xl font-bold mb-2" style={{ color: '#ff9e19' }}>
+                {baselineData.rewiredIndex}
               </div>
-              <div className={`text-sm mt-1 ${getTierColor(baselineData.tier)}`}>
+              <div className={`text-lg font-semibold mb-3 ${getTierColor(baselineData.tier)}`}>
                 {baselineData.tier}
+              </div>
+              <div className="w-full rounded-full h-2" style={{ backgroundColor: '#1a1a1a' }}>
+                <div 
+                  className="h-2 rounded-full transition-all duration-500"
+                  style={{ 
+                    backgroundColor: '#ff9e19',
+                    width: `${baselineData.rewiredIndex}%`
+                  }}
+                />
               </div>
             </div>
 
-            {/* Domain Scores - 3 columns on desktop */}
-            <div className="md:col-span-3 grid grid-cols-2 gap-3">
-              <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-3">
-                <div className="text-xs text-gray-400 mb-1">Regulation</div>
-                <div className="text-2xl font-bold text-white">
+            {/* Domain Scores - 2x2 Grid with Icons and Colors */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Regulation - Blue */}
+              <div className="p-4 rounded-lg" style={{ backgroundColor: '#0a0a0a' }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <svg className="w-5 h-5" style={{ color: '#3b82f6' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                  <div className="font-semibold text-white text-sm">Regulation</div>
+                </div>
+                <div className="text-2xl font-bold text-white mb-1">
                   {baselineData.domainScores.regulation.toFixed(1)}
                   <span className="text-sm text-gray-500">/5</span>
                 </div>
+                <div className="w-full rounded-full h-2" style={{ backgroundColor: '#1a1a1a' }}>
+                  <div 
+                    className="h-2 rounded-full transition-all"
+                    style={{ 
+                      backgroundColor: '#3b82f6',
+                      width: `${(baselineData.domainScores.regulation / 5) * 100}%`
+                    }}
+                  />
+                </div>
               </div>
-              
-              <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-3">
-                <div className="text-xs text-gray-400 mb-1">Awareness</div>
-                <div className="text-2xl font-bold text-white">
+
+              {/* Awareness - Purple */}
+              <div className="p-4 rounded-lg" style={{ backgroundColor: '#0a0a0a' }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <svg className="w-5 h-5" style={{ color: '#a855f7' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  <div className="font-semibold text-white text-sm">Awareness</div>
+                </div>
+                <div className="text-2xl font-bold text-white mb-1">
                   {baselineData.domainScores.awareness.toFixed(1)}
                   <span className="text-sm text-gray-500">/5</span>
                 </div>
+                <div className="w-full rounded-full h-2" style={{ backgroundColor: '#1a1a1a' }}>
+                  <div 
+                    className="h-2 rounded-full transition-all"
+                    style={{ 
+                      backgroundColor: '#a855f7',
+                      width: `${(baselineData.domainScores.awareness / 5) * 100}%`
+                    }}
+                  />
+                </div>
               </div>
-              
-              <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-3">
-                <div className="text-xs text-gray-400 mb-1">Outlook</div>
-                <div className="text-2xl font-bold text-white">
+
+              {/* Outlook - Yellow */}
+              <div className="p-4 rounded-lg" style={{ backgroundColor: '#0a0a0a' }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <svg className="w-5 h-5" style={{ color: '#eab308' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                  <div className="font-semibold text-white text-sm">Outlook</div>
+                </div>
+                <div className="text-2xl font-bold text-white mb-1">
                   {baselineData.domainScores.outlook.toFixed(1)}
                   <span className="text-sm text-gray-500">/5</span>
                 </div>
+                <div className="w-full rounded-full h-2" style={{ backgroundColor: '#1a1a1a' }}>
+                  <div 
+                    className="h-2 rounded-full transition-all"
+                    style={{ 
+                      backgroundColor: '#eab308',
+                      width: `${(baselineData.domainScores.outlook / 5) * 100}%`
+                    }}
+                  />
+                </div>
               </div>
-              
-              <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-3">
-                <div className="text-xs text-gray-400 mb-1">Attention</div>
-                <div className="text-2xl font-bold text-white">
+
+              {/* Attention - Green */}
+              <div className="p-4 rounded-lg" style={{ backgroundColor: '#0a0a0a' }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <svg className="w-5 h-5" style={{ color: '#22c55e' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <div className="font-semibold text-white text-sm">Attention</div>
+                </div>
+                <div className="text-2xl font-bold text-white mb-1">
                   {baselineData.domainScores.attention.toFixed(1)}
                   <span className="text-sm text-gray-500">/5</span>
+                </div>
+                <div className="w-full rounded-full h-2" style={{ backgroundColor: '#1a1a1a' }}>
+                  <div 
+                    className="h-2 rounded-full transition-all"
+                    style={{ 
+                      backgroundColor: '#22c55e',
+                      width: `${(baselineData.domainScores.attention / 5) * 100}%`
+                    }}
+                  />
                 </div>
               </div>
             </div>
