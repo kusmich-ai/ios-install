@@ -1,4 +1,4 @@
-// app/auth/signup/page.tsx - WITH NAME & STRONG PASSWORD
+// app/auth/signup/page.tsx - WITH FIRST/LAST NAME & STRONG PASSWORD
 'use client'
 
 import { useState } from 'react'
@@ -9,7 +9,8 @@ import Link from 'next/link'
 export default function SignUp() {
   const router = useRouter()
   const supabase = createClient()
-  const [fullName, setFullName] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -39,8 +40,8 @@ export default function SignUp() {
     setError('')
 
     // Validation
-    if (!fullName.trim()) {
-      setError('Please enter your name')
+    if (!firstName.trim()) {
+      setError('Please enter your first name')
       setLoading(false)
       return
     }
@@ -58,23 +59,20 @@ export default function SignUp() {
     }
 
     try {
-// Split full name into first and last
-const nameParts = fullName.trim().split(' ')
-const firstName = nameParts[0] || ''
-const lastName = nameParts.slice(1).join(' ') || '' // Handle multiple last names
-
-const { data, error: signUpError } = await supabase.auth.signUp({
-  email,
-  password,
-  options: {
-    emailRedirectTo: `${window.location.origin}/auth/callback`,
-    data: {
-      full_name: fullName.trim(),    // Keep for legacy/display
-      first_name: firstName,          // ← ChatInterface uses this
-      last_name: lastName,            // ← Optional but good to have
-    }
-  },
-})
+      const fullName = `${firstName.trim()} ${lastName.trim()}`.trim()
+      
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          data: {
+            first_name: firstName.trim(),   // ← ChatInterface uses this
+            last_name: lastName.trim(),     // ← Optional but good to have
+            full_name: fullName,            // ← For display purposes
+          }
+        },
+      })
 
       if (signUpError) throw signUpError
 
@@ -162,24 +160,45 @@ const { data, error: signUpError } = await supabase.auth.signUp({
         )}
 
         <form onSubmit={handleSignUp} className="space-y-4">
-          {/* Full Name Field */}
+          {/* First Name Field */}
           <div>
-            <label htmlFor="fullName" className="block text-sm font-medium mb-1 text-gray-300">
-              Full Name
+            <label htmlFor="firstName" className="block text-sm font-medium mb-1 text-gray-300">
+              First Name *
             </label>
             <input
-              id="fullName"
+              id="firstName"
               type="text"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
               className="w-full px-3 py-2 rounded focus:outline-none focus:ring-2"
               style={{ 
                 backgroundColor: '#0a0a0a', 
                 color: '#ffffff',
                 border: '1px solid #2a2a2a'
               }}
-              placeholder="John Doe"
+              placeholder="John"
               required
+              disabled={loading}
+            />
+          </div>
+
+          {/* Last Name Field */}
+          <div>
+            <label htmlFor="lastName" className="block text-sm font-medium mb-1 text-gray-300">
+              Last Name <span className="text-gray-500">(optional)</span>
+            </label>
+            <input
+              id="lastName"
+              type="text"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              className="w-full px-3 py-2 rounded focus:outline-none focus:ring-2"
+              style={{ 
+                backgroundColor: '#0a0a0a', 
+                color: '#ffffff',
+                border: '1px solid #2a2a2a'
+              }}
+              placeholder="Doe"
               disabled={loading}
             />
           </div>
@@ -187,7 +206,7 @@ const { data, error: signUpError } = await supabase.auth.signUp({
           {/* Email Field */}
           <div>
             <label htmlFor="email" className="block text-sm font-medium mb-1 text-gray-300">
-              Email Address
+              Email Address *
             </label>
             <input
               id="email"
@@ -209,7 +228,7 @@ const { data, error: signUpError } = await supabase.auth.signUp({
           {/* Password Field */}
           <div>
             <label htmlFor="password" className="block text-sm font-medium mb-1 text-gray-300">
-              Password
+              Password *
             </label>
             <input
               id="password"
@@ -247,7 +266,7 @@ const { data, error: signUpError } = await supabase.auth.signUp({
           {/* Confirm Password Field */}
           <div>
             <label htmlFor="confirmPassword" className="block text-sm font-medium mb-1 text-gray-300">
-              Confirm Password
+              Confirm Password *
             </label>
             <input
               id="confirmPassword"
