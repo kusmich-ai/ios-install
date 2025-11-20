@@ -7,8 +7,16 @@ export interface UserProgress {
   currentStage: number;
   stageStartDate: string;
   adherencePercentage: number;
+  consecutiveDays: number;
   rewiredIndex: number;
   rewiredDelta: number;
+  tier: string;
+  domainScores: {
+    regulation: number;
+    awareness: number;
+    outlook: number;
+    attention: number;
+  };
   unlockedTools: string[];
   dailyPractices: {
     [key: string]: {
@@ -62,7 +70,7 @@ export function useUserProgress() {
         .from('practice_logs')
         .select('*')
         .eq('user_id', user.id)
-        .eq('date', today);
+        .gte('practice_date', today); // Get today's practices
 
       if (practicesError) {
         console.error('Error fetching practices:', practicesError);
@@ -79,32 +87,42 @@ export function useUserProgress() {
         });
       }
 
-      // Fetch latest weekly delta for REwired Index
-      const { data: deltaData } = await supabase
-        .from('weekly_deltas')
-        .select('*')
+      // Fetch baseline and latest delta data from user_data table
+      const { data: userData, error: userDataError } = await supabase
+        .from('user_data')
+        .select('key, value')
         .eq('user_id', user.id)
-        .order('week_start', { ascending: false })
-        .limit(1)
-        .single();
+        .in('key', [
+          'ios:baseline:rewired_index',
+          'ios:baseline:tier',
+          'ios:baseline:domain_scores'
+        ]);
 
-      // Calculate REwired Index
-      const rewiredIndex = deltaData 
-        ? Math.round(((deltaData.regulation + deltaData.awareness + deltaData.outlook + deltaData.attention) / 4) * 20)
-        : 0;
+      if (userDataError) {
+        console.error('Error fetching user data:', userDataError);
+      }
 
-      // Get baseline for delta calculation
-      const { data: baselineData } = await supabase
-        .from('baseline_assessments')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
+      // Parse user_data into usable format
+      const dataMap = userData?.reduce((acc, item) => {
+        try {
+          acc[item.key] = JSON.parse(item.value);
+        } catch {
+          acc[item.key] = item.value;
+        }
+        return acc;
+      }, {} as Record<string, any>) || {};
 
-      const baselineIndex = baselineData
-        ? Math.round(((baselineData.regulation + baselineData.awareness + baselineData.outlook + baselineData.attention) / 4) * 20)
-        : 0;
+      const rewiredIndex = dataMap['ios:baseline:rewired_index'] || 0;
+      const tier = dataMap['ios:baseline:tier'] || 'Baseline Mode';
+      const domainScores = dataMap['ios:baseline:domain_scores'] || {
+        regulation: 0,
+        awareness: 0,
+        outlook: 0,
+        attention: 0
+      };
 
-      const rewiredDelta = rewiredIndex - baselineIndex;
+      // For now, delta is 0 (we'll calculate from weekly_deltas later)
+      const rewiredDelta = 0;
 
       // Determine unlocked tools based on stage
       const unlockedTools = getUnlockedTools(progressData.current_stage);
@@ -113,42 +131,14 @@ export function useUserProgress() {
         currentStage: progressData.current_stage,
         stageStartDate: progressData.stage_start_date,
         adherencePercentage: progressData.adherence_percentage || 0,
+        consecutiveDays: progressData.consecutive_days || 0,
         rewiredIndex,
         rewiredDelta,
+        tier,
+        domainScores,
         unlockedTools,
         dailyPractices
       });
 
       setLoading(false);
     } catch (err) {
-      console.error('Error in fetchProgress:', err);
-      setError(err instanceof Error ? err.message : 'Unknown error');
-      setLoading(false);
-    }
-  };
-
-  const refetchProgress = () => {
-    fetchProgress();
-  };
-
-  return { progress, loading, error, refetchProgress };
-}
-
-// Helper function to determine unlocked tools based on stage
-function getUnlockedTools(stage: number): string[] {
-  const tools: string[] = ['decentering']; // Unlocked from Stage 1
-  
-  if (stage >= 2) {
-    tools.push('meta_reflection');
-  }
-  
-  if (stage >= 3) {
-    tools.push('reframe');
-  }
-  
-  if (stage >= 4) {
-    tools.push('thought_hygiene');
-  }
-  
-  return tools;
-}
