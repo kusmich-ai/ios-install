@@ -65,10 +65,10 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
         }
         
         hasInitialized.current = true;
-      } catch (error) {
-        console.error('Error initializing:', error);
-        setError(`Failed to initialize: ${error.message}`);
-      }
+    } catch (error) {
+  console.error('Error initializing:', error);
+  setError(`Failed to initialize: ${error instanceof Error ? error.message : 'Unknown error'}`);
+}
     };
 
     if (user && baselineData) {
@@ -96,10 +96,10 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
       if (data.error) throw new Error(data.error);
       return data.content[0].text;
     } catch (error) {
-      console.error('sendToAPI error:', error);
-      setError(`API error: ${error.message}`);
-      return null;
-    }
+  console.error('sendToAPI error:', error);
+  setError(`API error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  return null;
+}
   };
 
   const sendMessage = async (e) => {
