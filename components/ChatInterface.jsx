@@ -177,26 +177,24 @@ export default function ChatInterface({ user, baselineData }) {
 
   // Get user's first name from profile or email
   const getUserName = () => {
+    // First check user_metadata (set during signup)
     if (user?.user_metadata?.first_name) {
       return user.user_metadata.first_name;
     }
-    // Fallback to email username if no first name
+    // Check raw_user_meta_data (alternative location)
+    if (user?.raw_user_meta_data?.first_name) {
+      return user.raw_user_meta_data.first_name;
+    }
+    // TODO: You'll need to fetch from profiles table in Supabase
+    // For now, fallback to email username
     if (user?.email) {
       return user.email.split('@')[0];
     }
     return 'User';
   };
 
-  // Calculate days in current stage (placeholder - you'll need to implement actual logic)
-  const getDaysInStage = () => {
-    // TODO: Calculate from stage_start_date in user_progress table
-    // For now, returning placeholder
-    return 3; // Replace with actual calculation
-  };
-
-  const daysInStage = getDaysInStage();
-  const daysRemaining = 14 - daysInStage; // 14 days required for stage completion
-  const stageProgress = (daysInStage / 14) * 100;
+  // Calculate stage progress (out of 7 total stages)
+  const stageProgress = ((baselineData.currentStage - 1) / 6) * 100; // Stage 1-7, so 6 intervals
 
   return (
     <div className="flex h-screen bg-[#0a0a0a]">
@@ -210,25 +208,23 @@ export default function ChatInterface({ user, baselineData }) {
             <p className="text-sm font-medium text-white">{getUserName()}</p>
           </div>
 
-          {/* Stage Badge with Day Counter */}
-          <div className="mb-6 p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+          {/* Simplified Stage Progress */}
+          <div className="mb-6 p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[#ff9e19] font-semibold">Stage {baselineData.currentStage}</span>
-              <span className="text-xs text-gray-400">Day {daysInStage}</span>
+              <span className="text-sm text-[#ff9e19] font-semibold">
+                Stage {baselineData.currentStage} of 7
+              </span>
             </div>
-            {/* Progress bar to next stage */}
-            <div className="w-full rounded-full h-1.5 mb-2" style={{ backgroundColor: '#1a1a1a' }}>
+            {/* Progress bar through all stages */}
+            <div className="w-full rounded-full h-1.5" style={{ backgroundColor: '#1a1a1a' }}>
               <div 
                 className="h-1.5 rounded-full transition-all"
                 style={{ 
                   backgroundColor: '#ff9e19',
-                  width: `${Math.min(stageProgress, 100)}%`
+                  width: `${stageProgress}%`
                 }}
               />
             </div>
-            <p className="text-xs text-gray-400">
-              {daysRemaining > 0 ? `${daysRemaining} days to unlock eligibility` : 'Ready for evaluation'}
-            </p>
           </div>
 
           {/* REwired Index - Compact */}
