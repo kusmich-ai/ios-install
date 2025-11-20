@@ -22,13 +22,13 @@ interface ChatInterfaceProps {
 }
 
 export default function ChatInterface({ user, baselineData }: ChatInterfaceProps) {
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [input, setInput] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-const textareaRef = useRef<HTMLTextAreaElement>(null);
-const hasInitialized = useRef(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const hasInitialized = useRef<boolean>(false);
 
   const isMobile = useIsMobile();
   const { progress, loading: progressLoading, error: progressError } = useUserProgress();
