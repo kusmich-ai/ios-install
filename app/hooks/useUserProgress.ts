@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase-client'; // ← Using your existing setup
+import { createClient } from '@/lib/supabase-client';
 
 export interface UserProgress {
   currentStage: number;
@@ -26,12 +26,26 @@ export interface UserProgress {
   };
 }
 
+// Type for practice log from database
+interface PracticeLog {
+  practice_type: string;
+  completed: boolean;
+  completed_at?: string;
+  practice_date?: string;
+}
+
+// Type for user data from database
+interface UserDataItem {
+  key: string;
+  value: string;
+}
+
 export function useUserProgress() {
   const [progress, setProgress] = useState<UserProgress | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  const supabase = createClient(); // ← Using your existing client
+  const supabase = createClient();
 
   useEffect(() => {
     fetchProgress();
@@ -79,7 +93,7 @@ export function useUserProgress() {
       // Transform practice logs into dailyPractices format
       const dailyPractices: UserProgress['dailyPractices'] = {};
       if (practicesData) {
-        practicesData.forEach(practice => {
+        (practicesData as PracticeLog[]).forEach((practice: PracticeLog) => {
           dailyPractices[practice.practice_type] = {
             completed: practice.completed,
             time: practice.completed_at
@@ -103,7 +117,7 @@ export function useUserProgress() {
       }
 
       // Parse user_data into usable format
-      const dataMap = userData?.reduce((acc, item) => {
+      const dataMap = (userData as UserDataItem[])?.reduce((acc, item) => {
         try {
           acc[item.key] = JSON.parse(item.value);
         } catch {
