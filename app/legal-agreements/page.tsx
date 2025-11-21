@@ -1,9 +1,3 @@
-
-
-
-Legal agreements page fixed · TSX
-Copy
-
 'use client';
 
 import { useState } from 'react';
