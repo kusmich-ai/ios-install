@@ -67,15 +67,14 @@ export async function middleware(request: NextRequest) {
           return NextResponse.redirect(new URL('/screening', request.url))
         }
 
-        // Has screening - check legal
-        const { data: legal } = await supabase
-          .from('legal_acceptances')
-          .select('accepted')
-          .eq('user_id', session.user.id)
-          .eq('accepted', true)
-          .maybeSingle()
+        // ✅ FIXED - Check legal from user_profiles
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('has_accepted_terms, has_accepted_consent')
+          .eq('id', session.user.id)
+          .single()
 
-        if (!legal) {
+        if (!profile || !profile.has_accepted_terms || !profile.has_accepted_consent) {
           // No legal acceptance - send to legal
           return NextResponse.redirect(new URL('/legal-agreements', request.url))
         }
@@ -134,19 +133,18 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // If on legal page - check if already accepted
+  // ✅ FIXED - Check legal from user_profiles
   if (path === '/legal-agreements' || path === '/legal') {
     try {
-      const { data: legal } = await supabase
-        .from('legal_acceptances')
-        .select('accepted')
-        .eq('user_id', session.user.id)
-        .eq('accepted', true)
-        .maybeSingle()
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('has_accepted_terms, has_accepted_consent')
+        .eq('id', session.user.id)
+        .single()
 
-      if (legal) {
-        // Already accepted legal - send to assessment
-        return NextResponse.redirect(new URL('/assessment', request.url))
+      if (profile && profile.has_accepted_terms && profile.has_accepted_consent) {
+        // Already accepted legal - send to medical screening
+        return NextResponse.redirect(new URL('/medical-screening', request.url))
       }
     } catch (error) {
       console.error('Error checking legal:', error)
