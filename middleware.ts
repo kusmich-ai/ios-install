@@ -143,8 +143,8 @@ export async function middleware(request: NextRequest) {
         .single()
 
       if (profile && profile.has_accepted_terms && profile.has_accepted_consent) {
-        // Already accepted legal - send to medical screening
-        return NextResponse.redirect(new URL('/medical-screening', request.url))
+        // Already accepted legal - send to assessment
+        return NextResponse.redirect(new URL('/assessment', request.url))
       }
     } catch (error) {
       console.error('Error checking legal:', error)
