@@ -25,31 +25,43 @@ export default function LegalAgreements() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Store legal acceptance with timestamp
-      const { error: dbError } = await supabase
-        .from('legal_acceptances')
-        .insert({
-          user_id: user.id,
-          tos_accepted: true,
-          tos_accepted_at: new Date().toISOString(),
-          consent_accepted: true,
-          consent_accepted_at: new Date().toISOString(),
-          tos_version: '1.0',
-          consent_version: '1.0'
-        });
+     const handleAccept = async () => {
+    if (!canProceed) return;
+    
+    setIsSubmitting(true);
+    setError(null);
 
-      if (dbError) throw dbError;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
 
-      // Mark onboarding step complete
-      const { error: progressError } = await supabase
-        .from('user_progress')
-        .update({ 
-          legal_agreements_accepted: true,
-          legal_acceptance_date: new Date().toISOString()
+      // ✅ ADD THIS NEW CODE ✅
+      const { error: updateError } = await supabase
+        .from('user_profiles')
+        .update({
+          has_accepted_terms: true,
+          has_accepted_consent: true,
+          updated_at: new Date().toISOString()
         })
-        .eq('user_id', user.id);
+        .eq('id', user.id);
 
-      if (progressError) throw progressError;
+      if (updateError) {
+        console.error('Database update error:', updateError);
+        throw updateError;
+      }
+
+      console.log('✅ Legal agreements saved successfully!');
+      // ✅ END OF NEW CODE ✅
+
+      // Proceed to medical screening
+      router.push('/medical-screening');
+    } catch (err) {
+      console.error('Error accepting agreements:', err);
+      setError('Failed to save your acceptance. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
       // Proceed to baseline assessment
       router.push('/assessment');
