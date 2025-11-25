@@ -651,11 +651,26 @@ const IOSBaselineAssessment = ({ user }) => {
       }
       
       console.log('✅ Stored in user_progress table');
-      console.log('🎉 All baseline data stored successfully!');
-      
-      // ✅ Mark as successfully saved
-      setDataSaved(true);
-      setSaveError(null);
+
+// 4. ✅ ADD THIS: Update user_profiles flag
+console.log('📝 Updating user_profiles flag...');
+const { error: profileError } = await supabase
+  .from('user_profiles')
+  .update({ has_completed_baseline: true })
+  .eq('id', userId);
+
+if (profileError) {
+  console.error('❌ Error updating user_profiles:', profileError);
+  // Don't throw - baseline data is saved, this is supplementary
+} else {
+  console.log('✅ Updated user_profiles flag');
+}
+
+console.log('🎉 All baseline data stored successfully!');
+
+// ✅ Mark as successfully saved
+setDataSaved(true);
+setSaveError(null);
       
     } catch (error) {
       console.error('❌ Error storing baseline data:', error);
