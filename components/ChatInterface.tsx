@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useIsMobile } from '@/app/hooks/useIsMobile';
 import { useUserProgress } from '@/app/hooks/useUserProgress';
 import ToolsSidebar from '@/components/ToolsSidebar';
 import FloatingActionButton from '@/components/FloatingActionButton';
 
 interface ChatInterfaceProps {
-  user: any; // You can make this more specific later
+  user: any;
   baselineData: {
     rewiredIndex: number;
     tier: string;
@@ -20,10 +20,12 @@ interface ChatInterfaceProps {
     currentStage: number;
   };
 }
+
 type Message = {
   role: string;
   content: string;
 };
+
 export default function ChatInterface({ user, baselineData }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState<string>('');
@@ -34,7 +36,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   const hasInitialized = useRef<boolean>(false);
 
   const isMobile = useIsMobile();
-  const { progress, loading: progressLoading, error: progressError } = useUserProgress();
+  const { progress, loading: progressLoading, error: progressError, refetch: refetchProgress } = useUserProgress();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -68,10 +70,10 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
         }
         
         hasInitialized.current = true;
-    } catch (error) {
-  console.error('Error initializing:', error);
-  setError(`Failed to initialize: ${error instanceof Error ? error.message : 'Unknown error'}`);
-}
+      } catch (error) {
+        console.error('Error initializing:', error);
+        setError(`Failed to initialize: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
     };
 
     if (user && baselineData) {
@@ -97,12 +99,19 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
 
       const data = await response.json();
       if (data.error) throw new Error(data.error);
+      
+      // After a successful API call that might have logged a practice,
+      // refresh the progress to update sidebar
+      if (refetchProgress) {
+        setTimeout(() => refetchProgress(), 500);
+      }
+      
       return data.content[0].text;
     } catch (error) {
-  console.error('sendToAPI error:', error);
-  setError(`API error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  return null;
-}
+      console.error('sendToAPI error:', error);
+      setError(`API error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      return null;
+    }
   };
 
   const sendMessage = async (e: React.FormEvent) => {
@@ -150,6 +159,13 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
     }
     setLoading(false);
   };
+
+  // Callback for ToolsSidebar to trigger progress refresh
+  const handleProgressUpdate = useCallback(() => {
+    if (refetchProgress) {
+      refetchProgress();
+    }
+  }, [refetchProgress]);
 
   if (error || progressError) {
     return (
@@ -213,66 +229,67 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
               />
             </div>
           </div>
-{/* Domain Scores */}
-<div className="space-y-3">
-  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Domain Scores</h3>
-  
-  {/* Regulation */}
-  <div>
-    <div className="flex items-center justify-between mb-1">
-      <span className="text-sm text-gray-300">Regulation</span>
-      <span className="text-sm font-semibold text-[#3b82f6]">{baselineData.domainScores.regulation.toFixed(1)}/5</span>
-    </div>
-    <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
-      <div 
-        className="h-2 rounded-full transition-all bg-[#3b82f6]"
-        style={{ width: `${(baselineData.domainScores.regulation / 5) * 100}%` }}
-      />
-    </div>
-  </div>
 
-  {/* Awareness */}
-  <div>
-    <div className="flex items-center justify-between mb-1">
-      <span className="text-sm text-gray-300">Awareness</span>
-      <span className="text-sm font-semibold text-[#10b981]">{baselineData.domainScores.awareness.toFixed(1)}/5</span>
-    </div>
-    <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
-      <div 
-        className="h-2 rounded-full transition-all bg-[#10b981]"
-        style={{ width: `${(baselineData.domainScores.awareness / 5) * 100}%` }}
-      />
-    </div>
-  </div>
+          {/* Domain Scores */}
+          <div className="space-y-3">
+            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Domain Scores</h3>
+            
+            {/* Regulation */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm text-gray-300">Regulation</span>
+                <span className="text-sm font-semibold text-[#3b82f6]">{baselineData.domainScores.regulation.toFixed(1)}/5</span>
+              </div>
+              <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
+                <div 
+                  className="h-2 rounded-full transition-all bg-[#3b82f6]"
+                  style={{ width: `${(baselineData.domainScores.regulation / 5) * 100}%` }}
+                />
+              </div>
+            </div>
 
-  {/* Outlook */}
-  <div>
-    <div className="flex items-center justify-between mb-1">
-      <span className="text-sm text-gray-300">Outlook</span>
-      <span className="text-sm font-semibold text-[#f59e0b]">{baselineData.domainScores.outlook.toFixed(1)}/5</span>
-    </div>
-    <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
-      <div 
-        className="h-2 rounded-full transition-all bg-[#f59e0b]"
-        style={{ width: `${(baselineData.domainScores.outlook / 5) * 100}%` }}
-      />
-    </div>
-  </div>
+            {/* Awareness */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm text-gray-300">Awareness</span>
+                <span className="text-sm font-semibold text-[#10b981]">{baselineData.domainScores.awareness.toFixed(1)}/5</span>
+              </div>
+              <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
+                <div 
+                  className="h-2 rounded-full transition-all bg-[#10b981]"
+                  style={{ width: `${(baselineData.domainScores.awareness / 5) * 100}%` }}
+                />
+              </div>
+            </div>
 
-  {/* Attention */}
-  <div>
-    <div className="flex items-center justify-between mb-1">
-      <span className="text-sm text-gray-300">Attention</span>
-      <span className="text-sm font-semibold text-[#8b5cf6]">{baselineData.domainScores.attention.toFixed(1)}/5</span>
-    </div>
-    <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
-      <div 
-        className="h-2 rounded-full transition-all bg-[#8b5cf6]"
-        style={{ width: `${(baselineData.domainScores.attention / 5) * 100}%` }}
-      />
-    </div>
-  </div>
-</div>
+            {/* Outlook */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm text-gray-300">Outlook</span>
+                <span className="text-sm font-semibold text-[#f59e0b]">{baselineData.domainScores.outlook.toFixed(1)}/5</span>
+              </div>
+              <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
+                <div 
+                  className="h-2 rounded-full transition-all bg-[#f59e0b]"
+                  style={{ width: `${(baselineData.domainScores.outlook / 5) * 100}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Attention */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm text-gray-300">Attention</span>
+                <span className="text-sm font-semibold text-[#8b5cf6]">{baselineData.domainScores.attention.toFixed(1)}/5</span>
+              </div>
+              <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
+                <div 
+                  className="h-2 rounded-full transition-all bg-[#8b5cf6]"
+                  style={{ width: `${(baselineData.domainScores.attention / 5) * 100}%` }}
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </aside>
 
@@ -346,12 +363,14 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
         </div>
       </div>
 
-      {/* Tools Sidebar (Desktop) */}
+      {/* Tools Sidebar (Desktop) - Now with userId */}
       {!isMobile && progress && (
         <ToolsSidebar
           progress={progress}
+          userId={user?.id}
           onPracticeClick={handlePracticeClick}
           onToolClick={handleToolClick}
+          onProgressUpdate={handleProgressUpdate}
         />
       )}
 
