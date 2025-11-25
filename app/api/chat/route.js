@@ -33,7 +33,7 @@ const tools = [
       properties: {
         practice_type: {
           type: "string",
-          enum: ["hrvb_breathing", "awareness_rep", "somatic_flow", "micro_action", "flow_block", "co_regulation", "nightly_debrief"],
+          enum: ["hrvb", "awareness_rep", "somatic_flow", "micro_action", "flow_block", "co_regulation", "nightly_debrief"],
           description: "The type of practice completed"
         },
         notes: {
