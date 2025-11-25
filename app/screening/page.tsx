@@ -348,6 +348,16 @@ export default function ScreeningPage() {
 
       if (error) throw error;
 
+      // Update user_profiles flag
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .update({ has_completed_medical_screening: true })
+        .eq('id', user.id);
+
+      if (profileError) {
+        console.error('Error updating user_profiles:', profileError);
+      }
+
       await supabase.auth.updateUser({
         data: { screening_completed: true, clearance_status: clearance.status }
       });
