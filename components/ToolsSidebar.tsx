@@ -219,7 +219,7 @@ export default function ToolsSidebar({
                             <>
                               <button
                                 onClick={() => onPracticeClick(practice.id)}
-                                className="flex-1 px-2 py-1.5 text-xs font-medium bg-[#1a1a1a] text-gray-300 rounded hover:bg-[#252525] hover:text-white transition-colors"
+                                className="flex-1 px-2 py-1.5 text-xs font-medium bg-emerald-600/20 text-emerald-400 rounded hover:bg-[#252525] hover:text-white transition-colors"
                               >
                                 Start Practice
                               </button>
