@@ -14,18 +14,18 @@ interface ToolsSidebarProps {
 }
 
 // Map from your config practice IDs to the database practice_type values
+// Your config uses 'hrvb', database stores as 'hrvb'
 const PRACTICE_ID_MAP: { [key: string]: string } = {
-  'hrvb_breathing': 'hrvb_breathing',
+  'hrvb': 'hrvb',
   'awareness_rep': 'awareness_rep',
   'somatic_flow': 'somatic_flow',
   'micro_action': 'micro_action',
   'flow_block': 'flow_block',
   'co_regulation': 'co_regulation',
   'nightly_debrief': 'nightly_debrief',
-  // Add any alternate IDs your config uses
-  'resonance_breathing': 'hrvb_breathing',
-  'morning_micro_action': 'micro_action',
-  'intrapersonal_co_regulation': 'co_regulation',
+  // Legacy/alternate IDs (in case they appear elsewhere)
+  'hrvb_breathing': 'hrvb',
+  'resonance_breathing': 'hrvb',
 };
 
 export default function ToolsSidebar({ 
