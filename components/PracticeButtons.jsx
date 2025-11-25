@@ -5,10 +5,10 @@ import { useState, useEffect } from 'react';
 import { Check, Circle, Loader2, Clock } from 'lucide-react';
 
 const PRACTICE_INFO = {
-  hrvb_breathing: {
-    name: 'Resonance Breathing',
+  hrvb: {
+    name: 'HRVB Breathing',
     shortName: 'HRVB',
-    duration: '5-7 min',
+    duration: '5 min',
     icon: '🫁',
     description: 'Heart rate variability training'
   },
@@ -16,7 +16,7 @@ const PRACTICE_INFO = {
     name: 'Awareness Rep',
     shortName: 'Awareness',
     duration: '2 min',
-    icon: '👁',
+    icon: '👁️',
     description: 'Meta-awareness training'
   },
   somatic_flow: {
@@ -28,22 +28,22 @@ const PRACTICE_INFO = {
   },
   micro_action: {
     name: 'Morning Micro-Action',
-    shortName: 'Micro-Action',
-    duration: '2-5 min',
+    shortName: 'Micro',
+    duration: '2 min',
     icon: '⚡',
     description: 'Identity-based daily proof'
   },
   flow_block: {
     name: 'Flow Block',
     shortName: 'Flow',
-    duration: '60-90 min',
+    duration: '60 min',
     icon: '🎯',
     description: 'Deep work session'
   },
   co_regulation: {
     name: 'Co-Regulation',
     shortName: 'Co-Reg',
-    duration: '3-5 min',
+    duration: '3 min',
     icon: '💞',
     description: 'Relational coherence practice'
   },
