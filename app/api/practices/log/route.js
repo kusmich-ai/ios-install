@@ -43,7 +43,6 @@ export async function POST(req) {
 // The client should send their local date for consistency
 const now = new Date();
 const today = localDate || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    const now = new Date().toISOString();
 
     // Check if practice already logged for today
     const { data: existingLog, error: checkError } = await supabase
