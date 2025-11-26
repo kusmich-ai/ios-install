@@ -14,7 +14,7 @@ const supabase = createClient(
 
 export async function POST(req) {
   try {
-    const { userId, practiceType, completed = true, notes = null } = await req.json();
+    const { userId, practiceType, completed = true, notes = null, localDate = null } = await req.json();
 
     if (!userId || !practiceType) {
       return Response.json(
@@ -39,7 +39,10 @@ export async function POST(req) {
     }
 
     const currentStage = progressData?.current_stage || 1;
-    const today = new Date().toISOString().split('T')[0];
+    // Use local date from client if provided, otherwise calculate from UTC
+// The client should send their local date for consistency
+const now = new Date();
+const today = localDate || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const now = new Date().toISOString();
 
     // Check if practice already logged for today
