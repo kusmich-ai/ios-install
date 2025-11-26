@@ -187,7 +187,10 @@ export async function GET(req) {
     }
 
     const currentStage = progressData?.current_stage || 1;
-    const today = new Date().toISOString().split('T')[0];
+    // Get timezone from query params or default to local server time
+const timezone = searchParams.get('timezone');
+const now = new Date();
+const today = searchParams.get('localDate') || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
     // Get today's logs
     const { data: todayLogs, error: logsError } = await supabase
