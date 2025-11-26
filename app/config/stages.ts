@@ -28,8 +28,8 @@ export const STAGES: Stage[] = [
     practices: [
       {
         id: 'hrvb',
-        name: 'HRVB Breathing (Resonance Training)',
-        shortName: 'HRVB',
+        name: 'Resonance Breathing',
+        shortName: 'Resonance',
         duration: 5,
         icon: '🫁',
         description: 'Builds vagal tone, coherence, and autonomic balance'
@@ -56,8 +56,8 @@ export const STAGES: Stage[] = [
     practices: [
       {
         id: 'hrvb',
-        name: 'HRVB Breathing',
-        shortName: 'HRVB',
+        name: 'Resonance Breathing',
+        shortName: 'Resonance',
         duration: 5,
         icon: '🫁',
         description: 'Builds vagal tone'
@@ -92,8 +92,8 @@ export const STAGES: Stage[] = [
     practices: [
       {
         id: 'hrvb',
-        name: 'HRVB Breathing',
-        shortName: 'HRVB',
+        name: 'Resonance Breathing',
+        shortName: 'Resonance',
         duration: 5,
         icon: '🫁',
         description: 'Builds vagal tone'
@@ -136,8 +136,8 @@ export const STAGES: Stage[] = [
     practices: [
       {
         id: 'hrvb',
-        name: 'HRVB Breathing',
-        shortName: 'HRVB',
+        name: 'Resonance Breathing',
+        shortName: 'Resonance',
         duration: 5,
         icon: '🫁',
         description: 'Builds vagal tone'
@@ -188,8 +188,8 @@ export const STAGES: Stage[] = [
     practices: [
       {
         id: 'hrvb',
-        name: 'HRVB Breathing',
-        shortName: 'HRVB',
+        name: 'Resonance Breathing',
+        shortName: 'Resonance',
         duration: 5,
         icon: '🫁',
         description: 'Builds vagal tone'
@@ -248,8 +248,8 @@ export const STAGES: Stage[] = [
     practices: [
       {
         id: 'hrvb',
-        name: 'HRVB Breathing',
-        shortName: 'HRVB',
+        name: 'Resonance Breathing',
+        shortName: 'Resonance',
         duration: 5,
         icon: '🫁',
         description: 'Builds vagal tone'
