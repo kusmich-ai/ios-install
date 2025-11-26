@@ -81,8 +81,9 @@ export function useUserProgress() {
         return;
       }
 
-      // Fetch today's practice logs
-      const today = new Date().toISOString().split('T')[0];
+      // Fetch today's practice logs - use LOCAL date, not UTC
+const now = new Date();
+const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       const { data: practicesData, error: practicesError } = await supabase
         .from('practice_logs')
         .select('*')
