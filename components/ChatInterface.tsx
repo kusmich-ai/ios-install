@@ -29,6 +29,38 @@ function renderMarkdown(text: string): string {
     .replace(/\n/g, '<br />');
 }
 
+// Get stage name from number
+function getStageName(stage: number): string {
+  const names: { [key: number]: string } = {
+    1: 'Neural Priming',
+    2: 'Embodied Awareness',
+    3: 'Identity Mode',
+    4: 'Flow Mode',
+    5: 'Relational Coherence',
+    6: 'Integration',
+    7: 'Accelerated Expansion'
+  };
+  return names[stage] || `Stage ${stage}`;
+}
+
+// Get status tier based on REwired Index
+function getStatusTier(index: number): string {
+  if (index <= 20) return 'System Offline';
+  if (index <= 40) return 'Baseline Mode';
+  if (index <= 60) return 'Operational';
+  if (index <= 80) return 'Optimized';
+  return 'Integrated';
+}
+
+// Get status color based on REwired Index
+function getStatusColor(index: number): string {
+  if (index <= 20) return 'text-red-400';
+  if (index <= 40) return 'text-yellow-400';
+  if (index <= 60) return 'text-blue-400';
+  if (index <= 80) return 'text-green-400';
+  return 'text-purple-400';
+}
+
 interface ChatInterfaceProps {
   user: any;
   baselineData: {
@@ -227,10 +259,13 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
           </div>
 
           <div className="mb-6 p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-1">
               <span className="text-sm text-[#ff9e19] font-semibold">
                 Stage {baselineData.currentStage} of 7
               </span>
+            </div>
+            <div className="text-xs text-gray-300 mb-2">
+              {getStageName(baselineData.currentStage)}
             </div>
             <div className="w-full rounded-full h-1.5 bg-[#1a1a1a]">
               <div 
@@ -244,6 +279,9 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
             <div className="text-xs text-gray-400 mb-1 uppercase tracking-wide">REwired Index</div>
             <div className="text-4xl font-bold mb-1 text-[#ff9e19]">
               {baselineData.rewiredIndex}
+            </div>
+            <div className={`text-xs font-medium mb-2 ${getStatusColor(baselineData.rewiredIndex)}`}>
+              {getStatusTier(baselineData.rewiredIndex)}
             </div>
             <div className="w-full rounded-full h-1.5 bg-[#1a1a1a]">
               <div 
