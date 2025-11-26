@@ -8,9 +8,10 @@ import type { UserProgress } from '@/app/hooks/useUserProgress';
 
 interface ToolsSidebarProps {
   progress: UserProgress;
+  userId: string; // Add this
   onPracticeClick: (practiceId: string) => void;
   onToolClick: (toolId: string) => void;
-  onProgressUpdate?: () => void; // Optional callback to refresh progress
+  onProgressUpdate?: () => void;
 }
 
 // Map from your config practice IDs to the database practice_type values
@@ -30,6 +31,7 @@ const PRACTICE_ID_MAP: { [key: string]: string } = {
 
 export default function ToolsSidebar({ 
   progress, 
+  userId,
   onPracticeClick, 
   onToolClick,
   onProgressUpdate 
@@ -63,47 +65,49 @@ export default function ToolsSidebar({
     }
   };
 
-  // Get userId from somewhere - you might need to pass this as a prop
-  // For now, we'll get it from the API call
   const handleMarkComplete = async (practiceId: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent triggering the practice click
+    e.stopPropagation();
+    
+    if (!userId) {
+      setCompletionError('No user ID - please refresh the page');
+      return;
+    }
     
     try {
       setCompleting(practiceId);
       setCompletionError(null);
 
-      // Map the practice ID to the database format
       const dbPracticeType = PRACTICE_ID_MAP[practiceId] || practiceId;
+
+      console.log('[ToolsSidebar] Logging practice:', { userId, practiceType: dbPracticeType });
 
       const response = await fetch('/api/practices/log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          visitorMode: true, // This will make the API get userId from session
+          userId: userId, // Explicitly pass userId
           practiceType: dbPracticeType,
           completed: true
         })
       });
 
       const data = await response.json();
+      console.log('[ToolsSidebar] Response:', data);
 
-      if (data.error) {
-        throw new Error(data.error);
+      if (!response.ok || data.error) {
+        throw new Error(data.error || `HTTP ${response.status}`);
       }
 
       // Trigger progress refresh if callback provided
       if (onProgressUpdate) {
         onProgressUpdate();
+      } else {
+        // Fallback: reload page
+        setTimeout(() => window.location.reload(), 500);
       }
 
-      // Force a small delay then reload to show updated status
-      // This is a simple approach - ideally the parent would manage state
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
-
     } catch (err) {
-      console.error('Error completing practice:', err);
+      console.error('[ToolsSidebar] Error completing practice:', err);
       setCompletionError(err instanceof Error ? err.message : 'Failed to log completion');
     } finally {
       setCompleting(null);
@@ -219,7 +223,7 @@ export default function ToolsSidebar({
                             <>
                               <button
                                 onClick={() => onPracticeClick(practice.id)}
-                                className="flex-1 px-2 py-1.5 text-xs font-medium bg-emerald-600/20 text-emerald-400 rounded hover:bg-[#252525] hover:text-white transition-colors"
+                                className="flex-1 px-2 py-1.5 text-xs font-medium bg-emerald-600/20 text-emerald-400 rounded hover:bg-emerald-600/30 transition-colors"
                               >
                                 Start Practice
                               </button>
