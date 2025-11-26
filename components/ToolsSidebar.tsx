@@ -85,10 +85,11 @@ export default function ToolsSidebar({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: userId, // Explicitly pass userId
-          practiceType: dbPracticeType,
-          completed: true
-        })
+  userId: userId,
+  practiceType: dbPracticeType,
+  completed: true,
+  localDate: new Date().toLocaleDateString('en-CA') // Returns YYYY-MM-DD in local timezone
+})
       });
 
       const data = await response.json();
