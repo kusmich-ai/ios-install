@@ -61,7 +61,7 @@ const today = localDate || `${now.getFullYear()}-${String(now.getMonth() + 1).pa
         .from('practice_logs')
         .update({
           completed,
-          completed_at: completed ? now : null,
+          completed_at: completed ? now.toISOString() : null,
           notes
         })
         .eq('id', existingLog.id)
@@ -79,7 +79,7 @@ const today = localDate || `${now.getFullYear()}-${String(now.getMonth() + 1).pa
           practice_type: practiceType,
           stage: currentStage,
           completed,
-          completed_at: completed ? now : null,
+          completed_at: completed ? now.toISOString() : null,
           practice_date: today,
           notes
         })
