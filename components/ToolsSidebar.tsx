@@ -125,7 +125,7 @@ export default function ToolsSidebar({
         {/* Header */}
         <div className="mb-6">
           <h2 className="text-lg font-bold text-white mb-1">Tools</h2>
-          <p className="text-xs text-gray-400">Stage {progress.currentStage} Practices & Protocols</p>
+          <p className="text-xs text-gray-400">Stage {progress.currentStage} Rituals & Protocols</p>
         </div>
 
         {/* Progress Summary */}
@@ -172,13 +172,13 @@ export default function ToolsSidebar({
           </div>
         )}
 
-        {/* Daily Practices Section */}
+        {/* Daily Rituals Section */}
         <div className="mb-6">
           <button
             onClick={() => setDailyExpanded(!dailyExpanded)}
             className="w-full flex items-center justify-between text-sm font-semibold text-gray-300 hover:text-white transition-colors mb-3"
           >
-            <span>DAILY PRACTICES</span>
+            <span>DAILY RITUALS</span>
             {dailyExpanded ? (
               <ChevronDown className="w-4 h-4" />
             ) : (
