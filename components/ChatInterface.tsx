@@ -215,11 +215,11 @@ async function getFirstTimeOpeningMessage(data: BaselineData, userName: string):
 • Outlook: ${data.domainScores.outlook.toFixed(1)}/5.0
 • Attention: ${data.domainScores.attention.toFixed(1)}/5.0
 
+The results will also appear on the left side (desktop) or by clicking on the hamburger icon (mobile) for quick reference any time.
+
 ${personalizedInsight}
 
 ${tierText}
-
-The results will also appear on the left side (desktop) or by clicking on the hamburger icon (mobile) for quick reference any time.
 
 ---
 
@@ -229,7 +229,7 @@ Here's how this works:
 
 The IOS installs in 7 progressive stages. Each stage adds new practices that stack — they don't replace, they accumulate.
 
-You advance when the system sees you're ready. So you need to do the daily practices and follow the prompts. 
+You advance when the system sees you're ready. So you need to do the daily rituals and follow the prompts. 
 
 ---
 
