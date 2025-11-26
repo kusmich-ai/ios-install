@@ -5,6 +5,7 @@ import { useIsMobile } from '@/app/hooks/useIsMobile';
 import { useUserProgress } from '@/app/hooks/useUserProgress';
 import ToolsSidebar from '@/components/ToolsSidebar';
 import FloatingActionButton from '@/components/FloatingActionButton';
+import { createClient } from '@/lib/supabase/client';
 
 // Simple markdown renderer for chat messages
 function renderMarkdown(text: string): string {
@@ -61,19 +62,282 @@ function getStatusColor(index: number): string {
   return 'text-purple-400';
 }
 
+// ============================================
+// OPENING MESSAGE GENERATORS
+// ============================================
+
+interface BaselineData {
+  rewiredIndex: number;
+  tier: string;
+  domainScores: {
+    regulation: number;
+    awareness: number;
+    outlook: number;
+    attention: number;
+  };
+  currentStage: number;
+}
+
+interface ProgressData {
+  adherence_percentage?: number;
+  consecutive_days?: number;
+  stage_start_date?: string;
+}
+
+// Tier interpretations
+const tierInterpretations: { [key: string]: string } = {
+  'System Offline': "Uh oh! Your nervous system is in survival mode. You're operating on fumes. The IOS will teach you how to downshift into recovery.",
+  'Baseline Mode': "You're functioning, but not optimized. Regulation is inconsistent, awareness is fragmented. The IOS will build your foundation.",
+  'Operational': "You have some coherence, but it's not stable. The IOS will solidify what's working and upgrade what isn't.",
+  'Optimized': "You're performing well. The IOS will take you from good to exceptional — making flow states and clarity your default.",
+  'Integrated': "You're already operating at a high level. The IOS will help you sustain and expand this capacity across all domains."
+};
+
+// Stage rituals
+const stageRituals: { [key: number]: { list: string; total: string } } = {
+  1: {
+    list: `1. **HRVB (Resonance Breathing)** - 5 mins
+2. **Awareness Rep** - 2 mins`,
+    total: '7 minutes'
+  },
+  2: {
+    list: `1. **HRVB (Resonance Breathing)** - 5 mins
+2. **Somatic Flow** - 3 mins
+3. **Awareness Rep** - 2 mins`,
+    total: '10 minutes'
+  },
+  3: {
+    list: `1. **HRVB (Resonance Breathing)** - 5 mins
+2. **Somatic Flow** - 3 mins
+3. **Awareness Rep** - 2 mins
+4. **Morning Micro-Action** - 2-3 mins`,
+    total: '12-13 minutes'
+  },
+  4: {
+    list: `1. **HRVB (Resonance Breathing)** - 5 mins
+2. **Somatic Flow** - 3 mins
+3. **Awareness Rep** - 2 mins
+4. **Morning Micro-Action** - 2-3 mins
+5. **Flow Block** - 60-90 mins (scheduled)`,
+    total: '12-13 minutes morning + Flow Block'
+  },
+  5: {
+    list: `1. **HRVB (Resonance Breathing)** - 5 mins
+2. **Somatic Flow** - 3 mins
+3. **Awareness Rep** - 2 mins
+4. **Morning Micro-Action** - 2-3 mins
+5. **Flow Block** - 60-90 mins (scheduled)
+6. **Co-Regulation Practice** - 3-5 mins (evening)`,
+    total: '12-13 minutes morning + Flow Block + evening practice'
+  },
+  6: {
+    list: `1. **HRVB (Resonance Breathing)** - 5 mins
+2. **Somatic Flow** - 3 mins
+3. **Awareness Rep** - 2 mins
+4. **Morning Micro-Action** - 2-3 mins
+5. **Flow Block** - 60-90 mins (scheduled)
+6. **Co-Regulation Practice** - 3-5 mins (evening)
+7. **Nightly Debrief** - 2 mins (before sleep)`,
+    total: '12-13 minutes morning + Flow Block + evening practices'
+  },
+  7: {
+    list: `All Stage 6 rituals + personalized advanced protocols`,
+    total: 'Custom schedule'
+  }
+};
+
+// ============================================
+// PERSONALIZED INSIGHT GENERATION
+// ============================================
+
+// Generate personalized interpretation via API
+async function generatePersonalizedInsight(data: BaselineData, userName: string): Promise<string> {
+  try {
+    const response = await fetch('/api/chat/insight', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        rewiredIndex: data.rewiredIndex,
+        tier: data.tier,
+        domainScores: data.domainScores,
+        userName: userName
+      }),
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to generate insight');
+    }
+    
+    const result = await response.json();
+    return result.insight;
+  } catch (error) {
+    console.error('Error generating insight:', error);
+    // Fallback to generic insight if API fails
+    return getGenericInsight(data);
+  }
+}
+
+// Fallback generic insight based on scores
+function getGenericInsight(data: BaselineData): string {
+  const scores = data.domainScores;
+  const entries = Object.entries(scores) as [string, number][];
+  const lowest = entries.reduce((a, b) => a[1] < b[1] ? a : b);
+  const highest = entries.reduce((a, b) => a[1] > b[1] ? a : b);
+  
+  const lowestName = lowest[0].charAt(0).toUpperCase() + lowest[0].slice(1);
+  const highestName = highest[0].charAt(0).toUpperCase() + highest[0].slice(1);
+  
+  if (data.rewiredIndex >= 70) {
+    return `A ${data.rewiredIndex} baseline puts you ahead of most. Your ${highestName} is solid, but ${lowestName} is where the real gains are waiting. That's your growth edge.`;
+  } else if (data.rewiredIndex >= 50) {
+    return `A ${data.rewiredIndex} baseline shows potential with room to grow. ${highestName} is your strength - lean into it. ${lowestName} needs work, and that's exactly what we'll target.`;
+  } else {
+    return `A ${data.rewiredIndex} baseline means your system is running on survival mode. Good news: there's nowhere to go but up. We'll start with ${lowestName} - that's where the biggest shifts happen fastest.`;
+  }
+}
+
+// FIRST-TIME USER: Full onboarding message (async for personalized insight)
+async function getFirstTimeOpeningMessage(data: BaselineData, userName: string): Promise<string> {
+  const rituals = stageRituals[data.currentStage] || stageRituals[1];
+  const tierText = tierInterpretations[data.tier] || tierInterpretations['Operational'];
+  
+  // Get personalized insight via small API call
+  const personalizedInsight = await generatePersonalizedInsight(data, userName);
+  
+  return `Hey${userName ? `, ${userName}` : ''}. Your baseline diagnostic is complete. Nicely done.
+
+**REwired Index: ${data.rewiredIndex}/100**
+**Status: ${data.tier}**
+
+**Domain Breakdown:**
+• Regulation: ${data.domainScores.regulation.toFixed(1)}/5.0
+• Awareness: ${data.domainScores.awareness.toFixed(1)}/5.0
+• Outlook: ${data.domainScores.outlook.toFixed(1)}/5.0
+• Attention: ${data.domainScores.attention.toFixed(1)}/5.0
+
+${personalizedInsight}
+
+${tierText}
+
+The results will also appear on the left side (desktop) or by clicking on the hamburger icon (mobile) for quick reference any time.
+
+---
+
+Now, let's dive in. 
+
+Here's how this works:
+
+The IOS installs in 7 progressive stages. Each stage adds new practices that stack — they don't replace, they accumulate.
+
+You advance when the system sees you're ready. So you need to do the daily practices and follow the prompts. 
+
+---
+
+You're starting at **Stage ${data.currentStage}: ${getStageName(data.currentStage)}**.
+
+**Your daily rituals:**
+
+${rituals.list}
+
+**Total: ${rituals.total}** every morning, immediately upon waking.
+
+These aren't optional. They're the kernel installation. Without them, nothing else sticks.
+
+For simplicity, they are also located on the right side (desktop) or under the lightning bolt icon (mobile).
+
+Ready to learn the rituals?`;
+}
+
+// RETURNING USER (same day): Brief check-in
+function getSameDayReturnMessage(data: BaselineData, progress: ProgressData | null): string {
+  const completedToday = progress?.adherence_percentage ? progress.adherence_percentage > 0 : false;
+  
+  if (completedToday) {
+    return `Welcome back. Good to see you.
+
+Looks like you've already logged rituals today. What do you need?
+
+• Continue a conversation
+• Run an on-demand protocol (Reframe, Thought Hygiene, Decentering)
+• Check your progress
+• Ask a question
+
+What's on your mind?`;
+  }
+  
+  return `Welcome back.
+
+Your morning rituals are waiting. Ready to run through them now, or is there something else you need first?`;
+}
+
+// RETURNING USER (new day): Morning ritual prompt
+function getNewDayMorningMessage(data: BaselineData, progress: ProgressData | null, userName: string): string {
+  const rituals = stageRituals[data.currentStage] || stageRituals[1];
+  const consecutiveDays = progress?.consecutive_days || 0;
+  const adherence = progress?.adherence_percentage || 0;
+  
+  // Calculate days in current stage
+  let daysInStage = 1;
+  if (progress?.stage_start_date) {
+    const startDate = new Date(progress.stage_start_date);
+    const now = new Date();
+    daysInStage = Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+  }
+  
+  // Build streak message
+  let streakMessage = '';
+  if (consecutiveDays >= 7) {
+    streakMessage = `\n\n🔥 **${consecutiveDays} day streak.** Your nervous system is rewiring. Keep going.`;
+  } else if (consecutiveDays >= 3) {
+    streakMessage = `\n\n**${consecutiveDays} days consecutive.** Building momentum.`;
+  } else if (consecutiveDays === 0 && adherence > 0) {
+    streakMessage = `\n\nStreak broken. All good. No judgment — just start fresh today.`;
+  }
+  
+  return `Morning${userName ? `, ${userName}` : ''}.
+
+**Stage ${data.currentStage}: ${getStageName(data.currentStage)}** — Day ${daysInStage}
+**Adherence:** ${adherence.toFixed(0)}%${streakMessage}
+
+---
+
+**Today's rituals:**
+
+${rituals.list}
+
+**Total: ${rituals.total}**
+
+Ready to begin? Type "yes" or use the tool to get started.`;
+}
+
+// Determine which opening to use
+function determineOpeningType(
+  lastVisit: string | null,
+  hasCompletedOnboarding: boolean
+): 'first_time' | 'same_day' | 'new_day' {
+  if (!hasCompletedOnboarding || !lastVisit) {
+    return 'first_time';
+  }
+  
+  const lastVisitDate = new Date(lastVisit);
+  const today = new Date();
+  
+  // Check if same calendar day
+  const isSameDay = 
+    lastVisitDate.getFullYear() === today.getFullYear() &&
+    lastVisitDate.getMonth() === today.getMonth() &&
+    lastVisitDate.getDate() === today.getDate();
+  
+  return isSameDay ? 'same_day' : 'new_day';
+}
+
+// ============================================
+// MAIN COMPONENT
+// ============================================
+
 interface ChatInterfaceProps {
   user: any;
-  baselineData: {
-    rewiredIndex: number;
-    tier: string;
-    domainScores: {
-      regulation: number;
-      awareness: number;
-      outlook: number;
-      attention: number;
-    };
-    currentStage: number;
-  };
+  baselineData: BaselineData;
 }
 
 type Message = {
@@ -82,10 +346,11 @@ type Message = {
 };
 
 export default function ChatInterface({ user, baselineData }: ChatInterfaceProps) {
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [isInitializing, setIsInitializing] = useState<boolean>(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const hasInitialized = useRef<boolean>(false);
@@ -104,6 +369,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
     }
   }, [input]);
 
+  // Initialize conversation with appropriate opening
   useEffect(() => {
     if (hasInitialized.current) return;
     
@@ -111,23 +377,76 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
       try {
         if (!baselineData || !user) {
           setError('Missing data. Please complete assessment.');
+          setIsInitializing(false);
           return;
         }
 
-        const initMessage = `Hello. I've completed my baseline assessment. My REwired Index is ${baselineData.rewiredIndex}/100 (${baselineData.tier}). My domain scores are: Regulation ${baselineData.domainScores.regulation}/5, Awareness ${baselineData.domainScores.awareness}/5, Outlook ${baselineData.domainScores.outlook}/5, Attention ${baselineData.domainScores.attention}/5. I'm currently at Stage ${baselineData.currentStage}.`;
-
-        const greeting = await sendToAPI([
-          { role: 'user', content: initMessage }
-        ]);
+        const supabase = createClient();
         
-        if (greeting) {
-          setMessages([{ role: 'assistant', content: greeting }]);
+        // Check last visit timestamp from user_progress
+        const { data: progressData } = await supabase
+          .from('user_progress')
+          .select('last_visit, onboarding_completed, adherence_percentage, consecutive_days, stage_start_date')
+          .eq('user_id', user.id)
+          .single();
+        
+        const lastVisit = progressData?.last_visit || null;
+        const hasCompletedOnboarding = progressData?.onboarding_completed || false;
+        
+        // Determine opening type
+        const openingType = determineOpeningType(lastVisit, hasCompletedOnboarding);
+        
+        // Get user's first name
+        const userName = user?.user_metadata?.first_name || '';
+        
+        // Generate appropriate opening message
+        let openingMessage: string;
+        
+        switch (openingType) {
+          case 'first_time':
+            openingMessage = await getFirstTimeOpeningMessage(baselineData, userName);
+            // Mark onboarding as completed
+            await supabase
+              .from('user_progress')
+              .update({ 
+                onboarding_completed: true,
+                last_visit: new Date().toISOString()
+              })
+              .eq('user_id', user.id);
+            break;
+            
+          case 'same_day':
+            openingMessage = getSameDayReturnMessage(baselineData, progressData);
+            break;
+            
+          case 'new_day':
+            openingMessage = getNewDayMorningMessage(baselineData, progressData, userName);
+            break;
+            
+          default:
+            openingMessage = await getFirstTimeOpeningMessage(baselineData, userName);
         }
         
+        // Update last visit timestamp
+        await supabase
+          .from('user_progress')
+          .update({ last_visit: new Date().toISOString() })
+          .eq('user_id', user.id);
+        
+        // Set the opening message
+        setMessages([{ role: 'assistant', content: openingMessage }]);
+        
         hasInitialized.current = true;
+        setIsInitializing(false);
+        
       } catch (error) {
         console.error('Error initializing:', error);
-        setError(`Failed to initialize: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        // Fallback to first-time message if anything fails
+        const userName = user?.user_metadata?.first_name || '';
+        const openingMessage = await getFirstTimeOpeningMessage(baselineData, userName);
+        setMessages([{ role: 'assistant', content: openingMessage }]);
+        hasInitialized.current = true;
+        setIsInitializing(false);
       }
     };
 
@@ -221,6 +540,22 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
       refetchProgress();
     }
   }, [refetchProgress]);
+
+  // Show loading state while initializing
+  if (isInitializing) {
+    return (
+      <div className="flex h-screen bg-[#0a0a0a] items-center justify-center">
+        <div className="text-center">
+          <div className="flex gap-2 justify-center mb-4">
+            <div className="w-3 h-3 bg-[#ff9e19] rounded-full animate-bounce" />
+            <div className="w-3 h-3 bg-[#ff9e19] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+            <div className="w-3 h-3 bg-[#ff9e19] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+          </div>
+          <p className="text-gray-400">Initializing IOS System...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (error || progressError) {
     return (
