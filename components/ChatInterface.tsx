@@ -5,6 +5,7 @@ import { useIsMobile } from '@/app/hooks/useIsMobile';
 import { useUserProgress } from '@/app/hooks/useUserProgress';
 import ToolsSidebar from '@/components/ToolsSidebar';
 import FloatingActionButton from '@/components/FloatingActionButton';
+import MobileDashboard from '@/components/MobileDashboard';
 import { createClient } from '@/lib/supabase-client';
 
 // Simple markdown renderer for chat messages
@@ -774,6 +775,16 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
           onPracticeClick={handlePracticeClick}
           onToolClick={handleToolClick}
           onProgressUpdate={handleProgressUpdate}
+        />
+      )}
+
+      {/* Mobile Dashboard Drawer */}
+      {isMobile && (
+        <MobileDashboard
+          userName={getUserName()}
+          currentStage={baselineData.currentStage}
+          rewiredIndex={baselineData.rewiredIndex}
+          domainScores={baselineData.domainScores}
         />
       )}
 
