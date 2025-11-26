@@ -5,7 +5,7 @@ import { useIsMobile } from '@/app/hooks/useIsMobile';
 import { useUserProgress } from '@/app/hooks/useUserProgress';
 import ToolsSidebar from '@/components/ToolsSidebar';
 import FloatingActionButton from '@/components/FloatingActionButton';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase-client';
 
 // Simple markdown renderer for chat messages
 function renderMarkdown(text: string): string {
