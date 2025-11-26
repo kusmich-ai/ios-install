@@ -6,6 +6,29 @@ import { useUserProgress } from '@/app/hooks/useUserProgress';
 import ToolsSidebar from '@/components/ToolsSidebar';
 import FloatingActionButton from '@/components/FloatingActionButton';
 
+// Simple markdown renderer for chat messages
+function renderMarkdown(text: string): string {
+  return text
+    // Remove excessive box-drawing characters (═ ─ │ etc.)
+    .replace(/^[═─│┌┐└┘├┤┬┴┼]{3,}$/gm, '')
+    // Bold: **text** or __text__
+    .replace(/\*\*(.*?)\*\*/g, '<strong class="text-[#ff9e19]">$1</strong>')
+    .replace(/__(.*?)__/g, '<strong class="text-[#ff9e19]">$1</strong>')
+    // Italic: *text* or _text_
+    .replace(/\*([^*\n]+)\*/g, '<em>$1</em>')
+    .replace(/_([^_\n]+)_/g, '<em>$1</em>')
+    // Section headers (lines that are all caps or end with colon)
+    .replace(/^([A-Z][A-Z\s&]+):?\s*$/gm, '<div class="text-[#ff9e19] font-semibold mt-4 mb-1">$1</div>')
+    // Bullet points
+    .replace(/^[•\-]\s+(.*)$/gm, '<div class="ml-4">• $1</div>')
+    // Progress indicators like "Stage: X" or "Score: Y"
+    .replace(/^(Stage|Score|Status|Adherence|Days|Index):\s*(.*)$/gm, '<div><span class="text-gray-400">$1:</span> <span class="font-medium">$2</span></div>')
+    // Clean up multiple consecutive line breaks
+    .replace(/\n{3,}/g, '\n\n')
+    // Line breaks
+    .replace(/\n/g, '<br />');
+}
+
 interface ChatInterfaceProps {
   user: any;
   baselineData: {
@@ -309,7 +332,14 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
                       : 'bg-gray-800 text-gray-100 border border-gray-700'
                   }`}
                 >
-                  <div className="whitespace-pre-wrap leading-relaxed">{msg.content}</div>
+                  {msg.role === 'user' ? (
+                    <div className="whitespace-pre-wrap leading-relaxed">{msg.content}</div>
+                  ) : (
+                    <div 
+                      className="leading-relaxed prose prose-invert prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
+                    />
+                  )}
                 </div>
               </div>
             ))}
