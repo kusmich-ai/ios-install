@@ -41,6 +41,11 @@ export default function FloatingActionButton({
     setIsOpen(false);
   };
 
+  // Calculate completion stats
+  const completedCount = currentStagePractices.filter(p => getPracticeStatus(p.id) === 'completed').length;
+  const totalCount = currentStagePractices.length;
+  const allComplete = completedCount === totalCount;
+
   return (
     <>
       {/* Overlay */}
@@ -64,6 +69,43 @@ export default function FloatingActionButton({
               >
                 <X className="w-5 h-5" />
               </button>
+            </div>
+
+            {/* Today's Progress */}
+            <div className={`mb-4 p-3 rounded-lg border ${
+              allComplete 
+                ? 'bg-green-500/10 border-green-500/30' 
+                : 'bg-[#0a0a0a] border-gray-700'
+            }`}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-gray-400">Today's Progress</span>
+                <span className={`text-sm font-bold ${allComplete ? 'text-green-400' : 'text-[#ff9e19]'}`}>
+                  {completedCount}/{totalCount}
+                </span>
+              </div>
+              <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
+                <div 
+                  className={`h-full transition-all duration-500 ${allComplete ? 'bg-green-500' : 'bg-[#ff9e19]'}`}
+                  style={{ width: `${(completedCount / totalCount) * 100}%` }}
+                />
+              </div>
+              {allComplete && (
+                <p className="text-xs text-green-400 mt-2 text-center">All practices complete! 🎉</p>
+              )}
+            </div>
+
+            {/* Adherence Stats */}
+            <div className="mb-4 p-3 rounded-lg bg-[#0a0a0a] border border-gray-700">
+              <div className="grid grid-cols-2 gap-3 text-center">
+                <div>
+                  <div className="text-lg font-bold text-[#ff9e19]">{progress.adherencePercentage}%</div>
+                  <div className="text-xs text-gray-500">14-Day Adherence</div>
+                </div>
+                <div>
+                  <div className="text-lg font-bold text-[#ff9e19]">{progress.consecutiveDays}</div>
+                  <div className="text-xs text-gray-500">Day Streak</div>
+                </div>
+              </div>
             </div>
 
             {/* Daily Practices */}
