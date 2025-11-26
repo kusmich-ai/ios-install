@@ -36,7 +36,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   const hasInitialized = useRef<boolean>(false);
 
   const isMobile = useIsMobile();
-  const { progress, loading: progressLoading, error: progressError, refetch: refetchProgress } = useUserProgress();
+  const { progress, loading: progressLoading, error: progressError, refetchProgress } = useUserProgress();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
