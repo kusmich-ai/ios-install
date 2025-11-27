@@ -93,7 +93,12 @@ export default function ResonanceBreathing() {
   // Play a singing bowl / chime tone
   const playTone = useCallback((frequency: number, duration: number, isInhale: boolean) => {
     const ctx = audioContextRef.current;
-    if (!ctx) return;
+    if (!ctx) {
+      console.warn("playTone: No AudioContext");
+      return;
+    }
+
+    console.log("playTone called:", { frequency, duration, isInhale, ctxState: ctx.state });
 
     // Ensure context is running (mobile requirement)
     if (ctx.state === "suspended") {
@@ -128,11 +133,12 @@ export default function ResonanceBreathing() {
       harmonic2Gain.gain.setValueAtTime(0.05, now);
 
       // Envelope - singing bowl style (quick attack, long decay)
+      // INCREASED VOLUME for mobile - was 0.12/0.1, now 0.4/0.35
       const attackTime = 0.02;
       const decayTime = duration / 1000;
 
       masterGain.gain.setValueAtTime(0, now);
-      masterGain.gain.linearRampToValueAtTime(isInhale ? 0.12 : 0.1, now + attackTime);
+      masterGain.gain.linearRampToValueAtTime(isInhale ? 0.4 : 0.35, now + attackTime);
       masterGain.gain.exponentialRampToValueAtTime(0.001, now + decayTime);
 
       // Connect nodes
@@ -154,6 +160,8 @@ export default function ResonanceBreathing() {
       fundamental.stop(now + decayTime);
       harmonic1.stop(now + decayTime);
       harmonic2.stop(now + decayTime);
+      
+      console.log("playTone: Oscillators started successfully");
     } catch (e) {
       console.warn("Error playing tone:", e);
     }
@@ -162,7 +170,12 @@ export default function ResonanceBreathing() {
   // Start binaural beat
   const startBinaural = useCallback(() => {
     const ctx = audioContextRef.current;
-    if (!ctx) return;
+    if (!ctx) {
+      console.warn("startBinaural: No AudioContext");
+      return;
+    }
+
+    console.log("startBinaural called, ctxState:", ctx.state);
 
     // Ensure context is running
     if (ctx.state === "suspended") {
@@ -189,15 +202,15 @@ export default function ResonanceBreathing() {
       leftPanner.pan.setValueAtTime(-1, now);
       rightPanner.pan.setValueAtTime(1, now);
 
-      // Gain nodes - subtle volume
+      // Gain nodes - INCREASED for mobile (was 0.08, now 0.15)
       const leftGain = ctx.createGain();
       const rightGain = ctx.createGain();
       leftGain.gain.setValueAtTime(0, now);
       rightGain.gain.setValueAtTime(0, now);
 
       // Fade in over 3 seconds
-      leftGain.gain.linearRampToValueAtTime(0.08, now + 3);
-      rightGain.gain.linearRampToValueAtTime(0.08, now + 3);
+      leftGain.gain.linearRampToValueAtTime(0.15, now + 3);
+      rightGain.gain.linearRampToValueAtTime(0.15, now + 3);
 
       // Connect
       leftOsc.connect(leftGain);
@@ -216,6 +229,8 @@ export default function ResonanceBreathing() {
         gainL: leftGain,
         gainR: rightGain,
       };
+      
+      console.log("startBinaural: Oscillators started successfully");
     } catch (e) {
       console.warn("Error starting binaural:", e);
     }
