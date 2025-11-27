@@ -1,195 +1,209 @@
-# IOS System Changelog
+# IOS System Installer - Changelog
 
-All notable changes to the Integrated Operating System (IOS) project will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+All notable changes to the IOS (Integrated Operating System) project will be documented in this file.
 
 ---
 
-## [Unreleased]
+## [0.14.0] - 2025-11-27
 
 ### Added
-- CHANGELOG.md file for tracking all system changes
+- **Hybrid Template System for Ritual Introduction**
+  - New `introStep` state machine (0-4) tracks position in scripted flow
+  - Template-driven messages for Stage 1 ritual introductions (zero API calls for compliant users)
+  - Quick-reply buttons: "Yes, let's go", "Got it, next ritual", "Got it, I'm ready"
+  - Affirmative text detection: recognizes "yes", "got it", "makes sense", "ready", etc.
+  - Escape hatch with redirect: if user asks question mid-intro, Claude answers then prompts return to flow
+  - `ritualIntroTemplates` object with ritual1Intro, ritual2Intro, wrapUp messages
+  - `introQuickReplies` object defining button text per step
+  - `getIntroRedirectMessage()` function for graceful flow recovery
+  - Database column: `ritual_intro_completed` boolean in user_progress table
+
+- **Practice Completion Chat Integration**
+  - `onPracticeCompleted` callback from FloatingActionButton to ChatInterface
+  - Chat automatically acknowledges when user completes practice via modal
+  - Seamless connection between practice tracking UI and conversational interface
+
+### Changed
+- **Terminology Standardization**
+  - "HRVB (Resonance Breathing)" → "Resonance Breathing" (simpler, user-friendly)
+  - "Daily Practices" → "Daily Rituals" throughout UI
+  - Consistent naming across stageRituals object, progress display, and chat messages
+
+### Architecture Decision
+- **Template vs Claude Split (80/20 rule)**
+  - Templates handle: daily prompts, stage unlocks, progress summaries, scripted intros
+  - Claude handles: questions, on-demand protocols, pattern recognition, coaching
+  - Benefits: 80% cost savings, instant responses, consistency, Claude stays fresh
+
+---
+
+## [0.13.2] - 2025-11-27
+
+### Added
+- **Resonance Breathing Modal Integration**
+  - Full visual breathing animation (inhale 4s, exhale 6s rhythm)
+  - Expanding/contracting circle with gradient effects
+  - Phase indicator text ("Inhale..." / "Exhale...")
+  - 5-minute guided session with countdown timer
+  - Session completion tracking and acknowledgment
+
+- **Audio System for Breathing Practice**
+  - Singing bowl tones marking breath phase transitions
+  - Optional binaural beats toggle (hidden until user requests)
+  - Dual audio approach: HTML5 Audio for iOS Safari, Web Audio API for desktop
+  - Graceful fallback when audio context blocked
+
+### Fixed
+- **iOS Safari Audio Issues**
+  - Safari blocks Web Audio API autoplay - implemented HTML5 Audio fallback
+  - Touch event triggers audio context resume
+  - Mobile detection for appropriate audio strategy
+
+---
+
+## [0.13.1] - 2025-11-27
+
+### Added
+- **Comprehensive Practice Tracking System**
+  - Practice logging API endpoint with user authentication
+  - Adherence percentage calculation (completed/expected over time window)
+  - Consecutive day streak tracking
+  - Real-time progress display in dashboard
+  - Stage-specific practice requirements
+
+### Fixed
+- **CRITICAL: Timezone Bug in Practice Tracking**
+  - Root cause: Server using UTC, user in Calgary (Mountain Time, UTC-7)
+  - Symptom: Practices logged in evening stored under next day's UTC date
+  - Example: Nov 26 10:30 PM MT = Nov 27 05:30 AM UTC → wrongly counted as Nov 27
+  - Solution: Frontend sends client's local date string, all calculations use local time
+  - Files affected: practice logging API, adherence calculations, streak logic, progress display
+
+### Changed
+- **Date Handling Architecture**
+  - All practice dates now stored as local date strings (YYYY-MM-DD)
+  - Removed server-side UTC conversions for user-facing dates
+  - Dashboard "today" logic uses client timezone
+
+---
+
+## [0.13.0] - 2025-11-26
+
+### Added
+- **Mobile Dashboard Drawer**
+  - Hamburger menu icon replacing full sidebar on mobile
+  - Slide-out drawer with all navigation options
+  - Touch-friendly tap targets (44px minimum)
+  - Backdrop overlay with tap-to-close
+  - Smooth animation transitions
+
+- **Mobile Tools Feature Parity**
+  - FloatingActionButton now shows progress information
+  - Quick-access to daily rituals from any screen
+  - Responsive breakpoints: mobile (<768px), tablet, desktop
+
+### Changed
+- **Responsive Layout System**
+  - Sidebar hidden on mobile, visible on tablet+
+  - Content area full-width on mobile
+  - Consistent spacing across breakpoints
+
+---
+
+## [0.12.9] - 2025-11-26
+
+### Fixed
+- **Daily Ritual Reset Bug (Timezone)**
+  - Same UTC vs local date issue affecting "new day" detection
+  - Rituals showing as incomplete despite being done
+  - Fixed in 4 files: ChatInterface, ProgressDisplay, useUserProgress, practice API
+
+---
+
+## [0.12.8] - 2025-11-25
+
+### Changed
+- **Decentering Practice Protocol v2.0**
+  - Removed step labels ("Step 1", "Step 2") - now flows conversationally
+  - Added bridge stages between decentering and re-engagement
+  - Enhanced "player vs avatar" metaphor integration
+  - Improved closing ritual with pause instructions
+
+---
+
+## [0.12.7] - 2025-11-24
+
+### Fixed
+- **Onboarding Redirect Loop (Again)**
+  - Edge case: users with partial data getting stuck
+  - Added null checks for all onboarding status fields
+  - Improved middleware logic for incomplete states
+
+---
+
+## [0.12.6] - 2025-11-22
+
+### Added
+- **Opening Message Architecture**
+  - Hybrid approach: template for structure, API call for personalized insight
+  - Morning greeting varies by time of day
+  - Progress summary pulled from database
+  - One personalized observation from Claude based on recent activity
+
+### Changed
+- **Conversation Pacing System**
+  - Added explicit "STOP" instructions in system prompt
+  - Rituals introduced one at a time, waiting for user confirmation
+  - Prevents information overwhelm during onboarding
+
+---
+
+## [0.12.5] - 2025-11-21
+
+### Fixed
+- **Multiple Onboarding Edge Cases**
+  - Users stuck between screening and legal agreement
+  - Assessment completion not properly flagged
+  - Baseline data present but user routed back to assessment
 
 ---
 
 ## [0.12.4] - 2025-11-15
 
-### Changed - BREAKING
-- **Migrated from deprecated `@supabase/auth-helpers-nextjs` to `@supabase/ssr`**
-  - Old package incompatible with Next.js 16's new cookie handling
-  - Created separate server and client-side Supabase utilities
-  - New files created:
-    - `lib/supabase-server.ts` - Server-side Supabase client
-    - `lib/supabase-client.ts` - Client-side Supabase client
-  - Updated all authentication flows to use new package
-
-### Fixed
-- **Chat page server-side exception after assessment completion**
-  - Error: "Dynamic server usage: Route /chat couldn't be rendered statically"
-  - Added `export const dynamic = 'force-dynamic'` to force server-side rendering
-  - Fixed static generation attempting to render dynamic page using `cookies()`
-
-- **15 consecutive deployment failures causing auto-deploy suspension**
-  - Root cause: Missing `@supabase/auth-helpers-nextjs` package in dependencies
-  - Fixed by adding package to `package.json`
-  - Then migrated to `@supabase/ssr` for Next.js 16 compatibility
-  - Vercel's safety mechanism had paused auto-deployments after threshold
-  - Manual re-enable required in Vercel dashboard: Settings → Git → Resume Automatic Deployments
-
-- **Supabase authentication middleware incompatibility**
-  - Updated middleware to use `createServerClient` from `@supabase/ssr`
-  - Fixed cookie handling for Next.js 16 compatibility
-  - Proper server-side auth state management
-
-### Updated Files
-- `package.json` - Added/migrated Supabase dependencies
-- `lib/supabase-server.ts` - NEW server utility
-- `lib/supabase-client.ts` - NEW client utility  
-- `app/chat/page.tsx` - Dynamic rendering, new Supabase client
-- `app/auth/signin/page.tsx` - New client integration
-- `app/auth/signup/page.tsx` - New client integration
-- `app/auth/callback/route.ts` - Server-side auth handling
-- `middleware.ts` - Updated to use `@supabase/ssr`
-- All assessment and screening pages - Client utility migration
-
-### Documentation
-- **Deployment troubleshooting**
-  - How to re-enable auto-deployments after failure threshold
-  - Vercel safety mechanism documentation (15 failure limit)
-  - Process: Settings → Git → Resume Automatic Deployments
-
-- **Git workflow without terminal**
-  - Committing changes through VS Code Source Control
-  - Pushing changes through GitHub Desktop
-  - Verifying changes pushed to GitHub
-
-### Technical Details
-- **Next.js 16 cookie handling changes**
-  - Static generation incompatible with `cookies()` usage
-  - Dynamic routes must explicitly declare `dynamic = 'force-dynamic'`
-  - Server vs client component separation critical
-
-- **Supabase client patterns:**
-  - Server components: Use `createServerClient` with cookies
-  - Client components: Use `createBrowserClient`
-  - Middleware: Use `createServerClient` with request/response cookies
-
----
-
-## [0.12.3] - 2025-11-14
-
-### Fixed
-- **JSX syntax errors in chat page causing build failures**
-  - Fixed malformed `>` characters on lines 118 and 124 in `/app/chat/page.tsx`
-  - Characters were orphaned on separate lines instead of being part of anchor element opening tags
-  - Turbopack JSX parser now successfully compiles the file
-
-- **Vercel auto-deployment stopped working**
-  - Root cause: Missing GitHub webhooks after repository reconnection
-  - Webhooks were not created automatically when reconnecting repository
-  - Solution: Reinstalled Vercel GitHub App through GitHub application settings
-  - Verified proper repository access permissions
-  - Manual deploy hooks configured as backup
+### Added
+- **Weekly Delta Check-in System**
+  - 4-question self-report (Regulation, Awareness, Outlook, Attention)
+  - Comparison to baseline scores
+  - Delta calculation and trend tracking
+  - Sunday default with user-customizable day
 
 ### Changed
-- **Vercel-GitHub integration maintenance**
-  - Documented webhook verification process
-  - Added troubleshooting steps for future deployment issues
-  - Established monitoring for webhook presence at `/settings/hooks`
-
-### Documentation
-- **Deployment troubleshooting guide**
-  - How to verify GitHub-Vercel webhook configuration
-  - Steps to reinstall Vercel GitHub App
-  - Manual deploy hook creation as fallback
-  - Git email configuration verification through GitHub web interface
-
-### Known Issues
-- **Next.js middleware deprecation warning**
-  - Current: Using "middleware" file convention
-  - Warning: "middleware" convention deprecated in Next.js 16.0.1 (Turbopack)
-  - Action required: Migrate to "proxy" convention
-  - Reference: https://nextjs.org/docs/messages/middleware-to-proxy
-  - Status: To be addressed in future release
-
-### Technical Notes
-- Build machine: Washington, D.C., USA (East) - iad1
-- Configuration: 2 cores, 8 GB RAM
-- Next.js version: 16.0.1 (Turbopack)
-- Repository: github.com/kusmich-ai/ios-install (Branch: main)
+- **Progress Visualization**
+  - Added delta arrows (↑↓) next to domain scores
+  - Color coding: green for improvement, red for decline
+  - Baseline comparison always visible
 
 ---
 
-## [0.12.2] - 2025-11-14
+## [0.12.3] - 2025-11-15
+
+### Fixed
+- **Chat Interface Initial Load**
+  - First message sometimes not appearing
+  - Race condition between auth check and message fetch
+  - Added loading state to prevent premature render
+
+### Changed
+- **Error Handling Improvements**
+  - More descriptive error messages for API failures
+  - Retry logic for transient network issues
+  - User-friendly fallback states
+
+---
+
+## [0.12.2] - 2025-11-15
 
 ### Added
-- **BCT (Breath Counting Task) full integration into baseline assessment**
-  - Integrated as 5th assessment section (Presence Test) instead of standalone page
-  - Manual cycle completion after breath 8 (no auto-cycling)
-  - Mental counting requirement - all visual breath count displays removed
-  - Enhanced instructions emphasizing "long, slow, deep breaths throughout"
-  - Visual button feedback with scale animations on press
-  - Proper data flow to Supabase with all required fields:
-    - `presence_test_score`
-    - `presence_test_elapsed_seconds`
-    - `presence_test_cycles_completed`
-    - Calculated `attention_domain` scores
-
-- **Comprehensive results summary page**
-  - Displays calculated REwired Index (0-100 scale)
-  - Domain breakdowns with personalized commentary
-  - Tier classification display
-  - Manual "Start Your IOS Install Now" button
-  - Routes to `/chat` for Stage 1 onboarding (no auto-redirect)
-
-- **Email confirmation support**
-  - Intelligent detection of Supabase email confirmation setting
-  - Handles both scenarios (confirmation enabled/disabled)
-  - Enhanced signup flow with email verification messaging
-
-- **Full name field in signup**
-  - Added to user profile collection
-  - Stored in Supabase user metadata
-
-### Fixed
-- **Chat page server-side exception**
-  - Added comprehensive null checks for storage API results
-  - Proper validation before accessing `.value` properties
-  - Error handling for missing baseline data
-
-- **Layout.tsx forcing dynamic rendering**
-  - Removed auth checks from root layout
-  - Eliminated middleware conflicts on public pages
-  - Individual pages now handle their own authentication
-
-- **useSearchParams Suspense boundary error**
-  - Wrapped signin page searchParams usage in Suspense component
-  - Added appropriate fallback UI during parameter loading
-  - Build now completes without Next.js 13+ warnings
-
-- **Legal agreements text contrast**
-  - Changed text colors from light gray to dark gray (`text-gray-800`, `text-gray-900`)
-  - Added `prose-gray` for better readability
-  - White sections now have proper contrast
-
-- **Assessment routing flow**
-  - Corrected `/legal-agreements` redirect from `/baseline` → `/assessment`
-  - Assessment now properly includes BCT before completion
-  - Removed auto-redirect to `/chat`, replaced with manual button in results
-
-- **Screening page loading state**
-  - Fixed Supabase client initialization
-  - Changed from `createClient` to `createClientComponentClient`
-  - Preserved all existing screening functionality (5 sections, clearance logic, crisis resources)
-
-### Changed
-- **Authentication pages styling consistency**
-  - Updated signin/signup pages to match dark theme
-  - Applied orange accent color (#ff9e19) throughout
-  - Consistent UI/UX across all auth flows
-
 - **Password validation enhancement**
   - Minimum 8 characters required
   - Must include uppercase letter
@@ -856,27 +870,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Current Development Stage
 - Assessment orchestrator: Complete and styled
-- Stage 1-3: Built and ready for testing
+- Stage 1: Fully implemented with practice tracking
+- Stage 2-3: Architecture complete, implementation pending
 - Stage 4-7: Pending implementation
-- Chat interface: Integrated with baseline data
+- Chat interface: Integrated with baseline data + hybrid template system
 - Supabase storage: Configured and functional
+- Mobile responsive: Complete with drawer navigation
 
 ## Standing To-Do List
 
 ### Active Reminder Checklist
-- [ ] Provide Resonance Breathing video link
-- [ ] Provide Awareness Rep audio link (3 mins)
+- [x] Provide Resonance Breathing video link (www.unbecoming.app/breathe)
+- [ ] Provide Awareness Rep audio link (3 mins) - placeholder exists
 - [ ] Provide Somatic Flow video link
 
 ### Pending Development Tasks
 
+#### HIGH PRIORITY: Template Library Development
+- [x] Stage 1 ritual introduction templates (COMPLETE - v0.14.0)
+- [ ] Stage 2 ritual introduction templates (Somatic Flow)
+- [ ] Stage 3 ritual introduction templates (Morning Micro-Action)
+- [ ] Stage 4-6 introduction templates
+- [ ] Daily check-in templates (all stages)
+- [ ] Weekly delta check-in templates
+- [ ] Stage unlock notification templates
+- [ ] Progress summary templates
+
 #### Option B: Data Tracking/Storage System
-- [ ] Define storage schema for all user data
-- [ ] Build adherence calculation logic
-- [ ] Create delta tracking system
+- [x] Define storage schema for all user data
+- [x] Build adherence calculation logic
+- [x] Create delta tracking system
 - [ ] Design unlock eligibility checker
-- [ ] Daily ritual completion logging
-- [ ] Weekly delta check-in automation
+- [x] Daily ritual completion logging
+- [x] Weekly delta check-in automation
 
 #### Option C: Edge Cases & Troubleshooting
 - [ ] What happens when users miss days?
@@ -944,6 +970,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Spacing**: Consistent Tailwind scale
 - **Components**: Dark theme throughout
 
+### Database Schema (Key Tables)
+- `user_progress` - Stage, adherence, streaks, ritual_intro_completed
+- `baseline_assessments` - Initial 4-domain scores, REwired Index
+- `practice_logs` - Daily ritual completion records
+- `weekly_deltas` - Weekly check-in scores
+- `screening_responses` - Medical/psychiatric screening
+- `legal_acceptances` - Terms and consent records
+
 ---
 
 ## Notes on Versioning
@@ -958,6 +992,6 @@ Current status: Pre-release (0.x.x) - Building toward 1.0.0 production release
 
 ## References
 
-- Project repository: [To be added]
-- Live deployment: [To be added]
+- Project repository: github.com/kusmich-ai/ios-install
+- Live deployment: unbecoming.app
 - Documentation: /docs folder (version controlled)
