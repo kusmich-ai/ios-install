@@ -5,22 +5,14 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 // ============================================================================
 // RESONANCE BREATHING COMPONENT
 // 4-second inhale (nose) / 6-second exhale (mouth) / 5 minutes total
-// Now using real audio files for rich, organic sound
+// Synced to BreathPulse.mp3 as the master audio track
 // ============================================================================
-
-interface BreathPhase {
-  type: "inhale" | "exhale";
-  duration: number;
-}
-
-const BREATH_CYCLE: BreathPhase[] = [
-  { type: "inhale", duration: 4000 },
-  { type: "exhale", duration: 6000 },
-];
 
 const TOTAL_BREATHS = 30;
 const CYCLE_DURATION = 10000; // 10 seconds per breath
-const TOTAL_DURATION = 300000; // 5 minutes
+const INHALE_DURATION = 4000; // 4 seconds
+const EXHALE_DURATION = 6000; // 6 seconds
+const TOTAL_DURATION = 303000; // 5:03 to match audio
 
 // Color palette
 const COLORS = {
@@ -32,19 +24,11 @@ const COLORS = {
   textDim: "rgba(245, 242, 236, 0.4)",
 };
 
-// Audio file paths (relative to public folder)
-const AUDIO_FILES = {
-  inhale: "/audio/inhale.wav",
-  exhale: "/audio/exhale.wav",
-  binaural: "/audio/bineral.mp3",
-};
+// Audio file path
+const AUDIO_FILE = "/audio/BreathPulse.mp3";
 
-// Audio volume settings - adjust these to taste (0.0 - 1.0)
-const VOLUME = {
-  inhale: 0.4,
-  exhale: 0.4,
-  binaural: 0.5,
-};
+// Audio volume
+const VOLUME = 0.7;
 
 export default function ResonanceBreathing() {
   const [isActive, setIsActive] = useState(false);
@@ -55,251 +39,124 @@ export default function ResonanceBreathing() {
   const [phaseProgress, setPhaseProgress] = useState(0);
   const [audioLoaded, setAudioLoaded] = useState(false);
 
-  // Audio element refs
-  const inhaleAudioRef = useRef<HTMLAudioElement | null>(null);
-  const exhaleAudioRef = useRef<HTMLAudioElement | null>(null);
-  const binauralAudioRef = useRef<HTMLAudioElement | null>(null);
-  
+  // Audio element ref
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const animationFrameRef = useRef<number | null>(null);
-  const startTimeRef = useRef<number>(0);
-  const phaseStartTimeRef = useRef<number>(0);
 
-  // Preload audio files
+  // Preload audio file
   useEffect(() => {
-    // Create audio elements
-    inhaleAudioRef.current = new Audio(AUDIO_FILES.inhale);
-    exhaleAudioRef.current = new Audio(AUDIO_FILES.exhale);
-    binauralAudioRef.current = new Audio(AUDIO_FILES.binaural);
+    audioRef.current = new Audio(AUDIO_FILE);
+    audioRef.current.volume = VOLUME;
+    audioRef.current.preload = "auto";
 
-    // Set volumes
-    inhaleAudioRef.current.volume = VOLUME.inhale;
-    exhaleAudioRef.current.volume = VOLUME.exhale;
-    binauralAudioRef.current.volume = VOLUME.binaural;
+    audioRef.current.addEventListener("canplaythrough", () => {
+      setAudioLoaded(true);
+    });
 
-    // Binaural should loop
-    binauralAudioRef.current.loop = true;
-
-    // Preload
-    inhaleAudioRef.current.preload = "auto";
-    exhaleAudioRef.current.preload = "auto";
-    binauralAudioRef.current.preload = "auto";
-
-    // Track loading
-    let loadedCount = 0;
-    const checkLoaded = () => {
-      loadedCount++;
-      if (loadedCount >= 3) {
-        setAudioLoaded(true);
-      }
-    };
-
-    inhaleAudioRef.current.addEventListener("canplaythrough", checkLoaded);
-    exhaleAudioRef.current.addEventListener("canplaythrough", checkLoaded);
-    binauralAudioRef.current.addEventListener("canplaythrough", checkLoaded);
-
-    // Load the audio
-    inhaleAudioRef.current.load();
-    exhaleAudioRef.current.load();
-    binauralAudioRef.current.load();
-
-    // Cleanup
-    return () => {
-      if (inhaleAudioRef.current) {
-        inhaleAudioRef.current.pause();
-        inhaleAudioRef.current = null;
-      }
-      if (exhaleAudioRef.current) {
-        exhaleAudioRef.current.pause();
-        exhaleAudioRef.current = null;
-      }
-      if (binauralAudioRef.current) {
-        binauralAudioRef.current.pause();
-        binauralAudioRef.current = null;
-      }
-    };
-  }, []);
-
-  // Play inhale sound
-  const playInhale = useCallback(() => {
-    if (inhaleAudioRef.current) {
-      inhaleAudioRef.current.currentTime = 0;
-      inhaleAudioRef.current.play().catch((e) => {
-        console.log("Inhale audio play failed:", e);
-      });
-    }
-  }, []);
-
-  // Play exhale sound
-  const playExhale = useCallback(() => {
-    if (exhaleAudioRef.current) {
-      exhaleAudioRef.current.currentTime = 0;
-      exhaleAudioRef.current.play().catch((e) => {
-        console.log("Exhale audio play failed:", e);
-      });
-    }
-  }, []);
-
-  // Start binaural
-  const startBinaural = useCallback(() => {
-    if (binauralAudioRef.current) {
-      binauralAudioRef.current.currentTime = 0;
-      // Fade in
-      binauralAudioRef.current.volume = 0;
-      binauralAudioRef.current.play().catch((e) => {
-        console.log("Binaural audio play failed:", e);
-      });
-      
-      // Gradual fade in over 3 seconds
-      let vol = 0;
-      const fadeIn = setInterval(() => {
-        vol += VOLUME.binaural / 30; // 30 steps over ~3 seconds
-        if (vol >= VOLUME.binaural) {
-          vol = VOLUME.binaural;
-          clearInterval(fadeIn);
-        }
-        if (binauralAudioRef.current) {
-          binauralAudioRef.current.volume = vol;
-        }
-      }, 100);
-    }
-  }, []);
-
-  // Stop binaural
-  const stopBinaural = useCallback(() => {
-    if (binauralAudioRef.current) {
-      // Fade out over 2 seconds
-      let vol = binauralAudioRef.current.volume;
-      const fadeOut = setInterval(() => {
-        vol -= VOLUME.binaural / 20; // 20 steps over ~2 seconds
-        if (vol <= 0) {
-          vol = 0;
-          clearInterval(fadeOut);
-          if (binauralAudioRef.current) {
-            binauralAudioRef.current.pause();
-            binauralAudioRef.current.currentTime = 0;
-          }
-        }
-        if (binauralAudioRef.current) {
-          binauralAudioRef.current.volume = Math.max(0, vol);
-        }
-      }, 100);
-    }
-  }, []);
-
-  // Track previous phase to detect transitions
-  const prevPhaseRef = useRef<"inhale" | "exhale" | "idle">("idle");
-
-  // Main animation loop
-  const animate = useCallback((timestamp: number) => {
-    if (!startTimeRef.current) {
-      startTimeRef.current = timestamp;
-      phaseStartTimeRef.current = timestamp;
-    }
-
-    const elapsed = timestamp - startTimeRef.current;
-    setElapsedTime(elapsed);
-
-    if (elapsed >= TOTAL_DURATION) {
+    audioRef.current.addEventListener("ended", () => {
       setIsActive(false);
       setIsComplete(true);
       setCurrentPhase("idle");
-      prevPhaseRef.current = "idle";
-      stopBinaural();
+    });
+
+    audioRef.current.load();
+
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
+  // Animation loop - syncs visuals to audio currentTime
+  const animate = useCallback(() => {
+    if (!audioRef.current || !isActive) return;
+
+    const currentTime = audioRef.current.currentTime * 1000; // Convert to ms
+    setElapsedTime(currentTime);
+
+    // Check if audio ended
+    if (audioRef.current.ended || currentTime >= TOTAL_DURATION) {
+      setIsActive(false);
+      setIsComplete(true);
+      setCurrentPhase("idle");
       return;
     }
 
-    // Calculate current breath and phase
-    const currentBreathIndex = Math.floor(elapsed / CYCLE_DURATION);
-    const timeInCycle = elapsed % CYCLE_DURATION;
+    // Calculate current breath and phase based on audio time
+    const currentBreathIndex = Math.floor(currentTime / CYCLE_DURATION);
+    const timeInCycle = currentTime % CYCLE_DURATION;
 
     let phase: "inhale" | "exhale";
     let phaseElapsed: number;
     let phaseDuration: number;
 
-    if (timeInCycle < 4000) {
+    if (timeInCycle < INHALE_DURATION) {
       phase = "inhale";
       phaseElapsed = timeInCycle;
-      phaseDuration = 4000;
+      phaseDuration = INHALE_DURATION;
     } else {
       phase = "exhale";
-      phaseElapsed = timeInCycle - 4000;
-      phaseDuration = 6000;
+      phaseElapsed = timeInCycle - INHALE_DURATION;
+      phaseDuration = EXHALE_DURATION;
     }
 
-    // Update current phase for UI
     setCurrentPhase(phase);
-
-    // Detect phase transition for audio triggers (compare with previous frame's phase)
-    if (phase !== prevPhaseRef.current) {
-      phaseStartTimeRef.current = timestamp;
-
-      // Play audio on phase change
-      if (phase === "inhale") {
-        playInhale();
-        setBreathCount(currentBreathIndex + 1);
-      } else if (phase === "exhale") {
-        playExhale();
-      }
-      
-      prevPhaseRef.current = phase;
-    }
+    setBreathCount(Math.min(currentBreathIndex + 1, TOTAL_BREATHS));
 
     // Calculate smooth progress (0 to 1)
     const progress = phaseElapsed / phaseDuration;
     setPhaseProgress(progress);
 
     animationFrameRef.current = requestAnimationFrame(animate);
-  }, [playInhale, playExhale, stopBinaural]);
+  }, [isActive]);
+
+  // Start animation loop when active
+  useEffect(() => {
+    if (isActive) {
+      animationFrameRef.current = requestAnimationFrame(animate);
+    }
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [isActive, animate]);
 
   // Start session
   const startSession = useCallback(() => {
+    if (!audioRef.current) return;
+
+    // Reset audio to beginning
+    audioRef.current.currentTime = 0;
+    
+    // Start playing
+    audioRef.current.play().catch((e) => {
+      console.log("Audio play failed:", e);
+    });
+
     setIsActive(true);
     setIsComplete(false);
     setBreathCount(1);
     setElapsedTime(0);
     setPhaseProgress(0);
     setCurrentPhase("inhale");
-    startTimeRef.current = 0;
-    phaseStartTimeRef.current = 0;
-
-    // Start binaural
-    startBinaural();
-
-    // Play first inhale immediately
-    playInhale();
-
-    animationFrameRef.current = requestAnimationFrame(animate);
-  }, [animate, startBinaural, playInhale]);
+  }, []);
 
   // Stop session
   const stopSession = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+
     setIsActive(false);
     setCurrentPhase("idle");
-    prevPhaseRef.current = "idle";
-    stopBinaural();
-
-    // Stop any playing tones
-    if (inhaleAudioRef.current) {
-      inhaleAudioRef.current.pause();
-      inhaleAudioRef.current.currentTime = 0;
-    }
-    if (exhaleAudioRef.current) {
-      exhaleAudioRef.current.pause();
-      exhaleAudioRef.current.currentTime = 0;
-    }
 
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
     }
-  }, [stopBinaural]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
   }, []);
 
   // Format time display
@@ -826,7 +683,7 @@ export default function ResonanceBreathing() {
                 opacity: 0.4,
               }}
             >
-              Headphones recommended for binaural audio
+              Headphones recommended for best experience
             </p>
           )}
         </>
