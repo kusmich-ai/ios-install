@@ -323,6 +323,17 @@ export default function ResonanceBreathing() {
     animationFrameRef.current = requestAnimationFrame(animate);
   }, [playTone, stopBinaural]);
 
+  // Unlock iOS audio by playing a tiny silent buffer
+  const unlockiOSAudio = useCallback((ctx: AudioContext) => {
+    // Create a tiny buffer and play it - this "unlocks" iOS audio
+    const buffer = ctx.createBuffer(1, 1, 22050);
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(ctx.destination);
+    source.start(0);
+    console.log("iOS audio unlock buffer played");
+  }, []);
+
   // Start session - CRITICAL: Audio init must happen here in click handler
   const startSession = useCallback(async () => {
     // Initialize audio context on user interaction (required for mobile)
@@ -334,6 +345,9 @@ export default function ResonanceBreathing() {
         // This MUST happen synchronously in the tap handler for iOS
         await ctx.resume();
         console.log("AudioContext state after resume:", ctx.state);
+        
+        // iOS audio unlock - play silent buffer first
+        unlockiOSAudio(ctx);
       } catch (e) {
         console.warn("Failed to resume AudioContext:", e);
       }
@@ -349,13 +363,15 @@ export default function ResonanceBreathing() {
     startTimeRef.current = 0;
     phaseStartTimeRef.current = 0;
 
-    // Start audio immediately - no setTimeout (breaks iOS)
-    startBinaural();
-    playTone(AUDIO.inhaleFreq, 3500, true);
-    setBreathCount(1);
+    // Small delay after unlock to let iOS settle, then play real audio
+    setTimeout(() => {
+      startBinaural();
+      playTone(AUDIO.inhaleFreq, 3500, true);
+      setBreathCount(1);
+    }, 50);
 
     animationFrameRef.current = requestAnimationFrame(animate);
-  }, [animate, initAudio, startBinaural, playTone]);
+  }, [animate, initAudio, startBinaural, playTone, unlockiOSAudio]);
 
   // Stop session
   const stopSession = useCallback(() => {
