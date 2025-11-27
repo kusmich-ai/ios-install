@@ -826,7 +826,7 @@ export default function ResonanceBreathing() {
                 opacity: 0.4,
               }}
             >
-              Headphones recommended for binaural audio
+              Headphones recommended for full affect
             </p>
           )}
         </>
