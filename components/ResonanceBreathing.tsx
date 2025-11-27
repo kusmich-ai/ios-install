@@ -96,6 +96,75 @@ export default function ResonanceBreathing() {
     return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   }, []);
 
+  // Generate a simple beep as a WAV data URI (works when Web Audio fails on iOS)
+  const generateBeepDataUri = useCallback((frequency: number, duration: number, volume: number = 0.5) => {
+    const sampleRate = 44100;
+    const numSamples = Math.floor(sampleRate * duration);
+    const numChannels = 1;
+    const bitsPerSample = 16;
+    const byteRate = sampleRate * numChannels * (bitsPerSample / 8);
+    const blockAlign = numChannels * (bitsPerSample / 8);
+    const dataSize = numSamples * blockAlign;
+    const fileSize = 36 + dataSize;
+
+    const buffer = new ArrayBuffer(44 + dataSize);
+    const view = new DataView(buffer);
+
+    // WAV header
+    const writeString = (offset: number, str: string) => {
+      for (let i = 0; i < str.length; i++) {
+        view.setUint8(offset + i, str.charCodeAt(i));
+      }
+    };
+
+    writeString(0, 'RIFF');
+    view.setUint32(4, fileSize, true);
+    writeString(8, 'WAVE');
+    writeString(12, 'fmt ');
+    view.setUint32(16, 16, true); // fmt chunk size
+    view.setUint16(20, 1, true); // PCM format
+    view.setUint16(22, numChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, byteRate, true);
+    view.setUint16(32, blockAlign, true);
+    view.setUint16(34, bitsPerSample, true);
+    writeString(36, 'data');
+    view.setUint32(40, dataSize, true);
+
+    // Generate sine wave with fade out
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      const fadeOut = Math.max(0, 1 - (i / numSamples)); // Linear fade
+      const sample = Math.sin(2 * Math.PI * frequency * t) * volume * fadeOut;
+      const intSample = Math.max(-32768, Math.min(32767, Math.floor(sample * 32767)));
+      view.setInt16(44 + i * 2, intSample, true);
+    }
+
+    // Convert to base64
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return 'data:audio/wav;base64,' + btoa(binary);
+  }, []);
+
+  // Play using HTML5 Audio (fallback for iOS)
+  const playToneHTML5 = useCallback((frequency: number, duration: number) => {
+    console.log("playToneHTML5 called:", { frequency, duration });
+    try {
+      const dataUri = generateBeepDataUri(frequency, duration / 1000, 0.5);
+      const audio = new Audio(dataUri);
+      audio.play().then(() => {
+        console.log("HTML5 Audio playing successfully!");
+      }).catch((e) => {
+        console.error("HTML5 Audio play failed:", e);
+      });
+    } catch (e) {
+      console.error("HTML5 Audio error:", e);
+    }
+  }, [generateBeepDataUri]);
+
   // Play a singing bowl / chime tone
   const playTone = useCallback((frequency: number, duration: number, isInhale: boolean) => {
     const ctx = audioContextRef.current;
@@ -115,24 +184,9 @@ export default function ResonanceBreathing() {
       const now = ctx.currentTime;
 
       if (isMobile()) {
-        // SIMPLIFIED VERSION FOR MOBILE: Just one oscillator, direct connection
-        const oscillator = ctx.createOscillator();
-        const gainNode = ctx.createGain();
-
-        oscillator.type = "sine";
-        oscillator.frequency.setValueAtTime(frequency, now);
-
-        // Simple envelope - immediate volume, then fade
-        gainNode.gain.setValueAtTime(0.5, now);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, now + (duration / 1000));
-
-        oscillator.connect(gainNode);
-        gainNode.connect(ctx.destination);
-
-        oscillator.start(now);
-        oscillator.stop(now + (duration / 1000));
-        
-        console.log("playTone: Mobile oscillator started");
+        // USE HTML5 AUDIO FOR MOBILE (Web Audio oscillators don't work on iOS)
+        playToneHTML5(frequency, duration);
+        return;
       } else {
         // RICH VERSION FOR DESKTOP: Multiple oscillators for singing bowl sound
         const fundamental = ctx.createOscillator();
@@ -187,7 +241,7 @@ export default function ResonanceBreathing() {
     } catch (e) {
       console.warn("Error playing tone:", e);
     }
-  }, [isMobile]);
+  }, [isMobile, playToneHTML5]);
 
   // Start binaural beat
   const startBinaural = useCallback(() => {
@@ -208,28 +262,24 @@ export default function ResonanceBreathing() {
       const now = ctx.currentTime;
 
       if (isMobile()) {
-        // SIMPLIFIED FOR MOBILE: Single mono oscillator
-        const osc = ctx.createOscillator();
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(AUDIO.binauralBase, now);
-
-        const gainNode = ctx.createGain();
-        gainNode.gain.setValueAtTime(0, now);
-        gainNode.gain.linearRampToValueAtTime(0.2, now + 3);
-
-        osc.connect(gainNode);
-        gainNode.connect(ctx.destination);
-
-        osc.start(now);
-
-        binauralNodesRef.current = {
-          left: osc,
-          right: osc,
-          gainL: gainNode,
-          gainR: gainNode,
-        };
-        
-        console.log("startBinaural: Mobile oscillator started");
+        // USE HTML5 AUDIO FOR MOBILE - play a long drone tone
+        // We'll create a looping audio element instead
+        console.log("startBinaural: Using HTML5 Audio for mobile");
+        try {
+          const dataUri = generateBeepDataUri(AUDIO.binauralBase, 10, 0.15); // 10 second drone
+          const audio = new Audio(dataUri);
+          audio.loop = true;
+          audio.play().then(() => {
+            console.log("HTML5 binaural drone playing!");
+          }).catch((e) => {
+            console.error("HTML5 binaural play failed:", e);
+          });
+          // Store for cleanup
+          (binauralNodesRef.current as any) = { audio };
+        } catch (e) {
+          console.error("HTML5 binaural error:", e);
+        }
+        return;
       } else {
         // FULL STEREO BINAURAL FOR DESKTOP
         const leftOsc = ctx.createOscillator();
@@ -276,15 +326,30 @@ export default function ResonanceBreathing() {
     } catch (e) {
       console.warn("Error starting binaural:", e);
     }
-  }, [isMobile]);
+  }, [isMobile, generateBeepDataUri]);
 
   // Stop binaural beat
   const stopBinaural = useCallback(() => {
-    if (binauralNodesRef.current && audioContextRef.current) {
+    const nodes = binauralNodesRef.current as any;
+    
+    // Handle HTML5 Audio (mobile)
+    if (nodes?.audio) {
+      try {
+        nodes.audio.pause();
+        nodes.audio.src = '';
+      } catch (e) {
+        console.warn("Error stopping HTML5 audio:", e);
+      }
+      binauralNodesRef.current = null;
+      return;
+    }
+    
+    // Handle Web Audio (desktop)
+    if (nodes && audioContextRef.current) {
       try {
         const ctx = audioContextRef.current;
         const now = ctx.currentTime;
-        const { left, right, gainL, gainR } = binauralNodesRef.current;
+        const { left, right, gainL, gainR } = nodes;
 
         // Fade out over 2 seconds
         gainL.gain.linearRampToValueAtTime(0, now + 2);
@@ -979,7 +1044,7 @@ export default function ResonanceBreathing() {
                 textAlign: "center",
               }}
             >
-              Headphones recommended for full affect
+              Headphones recommended for binaural audio
             </p>
           )}
         </>
