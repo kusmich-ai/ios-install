@@ -792,7 +792,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
       {isMobile && progress && (
         <FloatingActionButton
           progress={progress}
-userId={userId}
+          userId={user.id}
           onPracticeClick={handlePracticeClick}
           onToolClick={handleToolClick}
           onProgressUpdate={refreshProgress} 
