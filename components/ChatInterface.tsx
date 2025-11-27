@@ -148,6 +148,109 @@ const stageRituals: { [key: number]: { list: string; total: string } } = {
 };
 
 // ============================================
+// RITUAL INTRODUCTION TEMPLATES (Stage 1)
+// ============================================
+
+const ritualIntroTemplates = {
+  // Step 1: Introduction to Ritual 1 (Resonance Breathing)
+  ritual1Intro: `Perfect. Let's walk through each one.
+
+---
+
+**RITUAL 1: RESONANCE BREATHING - 5 MINS**
+
+**What it does:**
+Stimulates your vagus nerve, increases heart rate variability, raises RMSSD. Translation: trains your nervous system to shift from stress to calm coherence on command.
+
+**When:** First thing after waking, before anything else.
+
+**How:**
+Sit up in bed or in a chair. Spine long, shoulders relaxed.
+We're using a 4-second inhale, 6-second exhale rhythm — this hits your resonance frequency and maximizes vagal tone.
+
+**Here is a guided video:** [Resonance Breathing Video](https://www.unbecoming.app/breathe)
+
+When ready, you can also initiate this with the Daily Ritual tools on the right (desktop) or with the lightning icon (mobile).
+
+That's ritual one. Make sense?`,
+
+  // Step 2: Introduction to Ritual 2 (Awareness Rep)
+  ritual2Intro: `Great.
+
+---
+
+**RITUAL 2: AWARENESS REP - 2 MINS**
+
+**What it does:**
+Strengthens meta-awareness circuitry (insula-PCC connectivity). Trains your brain to notice when you're lost in thought and return to present awareness.
+
+**When:** Right after Resonance Breathing, while still seated.
+
+**How:**
+A decentering practice that notices whatever is here — sounds, sensations, thoughts — and helps separate you from those things.
+
+You're not trying to change anything or "get somewhere." Just notice that you're noticing.
+
+When you drift into thought (you will), notice that too, and return.
+
+That's the practice. Recognizing you're the observer.
+
+**This audio will guide you through the process when ready:** [Awareness Rep Audio](https://www.unbecoming.app/awareness)
+
+You can also initiate this with the Daily Ritual tools on the right (desktop) or with the lightning icon (mobile).
+
+Make sense?`,
+
+  // Step 3: Wrap-up and set expectations
+  wrapUp: `Great!
+
+That's your **Stage 1 morning ritual**. 7 minutes. Every day.
+
+**Same sequence:**
+1. Wake up
+2. Resonance Breathing - 5 mins
+3. Awareness Rep - 2 mins
+4. Then check in with me
+
+Your toolbar will let you know if you have completed them for the day and your progress.
+
+**Starting tomorrow morning** — do both rituals, then come back and let me know how it went.
+
+See you then. Your nervous system is about to start learning.`
+};
+
+// Quick reply button configurations for each intro step
+const introQuickReplies: { [key: number]: { text: string; buttonLabel: string } | null } = {
+  0: { text: "Yes, let's learn the rituals", buttonLabel: "Yes, let's go" },
+  1: { text: "Got it, makes sense. What's next?", buttonLabel: "Got it, next ritual" },
+  2: { text: "Makes sense, I'm ready", buttonLabel: "Got it, I'm ready" },
+  3: null, // No button after wrap-up - free text enabled
+  4: null  // Intro complete
+};
+
+// Redirect messages to get user back on track after answering their question
+function getIntroRedirectMessage(currentStep: number): string {
+  switch (currentStep) {
+    case 0:
+      return `---
+
+Good question. Now — ready to learn the rituals? They're the foundation of everything else.`;
+    case 1:
+      return `---
+
+Alright, back to the installation. Ready to learn the second ritual?`;
+    case 2:
+      return `---
+
+Got it. Let's finish up the ritual overview so you're set for tomorrow.`;
+    default:
+      return `---
+
+Now, let's continue with the ritual introduction.`;
+  }
+}
+
+// ============================================
 // PERSONALIZED INSIGHT GENERATION
 // ============================================
 
@@ -352,6 +455,16 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState<boolean>(true);
+  const [openingType, setOpeningType] = useState<'first_time' | 'same_day' | 'new_day'>('first_time');
+  
+  // NEW: Track position in ritual introduction flow
+  // 0 = waiting for "yes" to learn rituals
+  // 1 = showed ritual 1, waiting for confirmation
+  // 2 = showed ritual 2, waiting for confirmation
+  // 3 = showed wrap-up, intro complete
+  // 4+ = intro complete, free text mode
+  const [introStep, setIntroStep] = useState<number>(0);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const hasInitialized = useRef<boolean>(false);
@@ -387,15 +500,26 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
         // Check last visit timestamp from user_progress
         const { data: progressData } = await supabase
           .from('user_progress')
-          .select('last_visit, onboarding_completed, adherence_percentage, consecutive_days, stage_start_date')
+          .select('last_visit, onboarding_completed, adherence_percentage, consecutive_days, stage_start_date, ritual_intro_completed')
           .eq('user_id', user.id)
           .single();
         
         const lastVisit = progressData?.last_visit || null;
         const hasCompletedOnboarding = progressData?.onboarding_completed || false;
+        const hasCompletedRitualIntro = progressData?.ritual_intro_completed || false;
         
         // Determine opening type
-        const openingType = determineOpeningType(lastVisit, hasCompletedOnboarding);
+        const detectedOpeningType = determineOpeningType(lastVisit, hasCompletedOnboarding);
+        setOpeningType(detectedOpeningType);
+        
+        // If first time AND ritual intro not completed, start at step 0
+        // If first time but ritual intro already completed (e.g., refreshed page), skip to step 4
+        // If returning user, skip intro entirely (step 4)
+        if (detectedOpeningType === 'first_time') {
+          setIntroStep(hasCompletedRitualIntro ? 4 : 0);
+        } else {
+          setIntroStep(4); // Returning users skip intro
+        }
         
         // Get user's first name
         const userName = user?.user_metadata?.first_name || '';
@@ -403,7 +527,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
         // Generate appropriate opening message
         let openingMessage: string;
         
-        switch (openingType) {
+        switch (detectedOpeningType) {
           case 'first_time':
             openingMessage = await getFirstTimeOpeningMessage(baselineData, userName);
             // Mark onboarding as completed
@@ -456,6 +580,54 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
     }
   }, [user, baselineData]);
 
+  // Handle quick reply button clicks (no API call)
+  const handleQuickReply = async (step: number) => {
+    const replyConfig = introQuickReplies[step];
+    if (!replyConfig) return;
+    
+    // Add user's reply to messages
+    const userMessage = { role: 'user', content: replyConfig.text };
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
+    
+    // Determine next template message based on current step
+    let assistantResponse = '';
+    let nextStep = step + 1;
+    
+    switch (step) {
+      case 0:
+        // User said yes to learning rituals -> show ritual 1
+        assistantResponse = ritualIntroTemplates.ritual1Intro;
+        break;
+      case 1:
+        // User confirmed ritual 1 -> show ritual 2
+        assistantResponse = ritualIntroTemplates.ritual2Intro;
+        break;
+      case 2:
+        // User confirmed ritual 2 -> show wrap-up
+        assistantResponse = ritualIntroTemplates.wrapUp;
+        nextStep = 4; // Skip to complete (step 3 is wrap-up display, step 4 is free text)
+        
+        // Mark ritual intro as completed in database
+        try {
+          const supabase = createClient();
+          await supabase
+            .from('user_progress')
+            .update({ ritual_intro_completed: true })
+            .eq('user_id', user.id);
+        } catch (err) {
+          console.error('Failed to mark ritual intro complete:', err);
+        }
+        break;
+      default:
+        return;
+    }
+    
+    // Add assistant response
+    setMessages([...newMessages, { role: 'assistant', content: assistantResponse }]);
+    setIntroStep(nextStep);
+  };
+
   const sendToAPI = async (messageHistory: Message[]) => {
     try {
       const response = await fetch('/api/chat', {
@@ -493,6 +665,29 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
     e.preventDefault();
     if (!input.trim() || loading) return;
 
+    const userInput = input.trim().toLowerCase();
+    
+    // Check if we're in intro flow and user types something that should use template
+    // (for first-time users who type instead of clicking button)
+    if (openingType === 'first_time' && introStep < 3) {
+      const isAffirmative = ['yes', 'yeah', 'yep', 'sure', 'ok', 'okay', 'ready', 'let\'s go', 'lets go', 'go', 'y'].includes(userInput) ||
+                           userInput.includes('yes') || 
+                           userInput.includes('ready') ||
+                           userInput.includes('got it') ||
+                           userInput.includes('makes sense') ||
+                           userInput.includes('next');
+      
+      if (isAffirmative) {
+        // Treat as quick reply
+        setInput('');
+        handleQuickReply(introStep);
+        return;
+      }
+    }
+    
+    // Track if user escaped intro to ask a question
+    const escapedIntro = openingType === 'first_time' && introStep < 4;
+
     setError(null);
     const userMessage = { role: 'user', content: input };
     const newMessages = [...messages, userMessage];
@@ -502,12 +697,26 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
 
     const response = await sendToAPI(newMessages);
     if (response) {
-      setMessages([...newMessages, { role: 'assistant', content: response }]);
+      let finalMessages = [...newMessages, { role: 'assistant', content: response }];
+      
+      // If they escaped intro to ask a question, add a redirect prompt after Claude's response
+      if (escapedIntro) {
+        const redirectMessage = getIntroRedirectMessage(introStep);
+        finalMessages = [...finalMessages, { role: 'assistant', content: redirectMessage }];
+        // Don't change introStep - keep them at their current position so button still works
+      }
+      
+      setMessages(finalMessages);
     }
     setLoading(false);
   };
 
   const handlePracticeClick = async (practiceId: string) => {
+    // If in intro flow, complete it first
+    if (introStep < 4) {
+      setIntroStep(4);
+    }
+    
     const practiceMessage = `I want to do the ${practiceId} practice now.`;
     const userMessage = { role: 'user', content: practiceMessage };
     const newMessages = [...messages, userMessage];
@@ -522,6 +731,11 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   };
 
   const handleToolClick = async (toolId: string) => {
+    // If in intro flow, complete it first
+    if (introStep < 4) {
+      setIntroStep(4);
+    }
+    
     const toolMessage = `I want to run the ${toolId} protocol.`;
     const userMessage = { role: 'user', content: toolMessage };
     const newMessages = [...messages, userMessage];
@@ -552,6 +766,11 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
       refetchProgress();
     }
     
+    // If still in intro, complete it
+    if (introStep < 4) {
+      setIntroStep(4);
+    }
+    
     // Create a notification message that Claude will see and respond to
     // We send it as a "user" message so it goes through the API and gets a response
     const completionNotification = `[PRACTICE COMPLETED] I just finished my ${practiceName} ritual and clicked "Done" to log it.`;
@@ -566,7 +785,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
       setMessages([...newMessages, { role: 'assistant', content: response }]);
     }
     setLoading(false);
-  }, [messages, refetchProgress]);
+  }, [messages, refetchProgress, introStep]);
 
   // Show loading state while initializing
   if (isInitializing) {
@@ -608,6 +827,9 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   };
 
   const stageProgress = ((baselineData.currentStage - 1) / 6) * 100;
+  
+  // Determine if we should show quick reply button
+  const currentQuickReply = openingType === 'first_time' && introStep < 3 ? introQuickReplies[introStep] : null;
 
   return (
     <div className="flex h-screen bg-[#0a0a0a]">
@@ -756,6 +978,18 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
               </div>
             )}
             
+            {/* Quick Reply Button for Intro Flow */}
+            {currentQuickReply && !loading && (
+              <div className="flex justify-center">
+                <button
+                  onClick={() => handleQuickReply(introStep)}
+                  className="px-6 py-3 bg-[#ff9e19] hover:bg-orange-600 text-white font-semibold rounded-xl transition-colors shadow-lg"
+                >
+                  {currentQuickReply.buttonLabel}
+                </button>
+              </div>
+            )}
+            
             <div ref={messagesEndRef} />
           </div>
         </div>
@@ -773,7 +1007,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
                     sendMessage(e);
                   }
                 }}
-                placeholder="Type your message..."
+                placeholder={currentQuickReply ? "Or type a question..." : "Type your message..."}
                 disabled={loading}
                 rows={1}
                 className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#ff9e19] disabled:opacity-50 resize-none min-h-[52px] max-h-[200px]"
@@ -787,7 +1021,9 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
               </button>
             </form>
             <p className="text-xs text-gray-500 mt-2 text-center">
-              Press Enter to send, Shift+Enter for new line
+              {currentQuickReply 
+                ? "Click the button above or type your own response" 
+                : "Press Enter to send, Shift+Enter for new line"}
             </p>
           </div>
         </div>
