@@ -795,7 +795,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
           userId={user.id}
           onPracticeClick={handlePracticeClick}
           onToolClick={handleToolClick}
-          onProgressUpdate={refreshProgress} 
+          onProgressUpdate={refetchProgress}
         />
       )}
     </div>
