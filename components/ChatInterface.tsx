@@ -94,28 +94,28 @@ const tierInterpretations: { [key: string]: string } = {
   'Integrated': "You're already operating at a high level. The IOS will help you sustain and expand this capacity across all domains."
 };
 
-// Stage rituals
+// Stage rituals - using "Resonance Breathing" consistently
 const stageRituals: { [key: number]: { list: string; total: string } } = {
   1: {
-    list: `1. **HRVB (Resonance Breathing)** - 5 mins
+    list: `1. **Resonance Breathing** - 5 mins
 2. **Awareness Rep** - 2 mins`,
     total: '7 minutes'
   },
   2: {
-    list: `1. **HRVB (Resonance Breathing)** - 5 mins
+    list: `1. **Resonance Breathing** - 5 mins
 2. **Somatic Flow** - 3 mins
 3. **Awareness Rep** - 2 mins`,
     total: '10 minutes'
   },
   3: {
-    list: `1. **HRVB (Resonance Breathing)** - 5 mins
+    list: `1. **Resonance Breathing** - 5 mins
 2. **Somatic Flow** - 3 mins
 3. **Awareness Rep** - 2 mins
 4. **Morning Micro-Action** - 2-3 mins`,
     total: '12-13 minutes'
   },
   4: {
-    list: `1. **HRVB (Resonance Breathing)** - 5 mins
+    list: `1. **Resonance Breathing** - 5 mins
 2. **Somatic Flow** - 3 mins
 3. **Awareness Rep** - 2 mins
 4. **Morning Micro-Action** - 2-3 mins
@@ -123,7 +123,7 @@ const stageRituals: { [key: number]: { list: string; total: string } } = {
     total: '12-13 minutes morning + Flow Block'
   },
   5: {
-    list: `1. **HRVB (Resonance Breathing)** - 5 mins
+    list: `1. **Resonance Breathing** - 5 mins
 2. **Somatic Flow** - 3 mins
 3. **Awareness Rep** - 2 mins
 4. **Morning Micro-Action** - 2-3 mins
@@ -132,7 +132,7 @@ const stageRituals: { [key: number]: { list: string; total: string } } = {
     total: '12-13 minutes morning + Flow Block + evening practice'
   },
   6: {
-    list: `1. **HRVB (Resonance Breathing)** - 5 mins
+    list: `1. **Resonance Breathing** - 5 mins
 2. **Somatic Flow** - 3 mins
 3. **Awareness Rep** - 2 mins
 4. **Morning Micro-Action** - 2-3 mins
@@ -535,12 +535,38 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
     setLoading(false);
   };
 
-  // Callback for ToolsSidebar to trigger progress refresh
+  // Callback for ToolsSidebar/FAB to trigger progress refresh only
   const handleProgressUpdate = useCallback(() => {
     if (refetchProgress) {
       refetchProgress();
     }
   }, [refetchProgress]);
+
+  // NEW: Callback when a practice is completed via "Done" button
+  // This notifies the chat so Claude can acknowledge and guide to the next ritual
+  const handlePracticeCompleted = useCallback(async (practiceId: string, practiceName: string) => {
+    console.log('[ChatInterface] Practice completed:', practiceId, practiceName);
+    
+    // First, refresh progress to update sidebar
+    if (refetchProgress) {
+      refetchProgress();
+    }
+    
+    // Create a notification message that Claude will see and respond to
+    // We send it as a "user" message so it goes through the API and gets a response
+    const completionNotification = `[PRACTICE COMPLETED] I just finished my ${practiceName} ritual and clicked "Done" to log it.`;
+    
+    const userMessage = { role: 'user', content: completionNotification };
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
+    setLoading(true);
+
+    const response = await sendToAPI(newMessages);
+    if (response) {
+      setMessages([...newMessages, { role: 'assistant', content: response }]);
+    }
+    setLoading(false);
+  }, [messages, refetchProgress]);
 
   // Show loading state while initializing
   if (isInitializing) {
@@ -767,7 +793,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
         </div>
       </div>
 
-      {/* Tools Sidebar (Desktop) - Now with userId */}
+      {/* Tools Sidebar (Desktop) - Now with onPracticeCompleted */}
       {!isMobile && progress && (
         <ToolsSidebar
           progress={progress}
@@ -775,6 +801,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
           onPracticeClick={handlePracticeClick}
           onToolClick={handleToolClick}
           onProgressUpdate={handleProgressUpdate}
+          onPracticeCompleted={handlePracticeCompleted}
         />
       )}
 
@@ -788,14 +815,15 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
         />
       )}
 
-      {/* Floating Action Button (Mobile) */}
+      {/* Floating Action Button (Mobile) - Now with onPracticeCompleted */}
       {isMobile && progress && (
         <FloatingActionButton
           progress={progress}
-          userId={user.id}
+          userId={user?.id}
           onPracticeClick={handlePracticeClick}
           onToolClick={handleToolClick}
-          onProgressUpdate={refetchProgress}
+          onProgressUpdate={handleProgressUpdate}
+          onPracticeCompleted={handlePracticeCompleted}
         />
       )}
     </div>
