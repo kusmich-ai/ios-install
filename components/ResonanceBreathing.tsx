@@ -479,7 +479,6 @@ export default function ResonanceBreathing() {
                 alignItems: "center",
                 gap: "0.5rem",
                 opacity: animationState.phase === "inhale" ? 1 : 0.3,
-                transition: "opacity 0.3s ease",
               }}
             >
               <svg
@@ -499,7 +498,6 @@ export default function ResonanceBreathing() {
                   letterSpacing: "0.15em",
                   textTransform: "uppercase",
                   color: animationState.phase === "inhale" ? COLORS.accent : COLORS.textDim,
-                  transition: "color 0.3s ease",
                 }}
               >
                 In
@@ -543,7 +541,6 @@ export default function ResonanceBreathing() {
                   height: "8px",
                   borderRadius: "50%",
                   backgroundColor: animationState.phase === "inhale" ? COLORS.orbBase : COLORS.textDim,
-                  transition: "background-color 0.3s ease",
                 }}
               />
 
@@ -558,7 +555,6 @@ export default function ResonanceBreathing() {
                   height: "8px",
                   borderRadius: "50%",
                   backgroundColor: animationState.phase === "exhale" ? COLORS.orbBase : COLORS.textDim,
-                  transition: "background-color 0.3s ease",
                 }}
               />
             </div>
@@ -571,7 +567,6 @@ export default function ResonanceBreathing() {
                 alignItems: "center",
                 gap: "0.5rem",
                 opacity: animationState.phase === "exhale" ? 1 : 0.3,
-                transition: "opacity 0.3s ease",
               }}
             >
               <svg
@@ -591,7 +586,6 @@ export default function ResonanceBreathing() {
                   letterSpacing: "0.15em",
                   textTransform: "uppercase",
                   color: animationState.phase === "exhale" ? COLORS.accent : COLORS.textDim,
-                  transition: "color 0.3s ease",
                 }}
               >
                 Out
@@ -609,7 +603,6 @@ export default function ResonanceBreathing() {
                 letterSpacing: "0.2em",
                 textTransform: "uppercase",
                 color: animationState.phase === "inhale" ? COLORS.textPrimary : COLORS.textDim,
-                transition: "color 0.3s ease",
               }}
             >
               {animationState.phase === "inhale" ? "Breathe In" : "Breathe Out"}
