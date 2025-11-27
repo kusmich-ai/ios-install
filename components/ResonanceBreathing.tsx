@@ -43,7 +43,7 @@ const AUDIO_FILES = {
 const VOLUME = {
   inhale: 0.4,
   exhale: 0.4,
-  binaural: 0.3,
+  binaural: 0.5,
 };
 
 export default function ResonanceBreathing() {
@@ -186,6 +186,9 @@ export default function ResonanceBreathing() {
     }
   }, []);
 
+  // Track previous phase to detect transitions
+  const prevPhaseRef = useRef<"inhale" | "exhale" | "idle">("idle");
+
   // Main animation loop
   const animate = useCallback((timestamp: number) => {
     if (!startTimeRef.current) {
@@ -200,6 +203,7 @@ export default function ResonanceBreathing() {
       setIsActive(false);
       setIsComplete(true);
       setCurrentPhase("idle");
+      prevPhaseRef.current = "idle";
       stopBinaural();
       return;
     }
@@ -222,18 +226,22 @@ export default function ResonanceBreathing() {
       phaseDuration = 6000;
     }
 
-    // Detect phase transition for audio triggers
-    if (phase !== currentPhase) {
-      setCurrentPhase(phase);
+    // Update current phase for UI
+    setCurrentPhase(phase);
+
+    // Detect phase transition for audio triggers (compare with previous frame's phase)
+    if (phase !== prevPhaseRef.current) {
       phaseStartTimeRef.current = timestamp;
 
       // Play audio on phase change
       if (phase === "inhale") {
         playInhale();
         setBreathCount(currentBreathIndex + 1);
-      } else {
+      } else if (phase === "exhale") {
         playExhale();
       }
+      
+      prevPhaseRef.current = phase;
     }
 
     // Calculate smooth progress (0 to 1)
@@ -241,13 +249,13 @@ export default function ResonanceBreathing() {
     setPhaseProgress(progress);
 
     animationFrameRef.current = requestAnimationFrame(animate);
-  }, [currentPhase, playInhale, playExhale, stopBinaural]);
+  }, [playInhale, playExhale, stopBinaural]);
 
   // Start session
   const startSession = useCallback(() => {
     setIsActive(true);
     setIsComplete(false);
-    setBreathCount(0);
+    setBreathCount(1);
     setElapsedTime(0);
     setPhaseProgress(0);
     setCurrentPhase("inhale");
@@ -257,11 +265,8 @@ export default function ResonanceBreathing() {
     // Start binaural
     startBinaural();
 
-    // Play first inhale
-    setTimeout(() => {
-      playInhale();
-      setBreathCount(1);
-    }, 100);
+    // Play first inhale immediately
+    playInhale();
 
     animationFrameRef.current = requestAnimationFrame(animate);
   }, [animate, startBinaural, playInhale]);
@@ -270,6 +275,7 @@ export default function ResonanceBreathing() {
   const stopSession = useCallback(() => {
     setIsActive(false);
     setCurrentPhase("idle");
+    prevPhaseRef.current = "idle";
     stopBinaural();
 
     // Stop any playing tones
@@ -820,7 +826,7 @@ export default function ResonanceBreathing() {
                 opacity: 0.4,
               }}
             >
-              Headphones recommended for full affect
+              Headphones recommended for binaural audio
             </p>
           )}
         </>
