@@ -5,6 +5,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 // ============================================================================
 // RESONANCE BREATHING COMPONENT
 // 4-second inhale (nose) / 6-second exhale (mouth) / 5 minutes total
+// Mobile-optimized with proper Web Audio API handling
 // ============================================================================
 
 interface BreathPhase {
@@ -39,6 +40,11 @@ const AUDIO = {
   binauralBeat: 7.83, // Hz - Schumann resonance (theta/alpha border)
 };
 
+// Type for WebKit AudioContext (iOS Safari)
+type WebKitWindow = Window & {
+  webkitAudioContext?: typeof AudioContext;
+};
+
 export default function ResonanceBreathing() {
   const [isActive, setIsActive] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
@@ -46,159 +52,205 @@ export default function ResonanceBreathing() {
   const [breathCount, setBreathCount] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [phaseProgress, setPhaseProgress] = useState(0);
+  const [audioInitialized, setAudioInitialized] = useState(false);
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const binauralNodesRef = useRef<{ left: OscillatorNode; right: OscillatorNode; gainL: GainNode; gainR: GainNode } | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(0);
   const phaseStartTimeRef = useRef<number>(0);
+  const currentPhaseRef = useRef<"inhale" | "exhale" | "idle">("idle");
 
-  // Initialize Web Audio Context
-  const initAudio = useCallback(() => {
-    if (!audioContextRef.current) {
-      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+  // Keep ref in sync with state for use in animation callback
+  useEffect(() => {
+    currentPhaseRef.current = currentPhase;
+  }, [currentPhase]);
+
+  // Initialize Web Audio Context - MUST be called from user interaction
+  const initAudio = useCallback((): AudioContext | null => {
+    try {
+      if (!audioContextRef.current) {
+        const AudioContextClass = window.AudioContext || (window as WebKitWindow).webkitAudioContext;
+        if (!AudioContextClass) {
+          console.warn("Web Audio API not supported");
+          return null;
+        }
+        audioContextRef.current = new AudioContextClass();
+        setAudioInitialized(true);
+      }
+      
+      // Always try to resume on mobile - this is critical
+      if (audioContextRef.current.state === "suspended") {
+        audioContextRef.current.resume().catch(console.warn);
+      }
+      
+      return audioContextRef.current;
+    } catch (e) {
+      console.warn("Failed to initialize audio:", e);
+      return null;
     }
-    return audioContextRef.current;
   }, []);
 
   // Play a singing bowl / chime tone
   const playTone = useCallback((frequency: number, duration: number, isInhale: boolean) => {
-    const ctx = initAudio();
-    if (ctx.state === "suspended") ctx.resume();
+    const ctx = audioContextRef.current;
+    if (!ctx) return;
 
-    const now = ctx.currentTime;
+    // Ensure context is running (mobile requirement)
+    if (ctx.state === "suspended") {
+      ctx.resume().catch(console.warn);
+    }
 
-    // Create oscillators for rich, bowl-like tone
-    const fundamental = ctx.createOscillator();
-    const harmonic1 = ctx.createOscillator();
-    const harmonic2 = ctx.createOscillator();
+    try {
+      const now = ctx.currentTime;
 
-    fundamental.type = "sine";
-    fundamental.frequency.setValueAtTime(frequency, now);
+      // Create oscillators for rich, bowl-like tone
+      const fundamental = ctx.createOscillator();
+      const harmonic1 = ctx.createOscillator();
+      const harmonic2 = ctx.createOscillator();
 
-    harmonic1.type = "sine";
-    harmonic1.frequency.setValueAtTime(frequency * 2, now);
+      fundamental.type = "sine";
+      fundamental.frequency.setValueAtTime(frequency, now);
 
-    harmonic2.type = "sine";
-    harmonic2.frequency.setValueAtTime(frequency * 3, now);
+      harmonic1.type = "sine";
+      harmonic1.frequency.setValueAtTime(frequency * 2, now);
 
-    // Gain nodes for mixing
-    const fundamentalGain = ctx.createGain();
-    const harmonic1Gain = ctx.createGain();
-    const harmonic2Gain = ctx.createGain();
-    const masterGain = ctx.createGain();
+      harmonic2.type = "sine";
+      harmonic2.frequency.setValueAtTime(frequency * 3, now);
 
-    fundamentalGain.gain.setValueAtTime(0.3, now);
-    harmonic1Gain.gain.setValueAtTime(0.15, now);
-    harmonic2Gain.gain.setValueAtTime(0.05, now);
+      // Gain nodes for mixing
+      const fundamentalGain = ctx.createGain();
+      const harmonic1Gain = ctx.createGain();
+      const harmonic2Gain = ctx.createGain();
+      const masterGain = ctx.createGain();
 
-    // Envelope - singing bowl style (quick attack, long decay)
-    const attackTime = 0.02;
-    const decayTime = duration / 1000;
+      fundamentalGain.gain.setValueAtTime(0.3, now);
+      harmonic1Gain.gain.setValueAtTime(0.15, now);
+      harmonic2Gain.gain.setValueAtTime(0.05, now);
 
-    masterGain.gain.setValueAtTime(0, now);
-    masterGain.gain.linearRampToValueAtTime(isInhale ? 0.12 : 0.1, now + attackTime);
-    masterGain.gain.exponentialRampToValueAtTime(0.001, now + decayTime);
+      // Envelope - singing bowl style (quick attack, long decay)
+      const attackTime = 0.02;
+      const decayTime = duration / 1000;
 
-    // Connect nodes
-    fundamental.connect(fundamentalGain);
-    harmonic1.connect(harmonic1Gain);
-    harmonic2.connect(harmonic2Gain);
+      masterGain.gain.setValueAtTime(0, now);
+      masterGain.gain.linearRampToValueAtTime(isInhale ? 0.12 : 0.1, now + attackTime);
+      masterGain.gain.exponentialRampToValueAtTime(0.001, now + decayTime);
 
-    fundamentalGain.connect(masterGain);
-    harmonic1Gain.connect(masterGain);
-    harmonic2Gain.connect(masterGain);
+      // Connect nodes
+      fundamental.connect(fundamentalGain);
+      harmonic1.connect(harmonic1Gain);
+      harmonic2.connect(harmonic2Gain);
 
-    masterGain.connect(ctx.destination);
+      fundamentalGain.connect(masterGain);
+      harmonic1Gain.connect(masterGain);
+      harmonic2Gain.connect(masterGain);
 
-    // Start and stop
-    fundamental.start(now);
-    harmonic1.start(now);
-    harmonic2.start(now);
+      masterGain.connect(ctx.destination);
 
-    fundamental.stop(now + decayTime);
-    harmonic1.stop(now + decayTime);
-    harmonic2.stop(now + decayTime);
-  }, [initAudio]);
+      // Start and stop
+      fundamental.start(now);
+      harmonic1.start(now);
+      harmonic2.start(now);
+
+      fundamental.stop(now + decayTime);
+      harmonic1.stop(now + decayTime);
+      harmonic2.stop(now + decayTime);
+    } catch (e) {
+      console.warn("Error playing tone:", e);
+    }
+  }, []);
 
   // Start binaural beat
   const startBinaural = useCallback(() => {
-    const ctx = initAudio();
-    if (ctx.state === "suspended") ctx.resume();
+    const ctx = audioContextRef.current;
+    if (!ctx) return;
 
-    const now = ctx.currentTime;
+    // Ensure context is running
+    if (ctx.state === "suspended") {
+      ctx.resume().catch(console.warn);
+    }
 
-    // Create stereo binaural beat
-    const leftOsc = ctx.createOscillator();
-    const rightOsc = ctx.createOscillator();
+    try {
+      const now = ctx.currentTime;
 
-    leftOsc.type = "sine";
-    rightOsc.type = "sine";
+      // Create stereo binaural beat
+      const leftOsc = ctx.createOscillator();
+      const rightOsc = ctx.createOscillator();
 
-    // Left ear: base frequency, Right ear: base + beat frequency
-    leftOsc.frequency.setValueAtTime(AUDIO.binauralBase, now);
-    rightOsc.frequency.setValueAtTime(AUDIO.binauralBase + AUDIO.binauralBeat, now);
+      leftOsc.type = "sine";
+      rightOsc.type = "sine";
 
-    // Create stereo panner nodes
-    const leftPanner = ctx.createStereoPanner();
-    const rightPanner = ctx.createStereoPanner();
-    leftPanner.pan.setValueAtTime(-1, now);
-    rightPanner.pan.setValueAtTime(1, now);
+      // Left ear: base frequency, Right ear: base + beat frequency
+      leftOsc.frequency.setValueAtTime(AUDIO.binauralBase, now);
+      rightOsc.frequency.setValueAtTime(AUDIO.binauralBase + AUDIO.binauralBeat, now);
 
-    // Gain nodes - subtle volume
-    const leftGain = ctx.createGain();
-    const rightGain = ctx.createGain();
-    leftGain.gain.setValueAtTime(0, now);
-    rightGain.gain.setValueAtTime(0, now);
+      // Create stereo panner nodes
+      const leftPanner = ctx.createStereoPanner();
+      const rightPanner = ctx.createStereoPanner();
+      leftPanner.pan.setValueAtTime(-1, now);
+      rightPanner.pan.setValueAtTime(1, now);
 
-    // Fade in over 3 seconds
-    leftGain.gain.linearRampToValueAtTime(0.08, now + 3);
-    rightGain.gain.linearRampToValueAtTime(0.08, now + 3);
+      // Gain nodes - subtle volume
+      const leftGain = ctx.createGain();
+      const rightGain = ctx.createGain();
+      leftGain.gain.setValueAtTime(0, now);
+      rightGain.gain.setValueAtTime(0, now);
 
-    // Connect
-    leftOsc.connect(leftGain);
-    rightOsc.connect(rightGain);
-    leftGain.connect(leftPanner);
-    rightGain.connect(rightPanner);
-    leftPanner.connect(ctx.destination);
-    rightPanner.connect(ctx.destination);
+      // Fade in over 3 seconds
+      leftGain.gain.linearRampToValueAtTime(0.08, now + 3);
+      rightGain.gain.linearRampToValueAtTime(0.08, now + 3);
 
-    leftOsc.start(now);
-    rightOsc.start(now);
+      // Connect
+      leftOsc.connect(leftGain);
+      rightOsc.connect(rightGain);
+      leftGain.connect(leftPanner);
+      rightGain.connect(rightPanner);
+      leftPanner.connect(ctx.destination);
+      rightPanner.connect(ctx.destination);
 
-    binauralNodesRef.current = {
-      left: leftOsc,
-      right: rightOsc,
-      gainL: leftGain,
-      gainR: rightGain,
-    };
-  }, [initAudio]);
+      leftOsc.start(now);
+      rightOsc.start(now);
+
+      binauralNodesRef.current = {
+        left: leftOsc,
+        right: rightOsc,
+        gainL: leftGain,
+        gainR: rightGain,
+      };
+    } catch (e) {
+      console.warn("Error starting binaural:", e);
+    }
+  }, []);
 
   // Stop binaural beat
   const stopBinaural = useCallback(() => {
     if (binauralNodesRef.current && audioContextRef.current) {
-      const ctx = audioContextRef.current;
-      const now = ctx.currentTime;
-      const { left, right, gainL, gainR } = binauralNodesRef.current;
+      try {
+        const ctx = audioContextRef.current;
+        const now = ctx.currentTime;
+        const { left, right, gainL, gainR } = binauralNodesRef.current;
 
-      // Fade out over 2 seconds
-      gainL.gain.linearRampToValueAtTime(0, now + 2);
-      gainR.gain.linearRampToValueAtTime(0, now + 2);
+        // Fade out over 2 seconds
+        gainL.gain.linearRampToValueAtTime(0, now + 2);
+        gainR.gain.linearRampToValueAtTime(0, now + 2);
 
-      setTimeout(() => {
-        try {
-          left.stop();
-          right.stop();
-        } catch (e) {
-          // Already stopped
-        }
-      }, 2100);
+        setTimeout(() => {
+          try {
+            left.stop();
+            right.stop();
+          } catch (e) {
+            // Already stopped
+          }
+        }, 2100);
+      } catch (e) {
+        console.warn("Error stopping binaural:", e);
+      }
 
       binauralNodesRef.current = null;
     }
   }, []);
 
-  // Main animation loop
+  // Main animation loop - using refs to avoid stale closures
   const animate = useCallback((timestamp: number) => {
     if (!startTimeRef.current) {
       startTimeRef.current = timestamp;
@@ -212,6 +264,7 @@ export default function ResonanceBreathing() {
       setIsActive(false);
       setIsComplete(true);
       setCurrentPhase("idle");
+      currentPhaseRef.current = "idle";
       stopBinaural();
       return;
     }
@@ -234,9 +287,10 @@ export default function ResonanceBreathing() {
       phaseDuration = 6000;
     }
 
-    // Detect phase transition for tone triggers
-    if (phase !== currentPhase) {
+    // Detect phase transition for tone triggers - use ref for current value
+    if (phase !== currentPhaseRef.current) {
       setCurrentPhase(phase);
+      currentPhaseRef.current = phase;
       phaseStartTimeRef.current = timestamp;
 
       // Play tone on phase change
@@ -253,35 +307,41 @@ export default function ResonanceBreathing() {
     setPhaseProgress(progress);
 
     animationFrameRef.current = requestAnimationFrame(animate);
-  }, [currentPhase, playTone, stopBinaural]);
+  }, [playTone, stopBinaural]);
 
-  // Start session
+  // Start session - CRITICAL: Audio init must happen here in click handler
   const startSession = useCallback(() => {
+    // Initialize audio context on user interaction (required for mobile)
+    const ctx = initAudio();
+    
     setIsActive(true);
     setIsComplete(false);
     setBreathCount(0);
     setElapsedTime(0);
     setPhaseProgress(0);
     setCurrentPhase("inhale");
+    currentPhaseRef.current = "inhale";
     startTimeRef.current = 0;
     phaseStartTimeRef.current = 0;
 
-    // Start binaural
-    startBinaural();
-
-    // Play first inhale tone
+    // Small delay to ensure audio context is ready
     setTimeout(() => {
+      // Start binaural
+      startBinaural();
+
+      // Play first inhale tone
       playTone(AUDIO.inhaleFreq, 3500, true);
       setBreathCount(1);
     }, 100);
 
     animationFrameRef.current = requestAnimationFrame(animate);
-  }, [animate, startBinaural, playTone]);
+  }, [animate, initAudio, startBinaural, playTone]);
 
   // Stop session
   const stopSession = useCallback(() => {
     setIsActive(false);
     setCurrentPhase("idle");
+    currentPhaseRef.current = "idle";
     stopBinaural();
 
     if (animationFrameRef.current) {
@@ -297,7 +357,7 @@ export default function ResonanceBreathing() {
       }
       stopBinaural();
       if (audioContextRef.current) {
-        audioContextRef.current.close();
+        audioContextRef.current.close().catch(console.warn);
       }
     };
   }, [stopBinaural]);
@@ -310,7 +370,7 @@ export default function ResonanceBreathing() {
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
-  // Calculate orb scale based on phase
+  // Calculate orb scale based on phase - use state directly for render
   const getOrbScale = () => {
     if (!isActive) return 1;
 
@@ -361,6 +421,9 @@ export default function ResonanceBreathing() {
         fontFamily: "'Cormorant Garamond', Georgia, serif",
         color: COLORS.textPrimary,
         overflow: "hidden",
+        // Prevent pull-to-refresh on mobile
+        touchAction: "none",
+        overscrollBehavior: "none",
       }}
     >
       {/* Google Fonts Import */}
@@ -508,7 +571,8 @@ export default function ResonanceBreathing() {
                 borderRadius: "50%",
                 background: `radial-gradient(circle, ${COLORS.accentDim} 0%, transparent 70%)`,
                 transform: `scale(${orbScale * 1.3})`,
-                transition: "transform 0.1s linear",
+                // Use will-change for GPU acceleration on mobile
+                willChange: "transform",
                 animation: isActive ? "pulseGlow 10s ease-in-out infinite" : "none",
               }}
             />
@@ -520,7 +584,8 @@ export default function ResonanceBreathing() {
                 width: "100%",
                 height: "100%",
                 transform: `scale(${orbScale})`,
-                transition: "transform 0.1s linear",
+                // Use will-change for GPU acceleration on mobile
+                willChange: "transform",
               }}
             >
               {/* Definitions for gradients and filters */}
@@ -666,8 +731,10 @@ export default function ResonanceBreathing() {
                   borderRadius: "50%",
                   backgroundColor: COLORS.accent,
                   boxShadow: `0 0 12px ${COLORS.accent}`,
+                  // Calculate top position directly instead of using transition
                   top: `${(1 - ballPosition) * 88}px`,
-                  transition: "top 0.1s linear",
+                  // Use will-change for GPU acceleration on mobile
+                  willChange: "top",
                 }}
               />
 
@@ -772,6 +839,9 @@ export default function ResonanceBreathing() {
                 cursor: "pointer",
                 transition: "all 0.3s ease",
                 fontFamily: "inherit",
+                // Better touch target for mobile
+                minHeight: "48px",
+                WebkitTapHighlightColor: "transparent",
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = COLORS.orbBase;
@@ -802,6 +872,9 @@ export default function ResonanceBreathing() {
                 cursor: "pointer",
                 transition: "all 0.3s ease",
                 fontFamily: "inherit",
+                // Better touch target for mobile
+                minHeight: "44px",
+                WebkitTapHighlightColor: "transparent",
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.color = COLORS.textPrimary;
@@ -824,9 +897,11 @@ export default function ResonanceBreathing() {
                 fontWeight: 400,
                 letterSpacing: "0.1em",
                 opacity: 0.4,
+                padding: "0 1rem",
+                textAlign: "center",
               }}
             >
-              Headphones recommended for full affect
+              Headphones recommended for binaural audio
             </p>
           )}
         </>
