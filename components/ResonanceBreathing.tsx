@@ -478,14 +478,14 @@ export default function ResonanceBreathing() {
                 flexDirection: "column",
                 alignItems: "center",
                 gap: "0.5rem",
-                opacity: currentPhase === "inhale" ? 1 : 0.3,
+                opacity: animationState.phase === "inhale" ? 1 : 0.3,
                 transition: "opacity 0.3s ease",
               }}
             >
               <svg
                 viewBox="0 0 32 32"
                 style={{ width: "32px", height: "32px" }}
-                stroke={currentPhase === "inhale" ? COLORS.accent : COLORS.textPrimary}
+                stroke={animationState.phase === "inhale" ? COLORS.accent : COLORS.textPrimary}
                 strokeWidth="1.5"
                 fill="none"
               >
@@ -498,7 +498,7 @@ export default function ResonanceBreathing() {
                   fontWeight: 400,
                   letterSpacing: "0.15em",
                   textTransform: "uppercase",
-                  color: currentPhase === "inhale" ? COLORS.accent : COLORS.textDim,
+                  color: animationState.phase === "inhale" ? COLORS.accent : COLORS.textDim,
                   transition: "color 0.3s ease",
                 }}
               >
@@ -542,7 +542,7 @@ export default function ResonanceBreathing() {
                   width: "8px",
                   height: "8px",
                   borderRadius: "50%",
-                  backgroundColor: currentPhase === "inhale" ? COLORS.orbBase : COLORS.textDim,
+                  backgroundColor: animationState.phase === "inhale" ? COLORS.orbBase : COLORS.textDim,
                   transition: "background-color 0.3s ease",
                 }}
               />
@@ -557,7 +557,7 @@ export default function ResonanceBreathing() {
                   width: "8px",
                   height: "8px",
                   borderRadius: "50%",
-                  backgroundColor: currentPhase === "exhale" ? COLORS.orbBase : COLORS.textDim,
+                  backgroundColor: animationState.phase === "exhale" ? COLORS.orbBase : COLORS.textDim,
                   transition: "background-color 0.3s ease",
                 }}
               />
@@ -570,14 +570,14 @@ export default function ResonanceBreathing() {
                 flexDirection: "column",
                 alignItems: "center",
                 gap: "0.5rem",
-                opacity: currentPhase === "exhale" ? 1 : 0.3,
+                opacity: animationState.phase === "exhale" ? 1 : 0.3,
                 transition: "opacity 0.3s ease",
               }}
             >
               <svg
                 viewBox="0 0 32 32"
                 style={{ width: "32px", height: "32px" }}
-                stroke={currentPhase === "exhale" ? COLORS.accent : COLORS.textPrimary}
+                stroke={animationState.phase === "exhale" ? COLORS.accent : COLORS.textPrimary}
                 strokeWidth="1.5"
                 fill="none"
               >
@@ -590,7 +590,7 @@ export default function ResonanceBreathing() {
                   fontWeight: 400,
                   letterSpacing: "0.15em",
                   textTransform: "uppercase",
-                  color: currentPhase === "exhale" ? COLORS.accent : COLORS.textDim,
+                  color: animationState.phase === "exhale" ? COLORS.accent : COLORS.textDim,
                   transition: "color 0.3s ease",
                 }}
               >
@@ -608,11 +608,11 @@ export default function ResonanceBreathing() {
                 fontWeight: 300,
                 letterSpacing: "0.2em",
                 textTransform: "uppercase",
-                color: currentPhase === "inhale" ? COLORS.textPrimary : COLORS.textDim,
+                color: animationState.phase === "inhale" ? COLORS.textPrimary : COLORS.textDim,
                 transition: "color 0.3s ease",
               }}
             >
-              {currentPhase === "inhale" ? "Breathe In" : "Breathe Out"}
+              {animationState.phase === "inhale" ? "Breathe In" : "Breathe Out"}
             </p>
           )}
 
