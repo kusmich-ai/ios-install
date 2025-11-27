@@ -90,6 +90,12 @@ export default function ResonanceBreathing() {
     }
   }, []);
 
+  // Detect if we're on mobile/iOS
+  const isMobile = useCallback(() => {
+    if (typeof window === 'undefined') return false;
+    return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  }, []);
+
   // Play a singing bowl / chime tone
   const playTone = useCallback((frequency: number, duration: number, isInhale: boolean) => {
     const ctx = audioContextRef.current;
@@ -98,7 +104,7 @@ export default function ResonanceBreathing() {
       return;
     }
 
-    console.log("playTone called:", { frequency, duration, isInhale, ctxState: ctx.state });
+    console.log("playTone called:", { frequency, duration, isInhale, ctxState: ctx.state, mobile: isMobile() });
 
     // Ensure context is running (mobile requirement)
     if (ctx.state === "suspended") {
@@ -108,64 +114,80 @@ export default function ResonanceBreathing() {
     try {
       const now = ctx.currentTime;
 
-      // Create oscillators for rich, bowl-like tone
-      const fundamental = ctx.createOscillator();
-      const harmonic1 = ctx.createOscillator();
-      const harmonic2 = ctx.createOscillator();
+      if (isMobile()) {
+        // SIMPLIFIED VERSION FOR MOBILE: Just one oscillator, direct connection
+        const oscillator = ctx.createOscillator();
+        const gainNode = ctx.createGain();
 
-      fundamental.type = "sine";
-      fundamental.frequency.setValueAtTime(frequency, now);
+        oscillator.type = "sine";
+        oscillator.frequency.setValueAtTime(frequency, now);
 
-      harmonic1.type = "sine";
-      harmonic1.frequency.setValueAtTime(frequency * 2, now);
+        // Simple envelope - immediate volume, then fade
+        gainNode.gain.setValueAtTime(0.5, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + (duration / 1000));
 
-      harmonic2.type = "sine";
-      harmonic2.frequency.setValueAtTime(frequency * 3, now);
+        oscillator.connect(gainNode);
+        gainNode.connect(ctx.destination);
 
-      // Gain nodes for mixing
-      const fundamentalGain = ctx.createGain();
-      const harmonic1Gain = ctx.createGain();
-      const harmonic2Gain = ctx.createGain();
-      const masterGain = ctx.createGain();
+        oscillator.start(now);
+        oscillator.stop(now + (duration / 1000));
+        
+        console.log("playTone: Mobile oscillator started");
+      } else {
+        // RICH VERSION FOR DESKTOP: Multiple oscillators for singing bowl sound
+        const fundamental = ctx.createOscillator();
+        const harmonic1 = ctx.createOscillator();
+        const harmonic2 = ctx.createOscillator();
 
-      fundamentalGain.gain.setValueAtTime(0.3, now);
-      harmonic1Gain.gain.setValueAtTime(0.15, now);
-      harmonic2Gain.gain.setValueAtTime(0.05, now);
+        fundamental.type = "sine";
+        fundamental.frequency.setValueAtTime(frequency, now);
 
-      // Envelope - singing bowl style (quick attack, long decay)
-      // INCREASED VOLUME for mobile - was 0.12/0.1, now 0.4/0.35
-      const attackTime = 0.02;
-      const decayTime = duration / 1000;
+        harmonic1.type = "sine";
+        harmonic1.frequency.setValueAtTime(frequency * 2, now);
 
-      masterGain.gain.setValueAtTime(0, now);
-      masterGain.gain.linearRampToValueAtTime(isInhale ? 0.4 : 0.35, now + attackTime);
-      masterGain.gain.exponentialRampToValueAtTime(0.001, now + decayTime);
+        harmonic2.type = "sine";
+        harmonic2.frequency.setValueAtTime(frequency * 3, now);
 
-      // Connect nodes
-      fundamental.connect(fundamentalGain);
-      harmonic1.connect(harmonic1Gain);
-      harmonic2.connect(harmonic2Gain);
+        const fundamentalGain = ctx.createGain();
+        const harmonic1Gain = ctx.createGain();
+        const harmonic2Gain = ctx.createGain();
+        const masterGain = ctx.createGain();
 
-      fundamentalGain.connect(masterGain);
-      harmonic1Gain.connect(masterGain);
-      harmonic2Gain.connect(masterGain);
+        fundamentalGain.gain.setValueAtTime(0.3, now);
+        harmonic1Gain.gain.setValueAtTime(0.15, now);
+        harmonic2Gain.gain.setValueAtTime(0.05, now);
 
-      masterGain.connect(ctx.destination);
+        const attackTime = 0.02;
+        const decayTime = duration / 1000;
 
-      // Start and stop
-      fundamental.start(now);
-      harmonic1.start(now);
-      harmonic2.start(now);
+        masterGain.gain.setValueAtTime(0, now);
+        masterGain.gain.linearRampToValueAtTime(isInhale ? 0.12 : 0.1, now + attackTime);
+        masterGain.gain.exponentialRampToValueAtTime(0.001, now + decayTime);
 
-      fundamental.stop(now + decayTime);
-      harmonic1.stop(now + decayTime);
-      harmonic2.stop(now + decayTime);
-      
-      console.log("playTone: Oscillators started successfully");
+        fundamental.connect(fundamentalGain);
+        harmonic1.connect(harmonic1Gain);
+        harmonic2.connect(harmonic2Gain);
+
+        fundamentalGain.connect(masterGain);
+        harmonic1Gain.connect(masterGain);
+        harmonic2Gain.connect(masterGain);
+
+        masterGain.connect(ctx.destination);
+
+        fundamental.start(now);
+        harmonic1.start(now);
+        harmonic2.start(now);
+
+        fundamental.stop(now + decayTime);
+        harmonic1.stop(now + decayTime);
+        harmonic2.stop(now + decayTime);
+        
+        console.log("playTone: Desktop oscillators started");
+      }
     } catch (e) {
       console.warn("Error playing tone:", e);
     }
-  }, []);
+  }, [isMobile]);
 
   // Start binaural beat
   const startBinaural = useCallback(() => {
@@ -175,7 +197,7 @@ export default function ResonanceBreathing() {
       return;
     }
 
-    console.log("startBinaural called, ctxState:", ctx.state);
+    console.log("startBinaural called, ctxState:", ctx.state, "mobile:", isMobile());
 
     // Ensure context is running
     if (ctx.state === "suspended") {
@@ -185,56 +207,76 @@ export default function ResonanceBreathing() {
     try {
       const now = ctx.currentTime;
 
-      // Create stereo binaural beat
-      const leftOsc = ctx.createOscillator();
-      const rightOsc = ctx.createOscillator();
+      if (isMobile()) {
+        // SIMPLIFIED FOR MOBILE: Single mono oscillator
+        const osc = ctx.createOscillator();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(AUDIO.binauralBase, now);
 
-      leftOsc.type = "sine";
-      rightOsc.type = "sine";
+        const gainNode = ctx.createGain();
+        gainNode.gain.setValueAtTime(0, now);
+        gainNode.gain.linearRampToValueAtTime(0.2, now + 3);
 
-      // Left ear: base frequency, Right ear: base + beat frequency
-      leftOsc.frequency.setValueAtTime(AUDIO.binauralBase, now);
-      rightOsc.frequency.setValueAtTime(AUDIO.binauralBase + AUDIO.binauralBeat, now);
+        osc.connect(gainNode);
+        gainNode.connect(ctx.destination);
 
-      // Create stereo panner nodes
-      const leftPanner = ctx.createStereoPanner();
-      const rightPanner = ctx.createStereoPanner();
-      leftPanner.pan.setValueAtTime(-1, now);
-      rightPanner.pan.setValueAtTime(1, now);
+        osc.start(now);
 
-      // Gain nodes - INCREASED for mobile (was 0.08, now 0.15)
-      const leftGain = ctx.createGain();
-      const rightGain = ctx.createGain();
-      leftGain.gain.setValueAtTime(0, now);
-      rightGain.gain.setValueAtTime(0, now);
+        binauralNodesRef.current = {
+          left: osc,
+          right: osc,
+          gainL: gainNode,
+          gainR: gainNode,
+        };
+        
+        console.log("startBinaural: Mobile oscillator started");
+      } else {
+        // FULL STEREO BINAURAL FOR DESKTOP
+        const leftOsc = ctx.createOscillator();
+        const rightOsc = ctx.createOscillator();
 
-      // Fade in over 3 seconds
-      leftGain.gain.linearRampToValueAtTime(0.15, now + 3);
-      rightGain.gain.linearRampToValueAtTime(0.15, now + 3);
+        leftOsc.type = "sine";
+        rightOsc.type = "sine";
 
-      // Connect
-      leftOsc.connect(leftGain);
-      rightOsc.connect(rightGain);
-      leftGain.connect(leftPanner);
-      rightGain.connect(rightPanner);
-      leftPanner.connect(ctx.destination);
-      rightPanner.connect(ctx.destination);
+        leftOsc.frequency.setValueAtTime(AUDIO.binauralBase, now);
+        rightOsc.frequency.setValueAtTime(AUDIO.binauralBase + AUDIO.binauralBeat, now);
 
-      leftOsc.start(now);
-      rightOsc.start(now);
+        const leftPanner = ctx.createStereoPanner();
+        const rightPanner = ctx.createStereoPanner();
+        leftPanner.pan.setValueAtTime(-1, now);
+        rightPanner.pan.setValueAtTime(1, now);
 
-      binauralNodesRef.current = {
-        left: leftOsc,
-        right: rightOsc,
-        gainL: leftGain,
-        gainR: rightGain,
-      };
-      
-      console.log("startBinaural: Oscillators started successfully");
+        const leftGain = ctx.createGain();
+        const rightGain = ctx.createGain();
+        leftGain.gain.setValueAtTime(0, now);
+        rightGain.gain.setValueAtTime(0, now);
+
+        leftGain.gain.linearRampToValueAtTime(0.08, now + 3);
+        rightGain.gain.linearRampToValueAtTime(0.08, now + 3);
+
+        leftOsc.connect(leftGain);
+        rightOsc.connect(rightGain);
+        leftGain.connect(leftPanner);
+        rightGain.connect(rightPanner);
+        leftPanner.connect(ctx.destination);
+        rightPanner.connect(ctx.destination);
+
+        leftOsc.start(now);
+        rightOsc.start(now);
+
+        binauralNodesRef.current = {
+          left: leftOsc,
+          right: rightOsc,
+          gainL: leftGain,
+          gainR: rightGain,
+        };
+        
+        console.log("startBinaural: Desktop stereo oscillators started");
+      }
     } catch (e) {
       console.warn("Error starting binaural:", e);
     }
-  }, []);
+  }, [isMobile]);
 
   // Stop binaural beat
   const stopBinaural = useCallback(() => {
@@ -937,7 +979,7 @@ export default function ResonanceBreathing() {
                 textAlign: "center",
               }}
             >
-              Headphones recommended for binaural audio
+              Headphones recommended for full affect
             </p>
           )}
         </>
