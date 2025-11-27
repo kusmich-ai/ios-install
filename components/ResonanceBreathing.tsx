@@ -526,9 +526,9 @@ export default function ResonanceBreathing() {
               {/* Definitions for gradients and filters */}
               <defs>
                 <radialGradient id="orbGradient" cx="30%" cy="30%" r="70%">
-                  <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.7" />
-                  <stop offset="50%" stopColor={COLORS.orbBase} stopOpacity="0.55" />
-                  <stop offset="100%" stopColor="#D4CFC7" stopOpacity="0.4" />
+                  <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.35" />
+                  <stop offset="50%" stopColor={COLORS.orbBase} stopOpacity="0.25" />
+                  <stop offset="100%" stopColor="#D4CFC7" stopOpacity="0.15" />
                 </radialGradient>
 
                 <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
@@ -560,9 +560,9 @@ export default function ResonanceBreathing() {
               {/* Sacred Geometry - Flower of Life inspired pattern */}
               <g
                 stroke={COLORS.accent}
-                strokeWidth="0.5"
+                strokeWidth="0.6"
                 fill="none"
-                opacity={isActive ? 0.4 : 0.25}
+                opacity={isActive ? 0.6 : 0.4}
                 filter="url(#softGlow)"
               >
                 {/* Center circle */}
