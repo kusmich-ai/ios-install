@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { ChevronRight, ChevronDown, Check, Loader2 } from 'lucide-react';
 import { STAGES, ON_DEMAND_TOOLS, getStagePractices, getUnlockedOnDemandTools } from '@/app/config/stages';
 import type { UserProgress } from '@/app/hooks/useUserProgress';
-// CHANGE #3: Import the hook for the Resonance Breathing modal
+// CHANGE #3: Import the Resonance Breathing modal hook
 import { useResonanceBreathing } from '@/components/ResonanceModal';
 
 interface ToolsSidebarProps {
@@ -25,19 +25,9 @@ const PRACTICE_ID_MAP: { [key: string]: string } = {
   'flow_block': 'flow_block',
   'co_regulation': 'co_regulation',
   'nightly_debrief': 'nightly_debrief',
+  // Legacy/alternate IDs (in case they appear elsewhere)
   'hrvb_breathing': 'hrvb',
   'resonance_breathing': 'hrvb',
-};
-
-// CHANGE #2: Map practice IDs to full display names
-const PRACTICE_FULL_NAMES: { [key: string]: string } = {
-  'hrvb': 'Resonance Breathing',
-  'awareness_rep': 'Awareness Rep',
-  'somatic_flow': 'Somatic Flow',
-  'micro_action': 'Morning Micro-Action',
-  'flow_block': 'Flow Block',
-  'co_regulation': 'Co-Regulation Practice',
-  'nightly_debrief': 'Nightly Debrief',
 };
 
 export default function ToolsSidebar({ 
@@ -59,6 +49,7 @@ export default function ToolsSidebar({
   const unlockedTools = getUnlockedOnDemandTools(progress.currentStage);
 
   const getPracticeStatus = (practiceId: string): 'completed' | 'pending' | 'locked' => {
+    // Check both the original ID and mapped ID
     const mappedId = PRACTICE_ID_MAP[practiceId] || practiceId;
     const practiceData = progress.dailyPractices[practiceId] || progress.dailyPractices[mappedId];
     if (practiceData?.completed) return 'completed';
@@ -78,18 +69,11 @@ export default function ToolsSidebar({
     }
   };
 
-  // CHANGE #2: Get full display name for a practice
-  const getFullName = (practiceId: string, shortName: string): string => {
-    return PRACTICE_FULL_NAMES[practiceId] || shortName;
-  };
-
   // CHANGE #3: Handle practice click with special routing for Resonance Breathing
   const handleStartPractice = (practiceId: string) => {
-    if (practiceId === 'hrvb' || practiceId === 'hrvb_breathing' || practiceId === 'resonance_breathing') {
-      // Open the Resonance Breathing modal
+    if (practiceId === 'hrvb') {
       openResonance();
     } else {
-      // Use the default handler for other practices
       onPracticeClick(practiceId);
     }
   };
@@ -117,7 +101,7 @@ export default function ToolsSidebar({
           userId: userId,
           practiceType: dbPracticeType,
           completed: true,
-          localDate: new Date().toLocaleDateString('en-CA')
+          localDate: new Date().toLocaleDateString('en-CA') // Returns YYYY-MM-DD in local timezone
         })
       });
 
@@ -128,9 +112,11 @@ export default function ToolsSidebar({
         throw new Error(data.error || `HTTP ${response.status}`);
       }
 
+      // Trigger progress refresh if callback provided
       if (onProgressUpdate) {
         onProgressUpdate();
       } else {
+        // Fallback: reload page
         setTimeout(() => window.location.reload(), 500);
       }
 
@@ -142,6 +128,7 @@ export default function ToolsSidebar({
     }
   };
 
+  // Calculate completion stats
   const completedCount = currentStagePractices.filter(p => getPracticeStatus(p.id) === 'completed').length;
   const totalCount = currentStagePractices.length;
   const allComplete = completedCount === totalCount;
@@ -223,8 +210,6 @@ export default function ToolsSidebar({
                   const status = getPracticeStatus(practice.id);
                   const isCompleted = status === 'completed';
                   const isCompleting = completing === practice.id;
-                  // CHANGE #2: Use full name instead of shortName
-                  const displayName = getFullName(practice.id, practice.shortName);
                   
                   return (
                     <div
@@ -240,11 +225,11 @@ export default function ToolsSidebar({
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
                             <span className="text-xs">{getStatusIcon(status)}</span>
-                            {/* CHANGE #2: Display full name */}
+                            {/* CHANGE #2: Use practice.name instead of practice.shortName for full names */}
                             <span className={`text-sm font-medium ${
                               isCompleted ? 'text-green-400' : 'text-white'
                             }`}>
-                              {displayName}
+                              {practice.name}
                             </span>
                           </div>
                           <div className="text-xs text-gray-400 mb-2">
@@ -255,7 +240,8 @@ export default function ToolsSidebar({
                           <div className="flex gap-2">
                             {!isCompleted && (
                               <>
-                                {/* CHANGE #1 & #3: Updated text and handler */}
+                                {/* CHANGE #1: "Start Practice" -> "Start Ritual" */}
+                                {/* CHANGE #3: Use handleStartPractice instead of onPracticeClick */}
                                 <button
                                   onClick={() => handleStartPractice(practice.id)}
                                   className="flex-1 px-2 py-1.5 text-xs font-medium bg-emerald-600/20 text-emerald-400 rounded hover:bg-emerald-600/30 transition-colors"
