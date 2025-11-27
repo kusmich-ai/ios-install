@@ -339,7 +339,7 @@ You advance when the system sees you're ready. So you need to do the daily ritua
 
 You're starting at **Stage ${data.currentStage}: ${getStageName(data.currentStage)}**.
 
-**Your daily rituals:**
+**Your daily rituals (that start tomorrow morning):**
 
 ${rituals.list}
 
