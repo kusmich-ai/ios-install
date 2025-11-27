@@ -75,13 +75,12 @@ export default function ResonanceBreathing() {
           console.warn("Web Audio API not supported");
           return null;
         }
-        audioContextRef.current = new AudioContextClass();
+        // iOS requires specific sample rate sometimes
+        audioContextRef.current = new AudioContextClass({
+          sampleRate: 44100,
+        });
+        console.log("AudioContext created, state:", audioContextRef.current.state);
         setAudioInitialized(true);
-      }
-      
-      // Always try to resume on mobile - this is critical
-      if (audioContextRef.current.state === "suspended") {
-        audioContextRef.current.resume().catch(console.warn);
       }
       
       return audioContextRef.current;
@@ -310,9 +309,20 @@ export default function ResonanceBreathing() {
   }, [playTone, stopBinaural]);
 
   // Start session - CRITICAL: Audio init must happen here in click handler
-  const startSession = useCallback(() => {
+  const startSession = useCallback(async () => {
     // Initialize audio context on user interaction (required for mobile)
     const ctx = initAudio();
+    
+    // iOS CRITICAL: Must resume AudioContext in the same user gesture call stack
+    if (ctx) {
+      try {
+        // This MUST happen synchronously in the tap handler for iOS
+        await ctx.resume();
+        console.log("AudioContext state after resume:", ctx.state);
+      } catch (e) {
+        console.warn("Failed to resume AudioContext:", e);
+      }
+    }
     
     setIsActive(true);
     setIsComplete(false);
@@ -324,15 +334,10 @@ export default function ResonanceBreathing() {
     startTimeRef.current = 0;
     phaseStartTimeRef.current = 0;
 
-    // Small delay to ensure audio context is ready
-    setTimeout(() => {
-      // Start binaural
-      startBinaural();
-
-      // Play first inhale tone
-      playTone(AUDIO.inhaleFreq, 3500, true);
-      setBreathCount(1);
-    }, 100);
+    // Start audio immediately - no setTimeout (breaks iOS)
+    startBinaural();
+    playTone(AUDIO.inhaleFreq, 3500, true);
+    setBreathCount(1);
 
     animationFrameRef.current = requestAnimationFrame(animate);
   }, [animate, initAudio, startBinaural, playTone]);
