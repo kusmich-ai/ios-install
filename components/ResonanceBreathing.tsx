@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 // ============================================================================
 // RESONANCE BREATHING COMPONENT
 // 4-second inhale (nose) / 6-second exhale (mouth) / 5 minutes total
-// Mobile-optimized with proper Web Audio API handling
+// Now using real audio files for rich, organic sound
 // ============================================================================
 
 interface BreathPhase {
@@ -32,17 +32,18 @@ const COLORS = {
   textDim: "rgba(245, 242, 236, 0.4)",
 };
 
-// Audio frequencies
-const AUDIO = {
-  inhaleFreq: 528, // Hz - "love frequency"
-  exhaleFreq: 396, // Hz - grounding
-  binauralBase: 200, // Hz carrier
-  binauralBeat: 7.83, // Hz - Schumann resonance (theta/alpha border)
+// Audio file paths (relative to public folder)
+const AUDIO_FILES = {
+  inhale: "/audio/inhale.wav",
+  exhale: "/audio/exhale.wav",
+  binaural: "/audio/bineral.mp3",
 };
 
-// Type for WebKit AudioContext (iOS Safari)
-type WebKitWindow = Window & {
-  webkitAudioContext?: typeof AudioContext;
+// Audio volume settings - adjust these to taste (0.0 - 1.0)
+const VOLUME = {
+  inhale: 0.4,
+  exhale: 0.4,
+  binaural: 0.3,
 };
 
 export default function ResonanceBreathing() {
@@ -52,326 +53,140 @@ export default function ResonanceBreathing() {
   const [breathCount, setBreathCount] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [phaseProgress, setPhaseProgress] = useState(0);
-  const [audioInitialized, setAudioInitialized] = useState(false);
+  const [audioLoaded, setAudioLoaded] = useState(false);
 
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const binauralNodesRef = useRef<{ left: OscillatorNode; right: OscillatorNode; gainL: GainNode; gainR: GainNode } | null>(null);
+  // Audio element refs
+  const inhaleAudioRef = useRef<HTMLAudioElement | null>(null);
+  const exhaleAudioRef = useRef<HTMLAudioElement | null>(null);
+  const binauralAudioRef = useRef<HTMLAudioElement | null>(null);
+  
   const animationFrameRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(0);
   const phaseStartTimeRef = useRef<number>(0);
-  const currentPhaseRef = useRef<"inhale" | "exhale" | "idle">("idle");
 
-  // Keep ref in sync with state for use in animation callback
+  // Preload audio files
   useEffect(() => {
-    currentPhaseRef.current = currentPhase;
-  }, [currentPhase]);
+    // Create audio elements
+    inhaleAudioRef.current = new Audio(AUDIO_FILES.inhale);
+    exhaleAudioRef.current = new Audio(AUDIO_FILES.exhale);
+    binauralAudioRef.current = new Audio(AUDIO_FILES.binaural);
 
-  // Initialize Web Audio Context - MUST be called from user interaction
-  const initAudio = useCallback((): AudioContext | null => {
-    try {
-      if (!audioContextRef.current) {
-        const AudioContextClass = window.AudioContext || (window as WebKitWindow).webkitAudioContext;
-        if (!AudioContextClass) {
-          console.warn("Web Audio API not supported");
-          return null;
-        }
-        // iOS requires specific sample rate sometimes
-        audioContextRef.current = new AudioContextClass({
-          sampleRate: 44100,
-        });
-        console.log("AudioContext created, state:", audioContextRef.current.state);
-        setAudioInitialized(true);
-      }
-      
-      return audioContextRef.current;
-    } catch (e) {
-      console.warn("Failed to initialize audio:", e);
-      return null;
-    }
-  }, []);
+    // Set volumes
+    inhaleAudioRef.current.volume = VOLUME.inhale;
+    exhaleAudioRef.current.volume = VOLUME.exhale;
+    binauralAudioRef.current.volume = VOLUME.binaural;
 
-  // Detect if we're on mobile/iOS
-  const isMobile = useCallback(() => {
-    if (typeof window === 'undefined') return false;
-    return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  }, []);
+    // Binaural should loop
+    binauralAudioRef.current.loop = true;
 
-  // Generate a simple beep as a WAV data URI (works when Web Audio fails on iOS)
-  const generateBeepDataUri = useCallback((frequency: number, duration: number, volume: number = 0.5) => {
-    const sampleRate = 44100;
-    const numSamples = Math.floor(sampleRate * duration);
-    const numChannels = 1;
-    const bitsPerSample = 16;
-    const byteRate = sampleRate * numChannels * (bitsPerSample / 8);
-    const blockAlign = numChannels * (bitsPerSample / 8);
-    const dataSize = numSamples * blockAlign;
-    const fileSize = 36 + dataSize;
+    // Preload
+    inhaleAudioRef.current.preload = "auto";
+    exhaleAudioRef.current.preload = "auto";
+    binauralAudioRef.current.preload = "auto";
 
-    const buffer = new ArrayBuffer(44 + dataSize);
-    const view = new DataView(buffer);
-
-    // WAV header
-    const writeString = (offset: number, str: string) => {
-      for (let i = 0; i < str.length; i++) {
-        view.setUint8(offset + i, str.charCodeAt(i));
+    // Track loading
+    let loadedCount = 0;
+    const checkLoaded = () => {
+      loadedCount++;
+      if (loadedCount >= 3) {
+        setAudioLoaded(true);
       }
     };
 
-    writeString(0, 'RIFF');
-    view.setUint32(4, fileSize, true);
-    writeString(8, 'WAVE');
-    writeString(12, 'fmt ');
-    view.setUint32(16, 16, true); // fmt chunk size
-    view.setUint16(20, 1, true); // PCM format
-    view.setUint16(22, numChannels, true);
-    view.setUint32(24, sampleRate, true);
-    view.setUint32(28, byteRate, true);
-    view.setUint16(32, blockAlign, true);
-    view.setUint16(34, bitsPerSample, true);
-    writeString(36, 'data');
-    view.setUint32(40, dataSize, true);
+    inhaleAudioRef.current.addEventListener("canplaythrough", checkLoaded);
+    exhaleAudioRef.current.addEventListener("canplaythrough", checkLoaded);
+    binauralAudioRef.current.addEventListener("canplaythrough", checkLoaded);
 
-    // Generate sine wave with fade out
-    for (let i = 0; i < numSamples; i++) {
-      const t = i / sampleRate;
-      const fadeOut = Math.max(0, 1 - (i / numSamples)); // Linear fade
-      const sample = Math.sin(2 * Math.PI * frequency * t) * volume * fadeOut;
-      const intSample = Math.max(-32768, Math.min(32767, Math.floor(sample * 32767)));
-      view.setInt16(44 + i * 2, intSample, true);
-    }
+    // Load the audio
+    inhaleAudioRef.current.load();
+    exhaleAudioRef.current.load();
+    binauralAudioRef.current.load();
 
-    // Convert to base64
-    const bytes = new Uint8Array(buffer);
-    let binary = '';
-    for (let i = 0; i < bytes.length; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    return 'data:audio/wav;base64,' + btoa(binary);
+    // Cleanup
+    return () => {
+      if (inhaleAudioRef.current) {
+        inhaleAudioRef.current.pause();
+        inhaleAudioRef.current = null;
+      }
+      if (exhaleAudioRef.current) {
+        exhaleAudioRef.current.pause();
+        exhaleAudioRef.current = null;
+      }
+      if (binauralAudioRef.current) {
+        binauralAudioRef.current.pause();
+        binauralAudioRef.current = null;
+      }
+    };
   }, []);
 
-  // Play using HTML5 Audio (fallback for iOS)
-  const playToneHTML5 = useCallback((frequency: number, duration: number) => {
-    console.log("playToneHTML5 called:", { frequency, duration });
-    try {
-      const dataUri = generateBeepDataUri(frequency, duration / 1000, 0.5);
-      const audio = new Audio(dataUri);
-      audio.play().then(() => {
-        console.log("HTML5 Audio playing successfully!");
-      }).catch((e) => {
-        console.error("HTML5 Audio play failed:", e);
+  // Play inhale sound
+  const playInhale = useCallback(() => {
+    if (inhaleAudioRef.current) {
+      inhaleAudioRef.current.currentTime = 0;
+      inhaleAudioRef.current.play().catch((e) => {
+        console.log("Inhale audio play failed:", e);
       });
-    } catch (e) {
-      console.error("HTML5 Audio error:", e);
-    }
-  }, [generateBeepDataUri]);
-
-  // Play a singing bowl / chime tone
-  const playTone = useCallback((frequency: number, duration: number, isInhale: boolean) => {
-    const ctx = audioContextRef.current;
-    if (!ctx) {
-      console.warn("playTone: No AudioContext");
-      return;
-    }
-
-    console.log("playTone called:", { frequency, duration, isInhale, ctxState: ctx.state, mobile: isMobile() });
-
-    // Ensure context is running (mobile requirement)
-    if (ctx.state === "suspended") {
-      ctx.resume().catch(console.warn);
-    }
-
-    try {
-      const now = ctx.currentTime;
-
-      if (isMobile()) {
-        // USE HTML5 AUDIO FOR MOBILE (Web Audio oscillators don't work on iOS)
-        playToneHTML5(frequency, duration);
-        return;
-      } else {
-        // RICH VERSION FOR DESKTOP: Multiple oscillators for singing bowl sound
-        const fundamental = ctx.createOscillator();
-        const harmonic1 = ctx.createOscillator();
-        const harmonic2 = ctx.createOscillator();
-
-        fundamental.type = "sine";
-        fundamental.frequency.setValueAtTime(frequency, now);
-
-        harmonic1.type = "sine";
-        harmonic1.frequency.setValueAtTime(frequency * 2, now);
-
-        harmonic2.type = "sine";
-        harmonic2.frequency.setValueAtTime(frequency * 3, now);
-
-        const fundamentalGain = ctx.createGain();
-        const harmonic1Gain = ctx.createGain();
-        const harmonic2Gain = ctx.createGain();
-        const masterGain = ctx.createGain();
-
-        fundamentalGain.gain.setValueAtTime(0.3, now);
-        harmonic1Gain.gain.setValueAtTime(0.15, now);
-        harmonic2Gain.gain.setValueAtTime(0.05, now);
-
-        const attackTime = 0.02;
-        const decayTime = duration / 1000;
-
-        masterGain.gain.setValueAtTime(0, now);
-        masterGain.gain.linearRampToValueAtTime(isInhale ? 0.12 : 0.1, now + attackTime);
-        masterGain.gain.exponentialRampToValueAtTime(0.001, now + decayTime);
-
-        fundamental.connect(fundamentalGain);
-        harmonic1.connect(harmonic1Gain);
-        harmonic2.connect(harmonic2Gain);
-
-        fundamentalGain.connect(masterGain);
-        harmonic1Gain.connect(masterGain);
-        harmonic2Gain.connect(masterGain);
-
-        masterGain.connect(ctx.destination);
-
-        fundamental.start(now);
-        harmonic1.start(now);
-        harmonic2.start(now);
-
-        fundamental.stop(now + decayTime);
-        harmonic1.stop(now + decayTime);
-        harmonic2.stop(now + decayTime);
-        
-        console.log("playTone: Desktop oscillators started");
-      }
-    } catch (e) {
-      console.warn("Error playing tone:", e);
-    }
-  }, [isMobile, playToneHTML5]);
-
-  // Start binaural beat
-  const startBinaural = useCallback(() => {
-    const ctx = audioContextRef.current;
-    if (!ctx) {
-      console.warn("startBinaural: No AudioContext");
-      return;
-    }
-
-    console.log("startBinaural called, ctxState:", ctx.state, "mobile:", isMobile());
-
-    // Ensure context is running
-    if (ctx.state === "suspended") {
-      ctx.resume().catch(console.warn);
-    }
-
-    try {
-      const now = ctx.currentTime;
-
-      if (isMobile()) {
-        // USE HTML5 AUDIO FOR MOBILE - play a long drone tone
-        // We'll create a looping audio element instead
-        console.log("startBinaural: Using HTML5 Audio for mobile");
-        try {
-          const dataUri = generateBeepDataUri(AUDIO.binauralBase, 10, 0.15); // 10 second drone
-          const audio = new Audio(dataUri);
-          audio.loop = true;
-          audio.play().then(() => {
-            console.log("HTML5 binaural drone playing!");
-          }).catch((e) => {
-            console.error("HTML5 binaural play failed:", e);
-          });
-          // Store for cleanup
-          (binauralNodesRef.current as any) = { audio };
-        } catch (e) {
-          console.error("HTML5 binaural error:", e);
-        }
-        return;
-      } else {
-        // FULL STEREO BINAURAL FOR DESKTOP
-        const leftOsc = ctx.createOscillator();
-        const rightOsc = ctx.createOscillator();
-
-        leftOsc.type = "sine";
-        rightOsc.type = "sine";
-
-        leftOsc.frequency.setValueAtTime(AUDIO.binauralBase, now);
-        rightOsc.frequency.setValueAtTime(AUDIO.binauralBase + AUDIO.binauralBeat, now);
-
-        const leftPanner = ctx.createStereoPanner();
-        const rightPanner = ctx.createStereoPanner();
-        leftPanner.pan.setValueAtTime(-1, now);
-        rightPanner.pan.setValueAtTime(1, now);
-
-        const leftGain = ctx.createGain();
-        const rightGain = ctx.createGain();
-        leftGain.gain.setValueAtTime(0, now);
-        rightGain.gain.setValueAtTime(0, now);
-
-        leftGain.gain.linearRampToValueAtTime(0.08, now + 3);
-        rightGain.gain.linearRampToValueAtTime(0.08, now + 3);
-
-        leftOsc.connect(leftGain);
-        rightOsc.connect(rightGain);
-        leftGain.connect(leftPanner);
-        rightGain.connect(rightPanner);
-        leftPanner.connect(ctx.destination);
-        rightPanner.connect(ctx.destination);
-
-        leftOsc.start(now);
-        rightOsc.start(now);
-
-        binauralNodesRef.current = {
-          left: leftOsc,
-          right: rightOsc,
-          gainL: leftGain,
-          gainR: rightGain,
-        };
-        
-        console.log("startBinaural: Desktop stereo oscillators started");
-      }
-    } catch (e) {
-      console.warn("Error starting binaural:", e);
-    }
-  }, [isMobile, generateBeepDataUri]);
-
-  // Stop binaural beat
-  const stopBinaural = useCallback(() => {
-    const nodes = binauralNodesRef.current as any;
-    
-    // Handle HTML5 Audio (mobile)
-    if (nodes?.audio) {
-      try {
-        nodes.audio.pause();
-        nodes.audio.src = '';
-      } catch (e) {
-        console.warn("Error stopping HTML5 audio:", e);
-      }
-      binauralNodesRef.current = null;
-      return;
-    }
-    
-    // Handle Web Audio (desktop)
-    if (nodes && audioContextRef.current) {
-      try {
-        const ctx = audioContextRef.current;
-        const now = ctx.currentTime;
-        const { left, right, gainL, gainR } = nodes;
-
-        // Fade out over 2 seconds
-        gainL.gain.linearRampToValueAtTime(0, now + 2);
-        gainR.gain.linearRampToValueAtTime(0, now + 2);
-
-        setTimeout(() => {
-          try {
-            left.stop();
-            right.stop();
-          } catch (e) {
-            // Already stopped
-          }
-        }, 2100);
-      } catch (e) {
-        console.warn("Error stopping binaural:", e);
-      }
-
-      binauralNodesRef.current = null;
     }
   }, []);
 
-  // Main animation loop - using refs to avoid stale closures
+  // Play exhale sound
+  const playExhale = useCallback(() => {
+    if (exhaleAudioRef.current) {
+      exhaleAudioRef.current.currentTime = 0;
+      exhaleAudioRef.current.play().catch((e) => {
+        console.log("Exhale audio play failed:", e);
+      });
+    }
+  }, []);
+
+  // Start binaural
+  const startBinaural = useCallback(() => {
+    if (binauralAudioRef.current) {
+      binauralAudioRef.current.currentTime = 0;
+      // Fade in
+      binauralAudioRef.current.volume = 0;
+      binauralAudioRef.current.play().catch((e) => {
+        console.log("Binaural audio play failed:", e);
+      });
+      
+      // Gradual fade in over 3 seconds
+      let vol = 0;
+      const fadeIn = setInterval(() => {
+        vol += VOLUME.binaural / 30; // 30 steps over ~3 seconds
+        if (vol >= VOLUME.binaural) {
+          vol = VOLUME.binaural;
+          clearInterval(fadeIn);
+        }
+        if (binauralAudioRef.current) {
+          binauralAudioRef.current.volume = vol;
+        }
+      }, 100);
+    }
+  }, []);
+
+  // Stop binaural
+  const stopBinaural = useCallback(() => {
+    if (binauralAudioRef.current) {
+      // Fade out over 2 seconds
+      let vol = binauralAudioRef.current.volume;
+      const fadeOut = setInterval(() => {
+        vol -= VOLUME.binaural / 20; // 20 steps over ~2 seconds
+        if (vol <= 0) {
+          vol = 0;
+          clearInterval(fadeOut);
+          if (binauralAudioRef.current) {
+            binauralAudioRef.current.pause();
+            binauralAudioRef.current.currentTime = 0;
+          }
+        }
+        if (binauralAudioRef.current) {
+          binauralAudioRef.current.volume = Math.max(0, vol);
+        }
+      }, 100);
+    }
+  }, []);
+
+  // Main animation loop
   const animate = useCallback((timestamp: number) => {
     if (!startTimeRef.current) {
       startTimeRef.current = timestamp;
@@ -385,7 +200,6 @@ export default function ResonanceBreathing() {
       setIsActive(false);
       setIsComplete(true);
       setCurrentPhase("idle");
-      currentPhaseRef.current = "idle";
       stopBinaural();
       return;
     }
@@ -408,18 +222,17 @@ export default function ResonanceBreathing() {
       phaseDuration = 6000;
     }
 
-    // Detect phase transition for tone triggers - use ref for current value
-    if (phase !== currentPhaseRef.current) {
+    // Detect phase transition for audio triggers
+    if (phase !== currentPhase) {
       setCurrentPhase(phase);
-      currentPhaseRef.current = phase;
       phaseStartTimeRef.current = timestamp;
 
-      // Play tone on phase change
+      // Play audio on phase change
       if (phase === "inhale") {
-        playTone(AUDIO.inhaleFreq, 3500, true);
+        playInhale();
         setBreathCount(currentBreathIndex + 1);
       } else {
-        playTone(AUDIO.exhaleFreq, 5000, false);
+        playExhale();
       }
     }
 
@@ -428,64 +241,46 @@ export default function ResonanceBreathing() {
     setPhaseProgress(progress);
 
     animationFrameRef.current = requestAnimationFrame(animate);
-  }, [playTone, stopBinaural]);
+  }, [currentPhase, playInhale, playExhale, stopBinaural]);
 
-  // Unlock iOS audio by playing a tiny silent buffer
-  const unlockiOSAudio = useCallback((ctx: AudioContext) => {
-    // Create a tiny buffer and play it - this "unlocks" iOS audio
-    const buffer = ctx.createBuffer(1, 1, 22050);
-    const source = ctx.createBufferSource();
-    source.buffer = buffer;
-    source.connect(ctx.destination);
-    source.start(0);
-    console.log("iOS audio unlock buffer played");
-  }, []);
-
-  // Start session - CRITICAL: Audio init must happen here in click handler
-  const startSession = useCallback(async () => {
-    // Initialize audio context on user interaction (required for mobile)
-    const ctx = initAudio();
-    
-    // iOS CRITICAL: Must resume AudioContext in the same user gesture call stack
-    if (ctx) {
-      try {
-        // This MUST happen synchronously in the tap handler for iOS
-        await ctx.resume();
-        console.log("AudioContext state after resume:", ctx.state);
-        
-        // iOS audio unlock - play silent buffer first
-        unlockiOSAudio(ctx);
-      } catch (e) {
-        console.warn("Failed to resume AudioContext:", e);
-      }
-    }
-    
+  // Start session
+  const startSession = useCallback(() => {
     setIsActive(true);
     setIsComplete(false);
     setBreathCount(0);
     setElapsedTime(0);
     setPhaseProgress(0);
     setCurrentPhase("inhale");
-    currentPhaseRef.current = "inhale";
     startTimeRef.current = 0;
     phaseStartTimeRef.current = 0;
 
-    // Small delay after unlock to let iOS settle, then play real audio
+    // Start binaural
+    startBinaural();
+
+    // Play first inhale
     setTimeout(() => {
-      startBinaural();
-      playTone(AUDIO.inhaleFreq, 3500, true);
+      playInhale();
       setBreathCount(1);
-    }, 50);
+    }, 100);
 
     animationFrameRef.current = requestAnimationFrame(animate);
-  }, [animate, initAudio, startBinaural, playTone, unlockiOSAudio]);
+  }, [animate, startBinaural, playInhale]);
 
   // Stop session
   const stopSession = useCallback(() => {
     setIsActive(false);
     setCurrentPhase("idle");
-    currentPhaseRef.current = "idle";
     stopBinaural();
+
+    // Stop any playing tones
+    if (inhaleAudioRef.current) {
+      inhaleAudioRef.current.pause();
+      inhaleAudioRef.current.currentTime = 0;
+    }
+    if (exhaleAudioRef.current) {
+      exhaleAudioRef.current.pause();
+      exhaleAudioRef.current.currentTime = 0;
+    }
 
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
@@ -498,12 +293,8 @@ export default function ResonanceBreathing() {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
-      stopBinaural();
-      if (audioContextRef.current) {
-        audioContextRef.current.close().catch(console.warn);
-      }
     };
-  }, [stopBinaural]);
+  }, []);
 
   // Format time display
   const formatTime = (ms: number) => {
@@ -513,7 +304,7 @@ export default function ResonanceBreathing() {
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
-  // Calculate orb scale based on phase - use state directly for render
+  // Calculate orb scale based on phase
   const getOrbScale = () => {
     if (!isActive) return 1;
 
@@ -564,9 +355,6 @@ export default function ResonanceBreathing() {
         fontFamily: "'Cormorant Garamond', Georgia, serif",
         color: COLORS.textPrimary,
         overflow: "hidden",
-        // Prevent pull-to-refresh on mobile
-        touchAction: "none",
-        overscrollBehavior: "none",
       }}
     >
       {/* Google Fonts Import */}
@@ -714,8 +502,7 @@ export default function ResonanceBreathing() {
                 borderRadius: "50%",
                 background: `radial-gradient(circle, ${COLORS.accentDim} 0%, transparent 70%)`,
                 transform: `scale(${orbScale * 1.3})`,
-                // Use will-change for GPU acceleration on mobile
-                willChange: "transform",
+                transition: "transform 0.1s linear",
                 animation: isActive ? "pulseGlow 10s ease-in-out infinite" : "none",
               }}
             />
@@ -727,8 +514,7 @@ export default function ResonanceBreathing() {
                 width: "100%",
                 height: "100%",
                 transform: `scale(${orbScale})`,
-                // Use will-change for GPU acceleration on mobile
-                willChange: "transform",
+                transition: "transform 0.1s linear",
               }}
             >
               {/* Definitions for gradients and filters */}
@@ -874,10 +660,8 @@ export default function ResonanceBreathing() {
                   borderRadius: "50%",
                   backgroundColor: COLORS.accent,
                   boxShadow: `0 0 12px ${COLORS.accent}`,
-                  // Calculate top position directly instead of using transition
                   top: `${(1 - ballPosition) * 88}px`,
-                  // Use will-change for GPU acceleration on mobile
-                  willChange: "top",
+                  transition: "top 0.1s linear",
                 }}
               />
 
@@ -982,9 +766,6 @@ export default function ResonanceBreathing() {
                 cursor: "pointer",
                 transition: "all 0.3s ease",
                 fontFamily: "inherit",
-                // Better touch target for mobile
-                minHeight: "48px",
-                WebkitTapHighlightColor: "transparent",
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = COLORS.orbBase;
@@ -1015,9 +796,6 @@ export default function ResonanceBreathing() {
                 cursor: "pointer",
                 transition: "all 0.3s ease",
                 fontFamily: "inherit",
-                // Better touch target for mobile
-                minHeight: "44px",
-                WebkitTapHighlightColor: "transparent",
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.color = COLORS.textPrimary;
@@ -1040,11 +818,9 @@ export default function ResonanceBreathing() {
                 fontWeight: 400,
                 letterSpacing: "0.1em",
                 opacity: 0.4,
-                padding: "0 1rem",
-                textAlign: "center",
               }}
             >
-              Headphones recommended for binaural audio
+              Headphones recommended for full affect
             </p>
           )}
         </>
