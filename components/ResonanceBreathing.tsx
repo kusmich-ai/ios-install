@@ -36,8 +36,14 @@ export default function ResonanceBreathing() {
   const [currentPhase, setCurrentPhase] = useState<"inhale" | "exhale" | "idle">("idle");
   const [breathCount, setBreathCount] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
-  const [phaseProgress, setPhaseProgress] = useState(0);
   const [audioLoaded, setAudioLoaded] = useState(false);
+  
+  // Use refs for animation values to avoid re-renders
+  const [animationState, setAnimationState] = useState({
+    orbScale: 1,
+    ballPosition: 0,
+    phase: "idle" as "inhale" | "exhale" | "idle",
+  });
 
   // Audio element ref
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -69,18 +75,23 @@ export default function ResonanceBreathing() {
     };
   }, []);
 
+  // Ease in-out function
+  const easeInOutQuad = (t: number) => {
+    return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+  };
+
   // Animation loop - syncs visuals to audio currentTime
   const animate = useCallback(() => {
     if (!audioRef.current || !isActive) return;
 
     const currentTime = audioRef.current.currentTime * 1000; // Convert to ms
-    setElapsedTime(currentTime);
 
     // Check if audio ended
     if (audioRef.current.ended || currentTime >= TOTAL_DURATION) {
       setIsActive(false);
       setIsComplete(true);
       setCurrentPhase("idle");
+      setAnimationState({ orbScale: 1, ballPosition: 0, phase: "idle" });
       return;
     }
 
@@ -102,15 +113,43 @@ export default function ResonanceBreathing() {
       phaseDuration = EXHALE_DURATION;
     }
 
-    setCurrentPhase(phase);
-    setBreathCount(Math.min(currentBreathIndex + 1, TOTAL_BREATHS));
-
     // Calculate smooth progress (0 to 1)
     const progress = phaseElapsed / phaseDuration;
-    setPhaseProgress(progress);
+    const easedProgress = easeInOutQuad(progress);
+
+    // Calculate orb scale
+    let orbScale: number;
+    if (phase === "inhale") {
+      orbScale = 1 + easedProgress * 0.35;
+    } else {
+      orbScale = 1.35 - easedProgress * 0.35;
+    }
+
+    // Calculate ball position (0 = bottom, 1 = top)
+    let ballPosition: number;
+    if (phase === "inhale") {
+      ballPosition = easedProgress;
+    } else {
+      ballPosition = 1 - easedProgress;
+    }
+
+    // Batch update animation state
+    setAnimationState({ orbScale, ballPosition, phase });
+    
+    // Update other state less frequently
+    const newBreathCount = Math.min(currentBreathIndex + 1, TOTAL_BREATHS);
+    if (breathCount !== newBreathCount) {
+      setBreathCount(newBreathCount);
+    }
+    if (currentPhase !== phase) {
+      setCurrentPhase(phase);
+    }
+    
+    // Update elapsed time (for display)
+    setElapsedTime(currentTime);
 
     animationFrameRef.current = requestAnimationFrame(animate);
-  }, [isActive]);
+  }, [isActive, breathCount, currentPhase]);
 
   // Start animation loop when active
   useEffect(() => {
@@ -140,8 +179,8 @@ export default function ResonanceBreathing() {
     setIsComplete(false);
     setBreathCount(1);
     setElapsedTime(0);
-    setPhaseProgress(0);
     setCurrentPhase("inhale");
+    setAnimationState({ orbScale: 1, ballPosition: 0, phase: "inhale" });
   }, []);
 
   // Stop session
@@ -153,6 +192,7 @@ export default function ResonanceBreathing() {
 
     setIsActive(false);
     setCurrentPhase("idle");
+    setAnimationState({ orbScale: 1, ballPosition: 0, phase: "idle" });
 
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
@@ -167,43 +207,7 @@ export default function ResonanceBreathing() {
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
-  // Calculate orb scale based on phase
-  const getOrbScale = () => {
-    if (!isActive) return 1;
-
-    // Ease in-out function
-    const easeInOutQuad = (t: number) => {
-      return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-    };
-
-    const easedProgress = easeInOutQuad(phaseProgress);
-
-    if (currentPhase === "inhale") {
-      return 1 + easedProgress * 0.35; // Scale from 1 to 1.35
-    } else {
-      return 1.35 - easedProgress * 0.35; // Scale from 1.35 to 1
-    }
-  };
-
-  // Calculate ball position (0 = bottom, 1 = top)
-  const getBallPosition = () => {
-    if (!isActive) return 0;
-
-    const easeInOutQuad = (t: number) => {
-      return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-    };
-
-    const easedProgress = easeInOutQuad(phaseProgress);
-
-    if (currentPhase === "inhale") {
-      return easedProgress; // 0 to 1 (bottom to top)
-    } else {
-      return 1 - easedProgress; // 1 to 0 (top to bottom)
-    }
-  };
-
-  const orbScale = getOrbScale();
-  const ballPosition = getBallPosition();
+  const { orbScale, ballPosition } = animationState;
 
   return (
     <div
@@ -365,7 +369,7 @@ export default function ResonanceBreathing() {
                 borderRadius: "50%",
                 background: `radial-gradient(circle, ${COLORS.accentDim} 0%, transparent 70%)`,
                 transform: `scale(${orbScale * 1.3})`,
-                transition: "transform 0.1s linear",
+                willChange: "transform",
                 animation: isActive ? "pulseGlow 10s ease-in-out infinite" : "none",
               }}
             />
@@ -377,7 +381,7 @@ export default function ResonanceBreathing() {
                 width: "100%",
                 height: "100%",
                 transform: `scale(${orbScale})`,
-                transition: "transform 0.1s linear",
+                willChange: "transform",
               }}
             >
               {/* Definitions for gradients and filters */}
@@ -517,14 +521,14 @@ export default function ResonanceBreathing() {
                 style={{
                   position: "absolute",
                   left: "50%",
-                  transform: "translateX(-50%)",
+                  marginLeft: "-6px",
                   width: "12px",
                   height: "12px",
                   borderRadius: "50%",
                   backgroundColor: COLORS.accent,
                   boxShadow: `0 0 12px ${COLORS.accent}`,
-                  top: `${(1 - ballPosition) * 88}px`,
-                  transition: "top 0.1s linear",
+                  bottom: `${ballPosition * 88}px`,
+                  willChange: "bottom",
                 }}
               />
 
@@ -534,7 +538,7 @@ export default function ResonanceBreathing() {
                   position: "absolute",
                   top: "-4px",
                   left: "50%",
-                  transform: "translateX(-50%)",
+                  marginLeft: "-4px",
                   width: "8px",
                   height: "8px",
                   borderRadius: "50%",
@@ -549,7 +553,7 @@ export default function ResonanceBreathing() {
                   position: "absolute",
                   bottom: "-4px",
                   left: "50%",
-                  transform: "translateX(-50%)",
+                  marginLeft: "-4px",
                   width: "8px",
                   height: "8px",
                   borderRadius: "50%",
