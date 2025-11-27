@@ -1,51 +1,129 @@
 // app/api/practices/log/route.js
 import { createClient } from '@supabase/supabase-js';
-import { 
-  calculateAdherence, 
-  calculateConsecutiveDays,
-  getStagePractices 
-} from '@/lib/progress-utils';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
-// Create Supabase client with service role for server-side operations
-const supabase = createClient(
+// Create Supabase admin client
+const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+// Stage practices mapping
+const STAGE_PRACTICES = {
+  1: ['hrvb', 'awareness_rep'],
+  2: ['hrvb', 'awareness_rep', 'somatic_flow'],
+  3: ['hrvb', 'awareness_rep', 'somatic_flow', 'micro_action'],
+  4: ['hrvb', 'awareness_rep', 'somatic_flow', 'micro_action', 'flow_block'],
+  5: ['hrvb', 'awareness_rep', 'somatic_flow', 'micro_action', 'flow_block', 'co_regulation'],
+  6: ['hrvb', 'awareness_rep', 'somatic_flow', 'micro_action', 'flow_block', 'co_regulation', 'nightly_debrief'],
+  7: ['hrvb', 'awareness_rep', 'somatic_flow', 'micro_action', 'flow_block', 'co_regulation', 'nightly_debrief']
+};
+
+function getStagePractices(stage) {
+  return STAGE_PRACTICES[stage] || STAGE_PRACTICES[1];
+}
+
 export async function POST(req) {
   try {
-    const { userId, practiceType, completed = true, notes = null, localDate = null } = await req.json();
+    const body = await req.json();
+    let { userId, practiceType, completed = true, notes = null, localDate = null } = body;
 
-    if (!userId || !practiceType) {
+    console.log('[Practice Log] Received:', { userId, practiceType, completed, localDate });
+
+    // If no userId provided, try to get from session
+    if (!userId) {
+      try {
+        const cookieStore = await cookies();
+        
+        const supabase = createServerClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+          {
+            cookies: {
+              getAll() {
+                return cookieStore.getAll();
+              },
+            },
+          }
+        );
+        
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        
+        console.log('[Practice Log] Session user:', user?.id, 'Error:', authError?.message);
+        
+        if (user) {
+          userId = user.id;
+        }
+      } catch (sessionError) {
+        console.error('[Practice Log] Session error:', sessionError);
+      }
+    }
+
+    // Final validation
+    if (!userId) {
       return Response.json(
-        { error: 'Missing required fields: userId and practiceType' },
+        { error: 'Not authenticated. Please log in.', debug: 'No userId from body or session' },
+        { status: 401 }
+      );
+    }
+
+    if (!practiceType) {
+      return Response.json(
+        { error: 'Missing practiceType' },
         { status: 400 }
       );
     }
 
+    console.log('[Practice Log] Logging practice for user:', userId, 'type:', practiceType);
+
     // Get user's current stage
-    const { data: progressData, error: progressError } = await supabase
+    const { data: progressData, error: progressError } = await supabaseAdmin
       .from('user_progress')
       .select('current_stage')
       .eq('user_id', userId)
       .single();
 
     if (progressError) {
-      console.error('Error fetching user progress:', progressError);
-      return Response.json(
-        { error: 'Failed to fetch user progress' },
-        { status: 500 }
-      );
+      console.error('[Practice Log] Progress fetch error:', progressError);
+      // If no progress record exists, create one
+      if (progressError.code === 'PGRST116') {
+        const { error: insertError } = await supabaseAdmin
+          .from('user_progress')
+          .insert({
+            user_id: userId,
+            current_stage: 1,
+            adherence_percentage: 0,
+            consecutive_days: 0
+          });
+        if (insertError) {
+          console.error('[Practice Log] Failed to create progress:', insertError);
+        }
+      }
     }
 
     const currentStage = progressData?.current_stage || 1;
-    // Use local date from client if provided, otherwise calculate from UTC
-// The client should send their local date for consistency
-const now = new Date();
-const today = localDate || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    
+    // Use client-provided local date if available, otherwise fall back to server date
+    // Client should send date in YYYY-MM-DD format based on their local timezone
+    let today;
+    if (localDate && /^\d{4}-\d{2}-\d{2}$/.test(localDate)) {
+      today = localDate;
+      console.log('[Practice Log] Using client-provided date:', today);
+    } else {
+      // Fallback to server time (UTC on Vercel)
+      const serverDate = new Date();
+      today = serverDate.getFullYear() + '-' + 
+        String(serverDate.getMonth() + 1).padStart(2, '0') + '-' + 
+        String(serverDate.getDate()).padStart(2, '0');
+      console.log('[Practice Log] Using server date (UTC):', today);
+    }
+    const now = new Date().toISOString();
 
-    // Check if practice already logged for today
-    const { data: existingLog, error: checkError } = await supabase
+    console.log('[Practice Log] Stage:', currentStage, 'Date:', today);
+
+    // Check for existing log today
+    const { data: existingLog } = await supabaseAdmin
       .from('practice_logs')
       .select('id')
       .eq('user_id', userId)
@@ -56,61 +134,102 @@ const today = localDate || `${now.getFullYear()}-${String(now.getMonth() + 1).pa
     let logResult;
 
     if (existingLog) {
-      // Update existing log
-      const { data, error } = await supabase
+      // Update existing
+      const { data, error } = await supabaseAdmin
         .from('practice_logs')
         .update({
           completed,
-          completed_at: completed ? now.toISOString() : null,
+          completed_at: completed ? now : null,
           notes
         })
         .eq('id', existingLog.id)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('[Practice Log] Update error:', error);
+        throw error;
+      }
       logResult = data;
+      console.log('[Practice Log] Updated existing log:', logResult.id);
     } else {
-      // Insert new log
-      const { data, error } = await supabase
+      // Insert new
+      const { data, error } = await supabaseAdmin
         .from('practice_logs')
         .insert({
           user_id: userId,
           practice_type: practiceType,
           stage: currentStage,
           completed,
-          completed_at: completed ? now.toISOString() : null,
+          completed_at: completed ? now : null,
           practice_date: today,
           notes
         })
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('[Practice Log] Insert error:', error);
+        throw error;
+      }
       logResult = data;
+      console.log('[Practice Log] Created new log:', logResult.id);
     }
 
-    // Recalculate adherence and consecutive days
+    // Calculate adherence
     const fourteenDaysAgo = new Date();
     fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
     const startDate = fourteenDaysAgo.toISOString().split('T')[0];
 
-    const { data: recentLogs, error: logsError } = await supabase
+    const { data: recentLogs } = await supabaseAdmin
       .from('practice_logs')
       .select('*')
       .eq('user_id', userId)
       .gte('practice_date', startDate)
-      .order('practice_date', { ascending: false });
+      .eq('completed', true);
 
-    if (logsError) {
-      console.error('Error fetching recent logs:', logsError);
+    const requiredPractices = getStagePractices(currentStage);
+    const totalRequired = requiredPractices.length * 14;
+    const completedCount = recentLogs?.length || 0;
+    const adherencePercentage = totalRequired > 0 
+      ? Math.min(100, Math.round((completedCount / totalRequired) * 100))
+      : 0;
+
+    // Calculate consecutive days (using client-provided date as reference)
+    let consecutiveDays = 0;
+    const logsByDate = {};
+    (recentLogs || []).forEach(log => {
+      if (!logsByDate[log.practice_date]) {
+        logsByDate[log.practice_date] = new Set();
+      }
+      logsByDate[log.practice_date].add(log.practice_type);
+    });
+
+    // Start from today (client's local date) and work backwards
+    // Parse the today string to create a date object for iteration
+    const [year, month, day] = today.split('-').map(Number);
+    const checkDate = new Date(year, month - 1, day); // month is 0-indexed
+    
+    for (let i = 0; i < 14; i++) {
+      const dateStr = checkDate.getFullYear() + '-' + 
+        String(checkDate.getMonth() + 1).padStart(2, '0') + '-' + 
+        String(checkDate.getDate()).padStart(2, '0');
+      const dayPractices = logsByDate[dateStr];
+      
+      if (dayPractices && requiredPractices.every(p => dayPractices.has(p))) {
+        consecutiveDays++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else if (i === 0) {
+        // Today can be incomplete - don't break streak, just skip today
+        checkDate.setDate(checkDate.getDate() - 1);
+        continue;
+      } else {
+        break;
+      }
     }
 
-    const adherencePercentage = calculateAdherence(recentLogs || [], currentStage, 14);
-    const consecutiveDays = calculateConsecutiveDays(recentLogs || [], currentStage);
-
-    // Update user_progress with new calculations
-    const { error: updateError } = await supabase
+    // Update user_progress
+    await supabaseAdmin
       .from('user_progress')
       .update({
         adherence_percentage: adherencePercentage,
@@ -118,25 +237,22 @@ const today = localDate || `${now.getFullYear()}-${String(now.getMonth() + 1).pa
       })
       .eq('user_id', userId);
 
-    if (updateError) {
-      console.error('Error updating user progress:', updateError);
-    }
-
-    // Get today's practice status
-    const { data: todayLogs, error: todayError } = await supabase
+    // Get today's status
+    const { data: todayLogs } = await supabaseAdmin
       .from('practice_logs')
       .select('practice_type, completed')
       .eq('user_id', userId)
-      .eq('practice_date', today);
+      .eq('practice_date', today)
+      .eq('completed', true);
 
-    const requiredPractices = getStagePractices(currentStage);
     const todayStatus = {};
     requiredPractices.forEach(p => {
-      const log = todayLogs?.find(l => l.practice_type === p);
-      todayStatus[p] = log?.completed || false;
+      todayStatus[p] = todayLogs?.some(l => l.practice_type === p) || false;
     });
 
     const allCompleteToday = requiredPractices.every(p => todayStatus[p]);
+
+    console.log('[Practice Log] Success! Adherence:', adherencePercentage, 'Streak:', consecutiveDays);
 
     return Response.json({
       success: true,
@@ -150,60 +266,59 @@ const today = localDate || `${now.getFullYear()}-${String(now.getMonth() + 1).pa
     });
 
   } catch (error) {
-    console.error('Practice log error:', error);
+    console.error('[Practice Log] Error:', error);
     return Response.json(
-      { error: error.message },
+      { error: error.message, stack: error.stack },
       { status: 500 }
     );
   }
 }
 
-// GET endpoint to fetch today's practice status
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId');
+    let userId = searchParams.get('userId');
 
+    // Try to get from session if not provided
     if (!userId) {
-      return Response.json(
-        { error: 'Missing userId parameter' },
-        { status: 400 }
-      );
+      try {
+        const cookieStore = await cookies();
+        const supabase = createServerClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+          {
+            cookies: {
+              getAll() {
+                return cookieStore.getAll();
+              },
+            },
+          }
+        );
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) userId = user.id;
+      } catch (e) {
+        console.error('[Practice Log GET] Session error:', e);
+      }
     }
 
-    // Get user's current stage
-    const { data: progressData, error: progressError } = await supabase
+    if (!userId) {
+      return Response.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
+    const { data: progressData } = await supabaseAdmin
       .from('user_progress')
       .select('current_stage, adherence_percentage, consecutive_days')
       .eq('user_id', userId)
       .single();
 
-    if (progressError) {
-      return Response.json(
-        { error: 'Failed to fetch user progress' },
-        { status: 500 }
-      );
-    }
-
     const currentStage = progressData?.current_stage || 1;
-    // Get timezone from query params or default to local server time
-const timezone = searchParams.get('timezone');
-const now = new Date();
-const today = searchParams.get('localDate') || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const today = new Date().toISOString().split('T')[0];
 
-    // Get today's logs
-    const { data: todayLogs, error: logsError } = await supabase
+    const { data: todayLogs } = await supabaseAdmin
       .from('practice_logs')
       .select('practice_type, completed, completed_at')
       .eq('user_id', userId)
       .eq('practice_date', today);
-
-    if (logsError) {
-      return Response.json(
-        { error: 'Failed to fetch practice logs' },
-        { status: 500 }
-      );
-    }
 
     const requiredPractices = getStagePractices(currentStage);
     const practices = requiredPractices.map(practiceId => {
@@ -218,16 +333,13 @@ const today = searchParams.get('localDate') || `${now.getFullYear()}-${String(no
     return Response.json({
       currentStage,
       practices,
-      adherencePercentage: progressData.adherence_percentage,
-      consecutiveDays: progressData.consecutive_days,
+      adherencePercentage: progressData?.adherence_percentage || 0,
+      consecutiveDays: progressData?.consecutive_days || 0,
       allCompleteToday: practices.every(p => p.completed)
     });
 
   } catch (error) {
-    console.error('GET practice status error:', error);
-    return Response.json(
-      { error: error.message },
-      { status: 500 }
-    );
+    console.error('[Practice Log GET] Error:', error);
+    return Response.json({ error: error.message }, { status: 500 });
   }
 }
