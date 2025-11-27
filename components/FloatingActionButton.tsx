@@ -4,15 +4,16 @@ import { useState } from 'react';
 import { Zap, X, Check, Loader2 } from 'lucide-react';
 import { getStagePractices, getUnlockedOnDemandTools } from '@/app/config/stages';
 import type { UserProgress } from '@/app/hooks/useUserProgress';
-// CHANGE: Import the Resonance Breathing modal hook
+// Import the Resonance Breathing modal hook
 import { useResonanceBreathing } from '@/components/ResonanceModal';
 
 interface FloatingActionButtonProps {
   progress: UserProgress;
-  userId: string; // Added to support practice completion
+  userId: string;
   onPracticeClick: (practiceId: string) => void;
   onToolClick: (toolId: string) => void;
-  onProgressUpdate?: () => void; // Added to refresh progress after completion
+  onProgressUpdate?: () => void;
+  onPracticeCompleted?: (practiceId: string, practiceName: string) => void; // NEW: notify chat when practice completed
 }
 
 // Map from config practice IDs to database practice_type values
@@ -31,7 +32,8 @@ export default function FloatingActionButton({
   userId,
   onPracticeClick, 
   onToolClick,
-  onProgressUpdate
+  onProgressUpdate,
+  onPracticeCompleted
 }: FloatingActionButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [completing, setCompleting] = useState<string | null>(null);
@@ -66,7 +68,7 @@ export default function FloatingActionButton({
   };
 
   // Handle "Done" button click to mark practice complete
-  const handleMarkComplete = async (practiceId: string, e: React.MouseEvent) => {
+  const handleMarkComplete = async (practiceId: string, practiceName: string, e: React.MouseEvent) => {
     e.stopPropagation();
     
     if (!userId) {
@@ -97,8 +99,12 @@ export default function FloatingActionButton({
         throw new Error(data.error || `HTTP ${response.status}`);
       }
 
-      // Trigger progress refresh if callback provided
-      if (onProgressUpdate) {
+      // NEW: Notify the chat that practice was completed
+      // This triggers Claude to acknowledge and guide to next ritual
+      if (onPracticeCompleted) {
+        onPracticeCompleted(practiceId, practiceName);
+      } else if (onProgressUpdate) {
+        // Fallback to just refreshing progress
         onProgressUpdate();
       } else {
         setTimeout(() => window.location.reload(), 500);
@@ -194,7 +200,7 @@ export default function FloatingActionButton({
               </div>
             )}
 
-            {/* CHANGE: "DAILY PRACTICES" -> "DAILY RITUALS" */}
+            {/* DAILY RITUALS */}
             <div className="mb-4">
               <div className="text-xs font-semibold text-gray-400 mb-2">
                 DAILY RITUALS
@@ -218,7 +224,6 @@ export default function FloatingActionButton({
                         <span className="text-lg">{practice.icon}</span>
                         <div className="flex items-center gap-2 flex-1">
                           <span className="text-xs">{getStatusIcon(status)}</span>
-                          {/* CHANGE: Use practice.name instead of practice.shortName */}
                           <span className={`text-sm font-medium ${
                             isCompleted ? 'text-green-400' : 'text-white'
                           }`}>
@@ -241,7 +246,7 @@ export default function FloatingActionButton({
                               Start Ritual
                             </button>
                             <button
-                              onClick={(e) => handleMarkComplete(practice.id, e)}
+                              onClick={(e) => handleMarkComplete(practice.id, practice.name, e)}
                               disabled={isCompleting}
                               className={`px-3 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1 ${
                                 isCompleting
