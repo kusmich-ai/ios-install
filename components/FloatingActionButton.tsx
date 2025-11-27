@@ -1,28 +1,51 @@
 'use client';
 
 import { useState } from 'react';
-import { Zap, X } from 'lucide-react';
+import { Zap, X, Check, Loader2 } from 'lucide-react';
 import { getStagePractices, getUnlockedOnDemandTools } from '@/app/config/stages';
 import type { UserProgress } from '@/app/hooks/useUserProgress';
+// CHANGE: Import the Resonance Breathing modal hook
+import { useResonanceBreathing } from '@/components/ResonanceModal';
 
 interface FloatingActionButtonProps {
   progress: UserProgress;
+  userId: string; // Added to support practice completion
   onPracticeClick: (practiceId: string) => void;
   onToolClick: (toolId: string) => void;
+  onProgressUpdate?: () => void; // Added to refresh progress after completion
 }
 
+// Map from config practice IDs to database practice_type values
+const PRACTICE_ID_MAP: { [key: string]: string } = {
+  'hrvb': 'hrvb',
+  'awareness_rep': 'awareness_rep',
+  'somatic_flow': 'somatic_flow',
+  'micro_action': 'micro_action',
+  'flow_block': 'flow_block',
+  'co_regulation': 'co_regulation',
+  'nightly_debrief': 'nightly_debrief',
+};
+
 export default function FloatingActionButton({ 
-  progress, 
+  progress,
+  userId,
   onPracticeClick, 
-  onToolClick 
+  onToolClick,
+  onProgressUpdate
 }: FloatingActionButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [completing, setCompleting] = useState<string | null>(null);
+  const [completionError, setCompletionError] = useState<string | null>(null);
+
+  // Initialize the Resonance Breathing modal hook
+  const { open: openResonance, Modal: ResonanceModal } = useResonanceBreathing();
 
   const currentStagePractices = getStagePractices(progress.currentStage);
   const unlockedTools = getUnlockedOnDemandTools(progress.currentStage);
 
   const getPracticeStatus = (practiceId: string): 'completed' | 'pending' => {
-    const practiceData = progress.dailyPractices[practiceId];
+    const mappedId = PRACTICE_ID_MAP[practiceId] || practiceId;
+    const practiceData = progress.dailyPractices[practiceId] || progress.dailyPractices[mappedId];
     if (practiceData?.completed) return 'completed';
     return 'pending';
   };
@@ -31,9 +54,62 @@ export default function FloatingActionButton({
     return status === 'completed' ? '✅' : '⏳';
   };
 
-  const handlePracticeClick = (practiceId: string) => {
-    onPracticeClick(practiceId);
-    setIsOpen(false);
+  // Handle "Start Ritual" click with special routing for Resonance Breathing
+  const handleStartPractice = (practiceId: string) => {
+    if (practiceId === 'hrvb') {
+      openResonance();
+      setIsOpen(false);
+    } else {
+      onPracticeClick(practiceId);
+      setIsOpen(false);
+    }
+  };
+
+  // Handle "Done" button click to mark practice complete
+  const handleMarkComplete = async (practiceId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    if (!userId) {
+      setCompletionError('No user ID - please refresh the page');
+      return;
+    }
+    
+    try {
+      setCompleting(practiceId);
+      setCompletionError(null);
+
+      const dbPracticeType = PRACTICE_ID_MAP[practiceId] || practiceId;
+
+      const response = await fetch('/api/practices/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: userId,
+          practiceType: dbPracticeType,
+          completed: true,
+          localDate: new Date().toLocaleDateString('en-CA')
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || data.error) {
+        throw new Error(data.error || `HTTP ${response.status}`);
+      }
+
+      // Trigger progress refresh if callback provided
+      if (onProgressUpdate) {
+        onProgressUpdate();
+      } else {
+        setTimeout(() => window.location.reload(), 500);
+      }
+
+    } catch (err) {
+      console.error('[FloatingActionButton] Error completing practice:', err);
+      setCompletionError(err instanceof Error ? err.message : 'Failed to log completion');
+    } finally {
+      setCompleting(null);
+    }
   };
 
   const handleToolClick = (toolId: string) => {
@@ -48,6 +124,9 @@ export default function FloatingActionButton({
 
   return (
     <>
+      {/* Resonance Breathing Modal (invisible until opened) */}
+      <ResonanceModal />
+
       {/* Overlay */}
       {isOpen && (
         <div 
@@ -90,7 +169,7 @@ export default function FloatingActionButton({
                 />
               </div>
               {allComplete && (
-                <p className="text-xs text-green-400 mt-2 text-center">All practices complete! 🎉</p>
+                <p className="text-xs text-green-400 mt-2 text-center">All rituals complete! 🎉</p>
               )}
             </div>
 
@@ -108,39 +187,85 @@ export default function FloatingActionButton({
               </div>
             </div>
 
-            {/* Daily Practices */}
+            {/* Error Display */}
+            {completionError && (
+              <div className="mb-4 p-2 bg-red-500/10 border border-red-500/30 rounded-lg">
+                <p className="text-xs text-red-400">{completionError}</p>
+              </div>
+            )}
+
+            {/* CHANGE: "DAILY PRACTICES" -> "DAILY RITUALS" */}
             <div className="mb-4">
               <div className="text-xs font-semibold text-gray-400 mb-2">
-                DAILY PRACTICES
+                DAILY RITUALS
               </div>
               <div className="space-y-2">
                 {currentStagePractices.map((practice) => {
                   const status = getPracticeStatus(practice.id);
                   const isCompleted = status === 'completed';
+                  const isCompleting = completing === practice.id;
                   
                   return (
-                    <button
+                    <div
                       key={practice.id}
-                      onClick={() => handlePracticeClick(practice.id)}
-                      disabled={isCompleted}
-                      className={`w-full text-left p-3 rounded-lg ${
+                      className={`p-3 rounded-lg ${
                         isCompleted
                           ? 'bg-green-500/10 border border-green-500/20'
-                          : 'bg-[#0a0a0a] border border-gray-700 active:border-[#ff9e19]'
+                          : 'bg-[#0a0a0a] border border-gray-700'
                       }`}
                     >
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm">{getStatusIcon(status)}</span>
-                        <span className={`text-sm font-medium ${
-                          isCompleted ? 'text-green-400 line-through' : 'text-white'
-                        }`}>
-                          {practice.shortName}
-                        </span>
+                        <span className="text-lg">{practice.icon}</span>
+                        <div className="flex items-center gap-2 flex-1">
+                          <span className="text-xs">{getStatusIcon(status)}</span>
+                          {/* CHANGE: Use practice.name instead of practice.shortName */}
+                          <span className={`text-sm font-medium ${
+                            isCompleted ? 'text-green-400' : 'text-white'
+                          }`}>
+                            {practice.name}
+                          </span>
+                        </div>
                       </div>
-                      <div className="text-xs text-gray-400 ml-6">
+                      <div className="text-xs text-gray-400 ml-8 mb-2">
                         {practice.duration} min
                       </div>
-                    </button>
+                      
+                      {/* Action Buttons - matching desktop */}
+                      <div className="flex gap-2 ml-8">
+                        {!isCompleted && (
+                          <>
+                            <button
+                              onClick={() => handleStartPractice(practice.id)}
+                              className="flex-1 px-2 py-1.5 text-xs font-medium bg-emerald-600/20 text-emerald-400 rounded hover:bg-emerald-600/30 transition-colors"
+                            >
+                              Start Ritual
+                            </button>
+                            <button
+                              onClick={(e) => handleMarkComplete(practice.id, e)}
+                              disabled={isCompleting}
+                              className={`px-3 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1 ${
+                                isCompleting
+                                  ? 'bg-gray-600 text-gray-400 cursor-wait'
+                                  : 'bg-[#ff9e19]/20 text-[#ff9e19] hover:bg-[#ff9e19]/30'
+                              }`}
+                            >
+                              {isCompleting ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <Check className="w-3 h-3" />
+                              )}
+                              Done
+                            </button>
+                          </>
+                        )}
+                        {isCompleted && (
+                          <span className="text-xs text-green-400 flex items-center gap-1">
+                            <Check className="w-3 h-3" />
+                            Completed
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   );
                 })}
               </div>
