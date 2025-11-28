@@ -2,21 +2,21 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronRight, ChevronDown, Check, Loader2 } from 'lucide-react';
+import { ChevronRight, ChevronDown, Check, Loader2, RefreshCw } from 'lucide-react';
 import { STAGES, ON_DEMAND_TOOLS, getStagePractices, getUnlockedOnDemandTools } from '@/app/config/stages';
 import type { UserProgress } from '@/app/hooks/useUserProgress';
 
 interface ToolsSidebarProps {
   progress: UserProgress;
-  userId: string; // Add this
+  userId: string;
   onPracticeClick: (practiceId: string) => void;
   onToolClick: (toolId: string) => void;
-  onProgressUpdate?: () => void;
-  onPracticeCompleted?: (practiceId: string, practiceName: string) => void; // NEW: notify chat when practice completed
+  onProgressUpdate?: () => Promise<void> | void;
+  onPracticeCompleted?: (practiceId: string, practiceName: string) => void;
+  isRefreshing?: boolean; // NEW: show when data is being refreshed
 }
 
 // Map from your config practice IDs to the database practice_type values
-// Your config uses 'hrvb', database stores as 'hrvb'
 const PRACTICE_ID_MAP: { [key: string]: string } = {
   'hrvb': 'hrvb',
   'awareness_rep': 'awareness_rep',
@@ -25,7 +25,7 @@ const PRACTICE_ID_MAP: { [key: string]: string } = {
   'flow_block': 'flow_block',
   'co_regulation': 'co_regulation',
   'nightly_debrief': 'nightly_debrief',
-  // Legacy/alternate IDs (in case they appear elsewhere)
+  // Legacy/alternate IDs
   'hrvb_breathing': 'hrvb',
   'resonance_breathing': 'hrvb',
 };
@@ -36,7 +36,8 @@ export default function ToolsSidebar({
   onPracticeClick, 
   onToolClick,
   onProgressUpdate,
-  onPracticeCompleted
+  onPracticeCompleted,
+  isRefreshing = false
 }: ToolsSidebarProps) {
   const [dailyExpanded, setDailyExpanded] = useState(true);
   const [toolsExpanded, setToolsExpanded] = useState(true);
@@ -47,7 +48,6 @@ export default function ToolsSidebar({
   const unlockedTools = getUnlockedOnDemandTools(progress.currentStage);
 
   const getPracticeStatus = (practiceId: string): 'completed' | 'pending' | 'locked' => {
-    // Check both the original ID and mapped ID
     const mappedId = PRACTICE_ID_MAP[practiceId] || practiceId;
     const practiceData = progress.dailyPractices[practiceId] || progress.dailyPractices[mappedId];
     if (practiceData?.completed) return 'completed';
@@ -96,7 +96,7 @@ export default function ToolsSidebar({
           userId: userId,
           practiceType: dbPracticeType,
           completed: true,
-          localDate: localDate  // Send client's local date
+          localDate: localDate
         })
       });
 
@@ -107,16 +107,16 @@ export default function ToolsSidebar({
         throw new Error(data.error || `HTTP ${response.status}`);
       }
 
-      // NEW: Notify the chat that practice was completed
-      // This triggers Claude to acknowledge and guide to next ritual
+      // NEW: Wait a moment for database to update, then refresh
+      // This ensures the next fetch gets the updated data
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // Notify chat that practice was completed
       if (onPracticeCompleted) {
         onPracticeCompleted(practiceId, practiceName);
       } else if (onProgressUpdate) {
         // Fallback to just refreshing progress
-        onProgressUpdate();
-      } else {
-        // Last resort: reload page
-        setTimeout(() => window.location.reload(), 500);
+        await onProgressUpdate();
       }
 
     } catch (err) {
@@ -137,8 +137,18 @@ export default function ToolsSidebar({
       <div className="p-4">
         {/* Header */}
         <div className="mb-6">
-          <h2 className="text-lg font-bold text-white mb-1">Tools</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-white mb-1">Tools</h2>
+            {/* NEW: Refresh indicator */}
+            {isRefreshing && (
+              <RefreshCw className="w-4 h-4 text-[#ff9e19] animate-spin" />
+            )}
+          </div>
           <p className="text-xs text-gray-400">Stage {progress.currentStage} Rituals & Protocols</p>
+          {/* NEW: Show data date for debugging */}
+          {progress.dataDate && (
+            <p className="text-xs text-gray-600 mt-1">Data for: {progress.dataDate}</p>
+          )}
         </div>
 
         {/* Progress Summary */}
