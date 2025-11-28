@@ -640,7 +640,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
         // Check last visit timestamp from user_progress
         const { data: progressData } = await supabase
           .from('user_progress')
-          .select('last_visit, onboarding_completed, adherence_percentage, consecutive_days, stage_start_date, ritual_intro_completed, practices_completed_today')
+          .select('last_visit, onboarding_completed, adherence_percentage, consecutive_days, stage_start_date, ritual_intro_completed')
           .eq('user_id', user.id)
           .single();
         
@@ -648,9 +648,20 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
         const hasCompletedOnboarding = progressData?.onboarding_completed || false;
         const hasCompletedRitualIntro = progressData?.ritual_intro_completed || false;
         
-        // Set practices completed today
-        if (progressData?.practices_completed_today) {
-          setPracticesCompletedToday(progressData.practices_completed_today);
+        // Get today's completed practices from practice_logs
+        const today = new Date();
+        const localDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        
+        const { data: practiceLogsData } = await supabase
+          .from('practice_logs')
+          .select('practice_type')
+          .eq('user_id', user.id)
+          .eq('practice_date', localDate)
+          .eq('completed', true);
+        
+        if (practiceLogsData && practiceLogsData.length > 0) {
+          const completedPractices = practiceLogsData.map(p => p.practice_type);
+          setPracticesCompletedToday(completedPractices);
         }
         
         // Determine opening type
