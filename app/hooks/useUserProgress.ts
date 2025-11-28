@@ -1,7 +1,7 @@
 // app/hooks/useUserProgress.ts
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase-client';
 
 export interface UserProgress {
@@ -33,6 +33,8 @@ export interface UserProgress {
     };
   };
   unlockEligible: boolean;
+  // NEW: Track the date this data is for
+  dataDate: string;
 }
 
 interface PracticeLog {
@@ -42,21 +44,40 @@ interface PracticeLog {
   practice_date?: string;
 }
 
-interface UserDataItem {
-  key: string;
-  value: string;
+// Helper to get local date string in YYYY-MM-DD format
+function getLocalDateString(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
 
 export function useUserProgress() {
   const [progress, setProgress] = useState<UserProgress | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  // Track the last fetch time and date for cache-busting
+  const lastFetchTime = useRef<number>(0);
+  const lastFetchDate = useRef<string>('');
   
   const supabase = createClient();
 
-  const fetchProgress = useCallback(async () => {
+  const fetchProgress = useCallback(async (forceRefresh: boolean = false) => {
     try {
-      setLoading(true);
+      // Prevent rapid re-fetches (debounce) unless forced
+      const now = Date.now();
+      if (!forceRefresh && now - lastFetchTime.current < 1000) {
+        console.log('[useUserProgress] Debounced - too soon since last fetch');
+        return;
+      }
+      lastFetchTime.current = now;
+      
+      // If not initial load, show refreshing state instead of full loading
+      if (progress) {
+        setIsRefreshing(true);
+      } else {
+        setLoading(true);
+      }
       setError(null);
       
       const { data: { user } } = await supabase.auth.getUser();
@@ -64,6 +85,7 @@ export function useUserProgress() {
       if (!user) {
         setError('No user logged in');
         setLoading(false);
+        setIsRefreshing(false);
         return;
       }
 
@@ -78,12 +100,15 @@ export function useUserProgress() {
         console.error('Error fetching progress:', progressError);
         setError(progressError.message);
         setLoading(false);
+        setIsRefreshing(false);
         return;
       }
 
       // Fetch today's practice logs - use LOCAL date, not UTC
-const now = new Date();
-const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const today = getLocalDateString();
+      
+      console.log('[useUserProgress] Fetching practices for date:', today);
+      
       const { data: practicesData, error: practicesError } = await supabase
         .from('practice_logs')
         .select('*')
@@ -97,6 +122,7 @@ const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0'
       // Transform practice logs into dailyPractices format
       const dailyPractices: UserProgress['dailyPractices'] = {};
       if (practicesData) {
+        console.log('[useUserProgress] Found practices:', practicesData.length);
         (practicesData as PracticeLog[]).forEach((practice: PracticeLog) => {
           dailyPractices[practice.practice_type] = {
             completed: practice.completed,
@@ -117,7 +143,7 @@ const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0'
       }
 
       // Fetch latest weekly delta
-      const { data: latestDelta, error: deltaError } = await supabase
+      const { data: latestDelta } = await supabase
         .from('weekly_deltas')
         .select('*')
         .eq('user_id', user.id)
@@ -197,7 +223,10 @@ const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0'
         domainDeltas.average
       );
 
-      setProgress({
+      // Update last fetch date
+      lastFetchDate.current = today;
+
+      const newProgress: UserProgress = {
         currentStage: progressData.current_stage,
         stageStartDate: progressData.stage_start_date,
         adherencePercentage: progressData.adherence_percentage || 0,
@@ -209,26 +238,95 @@ const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0'
         domainDeltas,
         unlockedTools,
         dailyPractices,
-        unlockEligible
+        unlockEligible,
+        dataDate: today
+      };
+
+      console.log('[useUserProgress] Setting progress:', {
+        date: today,
+        dailyPractices,
+        adherence: newProgress.adherencePercentage,
+        consecutiveDays: newProgress.consecutiveDays
       });
 
+      setProgress(newProgress);
       setLoading(false);
+      setIsRefreshing(false);
+      
     } catch (err) {
       console.error('Error in fetchProgress:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
       setLoading(false);
+      setIsRefreshing(false);
     }
-  }, [supabase]);
+  }, [supabase, progress]);
 
+  // Initial fetch on mount
   useEffect(() => {
     fetchProgress();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // NEW: Check for new day every minute and auto-refresh
+  useEffect(() => {
+    const checkNewDay = () => {
+      const today = getLocalDateString();
+      
+      // If the date has changed since we last fetched, refresh
+      if (lastFetchDate.current && lastFetchDate.current !== today) {
+        console.log('[useUserProgress] New day detected! Refreshing...', {
+          was: lastFetchDate.current,
+          now: today
+        });
+        fetchProgress(true); // Force refresh
+      }
+    };
+
+    // Check immediately
+    checkNewDay();
+    
+    // Then check every minute
+    const interval = setInterval(checkNewDay, 60000);
+    
+    return () => clearInterval(interval);
   }, [fetchProgress]);
 
+  // NEW: Also refresh when window regains focus (user comes back to tab)
+  useEffect(() => {
+    const handleFocus = () => {
+      const today = getLocalDateString();
+      
+      // If it's a new day or it's been more than 5 minutes, refresh
+      const timeSinceLastFetch = Date.now() - lastFetchTime.current;
+      const isNewDay = lastFetchDate.current !== today;
+      const isStale = timeSinceLastFetch > 5 * 60 * 1000; // 5 minutes
+      
+      if (isNewDay || isStale) {
+        console.log('[useUserProgress] Window focused, refreshing...', {
+          isNewDay,
+          isStale,
+          minutesSinceLastFetch: Math.round(timeSinceLastFetch / 60000)
+        });
+        fetchProgress(true);
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [fetchProgress]);
+
+  // Public refetch function - always forces refresh
   const refetchProgress = useCallback(() => {
-    fetchProgress();
+    console.log('[useUserProgress] Manual refetch triggered');
+    return fetchProgress(true);
   }, [fetchProgress]);
 
-  return { progress, loading, error, refetchProgress };
+  return { 
+    progress, 
+    loading, 
+    error, 
+    refetchProgress,
+    isRefreshing // NEW: expose refreshing state for UI feedback
+  };
 }
 
 // Helper function to determine unlocked tools based on stage
