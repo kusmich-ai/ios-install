@@ -3,8 +3,10 @@
 
 import { useState } from 'react';
 import { ChevronRight, ChevronDown, Check, Loader2, RefreshCw } from 'lucide-react';
-import { STAGES, ON_DEMAND_TOOLS, getStagePractices, getUnlockedOnDemandTools } from '@/app/config/stages';
+import { getStagePractices, getUnlockedOnDemandTools } from '@/app/config/stages';
 import type { UserProgress } from '@/app/hooks/useUserProgress';
+import { useResonanceBreathing } from '@/components/ResonanceModal';
+import { useAwarenessRep } from '@/components/AwarenessRepModal';
 
 interface ToolsSidebarProps {
   progress: UserProgress;
@@ -13,10 +15,10 @@ interface ToolsSidebarProps {
   onToolClick: (toolId: string) => void;
   onProgressUpdate?: () => Promise<void> | void;
   onPracticeCompleted?: (practiceId: string, practiceName: string) => void;
-  isRefreshing?: boolean; // NEW: show when data is being refreshed
+  isRefreshing?: boolean;
 }
 
-// Map from your config practice IDs to the database practice_type values
+// Map from config practice IDs to database practice_type values
 const PRACTICE_ID_MAP: { [key: string]: string } = {
   'hrvb': 'hrvb',
   'awareness_rep': 'awareness_rep',
@@ -44,6 +46,10 @@ export default function ToolsSidebar({
   const [completing, setCompleting] = useState<string | null>(null);
   const [completionError, setCompletionError] = useState<string | null>(null);
 
+  // Initialize modal hooks
+  const { open: openResonance, Modal: ResonanceModal } = useResonanceBreathing();
+  const { open: openAwarenessRep, Modal: AwarenessRepModal } = useAwarenessRep();
+
   const currentStagePractices = getStagePractices(progress.currentStage);
   const unlockedTools = getUnlockedOnDemandTools(progress.currentStage);
 
@@ -67,8 +73,31 @@ export default function ToolsSidebar({
     }
   };
 
-  const handleMarkComplete = async (practiceId: string, practiceName: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  // Handle "Start Ritual" click - routes to appropriate modal or chat
+  const handleStartPractice = (practiceId: string) => {
+    if (practiceId === 'hrvb') {
+      openResonance();
+    } else if (practiceId === 'awareness_rep') {
+      openAwarenessRep();
+    } else {
+      // Other practices go to chat for guidance
+      onPracticeClick(practiceId);
+    }
+  };
+
+  // Handle modal completion - logs practice and notifies chat
+  const handleModalComplete = async (practiceId: string, practiceName: string) => {
+    console.log(`[ToolsSidebar] Modal completed: ${practiceId}`);
+    
+    // Only log if not already completed today
+    if (getPracticeStatus(practiceId) !== 'completed') {
+      await handleMarkComplete(practiceId, practiceName);
+    }
+  };
+
+  // Handle "Done" button click to mark practice complete
+  const handleMarkComplete = async (practiceId: string, practiceName: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     
     if (!userId) {
       setCompletionError('No user ID - please refresh the page');
@@ -107,15 +136,13 @@ export default function ToolsSidebar({
         throw new Error(data.error || `HTTP ${response.status}`);
       }
 
-      // NEW: Wait a moment for database to update, then refresh
-      // This ensures the next fetch gets the updated data
+      // Wait a moment for database to update
       await new Promise(resolve => setTimeout(resolve, 300));
 
       // Notify chat that practice was completed
       if (onPracticeCompleted) {
         onPracticeCompleted(practiceId, practiceName);
       } else if (onProgressUpdate) {
-        // Fallback to just refreshing progress
         await onProgressUpdate();
       }
 
@@ -133,196 +160,204 @@ export default function ToolsSidebar({
   const allComplete = completedCount === totalCount;
 
   return (
-    <aside className="w-80 border-l border-gray-800 bg-[#111111] overflow-y-auto flex-shrink-0">
-      <div className="p-4">
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-white mb-1">Tools</h2>
-            {/* NEW: Refresh indicator */}
-            {isRefreshing && (
-              <RefreshCw className="w-4 h-4 text-[#ff9e19] animate-spin" />
+    <>
+      {/* Modals - rendered at top level with onComplete callbacks */}
+      <ResonanceModal 
+        onComplete={() => handleModalComplete('hrvb', 'Resonance Breathing')} 
+      />
+      <AwarenessRepModal 
+        onComplete={() => handleModalComplete('awareness_rep', 'Awareness Rep')} 
+      />
+
+      <aside className="w-80 border-l border-gray-800 bg-[#111111] overflow-y-auto flex-shrink-0">
+        <div className="p-4">
+          {/* Header */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-white mb-1">Tools</h2>
+              {isRefreshing && (
+                <RefreshCw className="w-4 h-4 text-[#ff9e19] animate-spin" />
+              )}
+            </div>
+            <p className="text-xs text-gray-400">Stage {progress.currentStage} Rituals & Protocols</p>
+            {progress.dataDate && (
+              <p className="text-xs text-gray-600 mt-1">Data for: {progress.dataDate}</p>
             )}
           </div>
-          <p className="text-xs text-gray-400">Stage {progress.currentStage} Rituals & Protocols</p>
-          {/* NEW: Show data date for debugging */}
-          {progress.dataDate && (
-            <p className="text-xs text-gray-600 mt-1">Data for: {progress.dataDate}</p>
-          )}
-        </div>
 
-        {/* Progress Summary */}
-        <div className={`mb-4 p-3 rounded-lg border ${
-          allComplete 
-            ? 'bg-green-500/10 border-green-500/30' 
-            : 'bg-[#0a0a0a] border-gray-700'
-        }`}>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-gray-400">Today's Progress</span>
-            <span className={`text-sm font-bold ${allComplete ? 'text-green-400' : 'text-[#ff9e19]'}`}>
-              {completedCount}/{totalCount}
-            </span>
-          </div>
-          <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
-            <div 
-              className={`h-full transition-all duration-500 ${allComplete ? 'bg-green-500' : 'bg-[#ff9e19]'}`}
-              style={{ width: `${(completedCount / totalCount) * 100}%` }}
-            />
-          </div>
-          {allComplete && (
-            <p className="text-xs text-green-400 mt-2 text-center">All practices complete! 🎉</p>
-          )}
-        </div>
-
-        {/* Adherence Stats */}
-        <div className="mb-4 p-3 rounded-lg bg-[#0a0a0a] border border-gray-700">
-          <div className="grid grid-cols-2 gap-3 text-center">
-            <div>
-              <div className="text-lg font-bold text-[#ff9e19]">{progress.adherencePercentage}%</div>
-              <div className="text-xs text-gray-500">14-Day Adherence</div>
+          {/* Progress Summary */}
+          <div className={`mb-4 p-3 rounded-lg border ${
+            allComplete 
+              ? 'bg-green-500/10 border-green-500/30' 
+              : 'bg-[#0a0a0a] border-gray-700'
+          }`}>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-400">Today's Progress</span>
+              <span className={`text-sm font-bold ${allComplete ? 'text-green-400' : 'text-[#ff9e19]'}`}>
+                {completedCount}/{totalCount}
+              </span>
             </div>
-            <div>
-              <div className="text-lg font-bold text-[#ff9e19]">{progress.consecutiveDays}</div>
-              <div className="text-xs text-gray-500">Day Streak</div>
+            <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
+              <div 
+                className={`h-full transition-all duration-500 ${allComplete ? 'bg-green-500' : 'bg-[#ff9e19]'}`}
+                style={{ width: `${(completedCount / totalCount) * 100}%` }}
+              />
             </div>
-          </div>
-        </div>
-
-        {/* Error Display */}
-        {completionError && (
-          <div className="mb-4 p-2 bg-red-500/10 border border-red-500/30 rounded-lg">
-            <p className="text-xs text-red-400">{completionError}</p>
-          </div>
-        )}
-
-        {/* Daily Rituals Section */}
-        <div className="mb-6">
-          <button
-            onClick={() => setDailyExpanded(!dailyExpanded)}
-            className="w-full flex items-center justify-between text-sm font-semibold text-gray-300 hover:text-white transition-colors mb-3"
-          >
-            <span>DAILY RITUALS</span>
-            {dailyExpanded ? (
-              <ChevronDown className="w-4 h-4" />
-            ) : (
-              <ChevronRight className="w-4 h-4" />
+            {allComplete && (
+              <p className="text-xs text-green-400 mt-2 text-center">All rituals complete! 🎉</p>
             )}
-          </button>
+          </div>
 
-          {dailyExpanded && (
-            <div className="space-y-2">
-              {currentStagePractices.map((practice) => {
-                const status = getPracticeStatus(practice.id);
-                const isCompleted = status === 'completed';
-                const isCompleting = completing === practice.id;
-                
-                return (
-                  <div
-                    key={practice.id}
-                    className={`p-3 rounded-lg transition-all ${
-                      isCompleted
-                        ? 'bg-green-500/10 border border-green-500/20'
-                        : 'bg-[#0a0a0a] border border-gray-700 hover:border-gray-600'
-                    }`}
+          {/* Adherence Stats */}
+          <div className="mb-4 p-3 rounded-lg bg-[#0a0a0a] border border-gray-700">
+            <div className="grid grid-cols-2 gap-3 text-center">
+              <div>
+                <div className="text-lg font-bold text-[#ff9e19]">{progress.adherencePercentage}%</div>
+                <div className="text-xs text-gray-500">14-Day Adherence</div>
+              </div>
+              <div>
+                <div className="text-lg font-bold text-[#ff9e19]">{progress.consecutiveDays}</div>
+                <div className="text-xs text-gray-500">Day Streak</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Error Display */}
+          {completionError && (
+            <div className="mb-4 p-2 bg-red-500/10 border border-red-500/30 rounded-lg">
+              <p className="text-xs text-red-400">{completionError}</p>
+            </div>
+          )}
+
+          {/* Daily Rituals Section */}
+          <div className="mb-6">
+            <button
+              onClick={() => setDailyExpanded(!dailyExpanded)}
+              className="w-full flex items-center justify-between text-sm font-semibold text-gray-300 hover:text-white transition-colors mb-3"
+            >
+              <span>DAILY RITUALS</span>
+              {dailyExpanded ? (
+                <ChevronDown className="w-4 h-4" />
+              ) : (
+                <ChevronRight className="w-4 h-4" />
+              )}
+            </button>
+
+            {dailyExpanded && (
+              <div className="space-y-2">
+                {currentStagePractices.map((practice) => {
+                  const status = getPracticeStatus(practice.id);
+                  const isCompleted = status === 'completed';
+                  const isCompleting = completing === practice.id;
+                  
+                  return (
+                    <div
+                      key={practice.id}
+                      className={`p-3 rounded-lg transition-all ${
+                        isCompleted
+                          ? 'bg-green-500/10 border border-green-500/20'
+                          : 'bg-[#0a0a0a] border border-gray-700 hover:border-gray-600'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <span className="text-xl">{practice.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs">{getStatusIcon(status)}</span>
+                            <span className={`text-sm font-medium ${
+                              isCompleted ? 'text-green-400' : 'text-white'
+                            }`}>
+                              {practice.shortName}
+                            </span>
+                          </div>
+                          <div className="text-xs text-gray-400 mb-2">
+                            {practice.duration} min
+                          </div>
+                          
+                          {/* Action Buttons */}
+                          <div className="flex gap-2">
+                            {!isCompleted && (
+                              <>
+                                <button
+                                  onClick={() => handleStartPractice(practice.id)}
+                                  className="flex-1 px-2 py-1.5 text-xs font-medium bg-emerald-600/20 text-emerald-400 rounded hover:bg-emerald-600/30 transition-colors"
+                                >
+                                  Start Ritual
+                                </button>
+                                <button
+                                  onClick={(e) => handleMarkComplete(practice.id, practice.name, e)}
+                                  disabled={isCompleting}
+                                  className={`px-3 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1 ${
+                                    isCompleting
+                                      ? 'bg-gray-600 text-gray-400 cursor-wait'
+                                      : 'bg-[#ff9e19]/20 text-[#ff9e19] hover:bg-[#ff9e19]/30'
+                                  }`}
+                                >
+                                  {isCompleting ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                  ) : (
+                                    <Check className="w-3 h-3" />
+                                  )}
+                                  Done
+                                </button>
+                              </>
+                            )}
+                            {isCompleted && (
+                              <span className="text-xs text-green-400 flex items-center gap-1">
+                                <Check className="w-3 h-3" />
+                                Completed
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* On-Demand Tools Section */}
+          <div>
+            <button
+              onClick={() => setToolsExpanded(!toolsExpanded)}
+              className="w-full flex items-center justify-between text-sm font-semibold text-gray-300 hover:text-white transition-colors mb-3"
+            >
+              <span>ON-DEMAND TOOLS</span>
+              {toolsExpanded ? (
+                <ChevronDown className="w-4 h-4" />
+              ) : (
+                <ChevronRight className="w-4 h-4" />
+              )}
+            </button>
+
+            {toolsExpanded && (
+              <div className="space-y-2">
+                {unlockedTools.map((tool) => (
+                  <button
+                    key={tool.id}
+                    onClick={() => onToolClick(tool.id)}
+                    className="w-full text-left p-3 rounded-lg bg-[#0a0a0a] border border-gray-700 hover:border-[#ff9e19] transition-all cursor-pointer"
                   >
                     <div className="flex items-start gap-3">
-                      <span className="text-xl">{practice.icon}</span>
+                      <span className="text-xl">{tool.icon}</span>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs">{getStatusIcon(status)}</span>
-                          <span className={`text-sm font-medium ${
-                            isCompleted ? 'text-green-400' : 'text-white'
-                          }`}>
-                            {practice.shortName}
-                          </span>
+                        <div className="text-sm font-medium text-white mb-1">
+                          {tool.shortName}
                         </div>
-                        <div className="text-xs text-gray-400 mb-2">
-                          {practice.duration} min
-                        </div>
-                        
-                        {/* Action Buttons */}
-                        <div className="flex gap-2">
-                          {!isCompleted && (
-                            <>
-                              <button
-                                onClick={() => onPracticeClick(practice.id)}
-                                className="flex-1 px-2 py-1.5 text-xs font-medium bg-emerald-600/20 text-emerald-400 rounded hover:bg-emerald-600/30 transition-colors"
-                              >
-                                Start Ritual
-                              </button>
-                              <button
-                                onClick={(e) => handleMarkComplete(practice.id, practice.name, e)}
-                                disabled={isCompleting}
-                                className={`px-3 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1 ${
-                                  isCompleting
-                                    ? 'bg-gray-600 text-gray-400 cursor-wait'
-                                    : 'bg-[#ff9e19]/20 text-[#ff9e19] hover:bg-[#ff9e19]/30'
-                                }`}
-                              >
-                                {isCompleting ? (
-                                  <Loader2 className="w-3 h-3 animate-spin" />
-                                ) : (
-                                  <Check className="w-3 h-3" />
-                                )}
-                                Done
-                              </button>
-                            </>
-                          )}
-                          {isCompleted && (
-                            <span className="text-xs text-green-400 flex items-center gap-1">
-                              <Check className="w-3 h-3" />
-                              Completed
-                            </span>
-                          )}
+                        <div className="text-xs text-gray-400">
+                          {tool.description}
                         </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* On-Demand Tools Section */}
-        <div>
-          <button
-            onClick={() => setToolsExpanded(!toolsExpanded)}
-            className="w-full flex items-center justify-between text-sm font-semibold text-gray-300 hover:text-white transition-colors mb-3"
-          >
-            <span>ON-DEMAND TOOLS</span>
-            {toolsExpanded ? (
-              <ChevronDown className="w-4 h-4" />
-            ) : (
-              <ChevronRight className="w-4 h-4" />
+                  </button>
+                ))}
+              </div>
             )}
-          </button>
-
-          {toolsExpanded && (
-            <div className="space-y-2">
-              {unlockedTools.map((tool) => (
-                <button
-                  key={tool.id}
-                  onClick={() => onToolClick(tool.id)}
-                  className="w-full text-left p-3 rounded-lg bg-[#0a0a0a] border border-gray-700 hover:border-[#ff9e19] transition-all cursor-pointer"
-                >
-                  <div className="flex items-start gap-3">
-                    <span className="text-xl">{tool.icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-white mb-1">
-                        {tool.shortName}
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        {tool.description}
-                      </div>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
+          </div>
         </div>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 }
