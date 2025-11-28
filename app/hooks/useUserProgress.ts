@@ -142,14 +142,16 @@ export function useUserProgress() {
         console.error('Error fetching baseline:', baselineError);
       }
 
-      // Fetch latest weekly delta
-      const { data: latestDelta } = await supabase
+      // Fetch latest 2 weekly deltas to calculate week-over-week change
+      const { data: weeklyDeltas } = await supabase
         .from('weekly_deltas')
         .select('*')
         .eq('user_id', user.id)
         .order('week_of', { ascending: false })
-        .limit(1)
-        .single();
+        .limit(2);
+
+      const latestDelta = weeklyDeltas?.[0] || null;
+      const previousDelta = weeklyDeltas?.[1] || null;
 
       // Calculate domain scores (use latest delta if available, otherwise baseline)
       let domainScores = {
@@ -188,14 +190,44 @@ export function useUserProgress() {
       else if (rewiredIndex >= 21) tier = 'Baseline Mode';
       else tier = 'System Offline';
 
-      // Calculate deltas from progress data or compute
-      const domainDeltas = {
-        regulation: progressData.regulation_delta || 0,
-        awareness: progressData.awareness_delta || 0,
-        outlook: progressData.outlook_delta || 0,
-        attention: progressData.attention_delta || 0,
+      // Calculate week-over-week deltas
+      // Priority: weekly_deltas comparison > user_progress deltas > zero
+      let domainDeltas = {
+        regulation: 0,
+        awareness: 0,
+        outlook: 0,
+        attention: 0,
         average: 0
       };
+
+      if (latestDelta && previousDelta) {
+        // Week-over-week comparison from weekly_deltas table
+        domainDeltas = {
+          regulation: (latestDelta.regulation_score || 0) - (previousDelta.regulation_score || 0),
+          awareness: (latestDelta.awareness_score || 0) - (previousDelta.awareness_score || 0),
+          outlook: (latestDelta.outlook_score || 0) - (previousDelta.outlook_score || 0),
+          attention: (latestDelta.attention_score || 0) - (previousDelta.attention_score || 0),
+          average: 0
+        };
+      } else if (latestDelta && baselineData) {
+        // Compare latest week to baseline (for users with only 1 week of data)
+        domainDeltas = {
+          regulation: (latestDelta.regulation_score || 0) - (baselineData.calm_core_score || 0),
+          awareness: (latestDelta.awareness_score || 0) - (baselineData.observer_index_score || 0),
+          outlook: (latestDelta.outlook_score || 0) - (baselineData.vitality_index_score || 0),
+          attention: (latestDelta.attention_score || 0) - (((baselineData.focus_diagnostic_score || 0) + (baselineData.presence_test_score || 0)) / 2),
+          average: 0
+        };
+      } else {
+        // Fallback to user_progress deltas (cumulative from baseline)
+        domainDeltas = {
+          regulation: progressData.regulation_delta || 0,
+          awareness: progressData.awareness_delta || 0,
+          outlook: progressData.outlook_delta || 0,
+          attention: progressData.attention_delta || 0,
+          average: 0
+        };
+      }
       domainDeltas.average = (domainDeltas.regulation + domainDeltas.awareness + 
                               domainDeltas.outlook + domainDeltas.attention) / 4;
 
