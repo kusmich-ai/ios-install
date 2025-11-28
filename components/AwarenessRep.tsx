@@ -377,6 +377,18 @@ export default function AwarenessRep({ onComplete }: AwarenessRepProps) {
             remaining
           </div>
         )}
+
+        {isComplete && (
+          <div
+            style={{
+              fontSize: "0.85rem",
+              color: "rgba(245, 242, 236, 0.4)",
+              marginTop: "0.5rem",
+            }}
+          >
+            Closing...
+          </div>
+        )}
       </div>
 
       {/* Progress bar */}
