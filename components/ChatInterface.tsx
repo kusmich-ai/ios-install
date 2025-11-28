@@ -1112,21 +1112,28 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
 
           <div className="mb-6 p-4 rounded-lg text-center border-2 bg-[#0a0a0a] border-[#ff9e19]">
             <div className="text-xs text-gray-400 mb-1 uppercase tracking-wide">REwired Index</div>
-            <div className="text-4xl font-bold mb-1 text-[#ff9e19]">
-              {baselineData.rewiredIndex}
+            <div className="flex items-center justify-center gap-2">
+              <div className="text-4xl font-bold text-[#ff9e19]">
+                {progress?.rewiredIndex ?? baselineData.rewiredIndex}
+              </div>
+              {progress?.rewiredDelta !== undefined && progress.rewiredDelta !== 0 && (
+                <span className={`text-sm font-semibold ${progress.rewiredDelta > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {progress.rewiredDelta > 0 ? '↑' : '↓'}{Math.abs(progress.rewiredDelta)}
+                </span>
+              )}
             </div>
-            <div className={`text-xs font-medium mb-2 ${getStatusColor(baselineData.rewiredIndex)}`}>
-              {getStatusTier(baselineData.rewiredIndex)}
+            <div className={`text-xs font-medium mb-2 ${getStatusColor(progress?.rewiredIndex ?? baselineData.rewiredIndex)}`}>
+              {progress?.tier ?? getStatusTier(baselineData.rewiredIndex)}
             </div>
             <div className="w-full rounded-full h-1.5 bg-[#1a1a1a]">
               <div 
                 className="h-1.5 rounded-full transition-all bg-[#ff9e19]"
-                style={{ width: `${baselineData.rewiredIndex}%` }}
+                style={{ width: `${progress?.rewiredIndex ?? baselineData.rewiredIndex}%` }}
               />
             </div>
           </div>
 
-          {/* Domain Scores */}
+          {/* Domain Scores with Deltas */}
           <div className="space-y-3">
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Domain Scores</h3>
             
@@ -1134,12 +1141,21 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
             <div>
               <div className="flex items-center justify-between mb-1">
                 <span className="text-sm text-gray-300">Regulation</span>
-                <span className="text-sm font-semibold text-[#3b82f6]">{baselineData.domainScores.regulation.toFixed(1)}/5</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-[#3b82f6]">
+                    {(progress?.domainScores?.regulation ?? baselineData.domainScores.regulation).toFixed(1)}/5
+                  </span>
+                  {progress?.domainDeltas?.regulation !== undefined && progress.domainDeltas.regulation !== 0 && (
+                    <span className={`text-xs font-medium ${progress.domainDeltas.regulation > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {progress.domainDeltas.regulation > 0 ? '↑' : '↓'}{Math.abs(progress.domainDeltas.regulation).toFixed(1)}
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
                 <div 
                   className="h-2 rounded-full transition-all bg-[#3b82f6]"
-                  style={{ width: `${(baselineData.domainScores.regulation / 5) * 100}%` }}
+                  style={{ width: `${((progress?.domainScores?.regulation ?? baselineData.domainScores.regulation) / 5) * 100}%` }}
                 />
               </div>
             </div>
@@ -1148,12 +1164,21 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
             <div>
               <div className="flex items-center justify-between mb-1">
                 <span className="text-sm text-gray-300">Awareness</span>
-                <span className="text-sm font-semibold text-[#10b981]">{baselineData.domainScores.awareness.toFixed(1)}/5</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-[#10b981]">
+                    {(progress?.domainScores?.awareness ?? baselineData.domainScores.awareness).toFixed(1)}/5
+                  </span>
+                  {progress?.domainDeltas?.awareness !== undefined && progress.domainDeltas.awareness !== 0 && (
+                    <span className={`text-xs font-medium ${progress.domainDeltas.awareness > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {progress.domainDeltas.awareness > 0 ? '↑' : '↓'}{Math.abs(progress.domainDeltas.awareness).toFixed(1)}
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
                 <div 
                   className="h-2 rounded-full transition-all bg-[#10b981]"
-                  style={{ width: `${(baselineData.domainScores.awareness / 5) * 100}%` }}
+                  style={{ width: `${((progress?.domainScores?.awareness ?? baselineData.domainScores.awareness) / 5) * 100}%` }}
                 />
               </div>
             </div>
@@ -1162,12 +1187,21 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
             <div>
               <div className="flex items-center justify-between mb-1">
                 <span className="text-sm text-gray-300">Outlook</span>
-                <span className="text-sm font-semibold text-[#f59e0b]">{baselineData.domainScores.outlook.toFixed(1)}/5</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-[#f59e0b]">
+                    {(progress?.domainScores?.outlook ?? baselineData.domainScores.outlook).toFixed(1)}/5
+                  </span>
+                  {progress?.domainDeltas?.outlook !== undefined && progress.domainDeltas.outlook !== 0 && (
+                    <span className={`text-xs font-medium ${progress.domainDeltas.outlook > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {progress.domainDeltas.outlook > 0 ? '↑' : '↓'}{Math.abs(progress.domainDeltas.outlook).toFixed(1)}
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
                 <div 
                   className="h-2 rounded-full transition-all bg-[#f59e0b]"
-                  style={{ width: `${(baselineData.domainScores.outlook / 5) * 100}%` }}
+                  style={{ width: `${((progress?.domainScores?.outlook ?? baselineData.domainScores.outlook) / 5) * 100}%` }}
                 />
               </div>
             </div>
@@ -1176,15 +1210,36 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
             <div>
               <div className="flex items-center justify-between mb-1">
                 <span className="text-sm text-gray-300">Attention</span>
-                <span className="text-sm font-semibold text-[#8b5cf6]">{baselineData.domainScores.attention.toFixed(1)}/5</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-[#8b5cf6]">
+                    {(progress?.domainScores?.attention ?? baselineData.domainScores.attention).toFixed(1)}/5
+                  </span>
+                  {progress?.domainDeltas?.attention !== undefined && progress.domainDeltas.attention !== 0 && (
+                    <span className={`text-xs font-medium ${progress.domainDeltas.attention > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {progress.domainDeltas.attention > 0 ? '↑' : '↓'}{Math.abs(progress.domainDeltas.attention).toFixed(1)}
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
                 <div 
                   className="h-2 rounded-full transition-all bg-[#8b5cf6]"
-                  style={{ width: `${(baselineData.domainScores.attention / 5) * 100}%` }}
+                  style={{ width: `${((progress?.domainScores?.attention ?? baselineData.domainScores.attention) / 5) * 100}%` }}
                 />
               </div>
             </div>
+
+            {/* Average Delta indicator */}
+            {progress?.domainDeltas?.average !== undefined && progress.domainDeltas.average !== 0 && (
+              <div className="mt-2 pt-2 border-t border-gray-800">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-400">Avg. Weekly Delta</span>
+                  <span className={`text-sm font-semibold ${progress.domainDeltas.average > 0 ? 'text-green-400' : progress.domainDeltas.average < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                    {progress.domainDeltas.average > 0 ? '+' : ''}{progress.domainDeltas.average.toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </aside>
