@@ -637,15 +637,15 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
 
         const supabase = createClient();
         
-        // Check last visit timestamp from user_progress
+        // Check progress data from user_progress (using correct column names)
         const { data: progressData } = await supabase
           .from('user_progress')
-          .select('last_visit, onboarding_completed, adherence_percentage, consecutive_days, stage_start_date, ritual_intro_completed')
+          .select('system_initialized, baseline_completed, adherence_percentage, consecutive_days, stage_start_date, ritual_intro_completed, updated_at')
           .eq('user_id', user.id)
           .single();
         
-        const lastVisit = progressData?.last_visit || null;
-        const hasCompletedOnboarding = progressData?.onboarding_completed || false;
+        const lastVisit = progressData?.updated_at || null;
+        const hasCompletedOnboarding = progressData?.system_initialized || false;
         const hasCompletedRitualIntro = progressData?.ritual_intro_completed || false;
         
         // Get today's completed practices from practice_logs
@@ -690,8 +690,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
             await supabase
               .from('user_progress')
               .update({ 
-                onboarding_completed: true,
-                last_visit: new Date().toISOString()
+                system_initialized: true
               })
               .eq('user_id', user.id);
             break;
@@ -707,12 +706,6 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
           default:
             openingMessage = await getFirstTimeOpeningMessage(baselineData, userName);
         }
-        
-        // Update last visit timestamp
-        await supabase
-          .from('user_progress')
-          .update({ last_visit: new Date().toISOString() })
-          .eq('user_id', user.id);
         
         // Set the opening message
         setMessages([{ role: 'assistant', content: openingMessage }]);
