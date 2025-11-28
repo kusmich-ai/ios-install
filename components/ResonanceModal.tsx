@@ -1,6 +1,5 @@
 "use client";
-
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import ResonanceBreathing from "./ResonanceBreathing";
 
 // ============================================================================
@@ -12,10 +11,35 @@ import ResonanceBreathing from "./ResonanceBreathing";
 interface ResonanceModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onComplete?: () => void; // Called when practice is completed (for auto-logging)
 }
 
-export function ResonanceModal({ isOpen, onClose }: ResonanceModalProps) {
-  if (!isOpen) return null;
+export function ResonanceModal({ isOpen, onClose, onComplete }: ResonanceModalProps) {
+  const hasCompletedRef = useRef(false);
+
+  // Reset completion flag when modal opens
+  if (!isOpen) {
+    hasCompletedRef.current = false;
+    return null;
+  }
+
+  const handleSessionComplete = () => {
+    // Prevent double-calling
+    if (hasCompletedRef.current) return;
+    hasCompletedRef.current = true;
+
+    console.log('[ResonanceModal] Session complete, triggering onComplete');
+    
+    // Call the onComplete callback for auto-logging
+    if (onComplete) {
+      onComplete();
+    }
+
+    // Auto-close modal after brief delay to show completion state
+    setTimeout(() => {
+      onClose();
+    }, 2000); // 2 second delay to show "Done" screen
+  };
 
   return (
     <div
@@ -25,9 +49,9 @@ export function ResonanceModal({ isOpen, onClose }: ResonanceModalProps) {
         zIndex: 9999,
       }}
     >
-      <ResonanceBreathing />
+      <ResonanceBreathing onComplete={handleSessionComplete} />
       
-      {/* Close button - top right */}
+      {/* Close button - top right (manual close, no auto-log) */}
       <button
         onClick={onClose}
         style={{
@@ -90,7 +114,10 @@ export function useResonanceBreathing() {
     open,
     close,
     toggle,
-    Modal: () => <ResonanceModal isOpen={isOpen} onClose={close} />,
+    // Modal component now accepts onComplete prop for auto-logging
+    Modal: ({ onComplete }: { onComplete?: () => void }) => (
+      <ResonanceModal isOpen={isOpen} onClose={close} onComplete={onComplete} />
+    ),
   };
 }
 
