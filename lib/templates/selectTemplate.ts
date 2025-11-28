@@ -387,10 +387,17 @@ function selectDailyPromptTemplate(
   // Determine which daily prompt to use
   let template: string;
   
-  if (context.daysInStage === 1 && stageTemplates.dailyPrompts.firstDay) {
-    template = stageTemplates.dailyPrompts.firstDay;
+  // Use type assertion since not all stages have firstDay defined
+  const dailyPrompts = stageTemplates.dailyPrompts as { 
+    firstDay?: string; 
+    standard: string; 
+    allComplete: string;
+  };
+  
+  if (context.daysInStage === 1 && dailyPrompts.firstDay) {
+    template = dailyPrompts.firstDay;
   } else {
-    template = stageTemplates.dailyPrompts.standard;
+    template = dailyPrompts.standard;
   }
   
   // Add streak message
