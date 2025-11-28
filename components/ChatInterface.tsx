@@ -529,10 +529,13 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   const buildTemplateContext = useCallback((): TemplateContext => {
     const userName = user?.user_metadata?.first_name || '';
     
+    // Type assertion for extended progress properties that may not be in the base type yet
+    const extendedProgress = progress as any;
+    
     // Calculate days in stage
     let daysInStage = 1;
-    if (progress?.stage_start_date) {
-      const startDate = new Date(progress.stage_start_date);
+    if (extendedProgress?.stageStartDate) {
+      const startDate = new Date(extendedProgress.stageStartDate);
       const now = new Date();
       daysInStage = Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
     }
@@ -541,8 +544,8 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
       userName,
       currentStage: baselineData.currentStage,
       stageName: getStageName(baselineData.currentStage),
-      adherence: progress?.adherence_percentage || 0,
-      consecutiveDays: progress?.consecutive_days || 0,
+      adherence: extendedProgress?.adherencePercentage || 0,
+      consecutiveDays: extendedProgress?.consecutiveDays || 0,
       daysInStage,
       rewiredIndex: baselineData.rewiredIndex,
       statusTier: getStatusTier(baselineData.rewiredIndex),
@@ -550,18 +553,18 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
       awarenessScore: baselineData.domainScores.awareness,
       outlookScore: baselineData.domainScores.outlook,
       attentionScore: baselineData.domainScores.attention,
-      regulationDelta: progress?.latest_regulation_delta || 0,
-      awarenessDelta: progress?.latest_awareness_delta || 0,
-      outlookDelta: progress?.latest_outlook_delta || 0,
-      attentionDelta: progress?.latest_attention_delta || 0,
-      avgDelta: progress?.latest_avg_delta || 0,
-      currentIdentity: progress?.current_identity || '',
-      microAction: progress?.micro_action || '',
-      identityDayInCycle: progress?.identity_sprint_start 
-        ? Math.floor((Date.now() - new Date(progress.identity_sprint_start).getTime()) / (1000 * 60 * 60 * 24)) + 1
+      regulationDelta: extendedProgress?.latestRegulationDelta || 0,
+      awarenessDelta: extendedProgress?.latestAwarenessDelta || 0,
+      outlookDelta: extendedProgress?.latestOutlookDelta || 0,
+      attentionDelta: extendedProgress?.latestAttentionDelta || 0,
+      avgDelta: extendedProgress?.latestAvgDelta || 0,
+      currentIdentity: extendedProgress?.currentIdentity || '',
+      microAction: extendedProgress?.microAction || '',
+      identityDayInCycle: extendedProgress?.identitySprintStart 
+        ? Math.floor((Date.now() - new Date(extendedProgress.identitySprintStart).getTime()) / (1000 * 60 * 60 * 24)) + 1
         : 0,
-      identityDaysRemaining: progress?.identity_sprint_start
-        ? Math.max(0, 21 - Math.floor((Date.now() - new Date(progress.identity_sprint_start).getTime()) / (1000 * 60 * 60 * 24)))
+      identityDaysRemaining: extendedProgress?.identitySprintStart
+        ? Math.max(0, 21 - Math.floor((Date.now() - new Date(extendedProgress.identitySprintStart).getTime()) / (1000 * 60 * 60 * 24)))
         : 21,
       isMobile,
       toolsReference: isMobile ? 'the lightning bolt icon' : 'the Daily Ritual tools on the right'
@@ -573,9 +576,12 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   // ============================================
   
   const buildSelectionContext = useCallback((): SelectionContext => {
+    // Type assertion for extended progress properties
+    const extendedProgress = progress as any;
+    
     let daysInStage = 1;
-    if (progress?.stage_start_date) {
-      const startDate = new Date(progress.stage_start_date);
+    if (extendedProgress?.stageStartDate) {
+      const startDate = new Date(extendedProgress.stageStartDate);
       const now = new Date();
       daysInStage = Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
     }
@@ -583,16 +589,16 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
     return {
       currentStage: baselineData.currentStage,
       daysInStage,
-      adherence: progress?.adherence_percentage || 0,
-      consecutiveDays: progress?.consecutive_days || 0,
+      adherence: extendedProgress?.adherencePercentage || 0,
+      consecutiveDays: extendedProgress?.consecutiveDays || 0,
       practicesCompletedToday,
-      stageIntroCompleted: progress?.ritual_intro_completed || introStep >= 4,
-      hasIdentitySet: !!(progress?.current_identity),
-      identityDayInCycle: progress?.identity_sprint_start 
-        ? Math.floor((Date.now() - new Date(progress.identity_sprint_start).getTime()) / (1000 * 60 * 60 * 24)) + 1
+      stageIntroCompleted: extendedProgress?.ritualIntroCompleted || introStep >= 4,
+      hasIdentitySet: !!(extendedProgress?.currentIdentity),
+      identityDayInCycle: extendedProgress?.identitySprintStart 
+        ? Math.floor((Date.now() - new Date(extendedProgress.identitySprintStart).getTime()) / (1000 * 60 * 60 * 24)) + 1
         : undefined,
-      flowBlockSetupCompleted: progress?.flow_block_setup_completed || false,
-      toolsIntroduced: progress?.tools_introduced || [],
+      flowBlockSetupCompleted: extendedProgress?.flowBlockSetupCompleted || false,
+      toolsIntroduced: extendedProgress?.toolsIntroduced || [],
       weeklyCheckInDue: false, // TODO: Implement weekly check-in logic
       isMobile
     };
@@ -611,8 +617,9 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
 
   // Update practices completed today when progress changes
   useEffect(() => {
-    if (progress?.practices_completed_today) {
-      setPracticesCompletedToday(progress.practices_completed_today);
+    const extendedProgress = progress as any;
+    if (extendedProgress?.practicesCompletedToday) {
+      setPracticesCompletedToday(extendedProgress.practicesCompletedToday);
     }
   }, [progress]);
 
@@ -931,7 +938,8 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
       if (result.additionalContext?.markToolIntroduced) {
         try {
           const supabase = createClient();
-          const currentTools = progress?.tools_introduced || [];
+          const extendedProgress = progress as any;
+          const currentTools = extendedProgress?.toolsIntroduced || [];
           await supabase
             .from('user_progress')
             .update({ 
