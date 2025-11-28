@@ -17,15 +17,28 @@ export default function AwarenessRep({ onComplete }: AwarenessRepProps) {
   const [isComplete, setIsComplete] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [loadAttempts, setLoadAttempts] = useState(0);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const onCompleteCalledRef = useRef(false);
+
+  // Try to load audio on mount
+  useEffect(() => {
+    if (audioRef.current) {
+      console.log('[AwarenessRep] Audio element mounted, src:', audioRef.current.src);
+      
+      // Force load attempt
+      audioRef.current.load();
+    }
+  }, []);
 
   // Handle audio events
   const handleLoadedMetadata = () => {
     if (audioRef.current) {
       setDuration(audioRef.current.duration);
       setIsLoaded(true);
-      console.log('[AwarenessRep] Audio loaded, duration:', audioRef.current.duration);
+      setAudioError(null);
+      console.log('[AwarenessRep] Audio loaded successfully, duration:', audioRef.current.duration);
     }
   };
 
@@ -38,37 +51,111 @@ export default function AwarenessRep({ onComplete }: AwarenessRepProps) {
   const handleEnded = () => {
     setIsPlaying(false);
     setIsComplete(true);
-    console.log('[AwarenessRep] Audio ended, calling onComplete');
-    if (onComplete) {
+    console.log('[AwarenessRep] Audio ended');
+    
+    if (onComplete && !onCompleteCalledRef.current) {
+      onCompleteCalledRef.current = true;
+      console.log('[AwarenessRep] Calling onComplete');
       onComplete();
     }
   };
 
   const handleError = (e: React.SyntheticEvent<HTMLAudioElement, Event>) => {
-    console.error("[AwarenessRep] Audio error:", e);
-    setAudioError("Unable to load audio. Please check the file exists at /audio/AwarenessRep.mp3");
+    const audio = e.currentTarget;
+    const error = audio.error;
+    
+    let errorMessage = "Unable to load audio file.";
+    
+    if (error) {
+      switch (error.code) {
+        case MediaError.MEDIA_ERR_ABORTED:
+          errorMessage = "Audio loading was aborted.";
+          break;
+        case MediaError.MEDIA_ERR_NETWORK:
+          errorMessage = "Network error while loading audio.";
+          break;
+        case MediaError.MEDIA_ERR_DECODE:
+          errorMessage = "Audio file is corrupted or unsupported format.";
+          break;
+        case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
+          errorMessage = "Audio file not found or format not supported.";
+          break;
+      }
+      console.error("[AwarenessRep] Audio error:", error.code, error.message);
+    }
+    
+    console.error("[AwarenessRep] Full error event:", e);
+    console.error("[AwarenessRep] Audio src was:", audio.src);
+    console.error("[AwarenessRep] Network state:", audio.networkState);
+    console.error("[AwarenessRep] Ready state:", audio.readyState);
+    
+    setAudioError(errorMessage);
+    setIsLoaded(false);
   };
 
   const handleCanPlay = () => {
+    console.log('[AwarenessRep] Audio can play');
     setIsLoaded(true);
     setAudioError(null);
   };
 
+  const handleLoadStart = () => {
+    console.log('[AwarenessRep] Audio load started');
+    setLoadAttempts(prev => prev + 1);
+  };
+
   const togglePlayPause = async () => {
-    if (!audioRef.current) return;
+    if (!audioRef.current) {
+      console.error('[AwarenessRep] No audio element');
+      return;
+    }
+
+    console.log('[AwarenessRep] Toggle play/pause, current state:', {
+      paused: audioRef.current.paused,
+      readyState: audioRef.current.readyState,
+      networkState: audioRef.current.networkState,
+      src: audioRef.current.src
+    });
 
     if (isPlaying) {
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
       try {
+        // If not loaded, try loading again
+        if (audioRef.current.readyState < 2) {
+          console.log('[AwarenessRep] Audio not ready, attempting reload...');
+          audioRef.current.load();
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
         await audioRef.current.play();
         setIsPlaying(true);
         setAudioError(null);
+        console.log('[AwarenessRep] Playback started successfully');
       } catch (err) {
         console.error("[AwarenessRep] Playback failed:", err);
-        setAudioError("Playback failed. Tap to try again.");
+        
+        if (err instanceof Error) {
+          if (err.name === 'NotAllowedError') {
+            setAudioError("Tap again to play (autoplay blocked)");
+          } else if (err.name === 'NotSupportedError') {
+            setAudioError("Audio format not supported");
+          } else {
+            setAudioError(`Playback failed: ${err.message}`);
+          }
+        } else {
+          setAudioError("Playback failed. Check if audio file exists.");
+        }
       }
+    }
+  };
+
+  const retryLoad = () => {
+    if (audioRef.current) {
+      console.log('[AwarenessRep] Retrying audio load...');
+      setAudioError(null);
+      audioRef.current.load();
     }
   };
 
@@ -102,11 +189,12 @@ export default function AwarenessRep({ onComplete }: AwarenessRepProps) {
         overflow: "hidden",
       }}
     >
-      {/* HTML Audio Element - more reliable than Audio API */}
+      {/* HTML Audio Element */}
       <audio
         ref={audioRef}
         src="/audio/AwarenessRep.mp3"
-        preload="metadata"
+        preload="auto"
+        onLoadStart={handleLoadStart}
         onLoadedMetadata={handleLoadedMetadata}
         onTimeUpdate={handleTimeUpdate}
         onEnded={handleEnded}
@@ -336,24 +424,44 @@ export default function AwarenessRep({ onComplete }: AwarenessRepProps) {
         </div>
       </div>
 
-      {/* Error display */}
+      {/* Error display with retry button */}
       {audioError && (
         <div
           style={{
             position: "absolute",
             bottom: "8%",
-            color: "#ef4444",
-            fontSize: "0.85rem",
             textAlign: "center",
             padding: "0 1rem",
           }}
         >
-          {audioError}
+          <div
+            style={{
+              color: "#ef4444",
+              fontSize: "0.85rem",
+              marginBottom: "0.5rem",
+            }}
+          >
+            {audioError}
+          </div>
+          <button
+            onClick={retryLoad}
+            style={{
+              padding: "0.5rem 1rem",
+              fontSize: "0.75rem",
+              color: "#ff9e19",
+              backgroundColor: "rgba(255, 158, 25, 0.1)",
+              border: "1px solid rgba(255, 158, 25, 0.3)",
+              borderRadius: "4px",
+              cursor: "pointer",
+            }}
+          >
+            Retry Loading
+          </button>
         </div>
       )}
 
       {/* Instructions */}
-      {!isPlaying && !isComplete && (
+      {!isPlaying && !isComplete && !audioError && (
         <div
           style={{
             position: "absolute",
