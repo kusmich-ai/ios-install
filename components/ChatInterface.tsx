@@ -169,6 +169,17 @@ const stageRituals: { [key: number]: { list: string; total: string } } = {
   }
 };
 
+// Required practice IDs by stage (for checking completion)
+const stagePracticeIds: { [key: number]: string[] } = {
+  1: ['resonance_breathing', 'awareness_rep'],
+  2: ['resonance_breathing', 'somatic_flow', 'awareness_rep'],
+  3: ['resonance_breathing', 'somatic_flow', 'awareness_rep', 'micro_action'],
+  4: ['resonance_breathing', 'somatic_flow', 'awareness_rep', 'micro_action', 'flow_block'],
+  5: ['resonance_breathing', 'somatic_flow', 'awareness_rep', 'micro_action', 'flow_block', 'co_regulation'],
+  6: ['resonance_breathing', 'somatic_flow', 'awareness_rep', 'micro_action', 'flow_block', 'co_regulation', 'nightly_debrief'],
+  7: ['resonance_breathing', 'somatic_flow', 'awareness_rep', 'micro_action', 'flow_block', 'co_regulation', 'nightly_debrief']
+};
+
 // ============================================
 // RITUAL INTRODUCTION TEMPLATES (Stage 1)
 // ============================================
@@ -375,20 +386,38 @@ Ready to learn the rituals?`;
 }
 
 // RETURNING USER (same day): Brief check-in
-function getSameDayReturnMessage(data: BaselineData, progress: ProgressData | null): string {
-  const completedToday = progress?.adherence_percentage ? progress.adherence_percentage > 0 : false;
+function getSameDayReturnMessage(
+  data: BaselineData, 
+  progress: ProgressData | null, 
+  currentStage: number,
+  completedPractices: string[]
+): string {
+  const requiredPractices = stagePracticeIds[currentStage] || stagePracticeIds[1];
+  const completedCount = completedPractices.length;
+  const totalRequired = requiredPractices.length;
+  const allComplete = requiredPractices.every(p => completedPractices.includes(p));
   
-  if (completedToday) {
+  if (allComplete) {
     return `Welcome back. Good to see you.
 
-Looks like you've already logged rituals today. What do you need?
+All ${totalRequired} rituals logged today. Nice work.
 
+What do you need?
 • Continue a conversation
 • Run an on-demand protocol (Reframe, Thought Hygiene, Decentering)
 • Check your progress
 • Ask a question
 
 What's on your mind?`;
+  }
+  
+  if (completedCount > 0) {
+    const remaining = requiredPractices.filter(p => !completedPractices.includes(p));
+    return `Welcome back.
+
+You've completed ${completedCount}/${totalRequired} rituals today. ${remaining.length} remaining.
+
+Ready to continue, or is there something else you need first?`;
   }
   
   return `Welcome back.
@@ -640,13 +669,14 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
         // Check progress data from user_progress (using correct column names)
         const { data: progressData } = await supabase
           .from('user_progress')
-          .select('system_initialized, baseline_completed, adherence_percentage, consecutive_days, stage_start_date, ritual_intro_completed, updated_at')
+          .select('system_initialized, baseline_completed, adherence_percentage, consecutive_days, stage_start_date, ritual_intro_completed, updated_at, current_stage')
           .eq('user_id', user.id)
           .single();
         
         const lastVisit = progressData?.updated_at || null;
         const hasCompletedOnboarding = progressData?.system_initialized || false;
         const hasCompletedRitualIntro = progressData?.ritual_intro_completed || false;
+        const currentStage = progressData?.current_stage || 1;
         
         // Get today's completed practices from practice_logs
         const today = new Date();
@@ -659,8 +689,12 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
           .eq('practice_date', localDate)
           .eq('completed', true);
         
-        if (practiceLogsData && practiceLogsData.length > 0) {
-          const completedPractices = practiceLogsData.map((p: { practice_type: string }) => p.practice_type);
+        // Build completed practices array
+        const completedPractices = practiceLogsData 
+          ? practiceLogsData.map((p: { practice_type: string }) => p.practice_type)
+          : [];
+        
+        if (completedPractices.length > 0) {
           setPracticesCompletedToday(completedPractices);
         }
         
@@ -696,7 +730,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
             break;
             
           case 'same_day':
-            openingMessage = getSameDayReturnMessage(baselineData, progressData);
+            openingMessage = getSameDayReturnMessage(baselineData, progressData, currentStage, completedPractices);
             break;
             
           case 'new_day':
