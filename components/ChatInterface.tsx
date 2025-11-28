@@ -542,8 +542,8 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
     
     return {
       userName,
-      currentStage: baselineData.currentStage,
-      stageName: getStageName(baselineData.currentStage),
+      currentStage: progress?.currentStage || 1,
+      stageName: getStageName(progress?.currentStage || 1),
       adherence: extendedProgress?.adherencePercentage || 0,
       consecutiveDays: extendedProgress?.consecutiveDays || 0,
       daysInStage,
@@ -587,7 +587,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
     }
     
     return {
-      currentStage: baselineData.currentStage,
+      currentStage: progress?.currentStage || 1,
       daysInStage,
       adherence: extendedProgress?.adherencePercentage || 0,
       consecutiveDays: extendedProgress?.consecutiveDays || 0,
