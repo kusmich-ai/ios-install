@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import AwarenessRep from "./AwarenessRep";
 
 // ============================================================================
@@ -15,15 +15,37 @@ interface AwarenessRepModalProps {
 }
 
 export function AwarenessRepModal({ isOpen, onClose, onComplete }: AwarenessRepModalProps) {
+  const hasCompletedRef = useRef(false);
+
+  // Reset completion flag when modal opens/closes
+  useEffect(() => {
+    if (!isOpen) {
+      hasCompletedRef.current = false;
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
-  const handleComplete = () => {
+  const handleSessionComplete = () => {
+    // Prevent double-calling
+    if (hasCompletedRef.current) {
+      console.log('[AwarenessRepModal] Already completed, skipping');
+      return;
+    }
+    hasCompletedRef.current = true;
+
+    console.log('[AwarenessRepModal] Session complete, calling onComplete');
+    
     // Call the onComplete callback (this triggers auto-logging)
     if (onComplete) {
       onComplete();
     }
-    // Optional: auto-close after a brief delay to show completion state
-    // setTimeout(onClose, 1500);
+    
+    // Auto-close after 2 seconds to show completion state
+    setTimeout(() => {
+      console.log('[AwarenessRepModal] Auto-closing modal');
+      onClose();
+    }, 2000);
   };
 
   return (
@@ -34,7 +56,7 @@ export function AwarenessRepModal({ isOpen, onClose, onComplete }: AwarenessRepM
         zIndex: 9999,
       }}
     >
-      <AwarenessRep onComplete={handleComplete} />
+      <AwarenessRep onComplete={handleSessionComplete} />
       
       {/* Close button - top right */}
       <button
