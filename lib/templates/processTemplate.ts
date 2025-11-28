@@ -2,7 +2,61 @@
 // Template variable replacement system
 
 export interface TemplateContext {
+  // ===========================================
+  // FLAT PROPERTIES (preferred, simpler to use)
+  // ===========================================
+  
   // User info
+  userName?: string;
+  
+  // Stage info
+  currentStage?: number;
+  stageName?: string;
+  daysInStage?: number;
+  
+  // Progress metrics
+  adherence?: number;
+  consecutiveDays?: number;
+  
+  // REwired Index
+  rewiredIndex?: number;
+  statusTier?: string;
+  
+  // Domain scores (0-5)
+  regulationScore?: number;
+  awarenessScore?: number;
+  outlookScore?: number;
+  attentionScore?: number;
+  
+  // Delta tracking
+  regulationDelta?: number;
+  awarenessDelta?: number;
+  outlookDelta?: number;
+  attentionDelta?: number;
+  avgDelta?: number;
+  
+  // Identity tracking (Stage 3+)
+  currentIdentity?: string;
+  microAction?: string;
+  identityDayInCycle?: number;
+  identityDaysRemaining?: number;
+  
+  // Platform
+  isMobile?: boolean;
+  toolsReference?: string;
+  
+  // Context-specific data (passed for specific templates)
+  practiceId?: string;
+  practiceName?: string;
+  nextPractice?: string;
+  nextPracticeName?: string;
+  allComplete?: boolean;
+  
+  // ===========================================
+  // NESTED PROPERTIES (backward compatibility)
+  // ===========================================
+  
+  // User info (nested)
   user?: {
     id?: string;
     user_metadata?: {
@@ -11,7 +65,7 @@ export interface TemplateContext {
     email?: string;
   };
   
-  // Baseline data
+  // Baseline data (nested)
   baselineData?: {
     rewiredIndex: number;
     tier: string;
@@ -24,33 +78,22 @@ export interface TemplateContext {
     };
   };
   
-  // Progress data
+  // Progress data (nested)
   progress?: {
     adherence_percentage?: number;
     consecutive_days?: number;
     stage_start_date?: string;
     current_stage?: number;
     practices_completed_today?: string[];
-    // Delta tracking
     latest_regulation_delta?: number;
     latest_awareness_delta?: number;
     latest_outlook_delta?: number;
     latest_attention_delta?: number;
     latest_avg_delta?: number;
-    // Identity tracking (Stage 3+)
     current_identity?: string;
     micro_action?: string;
     identity_sprint_start?: string;
   };
-  
-  // Platform
-  isMobile?: boolean;
-  
-  // Context-specific data (passed for specific templates)
-  practiceId?: string;
-  practiceName?: string;
-  nextPractice?: string;
-  nextPracticeName?: string;
   
   // Weekly check-in results
   deltas?: {
@@ -59,7 +102,6 @@ export interface TemplateContext {
     outlook: number;
     attention: number;
   };
-  avgDelta?: number;
   newScores?: {
     regulation: number;
     awareness: number;
@@ -78,6 +120,9 @@ export interface TemplateContext {
     avgDelta: number;
     consecutiveDays: number;
   };
+  
+  // Allow any additional properties for flexibility
+  [key: string]: any;
 }
 
 // Stage name lookup
@@ -132,51 +177,107 @@ function formatDelta(delta?: number): string {
  * with their actual values from the context.
  */
 export function processTemplate(template: string, context: TemplateContext): string {
+  // Support both flat properties (preferred) and nested (backward compatible)
   const {
-    user,
-    baselineData,
-    progress,
+    // Flat properties
+    userName,
+    currentStage: flatCurrentStage,
+    stageName: flatStageName,
+    daysInStage: flatDaysInStage,
+    adherence: flatAdherence,
+    consecutiveDays: flatConsecutiveDays,
+    rewiredIndex: flatRewiredIndex,
+    statusTier,
+    regulationScore: flatRegulationScore,
+    awarenessScore: flatAwarenessScore,
+    outlookScore: flatOutlookScore,
+    attentionScore: flatAttentionScore,
+    regulationDelta: flatRegulationDelta,
+    awarenessDelta: flatAwarenessDelta,
+    outlookDelta: flatOutlookDelta,
+    attentionDelta: flatAttentionDelta,
+    avgDelta: flatAvgDelta,
+    currentIdentity: flatCurrentIdentity,
+    microAction: flatMicroAction,
+    identityDayInCycle: flatIdentityDayInCycle,
+    identityDaysRemaining: flatIdentityDaysRemaining,
     isMobile,
+    toolsReference,
     practiceId,
     practiceName,
     nextPractice,
     nextPracticeName,
+    allComplete,
+    
+    // Nested properties (backward compatible)
+    user,
+    baselineData,
+    progress,
     deltas,
-    avgDelta,
     newScores,
     unlockCriteria,
     currentStatus
   } = context;
 
+  // Resolve values: prefer flat, fall back to nested
+  const resolvedUserName = userName || user?.user_metadata?.first_name || '';
+  const resolvedCurrentStage = flatCurrentStage || baselineData?.currentStage || progress?.current_stage || 1;
+  const resolvedStageName = flatStageName || getStageName(resolvedCurrentStage);
+  const resolvedDaysInStage = flatDaysInStage || calculateDaysInStage(progress?.stage_start_date);
+  const resolvedAdherence = flatAdherence ?? progress?.adherence_percentage ?? 0;
+  const resolvedConsecutiveDays = flatConsecutiveDays ?? progress?.consecutive_days ?? 0;
+  const resolvedRewiredIndex = flatRewiredIndex ?? baselineData?.rewiredIndex ?? 0;
+  const resolvedTier = statusTier || baselineData?.tier || 'Baseline Mode';
+  
+  // Domain scores
+  const resolvedRegulationScore = flatRegulationScore ?? baselineData?.domainScores?.regulation ?? 0;
+  const resolvedAwarenessScore = flatAwarenessScore ?? baselineData?.domainScores?.awareness ?? 0;
+  const resolvedOutlookScore = flatOutlookScore ?? baselineData?.domainScores?.outlook ?? 0;
+  const resolvedAttentionScore = flatAttentionScore ?? baselineData?.domainScores?.attention ?? 0;
+  
+  // Deltas
+  const resolvedRegulationDelta = flatRegulationDelta ?? deltas?.regulation ?? progress?.latest_regulation_delta;
+  const resolvedAwarenessDelta = flatAwarenessDelta ?? deltas?.awareness ?? progress?.latest_awareness_delta;
+  const resolvedOutlookDelta = flatOutlookDelta ?? deltas?.outlook ?? progress?.latest_outlook_delta;
+  const resolvedAttentionDelta = flatAttentionDelta ?? deltas?.attention ?? progress?.latest_attention_delta;
+  const resolvedAvgDelta = flatAvgDelta ?? progress?.latest_avg_delta;
+  
+  // Identity
+  const resolvedCurrentIdentity = flatCurrentIdentity || progress?.current_identity || '[Identity not set]';
+  const resolvedMicroAction = flatMicroAction || progress?.micro_action || '[Action not set]';
+  const resolvedIdentityDaysRemaining = flatIdentityDaysRemaining ?? calculateIdentityDaysRemaining(progress?.identity_sprint_start);
+  const resolvedIdentityDayInCycle = flatIdentityDayInCycle ?? calculateIdentityDayInCycle(progress?.identity_sprint_start);
+
   // Build variable map
   const variables: { [key: string]: string } = {
     // User info
-    '{{userName}}': user?.user_metadata?.first_name || '',
-    '{{userFirstName}}': user?.user_metadata?.first_name || '',
+    '{{userName}}': resolvedUserName,
+    '{{userFirstName}}': resolvedUserName,
     
     // Stage info
-    '{{currentStage}}': String(baselineData?.currentStage || progress?.current_stage || 1),
-    '{{stageName}}': getStageName(baselineData?.currentStage || progress?.current_stage || 1),
-    '{{daysInStage}}': String(calculateDaysInStage(progress?.stage_start_date)),
+    '{{currentStage}}': String(resolvedCurrentStage),
+    '{{stageName}}': resolvedStageName,
+    '{{daysInStage}}': String(resolvedDaysInStage),
     
     // Progress info
-    '{{adherence}}': String(Math.round(progress?.adherence_percentage || 0)),
-    '{{consecutiveDays}}': String(progress?.consecutive_days || 0),
-    '{{rewiredIndex}}': String(baselineData?.rewiredIndex || 0),
-    '{{tier}}': baselineData?.tier || 'Baseline Mode',
+    '{{adherence}}': String(Math.round(resolvedAdherence)),
+    '{{consecutiveDays}}': String(resolvedConsecutiveDays),
+    '{{rewiredIndex}}': String(resolvedRewiredIndex),
+    '{{tier}}': resolvedTier,
+    '{{statusTier}}': resolvedTier,
     
     // Domain scores (current)
-    '{{regulationScore}}': (baselineData?.domainScores?.regulation || 0).toFixed(1),
-    '{{awarenessScore}}': (baselineData?.domainScores?.awareness || 0).toFixed(1),
-    '{{outlookScore}}': (baselineData?.domainScores?.outlook || 0).toFixed(1),
-    '{{attentionScore}}': (baselineData?.domainScores?.attention || 0).toFixed(1),
+    '{{regulationScore}}': resolvedRegulationScore.toFixed(1),
+    '{{awarenessScore}}': resolvedAwarenessScore.toFixed(1),
+    '{{outlookScore}}': resolvedOutlookScore.toFixed(1),
+    '{{attentionScore}}': resolvedAttentionScore.toFixed(1),
     
-    // Deltas (from progress or passed in)
-    '{{regulationDelta}}': formatDelta(deltas?.regulation ?? progress?.latest_regulation_delta),
-    '{{awarenessDelta}}': formatDelta(deltas?.awareness ?? progress?.latest_awareness_delta),
-    '{{outlookDelta}}': formatDelta(deltas?.outlook ?? progress?.latest_outlook_delta),
-    '{{attentionDelta}}': formatDelta(deltas?.attention ?? progress?.latest_attention_delta),
-    '{{avgDelta}}': formatDelta(avgDelta ?? progress?.latest_avg_delta),
+    // Deltas
+    '{{regulationDelta}}': formatDelta(resolvedRegulationDelta),
+    '{{awarenessDelta}}': formatDelta(resolvedAwarenessDelta),
+    '{{outlookDelta}}': formatDelta(resolvedOutlookDelta),
+    '{{attentionDelta}}': formatDelta(resolvedAttentionDelta),
+    '{{avgDelta}}': formatDelta(resolvedAvgDelta),
     
     // New scores (from weekly check-in)
     '{{newRegulationScore}}': newScores?.regulation?.toFixed(1) || '0.0',
@@ -185,15 +286,18 @@ export function processTemplate(template: string, context: TemplateContext): str
     '{{newAttentionScore}}': newScores?.attention?.toFixed(1) || '0.0',
     
     // Identity (Stage 3+)
-    '{{currentIdentity}}': progress?.current_identity || '[Identity not set]',
-    '{{microAction}}': progress?.micro_action || '[Action not set]',
-    '{{identityDaysRemaining}}': String(calculateIdentityDaysRemaining(progress?.identity_sprint_start)),
-    '{{identityDayInCycle}}': String(calculateIdentityDayInCycle(progress?.identity_sprint_start)),
+    '{{currentIdentity}}': resolvedCurrentIdentity,
+    '{{microAction}}': resolvedMicroAction,
+    '{{identityDaysRemaining}}': String(resolvedIdentityDaysRemaining),
+    '{{identityDayInCycle}}': String(resolvedIdentityDayInCycle),
     
     // Platform-specific references
-    '{{toolbarReference}}': isMobile 
+    '{{toolbarReference}}': toolsReference || (isMobile 
       ? 'lightning bolt icon at the bottom right' 
-      : 'Daily Rituals toolbar on the right',
+      : 'Daily Rituals toolbar on the right'),
+    '{{toolsReference}}': toolsReference || (isMobile 
+      ? 'lightning bolt icon at the bottom right' 
+      : 'Daily Rituals toolbar on the right'),
     '{{dashboardReference}}': isMobile
       ? 'hamburger menu in the top left'
       : 'dashboard on the left',
@@ -209,9 +313,9 @@ export function processTemplate(template: string, context: TemplateContext): str
     '{{adherenceThreshold}}': String(unlockCriteria?.adherenceThreshold || 80),
     '{{deltaThreshold}}': String(unlockCriteria?.deltaThreshold || 0.3),
     '{{minimumDays}}': String(unlockCriteria?.minimumDays || 14),
-    '{{currentAdherence}}': String(Math.round(currentStatus?.adherence || 0)),
-    '{{currentAvgDelta}}': formatDelta(currentStatus?.avgDelta),
-    '{{currentConsecutiveDays}}': String(currentStatus?.consecutiveDays || 0),
+    '{{currentAdherence}}': String(Math.round(currentStatus?.adherence || resolvedAdherence)),
+    '{{currentAvgDelta}}': formatDelta(currentStatus?.avgDelta ?? resolvedAvgDelta),
+    '{{currentConsecutiveDays}}': String(currentStatus?.consecutiveDays || resolvedConsecutiveDays),
   };
 
   // Replace all variables in template
