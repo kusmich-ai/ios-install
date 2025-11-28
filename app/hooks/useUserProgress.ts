@@ -147,7 +147,7 @@ export function useUserProgress() {
         .from('weekly_deltas')
         .select('*')
         .eq('user_id', user.id)
-        .order('week_start_date', { ascending: false })
+        .order('week_of', { ascending: false })
         .limit(1)
         .single();
 
