@@ -1077,7 +1077,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
     return 'User';
   };
 
-  const stageProgress = ((baselineData.currentStage - 1) / 6) * 100;
+  const stageProgress = ((progress?.currentStage || 1) - 1) / 6 * 100;
   
   // Determine if we should show quick reply button
   const currentQuickReply = openingType === 'first_time' && introStep < 3 ? introQuickReplies[introStep] : null;
@@ -1096,11 +1096,11 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
           <div className="mb-6 p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
             <div className="flex items-center justify-between mb-1">
               <span className="text-sm text-[#ff9e19] font-semibold">
-                Stage {baselineData.currentStage} of 7
+                Stage {progress?.currentStage || 1} of 7
               </span>
             </div>
             <div className="text-xs text-gray-300 mb-2">
-              {getStageName(baselineData.currentStage)}
+              {getStageName(progress?.currentStage || 1)}
             </div>
             <div className="w-full rounded-full h-1.5 bg-[#1a1a1a]">
               <div 
@@ -1297,7 +1297,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
       {isMobile && (
         <MobileDashboard
           userName={getUserName()}
-          currentStage={baselineData.currentStage}
+          currentStage={progress?.currentStage || 1}
           rewiredIndex={baselineData.rewiredIndex}
           domainScores={baselineData.domainScores}
         />
