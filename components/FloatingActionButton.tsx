@@ -6,6 +6,7 @@ import { Zap, X, Check, Loader2, RefreshCw } from 'lucide-react';
 import { getStagePractices, getUnlockedOnDemandTools } from '@/app/config/stages';
 import type { UserProgress } from '@/app/hooks/useUserProgress';
 import { useResonanceBreathing } from '@/components/ResonanceModal';
+import { useAwarenessRep } from '@/components/AwarenessRepModal';
 
 interface FloatingActionButtonProps {
   progress: UserProgress;
@@ -14,7 +15,7 @@ interface FloatingActionButtonProps {
   onToolClick: (toolId: string) => void;
   onProgressUpdate?: () => Promise<void> | void;
   onPracticeCompleted?: (practiceId: string, practiceName: string) => void;
-  isRefreshing?: boolean; // NEW: show when data is being refreshed
+  isRefreshing?: boolean;
 }
 
 // Map from config practice IDs to database practice_type values
@@ -41,8 +42,9 @@ export default function FloatingActionButton({
   const [completing, setCompleting] = useState<string | null>(null);
   const [completionError, setCompletionError] = useState<string | null>(null);
 
-  // Initialize the Resonance Breathing modal hook
+  // Initialize modal hooks
   const { open: openResonance, Modal: ResonanceModal } = useResonanceBreathing();
+  const { open: openAwarenessRep, Modal: AwarenessRepModal } = useAwarenessRep();
 
   const currentStagePractices = getStagePractices(progress.currentStage);
   const unlockedTools = getUnlockedOnDemandTools(progress.currentStage);
@@ -58,20 +60,34 @@ export default function FloatingActionButton({
     return status === 'completed' ? '✅' : '⏳';
   };
 
-  // Handle "Start Ritual" click with special routing for Resonance Breathing
+  // Handle "Start Ritual" click - routes to appropriate modal or chat
   const handleStartPractice = (practiceId: string) => {
     if (practiceId === 'hrvb') {
       openResonance();
       setIsOpen(false);
+    } else if (practiceId === 'awareness_rep') {
+      openAwarenessRep();
+      setIsOpen(false);
     } else {
+      // Other practices go to chat for guidance
       onPracticeClick(practiceId);
       setIsOpen(false);
     }
   };
 
+  // Handle modal completion - logs practice and notifies chat
+  const handleModalComplete = async (practiceId: string, practiceName: string) => {
+    console.log(`[FloatingActionButton] Modal completed: ${practiceId}`);
+    
+    // Only log if not already completed today
+    if (getPracticeStatus(practiceId) !== 'completed') {
+      await handleMarkComplete(practiceId, practiceName);
+    }
+  };
+
   // Handle "Done" button click to mark practice complete
-  const handleMarkComplete = async (practiceId: string, practiceName: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleMarkComplete = async (practiceId: string, practiceName: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     
     if (!userId) {
       setCompletionError('No user ID - please refresh the page');
@@ -105,7 +121,7 @@ export default function FloatingActionButton({
         throw new Error(data.error || `HTTP ${response.status}`);
       }
 
-      // NEW: Wait a moment for database to update
+      // Wait a moment for database to update
       await new Promise(resolve => setTimeout(resolve, 300));
 
       // Notify chat that practice was completed
@@ -135,8 +151,13 @@ export default function FloatingActionButton({
 
   return (
     <>
-      {/* Resonance Breathing Modal */}
-      <ResonanceModal />
+      {/* Modals - rendered at top level with onComplete callbacks */}
+      <ResonanceModal 
+        onComplete={() => handleModalComplete('hrvb', 'Resonance Breathing')} 
+      />
+      <AwarenessRepModal 
+        onComplete={() => handleModalComplete('awareness_rep', 'Awareness Rep')} 
+      />
 
       {/* Overlay */}
       {isOpen && (
@@ -154,7 +175,6 @@ export default function FloatingActionButton({
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <h3 className="text-sm font-bold text-white">Tools</h3>
-                {/* NEW: Refresh indicator */}
                 {isRefreshing && (
                   <RefreshCw className="w-3 h-3 text-[#ff9e19] animate-spin" />
                 )}
