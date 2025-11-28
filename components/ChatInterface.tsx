@@ -172,13 +172,13 @@ const stageRituals: { [key: number]: { list: string; total: string } } = {
 // Required practice IDs by stage (for checking completion)
 // IDs must match what's stored in practice_logs.practice_type
 const stagePracticeIds: { [key: number]: string[] } = {
-  1: ['HRVB', 'awareness_rep'],
-  2: ['HRVB', 'somatic_flow', 'awareness_rep'],
-  3: ['HRVB', 'somatic_flow', 'awareness_rep', 'micro_action'],
-  4: ['HRVB', 'somatic_flow', 'awareness_rep', 'micro_action', 'flow_block'],
-  5: ['HRVB', 'somatic_flow', 'awareness_rep', 'micro_action', 'flow_block', 'co_regulation'],
-  6: ['HRVB', 'somatic_flow', 'awareness_rep', 'micro_action', 'flow_block', 'co_regulation', 'nightly_debrief'],
-  7: ['HRVB', 'somatic_flow', 'awareness_rep', 'micro_action', 'flow_block', 'co_regulation', 'nightly_debrief']
+  1: ['hrvb', 'awareness_rep'],
+  2: ['hrvb', 'somatic_flow', 'awareness_rep'],
+  3: ['hrvb', 'somatic_flow', 'awareness_rep', 'micro_action'],
+  4: ['hrvb', 'somatic_flow', 'awareness_rep', 'micro_action', 'flow_block'],
+  5: ['hrvb', 'somatic_flow', 'awareness_rep', 'micro_action', 'flow_block', 'co_regulation'],
+  6: ['hrvb', 'somatic_flow', 'awareness_rep', 'micro_action', 'flow_block', 'co_regulation', 'nightly_debrief'],
+  7: ['hrvb', 'somatic_flow', 'awareness_rep', 'micro_action', 'flow_block', 'co_regulation', 'nightly_debrief']
 };
 
 // ============================================
@@ -396,9 +396,11 @@ function getSameDayReturnMessage(
   const requiredPractices = stagePracticeIds[currentStage] || stagePracticeIds[1];
   const totalRequired = requiredPractices.length;
   
-  // Count how many required practices have been completed
-  // (handles case where practice IDs in DB might not exactly match our list)
-  const completedRequired = requiredPractices.filter(p => completedPractices.includes(p));
+  // Normalize to lowercase for comparison
+  const completedLower = completedPractices.map(p => p.toLowerCase());
+  
+  // Count how many required practices have been completed (case-insensitive)
+  const completedRequired = requiredPractices.filter(p => completedLower.includes(p.toLowerCase()));
   const completedCount = completedRequired.length;
   const remainingCount = totalRequired - completedCount;
   const allComplete = completedCount >= totalRequired;
