@@ -1,10 +1,10 @@
+// components/FloatingActionButton.tsx
 'use client';
 
 import { useState } from 'react';
-import { Zap, X, Check, Loader2 } from 'lucide-react';
+import { Zap, X, Check, Loader2, RefreshCw } from 'lucide-react';
 import { getStagePractices, getUnlockedOnDemandTools } from '@/app/config/stages';
 import type { UserProgress } from '@/app/hooks/useUserProgress';
-// Import the Resonance Breathing modal hook
 import { useResonanceBreathing } from '@/components/ResonanceModal';
 
 interface FloatingActionButtonProps {
@@ -12,8 +12,9 @@ interface FloatingActionButtonProps {
   userId: string;
   onPracticeClick: (practiceId: string) => void;
   onToolClick: (toolId: string) => void;
-  onProgressUpdate?: () => void;
-  onPracticeCompleted?: (practiceId: string, practiceName: string) => void; // NEW: notify chat when practice completed
+  onProgressUpdate?: () => Promise<void> | void;
+  onPracticeCompleted?: (practiceId: string, practiceName: string) => void;
+  isRefreshing?: boolean; // NEW: show when data is being refreshed
 }
 
 // Map from config practice IDs to database practice_type values
@@ -33,7 +34,8 @@ export default function FloatingActionButton({
   onPracticeClick, 
   onToolClick,
   onProgressUpdate,
-  onPracticeCompleted
+  onPracticeCompleted,
+  isRefreshing = false
 }: FloatingActionButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [completing, setCompleting] = useState<string | null>(null);
@@ -81,6 +83,10 @@ export default function FloatingActionButton({
       setCompletionError(null);
 
       const dbPracticeType = PRACTICE_ID_MAP[practiceId] || practiceId;
+      
+      // Get client's local date
+      const now = new Date();
+      const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
       const response = await fetch('/api/practices/log', {
         method: 'POST',
@@ -89,7 +95,7 @@ export default function FloatingActionButton({
           userId: userId,
           practiceType: dbPracticeType,
           completed: true,
-          localDate: new Date().toLocaleDateString('en-CA')
+          localDate: localDate
         })
       });
 
@@ -99,15 +105,14 @@ export default function FloatingActionButton({
         throw new Error(data.error || `HTTP ${response.status}`);
       }
 
-      // NEW: Notify the chat that practice was completed
-      // This triggers Claude to acknowledge and guide to next ritual
+      // NEW: Wait a moment for database to update
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // Notify chat that practice was completed
       if (onPracticeCompleted) {
         onPracticeCompleted(practiceId, practiceName);
       } else if (onProgressUpdate) {
-        // Fallback to just refreshing progress
-        onProgressUpdate();
-      } else {
-        setTimeout(() => window.location.reload(), 500);
+        await onProgressUpdate();
       }
 
     } catch (err) {
@@ -130,7 +135,7 @@ export default function FloatingActionButton({
 
   return (
     <>
-      {/* Resonance Breathing Modal (invisible until opened) */}
+      {/* Resonance Breathing Modal */}
       <ResonanceModal />
 
       {/* Overlay */}
@@ -147,7 +152,13 @@ export default function FloatingActionButton({
           <div className="p-4">
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-bold text-white">Tools</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-white">Tools</h3>
+                {/* NEW: Refresh indicator */}
+                {isRefreshing && (
+                  <RefreshCw className="w-3 h-3 text-[#ff9e19] animate-spin" />
+                )}
+              </div>
               <button
                 onClick={() => setIsOpen(false)}
                 className="text-gray-400 hover:text-white"
@@ -235,7 +246,7 @@ export default function FloatingActionButton({
                         {practice.duration} min
                       </div>
                       
-                      {/* Action Buttons - matching desktop */}
+                      {/* Action Buttons */}
                       <div className="flex gap-2 ml-8">
                         {!isCompleted && (
                           <>
