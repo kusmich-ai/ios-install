@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Zap, X, Check, Loader2, RefreshCw } from 'lucide-react';
+import { Zap, X, Check, Loader2, RefreshCw, RotateCcw } from 'lucide-react';
 import { getStagePractices, getUnlockedOnDemandTools } from '@/app/config/stages';
 import type { UserProgress } from '@/app/hooks/useUserProgress';
 import { useResonanceBreathing } from '@/components/ResonanceModal';
@@ -266,38 +266,45 @@ export default function FloatingActionButton({
                         {practice.duration} min
                       </div>
                       
-                      {/* Action Buttons */}
+                      {/* Action Buttons - Always show Start, even if completed */}
                       <div className="flex gap-2 ml-8">
+                        {/* Start/Re-run Button - Always visible */}
+                        <button
+                          onClick={() => handleStartPractice(practice.id)}
+                          className={`flex-1 px-2 py-1.5 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1 ${
+                            isCompleted
+                              ? 'bg-gray-600/30 text-gray-400 hover:bg-gray-600/50 hover:text-gray-300'
+                              : 'bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30'
+                          }`}
+                        >
+                          {isCompleted && <RotateCcw className="w-3 h-3" />}
+                          {isCompleted ? 'Run Again' : 'Start Ritual'}
+                        </button>
+                        
+                        {/* Done Button - Only show if not completed */}
                         {!isCompleted && (
-                          <>
-                            <button
-                              onClick={() => handleStartPractice(practice.id)}
-                              className="flex-1 px-2 py-1.5 text-xs font-medium bg-emerald-600/20 text-emerald-400 rounded hover:bg-emerald-600/30 transition-colors"
-                            >
-                              Start Ritual
-                            </button>
-                            <button
-                              onClick={(e) => handleMarkComplete(practice.id, practice.name, e)}
-                              disabled={isCompleting}
-                              className={`px-3 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1 ${
-                                isCompleting
-                                  ? 'bg-gray-600 text-gray-400 cursor-wait'
-                                  : 'bg-[#ff9e19]/20 text-[#ff9e19] hover:bg-[#ff9e19]/30'
-                              }`}
-                            >
-                              {isCompleting ? (
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                              ) : (
-                                <Check className="w-3 h-3" />
-                              )}
-                              Done
-                            </button>
-                          </>
+                          <button
+                            onClick={(e) => handleMarkComplete(practice.id, practice.name, e)}
+                            disabled={isCompleting}
+                            className={`px-3 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1 ${
+                              isCompleting
+                                ? 'bg-gray-600 text-gray-400 cursor-wait'
+                                : 'bg-[#ff9e19]/20 text-[#ff9e19] hover:bg-[#ff9e19]/30'
+                            }`}
+                          >
+                            {isCompleting ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Check className="w-3 h-3" />
+                            )}
+                            Done
+                          </button>
                         )}
+                        
+                        {/* Completed indicator */}
                         {isCompleted && (
-                          <span className="text-xs text-green-400 flex items-center gap-1">
+                          <span className="px-2 py-1.5 text-xs text-green-400 flex items-center gap-1">
                             <Check className="w-3 h-3" />
-                            Completed
                           </span>
                         )}
                       </div>
@@ -321,9 +328,14 @@ export default function FloatingActionButton({
                   >
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{tool.icon}</span>
-                      <span className="text-sm font-medium text-white">
-                        {tool.shortName}
-                      </span>
+                      <div className="flex-1">
+                        <span className="text-sm font-medium text-white">
+                          {tool.name}
+                        </span>
+                        <div className="text-xs text-gray-400 mt-0.5">
+                          {tool.description}
+                        </div>
+                      </div>
                     </div>
                   </button>
                 ))}
