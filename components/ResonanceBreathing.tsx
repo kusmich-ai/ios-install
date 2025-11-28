@@ -8,6 +8,10 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 // Synced to BreathPulse.mp3 as the master audio track
 // ============================================================================
 
+interface ResonanceBreathingProps {
+  onComplete?: () => void; // Called when session completes (for auto-logging)
+}
+
 const TOTAL_BREATHS = 30;
 const CYCLE_DURATION = 10000; // 10 seconds per breath
 const INHALE_DURATION = 4000; // 4 seconds
@@ -22,6 +26,7 @@ const COLORS = {
   accentDim: "rgba(255, 158, 24, 0.15)",
   textPrimary: "#F5F2EC",
   textDim: "rgba(245, 242, 236, 0.4)",
+  success: "#10b981",
 };
 
 // Audio file path
@@ -30,7 +35,7 @@ const AUDIO_FILE = "/audio/BreathPulse.mp3";
 // Audio volume
 const VOLUME = 0.7;
 
-export default function ResonanceBreathing() {
+export default function ResonanceBreathing({ onComplete }: ResonanceBreathingProps) {
   const [isActive, setIsActive] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
   const [currentPhase, setCurrentPhase] = useState<"inhale" | "exhale" | "idle">("idle");
@@ -48,6 +53,22 @@ export default function ResonanceBreathing() {
   // Audio element ref
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const onCompleteCalledRef = useRef(false);
+
+  // Handle session completion
+  const handleSessionComplete = useCallback(() => {
+    setIsActive(false);
+    setIsComplete(true);
+    setCurrentPhase("idle");
+    setAnimationState({ orbScale: 1, ballPosition: 0, phase: "idle" });
+    
+    // Trigger onComplete callback (only once)
+    if (onComplete && !onCompleteCalledRef.current) {
+      onCompleteCalledRef.current = true;
+      console.log('[ResonanceBreathing] Session complete, calling onComplete');
+      onComplete();
+    }
+  }, [onComplete]);
 
   // Preload audio file
   useEffect(() => {
@@ -60,9 +81,7 @@ export default function ResonanceBreathing() {
     });
 
     audioRef.current.addEventListener("ended", () => {
-      setIsActive(false);
-      setIsComplete(true);
-      setCurrentPhase("idle");
+      handleSessionComplete();
     });
 
     audioRef.current.load();
@@ -73,7 +92,7 @@ export default function ResonanceBreathing() {
         audioRef.current = null;
       }
     };
-  }, []);
+  }, [handleSessionComplete]);
 
   // Ease in-out function
   const easeInOutQuad = (t: number) => {
@@ -88,10 +107,7 @@ export default function ResonanceBreathing() {
 
     // Check if audio ended
     if (audioRef.current.ended || currentTime >= TOTAL_DURATION) {
-      setIsActive(false);
-      setIsComplete(true);
-      setCurrentPhase("idle");
-      setAnimationState({ orbScale: 1, ballPosition: 0, phase: "idle" });
+      handleSessionComplete();
       return;
     }
 
@@ -149,7 +165,7 @@ export default function ResonanceBreathing() {
     setElapsedTime(currentTime);
 
     animationFrameRef.current = requestAnimationFrame(animate);
-  }, [isActive, breathCount, currentPhase]);
+  }, [isActive, breathCount, currentPhase, handleSessionComplete]);
 
   // Start animation loop when active
   useEffect(() => {
@@ -166,6 +182,9 @@ export default function ResonanceBreathing() {
   // Start session
   const startSession = useCallback(() => {
     if (!audioRef.current) return;
+
+    // Reset the onComplete called flag
+    onCompleteCalledRef.current = false;
 
     // Reset audio to beginning
     audioRef.current.currentTime = 0;
@@ -239,7 +258,7 @@ export default function ResonanceBreathing() {
         }
       `}</style>
 
-      {/* Session Complete Screen */}
+      {/* Session Complete Screen - Matches AwarenessRep style */}
       {isComplete && (
         <div
           style={{
@@ -249,61 +268,69 @@ export default function ResonanceBreathing() {
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            animation: "fadeIn 1s ease-out",
+            animation: "fadeIn 0.5s ease-out",
             zIndex: 20,
             backgroundColor: COLORS.background,
           }}
         >
-          <p
+          {/* Green checkmark circle */}
+          <div
             style={{
-              fontSize: "1.5rem",
-              fontWeight: 300,
-              letterSpacing: "0.1em",
+              width: "120px",
+              height: "120px",
+              borderRadius: "50%",
+              border: `2px solid ${COLORS.success}`,
+              backgroundColor: "rgba(16, 185, 129, 0.1)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
               marginBottom: "2rem",
-              opacity: 0.9,
             }}
           >
-            Session Complete
+            <svg
+              width="50"
+              height="50"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={COLORS.success}
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+          
+          <p
+            style={{
+              fontSize: "2rem",
+              fontWeight: 300,
+              letterSpacing: "0.1em",
+              marginBottom: "1rem",
+              color: COLORS.success,
+            }}
+          >
+            Done
           </p>
           <p
             style={{
               fontSize: "1rem",
               fontWeight: 300,
               opacity: 0.6,
-              marginBottom: "3rem",
+              marginBottom: "1rem",
             }}
           >
             30 breaths · 5 minutes
           </p>
-          <button
-            onClick={() => {
-              setIsComplete(false);
-              setElapsedTime(0);
-              setBreathCount(0);
-            }}
+          <p
             style={{
-              padding: "1rem 2.5rem",
-              fontSize: "0.9rem",
-              fontWeight: 400,
-              letterSpacing: "0.15em",
-              textTransform: "uppercase",
-              backgroundColor: "transparent",
-              border: `1px solid ${COLORS.textDim}`,
-              color: COLORS.textPrimary,
-              cursor: "pointer",
-              transition: "all 0.3s ease",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = COLORS.accent;
-              e.currentTarget.style.color = COLORS.accent;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = COLORS.textDim;
-              e.currentTarget.style.color = COLORS.textPrimary;
+              fontSize: "0.85rem",
+              fontWeight: 300,
+              opacity: 0.4,
             }}
           >
-            Close
-          </button>
+            Closing...
+          </p>
         </div>
       )}
 
