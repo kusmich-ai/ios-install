@@ -750,11 +750,11 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   };
 
   // Callback for ToolsSidebar/FAB to trigger progress refresh only
-  const handleProgressUpdate = useCallback(() => {
-    if (refetchProgress) {
-      refetchProgress();
-    }
-  }, [refetchProgress]);
+  const handleProgressUpdate = useCallback(async () => {
+  if (refetchProgress) {
+    await refetchProgress();
+  }
+}, [refetchProgress]);
 
   // NEW: Callback when a practice is completed via "Done" button
   // This notifies the chat so Claude can acknowledge and guide to the next ritual
@@ -1031,15 +1031,16 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
 
       {/* Tools Sidebar (Desktop) - Now with onPracticeCompleted */}
       {!isMobile && progress && (
-        <ToolsSidebar
-          progress={progress}
-          userId={user?.id}
-          onPracticeClick={handlePracticeClick}
-          onToolClick={handleToolClick}
-          onProgressUpdate={handleProgressUpdate}
-          onPracticeCompleted={handlePracticeCompleted}
-        />
-      )}
+  <ToolsSidebar
+    progress={progress}
+    userId={user?.id}
+    onPracticeClick={handlePracticeClick}
+    onToolClick={handleToolClick}
+    onProgressUpdate={handleProgressUpdate}
+    onPracticeCompleted={handlePracticeCompleted}
+    isRefreshing={isRefreshing}
+  />
+)}
 
       {/* Mobile Dashboard Drawer */}
       {isMobile && (
@@ -1053,15 +1054,16 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
 
       {/* Floating Action Button (Mobile) - Now with onPracticeCompleted */}
       {isMobile && progress && (
-        <FloatingActionButton
-          progress={progress}
-          userId={user?.id}
-          onPracticeClick={handlePracticeClick}
-          onToolClick={handleToolClick}
-          onProgressUpdate={handleProgressUpdate}
-          onPracticeCompleted={handlePracticeCompleted}
-        />
-      )}
+  <FloatingActionButton
+    progress={progress}
+    userId={user?.id}
+    onPracticeClick={handlePracticeClick}
+    onToolClick={handleToolClick}
+    onProgressUpdate={handleProgressUpdate}
+    onPracticeCompleted={handlePracticeCompleted}
+    isRefreshing={isRefreshing}
+  />
+)}
     </div>
   );
 }
