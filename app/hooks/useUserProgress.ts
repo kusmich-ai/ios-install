@@ -278,7 +278,13 @@ export function useUserProgress() {
         date: today,
         dailyPractices,
         adherence: newProgress.adherencePercentage,
-        consecutiveDays: newProgress.consecutiveDays
+        consecutiveDays: newProgress.consecutiveDays,
+        domainScores: newProgress.domainScores,
+        domainDeltas: newProgress.domainDeltas,
+        rewiredIndex: newProgress.rewiredIndex,
+        rewiredDelta: newProgress.rewiredDelta,
+        hasWeeklyData: !!latestDelta,
+        hasPreviousWeek: !!previousDelta
       });
 
       setProgress(newProgress);
