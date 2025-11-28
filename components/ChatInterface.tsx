@@ -170,14 +170,15 @@ const stageRituals: { [key: number]: { list: string; total: string } } = {
 };
 
 // Required practice IDs by stage (for checking completion)
+// IDs must match what's stored in practice_logs.practice_type
 const stagePracticeIds: { [key: number]: string[] } = {
-  1: ['resonance_breathing', 'awareness_rep'],
-  2: ['resonance_breathing', 'somatic_flow', 'awareness_rep'],
-  3: ['resonance_breathing', 'somatic_flow', 'awareness_rep', 'micro_action'],
-  4: ['resonance_breathing', 'somatic_flow', 'awareness_rep', 'micro_action', 'flow_block'],
-  5: ['resonance_breathing', 'somatic_flow', 'awareness_rep', 'micro_action', 'flow_block', 'co_regulation'],
-  6: ['resonance_breathing', 'somatic_flow', 'awareness_rep', 'micro_action', 'flow_block', 'co_regulation', 'nightly_debrief'],
-  7: ['resonance_breathing', 'somatic_flow', 'awareness_rep', 'micro_action', 'flow_block', 'co_regulation', 'nightly_debrief']
+  1: ['HRVB', 'awareness_rep'],
+  2: ['HRVB', 'somatic_flow', 'awareness_rep'],
+  3: ['HRVB', 'somatic_flow', 'awareness_rep', 'micro_action'],
+  4: ['HRVB', 'somatic_flow', 'awareness_rep', 'micro_action', 'flow_block'],
+  5: ['HRVB', 'somatic_flow', 'awareness_rep', 'micro_action', 'flow_block', 'co_regulation'],
+  6: ['HRVB', 'somatic_flow', 'awareness_rep', 'micro_action', 'flow_block', 'co_regulation', 'nightly_debrief'],
+  7: ['HRVB', 'somatic_flow', 'awareness_rep', 'micro_action', 'flow_block', 'co_regulation', 'nightly_debrief']
 };
 
 // ============================================
@@ -393,9 +394,14 @@ function getSameDayReturnMessage(
   completedPractices: string[]
 ): string {
   const requiredPractices = stagePracticeIds[currentStage] || stagePracticeIds[1];
-  const completedCount = completedPractices.length;
   const totalRequired = requiredPractices.length;
-  const allComplete = requiredPractices.every(p => completedPractices.includes(p));
+  
+  // Count how many required practices have been completed
+  // (handles case where practice IDs in DB might not exactly match our list)
+  const completedRequired = requiredPractices.filter(p => completedPractices.includes(p));
+  const completedCount = completedRequired.length;
+  const remainingCount = totalRequired - completedCount;
+  const allComplete = completedCount >= totalRequired;
   
   if (allComplete) {
     return `Welcome back. Good to see you.
@@ -412,10 +418,9 @@ What's on your mind?`;
   }
   
   if (completedCount > 0) {
-    const remaining = requiredPractices.filter(p => !completedPractices.includes(p));
     return `Welcome back.
 
-You've completed ${completedCount}/${totalRequired} rituals today. ${remaining.length} remaining.
+You've completed ${completedCount}/${totalRequired} rituals today. ${remainingCount} remaining.
 
 Ready to continue, or is there something else you need first?`;
   }
