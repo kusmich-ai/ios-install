@@ -8,6 +8,28 @@ import FloatingActionButton from '@/components/FloatingActionButton';
 import MobileDashboard from '@/components/MobileDashboard';
 import { createClient } from '@/lib/supabase-client';
 
+// ============================================
+// TEMPLATE SYSTEM IMPORTS
+// ============================================
+import {
+  processTemplate,
+  selectTemplate,
+  templateLibrary,
+  getPracticesForStage,
+  getNextPractice,
+  areAllPracticesComplete,
+  getPracticeById,
+  isToolUnlocked,
+  getStageName as getStageNameFromHelper,
+  getStatusTier as getStatusTierFromHelper,
+  getStatusColor as getStatusColorFromHelper,
+  calculateDaysInStage,
+  getTimeOfDayGreeting,
+  type TemplateContext,
+  type SelectionContext,
+  type TemplateTrigger
+} from '@/lib/templates';
+
 // Simple markdown renderer for chat messages
 function renderMarkdown(text: string): string {
   return text
@@ -31,7 +53,7 @@ function renderMarkdown(text: string): string {
     .replace(/\n/g, '<br />');
 }
 
-// Get stage name from number
+// Get stage name from number (local version for backward compatibility)
 function getStageName(stage: number): string {
   const names: { [key: number]: string } = {
     1: 'Neural Priming',
@@ -436,6 +458,31 @@ function determineOpeningType(
 }
 
 // ============================================
+// PRACTICE NAME MAPPING
+// ============================================
+
+const practiceIdToName: { [key: string]: string } = {
+  'hrvb': 'Resonance Breathing',
+  'resonance_breathing': 'Resonance Breathing',
+  'awareness_rep': 'Awareness Rep',
+  'somatic_flow': 'Somatic Flow',
+  'micro_action': 'Morning Micro-Action',
+  'flow_block': 'Flow Block',
+  'co_regulation': 'Co-Regulation Practice',
+  'nightly_debrief': 'Nightly Debrief'
+};
+
+// Normalize practice ID (handle variations)
+function normalizePracticeId(id: string): string {
+  const normalized = id.toLowerCase().replace(/[\s-]/g, '_');
+  // Map common variations
+  if (normalized === 'resonance_breathing' || normalized === 'hrvb_breathing') {
+    return 'hrvb';
+  }
+  return normalized;
+}
+
+// ============================================
 // MAIN COMPONENT
 // ============================================
 
@@ -457,7 +504,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   const [isInitializing, setIsInitializing] = useState<boolean>(true);
   const [openingType, setOpeningType] = useState<'first_time' | 'same_day' | 'new_day'>('first_time');
   
-  // NEW: Track position in ritual introduction flow
+  // Track position in ritual introduction flow
   // 0 = waiting for "yes" to learn rituals
   // 1 = showed ritual 1, waiting for confirmation
   // 2 = showed ritual 2, waiting for confirmation
@@ -465,12 +512,91 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   // 4+ = intro complete, free text mode
   const [introStep, setIntroStep] = useState<number>(0);
   
+  // Track practices completed today (for template context)
+  const [practicesCompletedToday, setPracticesCompletedToday] = useState<string[]>([]);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const hasInitialized = useRef<boolean>(false);
 
   const isMobile = useIsMobile();
   const { progress, loading: progressLoading, error: progressError, refetchProgress, isRefreshing } = useUserProgress();
+
+  // ============================================
+  // BUILD TEMPLATE CONTEXT
+  // ============================================
+  
+  const buildTemplateContext = useCallback((): TemplateContext => {
+    const userName = user?.user_metadata?.first_name || '';
+    
+    // Calculate days in stage
+    let daysInStage = 1;
+    if (progress?.stage_start_date) {
+      const startDate = new Date(progress.stage_start_date);
+      const now = new Date();
+      daysInStage = Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    }
+    
+    return {
+      userName,
+      currentStage: baselineData.currentStage,
+      stageName: getStageName(baselineData.currentStage),
+      adherence: progress?.adherence_percentage || 0,
+      consecutiveDays: progress?.consecutive_days || 0,
+      daysInStage,
+      rewiredIndex: baselineData.rewiredIndex,
+      statusTier: getStatusTier(baselineData.rewiredIndex),
+      regulationScore: baselineData.domainScores.regulation,
+      awarenessScore: baselineData.domainScores.awareness,
+      outlookScore: baselineData.domainScores.outlook,
+      attentionScore: baselineData.domainScores.attention,
+      regulationDelta: progress?.latest_regulation_delta || 0,
+      awarenessDelta: progress?.latest_awareness_delta || 0,
+      outlookDelta: progress?.latest_outlook_delta || 0,
+      attentionDelta: progress?.latest_attention_delta || 0,
+      avgDelta: progress?.latest_avg_delta || 0,
+      currentIdentity: progress?.current_identity || '',
+      microAction: progress?.micro_action || '',
+      identityDayInCycle: progress?.identity_sprint_start 
+        ? Math.floor((Date.now() - new Date(progress.identity_sprint_start).getTime()) / (1000 * 60 * 60 * 24)) + 1
+        : 0,
+      identityDaysRemaining: progress?.identity_sprint_start
+        ? Math.max(0, 21 - Math.floor((Date.now() - new Date(progress.identity_sprint_start).getTime()) / (1000 * 60 * 60 * 24)))
+        : 21,
+      isMobile,
+      toolsReference: isMobile ? 'the lightning bolt icon' : 'the Daily Ritual tools on the right'
+    };
+  }, [user, baselineData, progress, isMobile]);
+  
+  // ============================================
+  // BUILD SELECTION CONTEXT
+  // ============================================
+  
+  const buildSelectionContext = useCallback((): SelectionContext => {
+    let daysInStage = 1;
+    if (progress?.stage_start_date) {
+      const startDate = new Date(progress.stage_start_date);
+      const now = new Date();
+      daysInStage = Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    }
+    
+    return {
+      currentStage: baselineData.currentStage,
+      daysInStage,
+      adherence: progress?.adherence_percentage || 0,
+      consecutiveDays: progress?.consecutive_days || 0,
+      practicesCompletedToday,
+      stageIntroCompleted: progress?.ritual_intro_completed || introStep >= 4,
+      hasIdentitySet: !!(progress?.current_identity),
+      identityDayInCycle: progress?.identity_sprint_start 
+        ? Math.floor((Date.now() - new Date(progress.identity_sprint_start).getTime()) / (1000 * 60 * 60 * 24)) + 1
+        : undefined,
+      flowBlockSetupCompleted: progress?.flow_block_setup_completed || false,
+      toolsIntroduced: progress?.tools_introduced || [],
+      weeklyCheckInDue: false, // TODO: Implement weekly check-in logic
+      isMobile
+    };
+  }, [baselineData, progress, practicesCompletedToday, introStep, isMobile]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -482,6 +608,13 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
   }, [input]);
+
+  // Update practices completed today when progress changes
+  useEffect(() => {
+    if (progress?.practices_completed_today) {
+      setPracticesCompletedToday(progress.practices_completed_today);
+    }
+  }, [progress]);
 
   // Initialize conversation with appropriate opening
   useEffect(() => {
@@ -500,13 +633,18 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
         // Check last visit timestamp from user_progress
         const { data: progressData } = await supabase
           .from('user_progress')
-          .select('last_visit, onboarding_completed, adherence_percentage, consecutive_days, stage_start_date, ritual_intro_completed')
+          .select('last_visit, onboarding_completed, adherence_percentage, consecutive_days, stage_start_date, ritual_intro_completed, practices_completed_today')
           .eq('user_id', user.id)
           .single();
         
         const lastVisit = progressData?.last_visit || null;
         const hasCompletedOnboarding = progressData?.onboarding_completed || false;
         const hasCompletedRitualIntro = progressData?.ritual_intro_completed || false;
+        
+        // Set practices completed today
+        if (progressData?.practices_completed_today) {
+          setPracticesCompletedToday(progressData.practices_completed_today);
+        }
         
         // Determine opening type
         const detectedOpeningType = determineOpeningType(lastVisit, hasCompletedOnboarding);
@@ -711,25 +849,55 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
     setLoading(false);
   };
 
+  // ============================================
+  // PRACTICE CLICK HANDLER - NOW USES TEMPLATES
+  // ============================================
   const handlePracticeClick = async (practiceId: string) => {
     // If in intro flow, complete it first
     if (introStep < 4) {
       setIntroStep(4);
     }
     
-    const practiceMessage = `I want to do the ${practiceId} practice now.`;
+    const normalizedId = normalizePracticeId(practiceId);
+    const practiceName = practiceIdToName[normalizedId] || practiceId;
+    
+    // Add user message
+    const practiceMessage = `I want to do the ${practiceName} practice now.`;
     const userMessage = { role: 'user', content: practiceMessage };
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
-    setLoading(true);
-
-    const response = await sendToAPI(newMessages);
-    if (response) {
-      setMessages([...newMessages, { role: 'assistant', content: response }]);
+    
+    // Build contexts for template selection
+    const templateContext = buildTemplateContext();
+    const selectionContext = buildSelectionContext();
+    
+    // Select template
+    const trigger: TemplateTrigger = { 
+      type: 'practice_click', 
+      practiceId: normalizedId,
+      practiceName 
+    };
+    
+    const result = selectTemplate(trigger, selectionContext);
+    
+    if (result.template) {
+      // Process template with variables
+      const processedContent = processTemplate(result.template, templateContext);
+      setMessages([...newMessages, { role: 'assistant', content: processedContent }]);
+    } else {
+      // Fallback to API if no template
+      setLoading(true);
+      const response = await sendToAPI(newMessages);
+      if (response) {
+        setMessages([...newMessages, { role: 'assistant', content: response }]);
+      }
+      setLoading(false);
     }
-    setLoading(false);
   };
 
+  // ============================================
+  // TOOL CLICK HANDLER - HYBRID: TEMPLATE + API
+  // ============================================
   const handleToolClick = async (toolId: string) => {
     // If in intro flow, complete it first
     if (introStep < 4) {
@@ -740,24 +908,61 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
     const userMessage = { role: 'user', content: toolMessage };
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
-    setLoading(true);
-
-    const response = await sendToAPI(newMessages);
-    if (response) {
-      setMessages([...newMessages, { role: 'assistant', content: response }]);
+    
+    // Build contexts
+    const templateContext = buildTemplateContext();
+    const selectionContext = buildSelectionContext();
+    
+    // Select template
+    const trigger: TemplateTrigger = { type: 'tool_click', toolId };
+    const result = selectTemplate(trigger, selectionContext);
+    
+    if (result.template && !result.additionalContext?.markToolIntroduced) {
+      // Tool has been introduced before - show start prompt, then let API take over
+      const processedContent = processTemplate(result.template, templateContext);
+      setMessages([...newMessages, { role: 'assistant', content: processedContent }]);
+      // Note: The next user input will go to API for dynamic tool execution
+    } else if (result.template) {
+      // First time introduction - show intro, mark as introduced
+      const processedContent = processTemplate(result.template, templateContext);
+      setMessages([...newMessages, { role: 'assistant', content: processedContent }]);
+      
+      // Mark tool as introduced in database
+      if (result.additionalContext?.markToolIntroduced) {
+        try {
+          const supabase = createClient();
+          const currentTools = progress?.tools_introduced || [];
+          await supabase
+            .from('user_progress')
+            .update({ 
+              tools_introduced: [...currentTools, toolId]
+            })
+            .eq('user_id', user.id);
+        } catch (err) {
+          console.error('Failed to mark tool introduced:', err);
+        }
+      }
+    } else {
+      // No template - use API directly
+      setLoading(true);
+      const response = await sendToAPI(newMessages);
+      if (response) {
+        setMessages([...newMessages, { role: 'assistant', content: response }]);
+      }
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   // Callback for ToolsSidebar/FAB to trigger progress refresh only
   const handleProgressUpdate = useCallback(async () => {
-  if (refetchProgress) {
-    await refetchProgress();
-  }
-}, [refetchProgress]);
+    if (refetchProgress) {
+      await refetchProgress();
+    }
+  }, [refetchProgress]);
 
-  // NEW: Callback when a practice is completed via "Done" button
-  // This notifies the chat so Claude can acknowledge and guide to the next ritual
+  // ============================================
+  // PRACTICE COMPLETED HANDLER - NOW USES TEMPLATES
+  // ============================================
   const handlePracticeCompleted = useCallback(async (practiceId: string, practiceName: string) => {
     console.log('[ChatInterface] Practice completed:', practiceId, practiceName);
     
@@ -771,21 +976,48 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
       setIntroStep(4);
     }
     
-    // Create a notification message that Claude will see and respond to
-    // We send it as a "user" message so it goes through the API and gets a response
-    const completionNotification = `[PRACTICE COMPLETED] I just finished my ${practiceName} ritual and clicked "Done" to log it.`;
+    const normalizedId = normalizePracticeId(practiceId);
     
+    // Update local state for practices completed today
+    const updatedPracticesCompleted = [...practicesCompletedToday, normalizedId];
+    setPracticesCompletedToday(updatedPracticesCompleted);
+    
+    // Create completion message
+    const completionNotification = `[PRACTICE COMPLETED] I just finished my ${practiceName} ritual and clicked "Done" to log it.`;
     const userMessage = { role: 'user', content: completionNotification };
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
-    setLoading(true);
-
-    const response = await sendToAPI(newMessages);
-    if (response) {
-      setMessages([...newMessages, { role: 'assistant', content: response }]);
+    
+    // Build contexts
+    const templateContext = buildTemplateContext();
+    const selectionContext = {
+      ...buildSelectionContext(),
+      practicesCompletedToday: updatedPracticesCompleted
+    };
+    
+    // Select template
+    const trigger: TemplateTrigger = { 
+      type: 'practice_completed', 
+      practiceId: normalizedId,
+      practiceName 
+    };
+    
+    const result = selectTemplate(trigger, selectionContext);
+    
+    if (result.template) {
+      // Process template with variables
+      const processedContent = processTemplate(result.template, templateContext);
+      setMessages([...newMessages, { role: 'assistant', content: processedContent }]);
+    } else {
+      // Fallback to API if no template
+      setLoading(true);
+      const response = await sendToAPI(newMessages);
+      if (response) {
+        setMessages([...newMessages, { role: 'assistant', content: response }]);
+      }
+      setLoading(false);
     }
-    setLoading(false);
-  }, [messages, refetchProgress, introStep]);
+  }, [messages, refetchProgress, introStep, practicesCompletedToday, buildTemplateContext, buildSelectionContext]);
 
   // Show loading state while initializing
   if (isInitializing) {
@@ -1031,16 +1263,16 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
 
       {/* Tools Sidebar (Desktop) - Now with onPracticeCompleted */}
       {!isMobile && progress && (
-  <ToolsSidebar
-    progress={progress}
-    userId={user?.id}
-    onPracticeClick={handlePracticeClick}
-    onToolClick={handleToolClick}
-    onProgressUpdate={handleProgressUpdate}
-    onPracticeCompleted={handlePracticeCompleted}
-    isRefreshing={isRefreshing}
-  />
-)}
+        <ToolsSidebar
+          progress={progress}
+          userId={user?.id}
+          onPracticeClick={handlePracticeClick}
+          onToolClick={handleToolClick}
+          onProgressUpdate={handleProgressUpdate}
+          onPracticeCompleted={handlePracticeCompleted}
+          isRefreshing={isRefreshing}
+        />
+      )}
 
       {/* Mobile Dashboard Drawer */}
       {isMobile && (
@@ -1054,16 +1286,16 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
 
       {/* Floating Action Button (Mobile) - Now with onPracticeCompleted */}
       {isMobile && progress && (
-  <FloatingActionButton
-    progress={progress}
-    userId={user?.id}
-    onPracticeClick={handlePracticeClick}
-    onToolClick={handleToolClick}
-    onProgressUpdate={handleProgressUpdate}
-    onPracticeCompleted={handlePracticeCompleted}
-    isRefreshing={isRefreshing}
-  />
-)}
+        <FloatingActionButton
+          progress={progress}
+          userId={user?.id}
+          onPracticeClick={handlePracticeClick}
+          onToolClick={handleToolClick}
+          onProgressUpdate={handleProgressUpdate}
+          onPracticeCompleted={handlePracticeCompleted}
+          isRefreshing={isRefreshing}
+        />
+      )}
     </div>
   );
 }
