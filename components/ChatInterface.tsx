@@ -660,7 +660,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
           .eq('completed', true);
         
         if (practiceLogsData && practiceLogsData.length > 0) {
-          const completedPractices = practiceLogsData.map(p => p.practice_type);
+          const completedPractices = practiceLogsData.map((p: { practice_type: string }) => p.practice_type);
           setPracticesCompletedToday(completedPractices);
         }
         
