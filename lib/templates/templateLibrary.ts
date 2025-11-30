@@ -364,6 +364,18 @@ Make sense?`
 
 Your {{toolbarReference}} will let you know if you have completed them for the day and your progress.
 
+---
+
+**ON-DEMAND TOOL AVAILABLE:**
+
+**Decentering Practice** — For when you feel identified with thoughts, emotions, or roles. This practice helps you recognize that you are the awareness noticing these things, not the things themselves.
+
+Use it when you catch yourself saying "I AM anxious" instead of "I notice anxiety" — or when you feel trapped in a role. Takes 2-5 minutes.
+
+Access it via your {{toolbarReference}} under "On-Demand Tools."
+
+---
+
 **Starting tomorrow morning** — do both rituals, then come back and let me know how it went.
 
 See you then. Your nervous system is about to start learning.`
@@ -435,7 +447,23 @@ Keep going. The system unlocks when your nervous system is ready — not before.
 
 You've proven your nervous system can maintain coherence. Now we bring awareness into motion.
 
-New practice unlocking: **Somatic Flow** — 3 minutes of breath-synced movement that extends your awareness into your body.`
+---
+
+**NEW RITUAL UNLOCKING:**
+
+**Somatic Flow** — 3 minutes of breath-synced movement that extends your awareness into your body. You'll learn Cat-Cow and Squat-to-Reach flows synchronized with your 4s inhale / 6s exhale.
+
+---
+
+**ON-DEMAND TOOL NOW AVAILABLE:**
+
+**Meta-Reflection** — A weekly practice (typically Sundays) to examine how awareness moved through your week. Not what happened, but how you perceived and interpreted it. This deepens self-inquiry and integrates insights over time.
+
+Access it anytime via the {{toolbarReference}} under "On-Demand Tools."
+
+---
+
+Ready to learn Somatic Flow?`
     }
   },
 
@@ -492,8 +520,6 @@ Make sense?`
 **Total: ${getMorningRitualTime(2)}**
 
 Same rules: every morning, immediately upon waking. The body is now part of the practice.
-
-**Also now available:** Weekly Meta-Reflection practice (Sundays) to integrate your learning.
 
 Starting tomorrow morning — run the full sequence. Your body is about to become aware.`
     },
@@ -562,7 +588,27 @@ Your body is learning. Keep the practice consistent.`,
 
 You've embodied awareness. Now we anchor it into who you are.
 
-New practice unlocking: **Morning Micro-Action** — one small daily proof of your chosen identity.`
+---
+
+**NEW RITUAL UNLOCKING:**
+
+**Morning Micro-Action** — One small daily proof of your chosen identity. Not affirmations. Not aspirations. Evidence-based identity training. Each completion rewires the neural pathways that define who you are.
+
+We'll run the Identity Installation Protocol together to set your 21-day identity and design your daily proof action.
+
+---
+
+**ON-DEMAND TOOL NOW AVAILABLE:**
+
+**Reframe Protocol** — For when triggers arise. This tool helps you identify the story you're telling yourself about an event and consciously replace it with an interpretation that restores agency, calm, and clarity.
+
+When you feel a strong emotional charge — frustration, stress, judgment — that's your cue to use it. Takes 2-5 minutes.
+
+Access it anytime via the {{toolbarReference}} under "On-Demand Tools."
+
+---
+
+Ready to run the Identity Installation Protocol?`
     }
   },
 
@@ -621,7 +667,7 @@ Your daily proof: **{{microAction}}**
 
 Every 21 days, we'll reassess and either deepen or evolve the identity.
 
-**Also now available:** Reframe Protocol (on-demand) for when triggers arise.
+**Remember:** The **Reframe Protocol** is now available in your {{toolbarReference}} under "On-Demand Tools" for when triggers arise.
 
 Starting tomorrow — full sequence + your micro-action. You're now training identity, not just awareness.`
     },
@@ -692,7 +738,27 @@ Your identity is forming. Keep the proof consistent.`,
 
 Your identity is becoming aligned. Now we train sustained attention on performance drivers.
 
-New practice unlocking: **Flow Block** — 60-90 minutes of single-task deep work.`
+---
+
+**NEW RITUAL UNLOCKING:**
+
+**Flow Block** — 60-90 minutes of single-task deep work. Challenge ≈ skill +10%. No phone, no distractions, full immersion. This is where awareness becomes performance.
+
+We'll run the Flow Block Setup together to identify your high-leverage tasks, build your Flow Menu, and design your weekly schedule.
+
+---
+
+**ON-DEMAND TOOL NOW AVAILABLE:**
+
+**Thought Hygiene** — For clearing cognitive residue after heavy mental load. When your mind feels cluttered with loops — tasks, worries, conversations running in the background — this 2-3 minute protocol surfaces and releases them.
+
+Use it after Flow Blocks, meetings, or whenever you feel scattered. Takes 2-3 minutes.
+
+Access it anytime via the {{toolbarReference}} under "On-Demand Tools."
+
+---
+
+Ready to set up your Flow Blocks?`
     }
   },
 
@@ -755,7 +821,7 @@ Ready to design your system?`
 
 **Total: ${getMorningRitualTime(4)}**
 
-**Also now available:** Thought Hygiene (on-demand) to clear cognitive residue after Flow Blocks.
+**Remember:** **Thought Hygiene** is now available in your {{toolbarReference}} under "On-Demand Tools" — use it after Flow Blocks when your mind feels cluttered.
 
 Your Flow Menu and Weekly Map are set. Time to train deep work as a neural skill.`
     },
@@ -808,7 +874,21 @@ Keep training the flow state.`,
 
 You can sustain attention in solitude. Now we train it in connection.
 
-New practice unlocking: **Co-Regulation Practice** — training the social nervous system.`
+---
+
+**NEW PRACTICE UNLOCKING:**
+
+**Co-Regulation Practice** — 3-5 minutes training the social nervous system. You'll activate the ventral vagal complex (your social safety circuit) through heart-focused compassion exercises. This trains your nervous system to stay open and regulated in relational contexts — not just when you're alone.
+
+**When:** Late afternoon/early evening, as you transition from work to personal time.
+
+---
+
+**No new on-demand tools this stage** — you have all the tools you need. This stage is about extending everything you've built into relationship.
+
+---
+
+Ready to learn the Co-Regulation Practice?`
     }
   },
 
@@ -923,7 +1003,44 @@ Keep training relational presence.`,
 
 You can stay regulated in solitude and connection. Now we seal it.
 
-New practice unlocking: **Nightly Debrief** — consolidating each day's learning before sleep.`
+---
+
+**NEW PRACTICE UNLOCKING:**
+
+**Nightly Debrief** — 2 minutes every evening before sleep. This consolidates each day's learning through one simple question: "What did reality teach me today?"
+
+Your nervous system encodes lessons during sleep. This practice ensures there's a clear signal to encode.
+
+---
+
+**FULL SYSTEM NOW ACTIVE:**
+
+You now have the complete IOS toolkit:
+
+**Daily Rituals:**
+- Resonance Breathing (regulation)
+- Somatic Flow (embodiment)  
+- Awareness Rep (meta-awareness)
+- Morning Micro-Action (identity)
+- Flow Block (performance)
+- Co-Regulation (relationship)
+- Nightly Debrief (integration)
+
+**On-Demand Tools:**
+- Decentering Practice (identity fusion)
+- Meta-Reflection (weekly integration)
+- Reframe Protocol (trigger response)
+- Thought Hygiene (cognitive clearing)
+
+All accessible via your {{toolbarReference}}.
+
+---
+
+**Stage 7: Accelerated Expansion** requires manual review and application when you're ready for advanced protocols.
+
+---
+
+Ready to learn the Nightly Debrief?`
     }
   },
 
