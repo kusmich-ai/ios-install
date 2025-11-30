@@ -30,6 +30,19 @@ import {
   type TemplateTrigger
 } from '@/lib/templates';
 
+// ============================================
+// MICRO-ACTION SETUP IMPORTS
+// ============================================
+import {
+  MicroActionSetupState,
+  MicroActionSetupStep,
+  initialMicroActionState,
+  microActionTemplates,
+  renderMicroActionTemplate,
+  getNextMicroActionStep,
+  microActionAPIPrompts
+} from '@/lib/templates/microActionTemplates';
+
 // Simple markdown renderer for chat messages
 function renderMarkdown(text: string): string {
   return text
@@ -559,6 +572,13 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   const [pendingUnlockStage, setPendingUnlockStage] = useState<number | null>(null);
   const hasCheckedUnlock = useRef<boolean>(false);
   
+  // ============================================
+  // MICRO-ACTION SETUP STATE
+  // ============================================
+  const [microActionSetupActive, setMicroActionSetupActive] = useState(false);
+  const [microActionSetupState, setMicroActionSetupState] = useState<MicroActionSetupState>(initialMicroActionState);
+  const [microActionQuickReplies, setMicroActionQuickReplies] = useState<string[] | undefined>(undefined);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const hasInitialized = useRef<boolean>(false);
@@ -811,6 +831,328 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
     setPendingUnlockStage(null);
   };
 
+  // ============================================
+  // MICRO-ACTION SETUP HANDLERS
+  // ============================================
+  
+  // Start Micro-Action setup flow
+  const startMicroActionSetup = useCallback(async () => {
+    console.log('[MicroAction] Starting setup flow');
+    
+    // Check for existing identity
+    const extendedProgress = progress as any;
+    const existingIdentity = extendedProgress?.currentIdentity;
+    const existingAction = extendedProgress?.microAction;
+    
+    // Initialize state
+    const isReturning = !!(existingIdentity && existingAction);
+    const newState: MicroActionSetupState = {
+      ...initialMicroActionState,
+      isFirstTime: !isReturning,
+      previousIdentity: existingIdentity || null,
+      previousAction: existingAction || null,
+      step: 'detect_context'
+    };
+    
+    setMicroActionSetupState(newState);
+    setMicroActionSetupActive(true);
+    
+    // Show first message
+    const template = microActionTemplates.detect_context;
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      content: template.message
+    }]);
+    setMicroActionQuickReplies(template.quickReplies);
+  }, [progress]);
+
+  // Process user response in Micro-Action setup
+  const processMicroActionResponse = useCallback(async (userResponse: string) => {
+    if (!microActionSetupActive) return;
+    
+    console.log('[MicroAction] Processing response:', userResponse, 'Current step:', microActionSetupState.step);
+    
+    // Add user message
+    setMessages(prev => [...prev, { role: 'user', content: userResponse }]);
+    setMicroActionQuickReplies(undefined);
+    
+    // Get next step
+    const { nextStep, requiresAPI } = getNextMicroActionStep(
+      microActionSetupState.step, 
+      microActionSetupState, 
+      userResponse
+    );
+    
+    // Update state based on current step and response
+    let updatedState = { ...microActionSetupState };
+    
+    // Handle state updates based on current step
+    switch (microActionSetupState.step) {
+      case 'detect_context':
+        updatedState.isFirstTime = userResponse.toLowerCase().includes('first');
+        break;
+      
+      case 'friction_discovery':
+      case 'friction_followup':
+        updatedState.frictionDescription = userResponse;
+        break;
+      
+      case 'identity_type':
+        updatedState.identityType = userResponse.toLowerCase().includes('capacity') 
+          ? 'additive' 
+          : 'subtractive';
+        break;
+      
+      case 'identity_phrasing':
+      case 'identity_refinement':
+        // Extract identity from response
+        const identityMatch = userResponse.match(/["""](.+?)["""]|I am (.+)|I'm (.+)/i);
+        if (identityMatch) {
+          updatedState.chosenIdentity = identityMatch[1] || identityMatch[2] || identityMatch[3];
+        } else {
+          updatedState.chosenIdentity = userResponse.trim();
+        }
+        break;
+      
+      case 'filter_concrete':
+        updatedState.identityPassedFilters.concrete = 
+          !userResponse.toLowerCase().includes('off') && 
+          !userResponse.toLowerCase().includes('not sure') &&
+          userResponse.length > 20;
+        break;
+      
+      case 'filter_coherent':
+        updatedState.identityPassedFilters.coherent = 
+          userResponse.toLowerCase().includes('yes') || 
+          userResponse.toLowerCase().includes('align');
+        break;
+      
+      case 'filter_containable':
+        updatedState.identityPassedFilters.containable = 
+          userResponse.toLowerCase().includes('yes') || 
+          userResponse.toLowerCase().includes('can see');
+        break;
+      
+      case 'filter_compelling':
+        updatedState.identityPassedFilters.compelling = 
+          userResponse.toLowerCase().includes('yes') || 
+          userResponse.toLowerCase().includes('feel');
+        break;
+      
+      case 'action_discovery':
+        updatedState.chosenAction = userResponse.trim();
+        break;
+      
+      case 'action_atomic':
+        updatedState.actionPassedTests.atomic = 
+          userResponse.toLowerCase().includes('yes') || 
+          userResponse.toLowerCase().includes('even on');
+        break;
+      
+      case 'action_congruent':
+        updatedState.actionPassedTests.congruent = 
+          userResponse.toLowerCase().includes('yes') || 
+          userResponse.toLowerCase().includes('clearly');
+        break;
+      
+      case 'action_emotional':
+        updatedState.actionPassedTests.emotional = 
+          userResponse.toLowerCase().includes('alignment') || 
+          userResponse.toLowerCase().includes('yes');
+        break;
+      
+      case 'commitment':
+        updatedState.committed = 
+          userResponse.toLowerCase().includes('yes') || 
+          userResponse.toLowerCase().includes('commit');
+        if (updatedState.committed) {
+          updatedState.sprintStartDate = new Date().toISOString();
+        }
+        break;
+    }
+    
+    updatedState.step = nextStep;
+    setMicroActionSetupState(updatedState);
+    
+    // Generate response
+    let responseContent = '';
+    let quickReplies: string[] | undefined;
+    
+    if (requiresAPI) {
+      // Call API for adaptive coaching
+      setLoading(true);
+      const apiPrompt = getMicroActionAPIPrompt(microActionSetupState.step, updatedState, userResponse);
+      if (apiPrompt) {
+        try {
+          const response = await fetch('/api/chat/coaching', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: apiPrompt, context: `Micro-Action Setup: ${microActionSetupState.step}` })
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            responseContent = data.response || getMicroActionFallback(microActionSetupState.step, updatedState);
+          } else {
+            responseContent = getMicroActionFallback(microActionSetupState.step, updatedState);
+          }
+        } catch (error) {
+          console.error('[MicroAction] API call failed:', error);
+          responseContent = getMicroActionFallback(microActionSetupState.step, updatedState);
+        }
+      }
+      setLoading(false);
+    } else {
+      // Use template
+      const templateKey = getMicroActionTemplateKey(nextStep, updatedState);
+      if (templateKey && templateKey in microActionTemplates) {
+        const template = microActionTemplates[templateKey as keyof typeof microActionTemplates];
+        responseContent = renderMicroActionTemplate(templateKey as keyof typeof microActionTemplates, updatedState);
+        if ('quickReplies' in template) {
+          quickReplies = template.quickReplies;
+        }
+      }
+    }
+    
+    // Add assistant message
+    if (responseContent) {
+      setMessages(prev => [...prev, { role: 'assistant', content: responseContent }]);
+      setMicroActionQuickReplies(quickReplies);
+    }
+    
+    // Check if complete
+    if (nextStep === 'complete' && updatedState.chosenIdentity && updatedState.chosenAction) {
+      await completeMicroActionSetup(updatedState.chosenIdentity, updatedState.chosenAction, updatedState.sprintStartDate);
+    }
+  }, [microActionSetupActive, microActionSetupState]);
+
+  // Complete Micro-Action setup and save to database
+  const completeMicroActionSetup = async (identity: string, action: string, sprintStartDate: string | null) => {
+    console.log('[MicroAction] Setup complete:', { identity, action, sprintStartDate });
+    
+    try {
+      const supabase = createClient();
+      
+      // Save identity and action to user_progress
+      await supabase
+        .from('user_progress')
+        .update({
+          current_identity: identity,
+          micro_action: action,
+          identity_sprint_start: sprintStartDate || new Date().toISOString()
+        })
+        .eq('user_id', user.id);
+      
+      // Refresh progress
+      if (refetchProgress) {
+        await refetchProgress();
+      }
+    } catch (error) {
+      console.error('[MicroAction] Failed to save setup:', error);
+    }
+    
+    // Reset setup state
+    setMicroActionSetupActive(false);
+    setMicroActionSetupState(initialMicroActionState);
+    setMicroActionQuickReplies(undefined);
+  };
+
+  // Helper: Get API prompt for Micro-Action coaching
+  function getMicroActionAPIPrompt(
+    step: MicroActionSetupStep, 
+    state: MicroActionSetupState, 
+    userResponse: string
+  ): string | null {
+    switch (step) {
+      case 'friction_discovery':
+      case 'friction_followup':
+        return microActionAPIPrompts.friction_followup(state, userResponse);
+      
+      case 'identity_phrasing':
+      case 'identity_refinement':
+        return microActionAPIPrompts.identity_refinement(state, userResponse);
+      
+      case 'filter_concrete':
+      case 'filter_coherent':
+      case 'filter_containable':
+      case 'filter_compelling':
+      case 'filter_refinement':
+        const failedFilter = !state.identityPassedFilters.concrete ? 'concrete'
+          : !state.identityPassedFilters.coherent ? 'coherent'
+          : !state.identityPassedFilters.containable ? 'containable'
+          : 'compelling';
+        return microActionAPIPrompts.filter_refinement(state, failedFilter, userResponse);
+      
+      case 'action_atomic':
+      case 'action_congruent':
+      case 'action_emotional':
+      case 'action_refinement':
+        const failedTest = !state.actionPassedTests.atomic ? 'atomic'
+          : !state.actionPassedTests.congruent ? 'congruent'
+          : 'emotional';
+        return microActionAPIPrompts.action_refinement(state, failedTest, userResponse);
+      
+      default:
+        return null;
+    }
+  }
+
+  // Helper: Get template key for Micro-Action step
+  function getMicroActionTemplateKey(step: MicroActionSetupStep, state: MicroActionSetupState): string {
+    switch (step) {
+      case 'welcome_first':
+        return 'welcome_first';
+      case 'welcome_returning':
+        return 'welcome_returning';
+      case 'friction_discovery':
+        return 'friction_discovery';
+      case 'identity_type':
+        return 'identity_type';
+      case 'identity_phrasing':
+        return state.identityType === 'additive' ? 'identity_type_additive' : 'identity_type_subtractive';
+      case 'filter_concrete':
+        return state.identityPassedFilters.concrete ? 'filter_concrete_pass' : 'filter_concrete';
+      case 'filter_coherent':
+        return state.identityPassedFilters.coherent ? 'filter_coherent_pass' : 'filter_coherent';
+      case 'filter_containable':
+        return state.identityPassedFilters.containable ? 'filter_containable_pass' : 'filter_containable';
+      case 'filter_compelling':
+        return state.identityPassedFilters.compelling ? 'filter_compelling_pass' : 'filter_compelling';
+      case 'action_discovery':
+        return 'action_discovery';
+      case 'action_atomic':
+        return state.actionPassedTests.atomic ? 'action_atomic_pass' : 'action_atomic';
+      case 'action_congruent':
+        return state.actionPassedTests.congruent ? 'action_congruent_pass' : 'action_congruent';
+      case 'action_emotional':
+        return state.actionPassedTests.emotional ? 'action_emotional_pass' : 'action_emotional';
+      case 'contract_creation':
+        return 'contract_creation';
+      case 'commitment':
+        return 'commitment';
+      case 'close':
+        return 'close';
+      default:
+        return step;
+    }
+  }
+
+  // Helper: Fallback message if API fails
+  function getMicroActionFallback(step: MicroActionSetupStep, state: MicroActionSetupState): string {
+    switch (step) {
+      case 'friction_followup':
+        return "Tell me more about that. What specifically feels most misaligned right now?";
+      case 'identity_refinement':
+        return `So you're working with "${state.chosenIdentity}" - does that phrasing feel right, or should we adjust it?`;
+      case 'filter_refinement':
+        return "That's helpful. Let me ask the question differently - what would this look like in practice?";
+      case 'action_refinement':
+        return "Let's try a smaller version. What's the tiniest proof of this identity you could do in under 2 minutes?";
+      default:
+        return "Let's continue. What feels most true to you?";
+    }
+  }
+
   // Initialize conversation with appropriate opening
   useEffect(() => {
     if (hasInitialized.current) return;
@@ -1009,6 +1351,15 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
 
     const userInput = input.trim().toLowerCase();
     
+    // ============================================
+    // MICRO-ACTION SETUP FLOW HANDLING
+    // ============================================
+    if (microActionSetupActive) {
+      setInput('');
+      await processMicroActionResponse(input.trim());
+      return;
+    }
+    
     // Check if we're in intro flow and user types something that should use template
     // (for first-time users who type instead of clicking button)
     if (openingType === 'first_time' && introStep < 3) {
@@ -1064,6 +1415,23 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
     
     const normalizedId = normalizePracticeId(practiceId);
     const practiceName = practiceIdToName[normalizedId] || practiceId;
+    
+    // ============================================
+    // MICRO-ACTION SPECIAL HANDLING
+    // ============================================
+    if (normalizedId === 'micro_action') {
+      const extendedProgress = progress as any;
+      const hasIdentity = !!(extendedProgress?.currentIdentity);
+      
+      if (!hasIdentity) {
+        // No identity set - trigger setup flow
+        const userMessage = { role: 'user', content: `I want to set up my Morning Micro-Action.` };
+        setMessages(prev => [...prev, userMessage]);
+        await startMicroActionSetup();
+        return;
+      }
+      // If identity exists, continue with normal practice flow
+    }
     
     // Add user message
     const practiceMessage = `I want to do the ${practiceName} practice now.`;
@@ -1512,6 +1880,25 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
               </div>
             )}
             
+            {/* Micro-Action Setup Quick Reply Buttons */}
+            {microActionSetupActive && microActionQuickReplies && microActionQuickReplies.length > 0 && !loading && (
+              <div className="flex justify-center gap-3 flex-wrap">
+                {microActionQuickReplies.map((reply, index) => (
+                  <button
+                    key={index}
+                    onClick={() => processMicroActionResponse(reply)}
+                    className={`px-5 py-2.5 font-medium rounded-xl transition-colors shadow-lg ${
+                      index === 0 
+                        ? 'bg-[#ff9e19] hover:bg-orange-600 text-white' 
+                        : 'bg-gray-700 hover:bg-gray-600 text-white'
+                    }`}
+                  >
+                    {reply}
+                  </button>
+                ))}
+              </div>
+            )}
+            
             <div ref={messagesEndRef} />
           </div>
         </div>
@@ -1529,7 +1916,13 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
                     sendMessage(e);
                   }
                 }}
-                placeholder={currentQuickReply ? "Or type a question..." : "Type your message..."}
+                placeholder={
+                  microActionSetupActive 
+                    ? (microActionQuickReplies ? "Or type your response..." : "Type your response...")
+                    : currentQuickReply 
+                      ? "Or type a question..." 
+                      : "Type your message..."
+                }
                 disabled={loading}
                 rows={1}
                 className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#ff9e19] disabled:opacity-50 resize-none min-h-[52px] max-h-[200px]"
@@ -1543,9 +1936,11 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
               </button>
             </form>
             <p className="text-xs text-gray-500 mt-2 text-center">
-              {currentQuickReply 
-                ? "Click the button above or type your own response" 
-                : "Press Enter to send, Shift+Enter for new line"}
+              {microActionSetupActive && microActionQuickReplies
+                ? "Click a button above or type your own response"
+                : currentQuickReply 
+                  ? "Click the button above or type your own response" 
+                  : "Press Enter to send, Shift+Enter for new line"}
             </p>
           </div>
         </div>
