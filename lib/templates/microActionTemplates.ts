@@ -346,13 +346,23 @@ Sprint ends: {{sprintEndDate}}
 
 ---
 
+**Your updated morning ritual sequence:**
+1. Resonance Breathing - 5 mins
+2. Awareness Rep - 2 mins
+3. Somatic Flow - 3 mins
+4. Morning Micro-Action - {{chosenAction}}
+
+Total: ~12-13 minutes
+
+---
+
 Some mornings will feel easy and connected. Some will feel mechanical or rushed. Both count. You're not chasing perfection — you're training consistency.
 
 By week 2, you'll notice when you *don't* do it — that slight sense of misalignment. That's the signal it's integrating.
 
 By week 3, it'll start to feel like just who you are.
 
-Your Morning Micro-Action is now part of your daily ritual sequence.`,
+**Tomorrow morning:** Complete your rituals in order, finishing with your Micro-Action.`,
   },
 
   // ============================================
