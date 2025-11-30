@@ -1199,7 +1199,9 @@ The IOS is complete. Continue your personalized Accelerated Expansion protocol.
 
 Welcome, Conductor.`,
 
-      notYet: `Stage 7 is active. Continue your personalized protocol.`
+      notYet: `Stage 7 is active. Continue your personalized protocol.`,
+      
+      confirmation: `Welcome to the final stage. You are now operating at full capacity.`
     }
   }
 };
