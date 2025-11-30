@@ -874,7 +874,16 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
     console.log('[MicroAction] ========================================');
     console.log('[MicroAction] Processing response:', userResponse);
     console.log('[MicroAction] Current step:', currentStep);
-    console.log('[MicroAction] Current state:', JSON.stringify(microActionSetupState, null, 2));
+    console.log('[MicroAction] Full state:', {
+      step: microActionSetupState.step,
+      isFirstTime: microActionSetupState.isFirstTime,
+      frictionDescription: microActionSetupState.frictionDescription,
+      identityType: microActionSetupState.identityType,
+      chosenIdentity: microActionSetupState.chosenIdentity,
+      identityPassedFilters: { ...microActionSetupState.identityPassedFilters },
+      chosenAction: microActionSetupState.chosenAction,
+      actionPassedTests: { ...microActionSetupState.actionPassedTests }
+    });
     
     // Add user message
     setMessages(prev => [...prev, { role: 'user', content: userResponse }]);
@@ -998,8 +1007,9 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
         break;
     }
     
+    console.log('[MicroAction] Step transition:', currentStep, '->', nextStep);
     updatedState.step = nextStep;
-    console.log('[MicroAction] Updated state:', JSON.stringify(updatedState, null, 2));
+    console.log('[MicroAction] Updated state step:', updatedState.step);
     setMicroActionSetupState(updatedState);
     
     // Generate response
