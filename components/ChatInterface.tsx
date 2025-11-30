@@ -870,7 +870,11 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   const processMicroActionResponse = useCallback(async (userResponse: string) => {
     if (!microActionSetupActive) return;
     
-    console.log('[MicroAction] Processing response:', userResponse, 'Current step:', microActionSetupState.step);
+    const currentStep = microActionSetupState.step;
+    console.log('[MicroAction] ========================================');
+    console.log('[MicroAction] Processing response:', userResponse);
+    console.log('[MicroAction] Current step:', currentStep);
+    console.log('[MicroAction] Current state:', JSON.stringify(microActionSetupState, null, 2));
     
     // Add user message
     setMessages(prev => [...prev, { role: 'user', content: userResponse }]);
@@ -878,87 +882,109 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
     
     // Get next step
     const { nextStep, requiresAPI } = getNextMicroActionStep(
-      microActionSetupState.step, 
+      currentStep, 
       microActionSetupState, 
       userResponse
     );
+    
+    console.log('[MicroAction] Next step:', nextStep, 'requiresAPI:', requiresAPI);
     
     // Update state based on current step and response
     let updatedState = { ...microActionSetupState };
     
     // Handle state updates based on current step
-    switch (microActionSetupState.step) {
+    switch (currentStep) {
       case 'detect_context':
         updatedState.isFirstTime = userResponse.toLowerCase().includes('first');
+        console.log('[MicroAction] Set isFirstTime:', updatedState.isFirstTime);
         break;
       
       case 'friction_discovery':
       case 'friction_followup':
         updatedState.frictionDescription = userResponse;
+        console.log('[MicroAction] Set frictionDescription:', updatedState.frictionDescription);
         break;
       
       case 'identity_type':
         updatedState.identityType = userResponse.toLowerCase().includes('capacity') 
           ? 'additive' 
           : 'subtractive';
+        console.log('[MicroAction] Set identityType:', updatedState.identityType);
         break;
       
       case 'identity_phrasing':
       case 'identity_refinement':
-        // Extract identity from response
+        // Extract identity from response - be more careful here
         const identityMatch = userResponse.match(/["""](.+?)["""]|I am (.+)|I'm (.+)/i);
         if (identityMatch) {
-          updatedState.chosenIdentity = identityMatch[1] || identityMatch[2] || identityMatch[3];
-        } else {
+          updatedState.chosenIdentity = (identityMatch[1] || identityMatch[2] || identityMatch[3])?.trim();
+        } else if (userResponse.length > 5 && !['yes', 'no', 'okay', 'ok'].includes(userResponse.toLowerCase().trim())) {
+          // Only set as identity if it's not a simple yes/no response
           updatedState.chosenIdentity = userResponse.trim();
         }
+        console.log('[MicroAction] Set chosenIdentity:', updatedState.chosenIdentity);
         break;
       
       case 'filter_concrete':
         updatedState.identityPassedFilters.concrete = 
-          !userResponse.toLowerCase().includes('off') && 
-          !userResponse.toLowerCase().includes('not sure') &&
-          userResponse.length > 20;
+          userResponse.toLowerCase().includes('yes') ||
+          userResponse.toLowerCase().includes('see evidence') ||
+          userResponse.toLowerCase().includes('would see');
+        console.log('[MicroAction] filter_concrete passed:', updatedState.identityPassedFilters.concrete);
         break;
       
       case 'filter_coherent':
         updatedState.identityPassedFilters.coherent = 
           userResponse.toLowerCase().includes('yes') || 
-          userResponse.toLowerCase().includes('align');
+          userResponse.toLowerCase().includes('align') ||
+          userResponse.toLowerCase().includes('upgrade');
+        console.log('[MicroAction] filter_coherent passed:', updatedState.identityPassedFilters.coherent);
         break;
       
       case 'filter_containable':
         updatedState.identityPassedFilters.containable = 
           userResponse.toLowerCase().includes('yes') || 
-          userResponse.toLowerCase().includes('can see');
+          userResponse.toLowerCase().includes('can prove') ||
+          userResponse.toLowerCase().includes('one action');
+        console.log('[MicroAction] filter_containable passed:', updatedState.identityPassedFilters.containable);
         break;
       
       case 'filter_compelling':
         updatedState.identityPassedFilters.compelling = 
           userResponse.toLowerCase().includes('yes') || 
-          userResponse.toLowerCase().includes('feel');
+          userResponse.toLowerCase().includes('feel') ||
+          userResponse.toLowerCase().includes('light');
+        console.log('[MicroAction] filter_compelling passed:', updatedState.identityPassedFilters.compelling);
         break;
       
       case 'action_discovery':
         updatedState.chosenAction = userResponse.trim();
+        console.log('[MicroAction] Set chosenAction:', updatedState.chosenAction);
         break;
       
       case 'action_atomic':
         updatedState.actionPassedTests.atomic = 
           userResponse.toLowerCase().includes('yes') || 
-          userResponse.toLowerCase().includes('even on');
+          userResponse.toLowerCase().includes('even on') ||
+          userResponse.toLowerCase().includes('doable');
+        console.log('[MicroAction] action_atomic passed:', updatedState.actionPassedTests.atomic);
         break;
       
       case 'action_congruent':
         updatedState.actionPassedTests.congruent = 
           userResponse.toLowerCase().includes('yes') || 
-          userResponse.toLowerCase().includes('clearly');
+          userResponse.toLowerCase().includes('clearly') ||
+          userResponse.toLowerCase().includes('recognize');
+        console.log('[MicroAction] action_congruent passed:', updatedState.actionPassedTests.congruent);
         break;
       
       case 'action_emotional':
         updatedState.actionPassedTests.emotional = 
           userResponse.toLowerCase().includes('alignment') || 
-          userResponse.toLowerCase().includes('yes');
+          userResponse.toLowerCase().includes('yes') ||
+          userResponse.toLowerCase().includes('pride') ||
+          userResponse.toLowerCase().includes('calm');
+        console.log('[MicroAction] action_emotional passed:', updatedState.actionPassedTests.emotional);
         break;
       
       case 'commitment':
@@ -968,10 +994,12 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
         if (updatedState.committed) {
           updatedState.sprintStartDate = new Date().toISOString();
         }
+        console.log('[MicroAction] committed:', updatedState.committed);
         break;
     }
     
     updatedState.step = nextStep;
+    console.log('[MicroAction] Updated state:', JSON.stringify(updatedState, null, 2));
     setMicroActionSetupState(updatedState);
     
     // Generate response
@@ -981,25 +1009,31 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
     if (requiresAPI) {
       // Call API for adaptive coaching
       setLoading(true);
-      const apiPrompt = getMicroActionAPIPrompt(microActionSetupState.step, updatedState, userResponse);
+      console.log('[MicroAction] Calling API for step:', nextStep, 'with state:', updatedState);
+      const apiPrompt = getMicroActionAPIPrompt(nextStep, updatedState, userResponse);
       if (apiPrompt) {
         try {
           const response = await fetch('/api/chat/coaching', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt: apiPrompt, context: `Micro-Action Setup: ${microActionSetupState.step}` })
+            body: JSON.stringify({ prompt: apiPrompt, context: `Micro-Action Setup: ${nextStep}` })
           });
           
           if (response.ok) {
             const data = await response.json();
-            responseContent = data.response || getMicroActionFallback(microActionSetupState.step, updatedState);
+            responseContent = data.response || getMicroActionFallback(nextStep, updatedState);
+            console.log('[MicroAction] API response:', responseContent);
           } else {
-            responseContent = getMicroActionFallback(microActionSetupState.step, updatedState);
+            console.error('[MicroAction] API response not ok:', response.status);
+            responseContent = getMicroActionFallback(nextStep, updatedState);
           }
         } catch (error) {
           console.error('[MicroAction] API call failed:', error);
-          responseContent = getMicroActionFallback(microActionSetupState.step, updatedState);
+          responseContent = getMicroActionFallback(nextStep, updatedState);
         }
+      } else {
+        console.log('[MicroAction] No API prompt for step:', nextStep, '- using fallback');
+        responseContent = getMicroActionFallback(nextStep, updatedState);
       }
       setLoading(false);
     } else {
@@ -1355,10 +1389,13 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
     // MICRO-ACTION SETUP FLOW HANDLING
     // ============================================
     if (microActionSetupActive) {
+      console.log('[sendMessage] Routing to Micro-Action setup flow');
       setInput('');
       await processMicroActionResponse(input.trim());
       return;
     }
+    
+    console.log('[sendMessage] microActionSetupActive:', microActionSetupActive, '- routing to normal flow');
     
     // Check if we're in intro flow and user types something that should use template
     // (for first-time users who type instead of clicking button)
