@@ -690,14 +690,16 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
       
       // Get the eligible message from templates
       const currentStageTemplates = templateLibrary.stages[progress.currentStage as keyof typeof templateLibrary.stages];
-      if (currentStageTemplates?.unlock?.eligible) {
+      // Type-safe access (cast to avoid TS union type issues)
+      const unlockTemplates = currentStageTemplates?.unlock as { eligible?: string; notYet?: string; confirmation?: string } | undefined;
+      if (unlockTemplates?.eligible) {
         const nextStage = progress.currentStage + 1;
         setPendingUnlockStage(nextStage);
         setUnlockFlowState('eligible_shown');
         
         // Process the template
         const templateContext = buildTemplateContext();
-        const processedMessage = processTemplate(currentStageTemplates.unlock.eligible, templateContext);
+        const processedMessage = processTemplate(unlockTemplates.eligible, templateContext);
         
         // Add unlock eligible message to chat
         setMessages(prev => [...prev, { 
@@ -751,11 +753,13 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
 
       // Get confirmation message from templates
       const previousStageTemplates = templateLibrary.stages[previousStage as keyof typeof templateLibrary.stages];
-      if (previousStageTemplates?.unlock?.confirmation) {
+      // Type-safe access to confirmation (cast to any to avoid TS union type issues)
+      const unlockTemplates = previousStageTemplates?.unlock as { eligible?: string; notYet?: string; confirmation?: string } | undefined;
+      if (unlockTemplates?.confirmation) {
         const templateContext = buildTemplateContext();
         // Override current stage in context for correct placeholder processing
         const updatedContext = { ...templateContext };
-        const processedMessage = processTemplate(previousStageTemplates.unlock.confirmation, updatedContext);
+        const processedMessage = processTemplate(unlockTemplates.confirmation, updatedContext);
         
         setMessages(prev => [...prev, { 
           role: 'assistant', 
