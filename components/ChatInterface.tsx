@@ -446,8 +446,8 @@ Your morning rituals are waiting. Ready to run through them now, or is there som
 }
 
 // RETURNING USER (new day): Morning ritual prompt
-function getNewDayMorningMessage(data: BaselineData, progress: ProgressData | null, userName: string): string {
-  const rituals = stageRituals[data.currentStage] || stageRituals[1];
+function getNewDayMorningMessage(data: BaselineData, progress: ProgressData | null, userName: string, currentStage: number): string {
+  const rituals = stageRituals[currentStage] || stageRituals[1];
   const consecutiveDays = progress?.consecutive_days || 0;
   const adherence = progress?.adherence_percentage || 0;
   
@@ -471,7 +471,7 @@ function getNewDayMorningMessage(data: BaselineData, progress: ProgressData | nu
   
   return `Morning${userName ? `, ${userName}` : ''}.
 
-**Stage ${data.currentStage}: ${getStageName(data.currentStage)}** — Day ${daysInStage}
+**Stage ${currentStage}: ${getStageName(currentStage)}** — Day ${daysInStage}
 **Adherence:** ${adherence.toFixed(0)}%${streakMessage}
 
 ---
@@ -1213,6 +1213,9 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
         const hasCompletedRitualIntro = progressData?.ritual_intro_completed || false;
         const currentStage = progressData?.current_stage || 1;
         
+        console.log('[ChatInterface] Stage from DB:', progressData?.current_stage, '-> Using:', currentStage);
+        console.log('[ChatInterface] Progress data:', progressData);
+        
         // Get today's completed practices from practice_logs
         const today = new Date();
         const localDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
@@ -1269,7 +1272,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
             break;
             
           case 'new_day':
-            openingMessage = getNewDayMorningMessage(baselineData, progressData, userName);
+            openingMessage = getNewDayMorningMessage(baselineData, progressData, userName, currentStage);
             break;
             
           default:
