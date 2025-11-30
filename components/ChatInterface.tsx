@@ -551,6 +551,14 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   // Track practices completed today (for template context)
   const [practicesCompletedToday, setPracticesCompletedToday] = useState<string[]>([]);
   
+  // ============================================
+  // UNLOCK FLOW STATE
+  // ============================================
+  // Track unlock flow: 'none' | 'eligible_shown' | 'confirmed' | 'intro_started'
+  const [unlockFlowState, setUnlockFlowState] = useState<'none' | 'eligible_shown' | 'confirmed' | 'intro_started'>('none');
+  const [pendingUnlockStage, setPendingUnlockStage] = useState<number | null>(null);
+  const hasCheckedUnlock = useRef<boolean>(false);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const hasInitialized = useRef<boolean>(false);
@@ -658,6 +666,146 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
       setPracticesCompletedToday(extendedProgress.practicesCompletedToday);
     }
   }, [progress]);
+
+  // ============================================
+  // UNLOCK ELIGIBILITY CHECK
+  // ============================================
+  // Check if user is eligible for stage unlock and show message
+  useEffect(() => {
+    // Only check once per session and when we have progress data
+    if (hasCheckedUnlock.current || !progress || isInitializing || unlockFlowState !== 'none') return;
+    
+    // Only check if user is eligible for unlock
+    console.log('[ChatInterface] Unlock check:', {
+      unlockEligible: progress.unlockEligible,
+      currentStage: progress.currentStage,
+      adherence: progress.adherencePercentage,
+      consecutiveDays: progress.consecutiveDays,
+      avgDelta: progress.domainDeltas?.average
+    });
+    
+    if (progress.unlockEligible && progress.currentStage < 7) {
+      hasCheckedUnlock.current = true;
+      console.log('[ChatInterface] User eligible for unlock! Showing eligible message...');
+      
+      // Get the eligible message from templates
+      const currentStageTemplates = templateLibrary.stages[progress.currentStage as keyof typeof templateLibrary.stages];
+      if (currentStageTemplates?.unlock?.eligible) {
+        const nextStage = progress.currentStage + 1;
+        setPendingUnlockStage(nextStage);
+        setUnlockFlowState('eligible_shown');
+        
+        // Process the template
+        const templateContext = buildTemplateContext();
+        const processedMessage = processTemplate(currentStageTemplates.unlock.eligible, templateContext);
+        
+        // Add unlock eligible message to chat
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: processedMessage 
+        }]);
+      }
+    }
+  }, [progress, isInitializing, unlockFlowState, buildTemplateContext]);
+
+  // ============================================
+  // UNLOCK CONFIRMATION HANDLER
+  // ============================================
+  const handleUnlockConfirmation = async (confirmed: boolean) => {
+    if (!confirmed || !pendingUnlockStage || !user) {
+      // User declined - reset state
+      setUnlockFlowState('none');
+      setPendingUnlockStage(null);
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: "No problem. Keep building consistency at your current stage. The unlock will be available whenever you're ready." 
+      }]);
+      return;
+    }
+
+    setLoading(true);
+    
+    try {
+      const supabase = createClient();
+      const previousStage = pendingUnlockStage - 1;
+      
+      // Update user's stage in database
+      const { error: updateError } = await supabase
+        .from('user_progress')
+        .update({ 
+          current_stage: pendingUnlockStage,
+          stage_start_date: new Date().toISOString().split('T')[0],
+          consecutive_days: 0  // Reset consecutive days for new stage
+        })
+        .eq('user_id', user.id);
+
+      if (updateError) {
+        console.error('Error updating stage:', updateError);
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: "There was an error unlocking the next stage. Please try again." 
+        }]);
+        setLoading(false);
+        return;
+      }
+
+      // Get confirmation message from templates
+      const previousStageTemplates = templateLibrary.stages[previousStage as keyof typeof templateLibrary.stages];
+      if (previousStageTemplates?.unlock?.confirmation) {
+        const templateContext = buildTemplateContext();
+        // Override current stage in context for correct placeholder processing
+        const updatedContext = { ...templateContext };
+        const processedMessage = processTemplate(previousStageTemplates.unlock.confirmation, updatedContext);
+        
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: processedMessage 
+        }]);
+      }
+
+      // Update flow state
+      setUnlockFlowState('confirmed');
+      
+      // Refresh progress data to reflect new stage
+      await refetchProgress();
+      
+    } catch (err) {
+      console.error('Error in unlock confirmation:', err);
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: "There was an error processing the unlock. Please try again." 
+      }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ============================================
+  // START NEW STAGE INTRO
+  // ============================================
+  const handleStartNewStageIntro = () => {
+    if (!pendingUnlockStage) return;
+    
+    setUnlockFlowState('intro_started');
+    
+    // Get the ritual intro for the new stage
+    const newStageTemplates = templateLibrary.stages[pendingUnlockStage as keyof typeof templateLibrary.stages];
+    if (newStageTemplates?.ritualIntro?.intro) {
+      const templateContext = buildTemplateContext();
+      const processedMessage = processTemplate(newStageTemplates.ritualIntro.intro, templateContext);
+      
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: processedMessage 
+      }]);
+      
+      // Reset intro step for new stage walkthrough
+      setIntroStep(0);
+    }
+    
+    // Clear pending unlock
+    setPendingUnlockStage(null);
+  };
 
   // Initialize conversation with appropriate opening
   useEffect(() => {
@@ -1326,6 +1474,36 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
                   className="px-6 py-3 bg-[#ff9e19] hover:bg-orange-600 text-white font-semibold rounded-xl transition-colors shadow-lg"
                 >
                   {currentQuickReply.buttonLabel}
+                </button>
+              </div>
+            )}
+            
+            {/* Unlock Confirmation Buttons */}
+            {unlockFlowState === 'eligible_shown' && pendingUnlockStage && !loading && (
+              <div className="flex justify-center gap-4">
+                <button
+                  onClick={() => handleUnlockConfirmation(true)}
+                  className="px-6 py-3 bg-[#ff9e19] hover:bg-orange-600 text-white font-semibold rounded-xl transition-colors shadow-lg"
+                >
+                  Yes, unlock Stage {pendingUnlockStage}
+                </button>
+                <button
+                  onClick={() => handleUnlockConfirmation(false)}
+                  className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-xl transition-colors shadow-lg"
+                >
+                  Not yet
+                </button>
+              </div>
+            )}
+            
+            {/* Start New Stage Intro Button */}
+            {unlockFlowState === 'confirmed' && pendingUnlockStage && !loading && (
+              <div className="flex justify-center">
+                <button
+                  onClick={handleStartNewStageIntro}
+                  className="px-6 py-3 bg-[#ff9e19] hover:bg-orange-600 text-white font-semibold rounded-xl transition-colors shadow-lg"
+                >
+                  Learn the new practices
                 </button>
               </div>
             )}
