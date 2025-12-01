@@ -1422,21 +1422,26 @@ What feels right?`
         const today = new Date();
         const localDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
         
-        console.log('[MicroAction] Inserting practice log:', {
-          user_id: user.id,
-          practice_type: 'micro_action',
-          practice_date: localDate,
-          completed: true
-        });
+        // Get current stage from progress
+        const currentStage = progress?.currentStage || 3; // Default to 3 since micro_action is Stage 3+
         
-        const { data: insertData, error: insertError } = await supabase.from('practice_logs').insert({
+        const insertPayload = {
           user_id: user.id,
           practice_type: 'micro_action',
           practice_date: localDate,
           completed: true,
-          completed_at: new Date().toISOString(),
-          notes: `Identity: ${currentIdentity} | Action: ${microAction}`
-        }).select();
+          stage: currentStage,
+          completed_at: new Date().toISOString()
+        };
+        
+        console.log('[MicroAction] Inserting practice log:', insertPayload);
+        
+        const { data: insertData, error: insertError } = await supabase
+          .from('practice_logs')
+          .insert(insertPayload)
+          .select();
+        
+        console.log('[MicroAction] Insert response - data:', insertData, 'error:', insertError);
         
         if (insertError) {
           console.error('[MicroAction] Insert error:', insertError);
@@ -1445,9 +1450,13 @@ What feels right?`
         
         console.log('[MicroAction] Insert success:', insertData);
         
-        // Refresh progress
+        // Refresh progress to update button state
+        console.log('[MicroAction] Calling refetchProgress...');
         if (refetchProgress) {
           await refetchProgress();
+          console.log('[MicroAction] refetchProgress completed');
+        } else {
+          console.log('[MicroAction] refetchProgress not available!');
         }
         
         // Add confirmation message
