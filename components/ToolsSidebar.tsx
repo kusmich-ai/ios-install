@@ -252,9 +252,8 @@ export default function ToolsSidebar({
                   
                   // Special handling for Micro-Action
                   const isMicroAction = practice.id === 'micro_action';
-                  const extendedProgress = progress as any;
-                  const hasIdentity = isMicroAction && !!(extendedProgress?.currentIdentity);
-                  const currentIdentity = extendedProgress?.currentIdentity || '';
+                  const hasIdentity = isMicroAction && !!(progress.currentIdentity);
+                  const currentIdentity = progress.currentIdentity || '';
                   
                   return (
                     <div
