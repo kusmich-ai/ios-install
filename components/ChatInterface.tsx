@@ -741,6 +741,8 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   useEffect(() => {
     // Only check once per session and when we have progress data
     if (hasCheckedUnlock.current || !progress || isInitializing || unlockFlowState !== 'none') return;
+    // Don't trigger if any other flow is active
+    if (weeklyCheckInActive || awaitingSprintRenewal || awaitingMicroActionStart || microActionState.isActive) return;
     
     // Only check if user is eligible for unlock
     console.log('[ChatInterface] Unlock check:', {
@@ -775,7 +777,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
         }]);
       }
     }
-  }, [progress, isInitializing, unlockFlowState, buildTemplateContext]);
+  }, [progress, isInitializing, unlockFlowState, buildTemplateContext, weeklyCheckInActive, awaitingSprintRenewal, awaitingMicroActionStart, microActionState.isActive]);
 
   // ============================================
   // UNLOCK CONFIRMATION HANDLER
@@ -1223,13 +1225,13 @@ ${qualQuestion} (0-5)`
       const qualRating = scores.qualitative || 0;
       
       // Check unlock criteria (internal thresholds - not shown to user)
+      // Stage 6→7 is manual review only, so no threshold for Stage 6
       const unlockThresholds: { [key: number]: { adherence: number; days: number; delta: number; qualitative: number } } = {
         1: { adherence: 80, days: 14, delta: 0.3, qualitative: 3 },
         2: { adherence: 80, days: 14, delta: 0.5, qualitative: 3 },
         3: { adherence: 80, days: 14, delta: 0.5, qualitative: 3 },
         4: { adherence: 80, days: 14, delta: 0.6, qualitative: 3 },
-        5: { adherence: 85, days: 14, delta: 0.7, qualitative: 3 },
-        6: { adherence: 85, days: 21, delta: 0.8, qualitative: 4 }
+        5: { adherence: 85, days: 14, delta: 0.7, qualitative: 3 }
       };
       
       const threshold = unlockThresholds[currentStage];
@@ -1246,12 +1248,17 @@ ${qualQuestion} (0-5)`
 • Stage Competence: ${scores.qualitative}/5
 
 **REwired Index:** ${rewiredIndex}/100
+**Average Delta from Baseline:** ${avgDelta >= 0 ? '+' : ''}${avgDelta.toFixed(2)}
 
 ---
 
 `;
 
-      if (threshold && currentStage < 7) {
+      if (currentStage === 6) {
+        // Stage 6→7 is manual review only
+        feedbackMessage += `**Stage 7 (Accelerated Expansion):**
+This is an advanced tier requiring application and manual review. When you're ready to explore advanced protocols (supplements, nootropics, neurofeedback, psychedelics), let me know and we'll discuss the application process.`;
+      } else if (threshold && currentStage < 6) {
         const meetsAdherence = adherence >= threshold.adherence;
         const meetsDays = consecutiveDays >= threshold.days;
         const meetsDelta = avgDelta >= threshold.delta;
@@ -1431,8 +1438,9 @@ ${statusItems.join('\n')}`;
   useEffect(() => {
     // Only check after initialization is complete and we have progress
     if (isInitializing || !progress || !hasInitialized.current) return;
-    // Don't trigger if weekly check-in is already active
-    if (weeklyCheckInActive) return;
+    // Don't trigger if any other flow is active
+    if (weeklyCheckInActive || awaitingMicroActionStart || microActionState.isActive) return;
+    if (unlockFlowState !== 'none') return;
     
     const extendedProgress = progress as any;
     const sprintStartDate = extendedProgress?.identitySprintStart;
@@ -1478,7 +1486,7 @@ What feels right?`
       // Set flag to watch for their response
       setAwaitingSprintRenewal(true);
     }
-  }, [progress, isInitializing, weeklyCheckInActive]);
+  }, [progress, isInitializing, weeklyCheckInActive, awaitingMicroActionStart, microActionState.isActive, unlockFlowState]);
 
   // ============================================
   // WEEKLY CHECK-IN DETECTION
