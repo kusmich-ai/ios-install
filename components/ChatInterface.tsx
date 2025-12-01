@@ -1419,9 +1419,14 @@ What feels right?`
       try {
         // Log the practice completion
         const supabase = createClient();
+        const today = new Date();
+        const localDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        
         await supabase.from('practice_logs').insert({
           user_id: user.id,
-          practice_id: 'micro_action',
+          practice_type: 'micro_action',
+          practice_date: localDate,
+          completed: true,
           completed_at: new Date().toISOString(),
           notes: `Identity: ${currentIdentity} | Action: ${microAction}`
         });
