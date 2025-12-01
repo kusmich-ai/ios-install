@@ -1422,14 +1422,28 @@ What feels right?`
         const today = new Date();
         const localDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
         
-        await supabase.from('practice_logs').insert({
+        console.log('[MicroAction] Inserting practice log:', {
+          user_id: user.id,
+          practice_type: 'micro_action',
+          practice_date: localDate,
+          completed: true
+        });
+        
+        const { data: insertData, error: insertError } = await supabase.from('practice_logs').insert({
           user_id: user.id,
           practice_type: 'micro_action',
           practice_date: localDate,
           completed: true,
           completed_at: new Date().toISOString(),
           notes: `Identity: ${currentIdentity} | Action: ${microAction}`
-        });
+        }).select();
+        
+        if (insertError) {
+          console.error('[MicroAction] Insert error:', insertError);
+          throw insertError;
+        }
+        
+        console.log('[MicroAction] Insert success:', insertData);
         
         // Refresh progress
         if (refetchProgress) {
