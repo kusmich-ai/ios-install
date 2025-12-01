@@ -195,6 +195,29 @@ const stagePracticeIds: { [key: number]: string[] } = {
 };
 
 // ============================================
+// WEEKLY CHECK-IN CONSTANTS
+// ============================================
+
+// Stage-specific qualitative questions
+const stageQualitativeQuestions: { [key: number]: string } = {
+  1: "How easily can you return to calm when stressed?",
+  2: "Does awareness stay present during movement?",
+  3: "Is your chosen identity feeling more automatic?",
+  4: "Can you drop into focused flow reliably?",
+  5: "Do you stay regulated in difficult conversations?",
+  6: "Is awareness stable across all life contexts?",
+  7: "Does awareness feel like your natural baseline?"
+};
+
+// Domain questions for weekly check-in
+const weeklyDomainQuestions = {
+  regulation: "**Regulation:** How easily could you calm yourself when stressed this week? (0 = couldn't at all, 5 = instantly)",
+  awareness: "**Awareness:** How quickly did you notice when lost in thought? (0 = never noticed, 5 = immediately)",
+  outlook: "**Outlook:** How open and positive did you feel toward life? (0 = closed/negative, 5 = open/positive)",
+  attention: "**Attention:** How focused were you on what truly matters? (0 = scattered, 5 = laser-focused)"
+};
+
+// ============================================
 // RITUAL INTRODUCTION TEMPLATES (Stage 1)
 // ============================================
 
@@ -578,6 +601,26 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   const [microActionState, setMicroActionState] = useState<MicroActionState>(initialMicroActionState);
   const [awaitingMicroActionStart, setAwaitingMicroActionStart] = useState(false);
   const [awaitingSprintRenewal, setAwaitingSprintRenewal] = useState(false);
+  
+  // ============================================
+  // WEEKLY CHECK-IN STATE
+  // ============================================
+  const [weeklyCheckInActive, setWeeklyCheckInActive] = useState(false);
+  const [weeklyCheckInStep, setWeeklyCheckInStep] = useState(0);
+  const [weeklyCheckInScores, setWeeklyCheckInScores] = useState<{
+    regulation: number | null;
+    awareness: number | null;
+    outlook: number | null;
+    attention: number | null;
+    qualitative: number | null;
+  }>({
+    regulation: null,
+    awareness: null,
+    outlook: null,
+    attention: null,
+    qualitative: null
+  });
+  const hasCheckedWeeklyDue = useRef<boolean>(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -1011,6 +1054,253 @@ Ready to discover your identity and design your micro-action?`
     setMicroActionState(initialMicroActionState);
   }, []);
 
+  // ============================================
+  // WEEKLY CHECK-IN HANDLERS
+  // ============================================
+  
+  const processWeeklyCheckInResponse = async (userInput: string) => {
+    const input = userInput.trim().toLowerCase();
+    
+    // Step 0: User confirms they want to start
+    if (weeklyCheckInStep === 0) {
+      const isAffirmative = ['yes', 'yeah', 'yep', 'sure', 'ok', 'okay', 'ready', 'let\'s go', 'lets go', 'y'].some(
+        word => input.includes(word)
+      );
+      
+      if (isAffirmative) {
+        setWeeklyCheckInStep(1);
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: `Great. Five quick ratings (0-5 scale).
+
+${weeklyDomainQuestions.regulation}`
+        }]);
+      } else {
+        // User declined
+        setWeeklyCheckInActive(false);
+        setWeeklyCheckInStep(0);
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: "No problem. The check-in will be here when you're ready. Just say 'weekly check-in' anytime."
+        }]);
+      }
+      return;
+    }
+    
+    // Parse numeric rating from input
+    const ratingMatch = input.match(/[0-5]/);
+    const rating = ratingMatch ? parseInt(ratingMatch[0]) : null;
+    
+    if (rating === null) {
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: "I need a number from 0-5. Try again?"
+      }]);
+      return;
+    }
+    
+    // Steps 1-4: Domain ratings
+    // Steps 5: Qualitative rating
+    const currentStage = progress?.currentStage || 1;
+    
+    switch (weeklyCheckInStep) {
+      case 1: // Regulation
+        setWeeklyCheckInScores(prev => ({ ...prev, regulation: rating }));
+        setWeeklyCheckInStep(2);
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: weeklyDomainQuestions.awareness
+        }]);
+        break;
+        
+      case 2: // Awareness
+        setWeeklyCheckInScores(prev => ({ ...prev, awareness: rating }));
+        setWeeklyCheckInStep(3);
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: weeklyDomainQuestions.outlook
+        }]);
+        break;
+        
+      case 3: // Outlook
+        setWeeklyCheckInScores(prev => ({ ...prev, outlook: rating }));
+        setWeeklyCheckInStep(4);
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: weeklyDomainQuestions.attention
+        }]);
+        break;
+        
+      case 4: // Attention
+        setWeeklyCheckInScores(prev => ({ ...prev, attention: rating }));
+        setWeeklyCheckInStep(5);
+        const qualQuestion = stageQualitativeQuestions[currentStage] || stageQualitativeQuestions[1];
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: `**Stage ${currentStage} Competence Check:**
+
+${qualQuestion} (0-5)`
+        }]);
+        break;
+        
+      case 5: // Qualitative - final step
+        const finalScores = {
+          ...weeklyCheckInScores,
+          qualitative: rating
+        };
+        setWeeklyCheckInScores(finalScores);
+        
+        // Save to database and show results
+        await saveWeeklyCheckIn(finalScores);
+        break;
+    }
+  };
+  
+  const saveWeeklyCheckIn = async (scores: typeof weeklyCheckInScores) => {
+    try {
+      const supabase = createClient();
+      const currentStage = progress?.currentStage || 1;
+      
+      // Get baseline for delta calculation
+      const { data: baseline } = await supabase
+        .from('baseline_assessments')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+      
+      const baselineScores = baseline ? {
+        regulation: baseline.calm_core_score || 0,
+        awareness: baseline.observer_index_score || 0,
+        outlook: baseline.vitality_index_score || 0,
+        attention: ((baseline.focus_diagnostic_score || 0) + (baseline.presence_test_score || 0)) / 2
+      } : { regulation: 0, awareness: 0, outlook: 0, attention: 0 };
+      
+      // Calculate deltas
+      const deltas = {
+        regulation: (scores.regulation || 0) - baselineScores.regulation,
+        awareness: (scores.awareness || 0) - baselineScores.awareness,
+        outlook: (scores.outlook || 0) - baselineScores.outlook,
+        attention: (scores.attention || 0) - baselineScores.attention
+      };
+      const avgDelta = (deltas.regulation + deltas.awareness + deltas.outlook + deltas.attention) / 4;
+      
+      // Insert into weekly_deltas
+      const today = new Date().toISOString().split('T')[0];
+      const { error: insertError } = await supabase
+        .from('weekly_deltas')
+        .upsert({
+          user_id: user.id,
+          week_of: today,
+          regulation_score: scores.regulation,
+          awareness_score: scores.awareness,
+          outlook_score: scores.outlook,
+          attention_score: scores.attention,
+          regulation_delta: deltas.regulation,
+          awareness_delta: deltas.awareness,
+          outlook_delta: deltas.outlook,
+          attention_delta: deltas.attention,
+          average_delta: avgDelta,
+          qualitative_rating: scores.qualitative,
+          stage_at_checkin: currentStage
+        }, { onConflict: 'user_id,week_of' });
+      
+      if (insertError) {
+        console.error('[WeeklyCheckIn] Insert error:', insertError);
+        throw insertError;
+      }
+      
+      console.log('[WeeklyCheckIn] Saved successfully');
+      
+      // Refresh progress
+      if (refetchProgress) {
+        await refetchProgress();
+      }
+      
+      // Calculate results and show feedback
+      const avgScore = ((scores.regulation || 0) + (scores.awareness || 0) + 
+                        (scores.outlook || 0) + (scores.attention || 0)) / 4;
+      const rewiredIndex = Math.round(avgScore * 20);
+      const qualRating = scores.qualitative || 0;
+      
+      // Check unlock criteria
+      const unlockThresholds: { [key: number]: { adherence: number; days: number; delta: number; qualitative: number } } = {
+        1: { adherence: 80, days: 14, delta: 0.3, qualitative: 3 },
+        2: { adherence: 80, days: 14, delta: 0.5, qualitative: 3 },
+        3: { adherence: 80, days: 14, delta: 0.5, qualitative: 3 },
+        4: { adherence: 80, days: 14, delta: 0.6, qualitative: 3 },
+        5: { adherence: 85, days: 14, delta: 0.7, qualitative: 3 },
+        6: { adherence: 85, days: 21, delta: 0.8, qualitative: 4 }
+      };
+      
+      const threshold = unlockThresholds[currentStage];
+      const adherence = progress?.adherencePercentage || 0;
+      const consecutiveDays = progress?.consecutiveDays || 0;
+      
+      let feedbackMessage = `**Weekly Check-In Complete** ✓
+
+**Your Scores:**
+• Regulation: ${scores.regulation}/5
+• Awareness: ${scores.awareness}/5
+• Outlook: ${scores.outlook}/5
+• Attention: ${scores.attention}/5
+• Stage Competence: ${scores.qualitative}/5
+
+**REwired Index:** ${rewiredIndex}/100
+**Average Delta from Baseline:** ${avgDelta >= 0 ? '+' : ''}${avgDelta.toFixed(2)}
+
+---
+
+`;
+
+      if (threshold && currentStage < 7) {
+        const meetsAdherence = adherence >= threshold.adherence;
+        const meetsDays = consecutiveDays >= threshold.days;
+        const meetsDelta = avgDelta >= threshold.delta;
+        const meetsQualitative = qualRating >= threshold.qualitative;
+        
+        if (meetsAdherence && meetsDays && meetsDelta && meetsQualitative) {
+          feedbackMessage += `**🎉 You've met all unlock criteria for Stage ${currentStage + 1}!**
+
+The unlock prompt should appear shortly.`;
+        } else {
+          feedbackMessage += `**Stage ${currentStage + 1} Unlock Progress:**
+• Adherence: ${adherence}% ${meetsAdherence ? '✓' : `(need ${threshold.adherence}%)`}
+• Consecutive Days: ${consecutiveDays} ${meetsDays ? '✓' : `(need ${threshold.days})`}
+• Average Delta: ${avgDelta >= 0 ? '+' : ''}${avgDelta.toFixed(2)} ${meetsDelta ? '✓' : `(need +${threshold.delta})`}
+• Stage Competence: ${qualRating}/5 ${meetsQualitative ? '✓' : `(need ${threshold.qualitative}/5)`}
+
+${!meetsQualitative ? `\n**Focus Area:** ${stageQualitativeQuestions[currentStage]} Keep practicing until this feels more solid.` : ''}
+${!meetsDelta ? `\n**Focus Area:** Your domain scores are improving. Keep up the daily rituals to build that delta.` : ''}`;
+        }
+      }
+      
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: feedbackMessage
+      }]);
+      
+      // Reset check-in state
+      setWeeklyCheckInActive(false);
+      setWeeklyCheckInStep(0);
+      setWeeklyCheckInScores({
+        regulation: null,
+        awareness: null,
+        outlook: null,
+        attention: null,
+        qualitative: null
+      });
+      
+    } catch (error) {
+      console.error('[WeeklyCheckIn] Error saving:', error);
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: "There was an error saving your check-in. Let's try again later."
+      }]);
+      setWeeklyCheckInActive(false);
+      setWeeklyCheckInStep(0);
+    }
+  };
+
   // Initialize conversation with appropriate opening
   useEffect(() => {
     if (hasInitialized.current) return;
@@ -1175,6 +1465,73 @@ What feels right?`
     }
   }, [progress, isInitializing]);
 
+  // ============================================
+  // WEEKLY CHECK-IN DETECTION
+  // ============================================
+  useEffect(() => {
+    // Only check once per session, after initialization, and when not in other flows
+    if (hasCheckedWeeklyDue.current || isInitializing || !progress || !hasInitialized.current) return;
+    if (weeklyCheckInActive || awaitingSprintRenewal || awaitingMicroActionStart || microActionState.isActive) return;
+    if (unlockFlowState !== 'none') return;
+    
+    const checkWeeklyDue = async () => {
+      try {
+        const supabase = createClient();
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (!currentUser) return;
+        
+        // Get the most recent weekly delta entry
+        const { data: lastCheckIn } = await supabase
+          .from('weekly_deltas')
+          .select('week_of')
+          .eq('user_id', currentUser.id)
+          .order('week_of', { ascending: false })
+          .limit(1)
+          .single();
+        
+        const today = new Date();
+        let daysSinceLastCheckIn = 999; // Default to long time if no check-in exists
+        
+        if (lastCheckIn?.week_of) {
+          const lastDate = new Date(lastCheckIn.week_of);
+          daysSinceLastCheckIn = Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+        }
+        
+        console.log('[WeeklyCheckIn] Days since last check-in:', daysSinceLastCheckIn);
+        
+        // If 7+ days since last check-in (or never done), prompt for check-in
+        if (daysSinceLastCheckIn >= 7) {
+          hasCheckedWeeklyDue.current = true;
+          
+          // Only show once per session
+          const shownKey = `weekly_checkin_shown_${today.toISOString().split('T')[0]}`;
+          if (sessionStorage.getItem(shownKey)) return;
+          sessionStorage.setItem(shownKey, 'true');
+          
+          // Small delay to let other messages settle
+          setTimeout(() => {
+            setMessages(prev => [...prev, {
+              role: 'assistant',
+              content: `**Weekly Check-In Time** 📊
+
+It's been ${daysSinceLastCheckIn === 999 ? 'a while' : daysSinceLastCheckIn + ' days'} since your last check-in. This quick assessment helps track your progress and determines when you're ready for the next stage.
+
+Takes about 2 minutes. Ready to start?`
+            }]);
+            
+            // We'll handle the response in sendMessage
+            setWeeklyCheckInActive(true);
+            setWeeklyCheckInStep(0);
+          }, 1500);
+        }
+      } catch (error) {
+        console.error('[WeeklyCheckIn] Error checking due date:', error);
+      }
+    };
+    
+    checkWeeklyDue();
+  }, [progress, isInitializing, weeklyCheckInActive, awaitingSprintRenewal, awaitingMicroActionStart, microActionState.isActive, unlockFlowState]);
+
   // Handle quick reply button clicks (no API call)
   const handleQuickReply = async (step: number) => {
     const replyConfig = introQuickReplies[step];
@@ -1263,6 +1620,26 @@ What feels right?`
     const userInput = input.trim().toLowerCase();
     
     // ============================================
+    // MANUAL WEEKLY CHECK-IN TRIGGER
+    // ============================================
+    if (userInput.includes('weekly check') || userInput === 'check in' || userInput === 'check-in') {
+      if (!weeklyCheckInActive) {
+        setMessages(prev => [...prev, 
+          { role: 'user', content: input.trim() },
+          { role: 'assistant', content: `**Weekly Check-In** 📊
+
+This quick assessment helps track your progress and determines when you're ready for the next stage.
+
+Takes about 2 minutes. Ready to start?` }
+        ]);
+        setInput('');
+        setWeeklyCheckInActive(true);
+        setWeeklyCheckInStep(0);
+        return;
+      }
+    }
+    
+    // ============================================
     // SPRINT RENEWAL HANDLING (after 21-day sprint complete)
     // ============================================
     if (awaitingSprintRenewal) {
@@ -1307,6 +1684,16 @@ What feels right?`
         }]);
         await startMicroActionSetup();
       }
+      return;
+    }
+    
+    // ============================================
+    // WEEKLY CHECK-IN FLOW HANDLING
+    // ============================================
+    if (weeklyCheckInActive) {
+      setMessages(prev => [...prev, { role: 'user', content: input.trim() }]);
+      setInput('');
+      await processWeeklyCheckInResponse(input.trim());
       return;
     }
     
