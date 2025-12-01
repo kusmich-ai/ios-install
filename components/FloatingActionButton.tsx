@@ -242,6 +242,12 @@ export default function FloatingActionButton({
                   const isCompleted = status === 'completed';
                   const isCompleting = completing === practice.id;
                   
+                  // Special handling for Micro-Action
+                  const isMicroAction = practice.id === 'micro_action';
+                  const extendedProgress = progress as any;
+                  const hasIdentity = isMicroAction && !!(extendedProgress?.currentIdentity);
+                  const currentIdentity = extendedProgress?.currentIdentity || '';
+                  
                   return (
                     <div
                       key={practice.id}
@@ -262,50 +268,108 @@ export default function FloatingActionButton({
                           </span>
                         </div>
                       </div>
+                      
+                      {/* Show identity for Micro-Action if set */}
+                      {isMicroAction && hasIdentity && (
+                        <div className="text-xs text-[#ff9e19]/70 ml-8 mb-1 truncate" title={currentIdentity}>
+                          {currentIdentity}
+                        </div>
+                      )}
+                      
                       <div className="text-xs text-gray-400 ml-8 mb-2">
-                        {practice.duration} min
+                        {isMicroAction ? (hasIdentity ? '2-5 min' : 'Setup required') : `${practice.duration} min`}
                       </div>
                       
-                      {/* Action Buttons - Always show Start, even if completed */}
+                      {/* Action Buttons - Special handling for Micro-Action */}
                       <div className="flex gap-2 ml-8">
-                        {/* Start/Re-run Button - Always visible */}
-                        <button
-                          onClick={() => handleStartPractice(practice.id)}
-                          className={`flex-1 px-2 py-1.5 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1 ${
-                            isCompleted
-                              ? 'bg-gray-600/30 text-gray-400 hover:bg-gray-600/50 hover:text-gray-300'
-                              : 'bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30'
-                          }`}
-                        >
-                          {isCompleted && <RotateCcw className="w-3 h-3" />}
-                          {isCompleted ? 'Run Again' : 'Start Ritual'}
-                        </button>
-                        
-                        {/* Done Button - Only show if not completed */}
-                        {!isCompleted && (
-                          <button
-                            onClick={(e) => handleMarkComplete(practice.id, practice.name, e)}
-                            disabled={isCompleting}
-                            className={`px-3 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1 ${
-                              isCompleting
-                                ? 'bg-gray-600 text-gray-400 cursor-wait'
-                                : 'bg-[#ff9e19]/20 text-[#ff9e19] hover:bg-[#ff9e19]/30'
-                            }`}
-                          >
-                            {isCompleting ? (
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                            ) : (
-                              <Check className="w-3 h-3" />
+                        {isMicroAction ? (
+                          // MICRO-ACTION SPECIAL BUTTONS
+                          hasIdentity ? (
+                            // Has identity - show only Log Complete button
+                            <>
+                              {!isCompleted && (
+                                <button
+                                  onClick={() => {
+                                    handleStartPractice(practice.id);
+                                    setIsOpen(false);
+                                  }}
+                                  disabled={isCompleting}
+                                  className={`flex-1 px-2 py-1.5 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1 ${
+                                    isCompleting
+                                      ? 'bg-gray-600 text-gray-400 cursor-wait'
+                                      : 'bg-[#ff9e19]/20 text-[#ff9e19] hover:bg-[#ff9e19]/30'
+                                  }`}
+                                >
+                                  {isCompleting ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                  ) : (
+                                    <Check className="w-3 h-3" />
+                                  )}
+                                  Log Complete
+                                </button>
+                              )}
+                              {isCompleted && (
+                                <span className="flex-1 px-2 py-1.5 text-xs text-green-400 flex items-center justify-center gap-1">
+                                  <Check className="w-3 h-3" />
+                                  Done for today
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            // No identity - show Setup button
+                            <button
+                              onClick={() => {
+                                handleStartPractice(practice.id);
+                                setIsOpen(false);
+                              }}
+                              className="flex-1 px-2 py-1.5 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1 bg-[#ff9e19]/20 text-[#ff9e19] hover:bg-[#ff9e19]/30"
+                            >
+                              Set Up Identity
+                            </button>
+                          )
+                        ) : (
+                          // NORMAL PRACTICE BUTTONS
+                          <>
+                            {/* Start/Re-run Button - Always visible */}
+                            <button
+                              onClick={() => handleStartPractice(practice.id)}
+                              className={`flex-1 px-2 py-1.5 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1 ${
+                                isCompleted
+                                  ? 'bg-gray-600/30 text-gray-400 hover:bg-gray-600/50 hover:text-gray-300'
+                                  : 'bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30'
+                              }`}
+                            >
+                              {isCompleted && <RotateCcw className="w-3 h-3" />}
+                              {isCompleted ? 'Run Again' : 'Start Ritual'}
+                            </button>
+                            
+                            {/* Done Button - Only show if not completed */}
+                            {!isCompleted && (
+                              <button
+                                onClick={(e) => handleMarkComplete(practice.id, practice.name, e)}
+                                disabled={isCompleting}
+                                className={`px-3 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1 ${
+                                  isCompleting
+                                    ? 'bg-gray-600 text-gray-400 cursor-wait'
+                                    : 'bg-[#ff9e19]/20 text-[#ff9e19] hover:bg-[#ff9e19]/30'
+                                }`}
+                              >
+                                {isCompleting ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <Check className="w-3 h-3" />
+                                )}
+                                Done
+                              </button>
                             )}
-                            Done
-                          </button>
-                        )}
-                        
-                        {/* Completed indicator */}
-                        {isCompleted && (
-                          <span className="px-2 py-1.5 text-xs text-green-400 flex items-center gap-1">
-                            <Check className="w-3 h-3" />
-                          </span>
+                            
+                            {/* Completed indicator */}
+                            {isCompleted && (
+                              <span className="px-2 py-1.5 text-xs text-green-400 flex items-center gap-1">
+                                <Check className="w-3 h-3" />
+                              </span>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
@@ -313,8 +377,6 @@ export default function FloatingActionButton({
                 })}
               </div>
             </div>
-
-            {/* On-Demand Tools */}
             <div>
               <div className="text-xs font-semibold text-gray-400 mb-2">
                 ON-DEMAND TOOLS
