@@ -791,8 +791,17 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
         }]);
       }
 
-      // Update flow state
-      setUnlockFlowState('confirmed');
+      // Update flow state - SPECIAL HANDLING FOR STAGE 3
+      if (pendingUnlockStage === 3) {
+        // Stage 3: The confirmation message already asks "Ready to run Identity Installation?"
+        // So we skip the "Learn the new practices" button and go straight to awaiting response
+        setUnlockFlowState('none');
+        setPendingUnlockStage(null);
+        setAwaitingMicroActionStart(true);
+      } else {
+        // Other stages: Show "Learn the new practices" button
+        setUnlockFlowState('confirmed');
+      }
       
       // Refresh progress data to reflect new stage
       await refetchProgress();
