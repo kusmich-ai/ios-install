@@ -35,6 +35,10 @@ export interface UserProgress {
   unlockEligible: boolean;
   // NEW: Track the date this data is for
   dataDate: string;
+  // NEW: Identity fields for Micro-Action
+  currentIdentity: string | null;
+  microAction: string | null;
+  identitySprintStart: string | null;
 }
 
 interface PracticeLog {
@@ -271,7 +275,11 @@ export function useUserProgress() {
         unlockedTools,
         dailyPractices,
         unlockEligible,
-        dataDate: today
+        dataDate: today,
+        // Identity fields for Micro-Action
+        currentIdentity: progressData.current_identity || null,
+        microAction: progressData.micro_action || null,
+        identitySprintStart: progressData.identity_sprint_start || null
       };
 
       console.log('[useUserProgress] Setting progress:', {
