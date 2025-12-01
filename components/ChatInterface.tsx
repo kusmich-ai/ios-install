@@ -576,6 +576,8 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   // MICRO-ACTION SETUP STATE (100% API version)
   // ============================================
   const [microActionState, setMicroActionState] = useState<MicroActionState>(initialMicroActionState);
+  const [awaitingMicroActionStart, setAwaitingMicroActionStart] = useState(false);
+  const [awaitingSprintRenewal, setAwaitingSprintRenewal] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -668,7 +670,11 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    // Refocus textarea after messages update (unless on mobile where keyboard behavior differs)
+    if (!isMobile && textareaRef.current && !loading) {
+      setTimeout(() => textareaRef.current?.focus(), 100);
+    }
+  }, [messages, loading, isMobile]);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -810,7 +816,34 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
     
     setUnlockFlowState('intro_started');
     
-    // Get the ritual intro for the new stage
+    // SPECIAL HANDLING FOR STAGE 3: Trigger Micro-Action Identity Setup
+    if (pendingUnlockStage === 3) {
+      // Add intro message for Stage 3
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: `**Welcome to Stage 3: Identity Mode** 🎯
+
+You've built a solid foundation with regulation and embodied awareness. Now it's time to anchor a new identity through daily proof.
+
+The Morning Micro-Action is a 21-day protocol where you:
+1. Choose an identity you want to embody
+2. Design one small daily action that proves you ARE this person
+3. Complete that action every morning
+
+By day 21, it won't feel like effort. It'll feel like you.
+
+Ready to discover your identity and design your micro-action?`
+      }]);
+      
+      // Clear pending unlock
+      setPendingUnlockStage(null);
+      
+      // Set a flag to trigger setup when user responds
+      setAwaitingMicroActionStart(true);
+      return;
+    }
+    
+    // Get the ritual intro for the new stage (for other stages)
     const newStageTemplates = templateLibrary.stages[pendingUnlockStage as keyof typeof templateLibrary.stages];
     if (newStageTemplates?.ritualIntro?.intro) {
       const templateContext = buildTemplateContext();
@@ -1083,6 +1116,56 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
     }
   }, [user, baselineData]);
 
+  // ============================================
+  // 21-DAY IDENTITY SPRINT CHECK
+  // ============================================
+  useEffect(() => {
+    // Only check after initialization is complete and we have progress
+    if (isInitializing || !progress || !hasInitialized.current) return;
+    
+    const extendedProgress = progress as any;
+    const sprintStartDate = extendedProgress?.identitySprintStart;
+    const hasIdentity = !!(extendedProgress?.currentIdentity);
+    
+    // Only check if they have an identity
+    if (!hasIdentity || !sprintStartDate) return;
+    
+    // Calculate days since sprint started
+    const startDate = new Date(sprintStartDate);
+    const today = new Date();
+    const daysSinceStart = Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    console.log('[MicroAction] Sprint check: days since start =', daysSinceStart);
+    
+    // If 21+ days, prompt for renewal
+    if (daysSinceStart >= 21) {
+      // Only show once per session
+      const shownKey = `sprint_renewal_shown_${sprintStartDate}`;
+      if (sessionStorage.getItem(shownKey)) return;
+      sessionStorage.setItem(shownKey, 'true');
+      
+      const identity = extendedProgress?.currentIdentity || '';
+      
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: `**21-Day Identity Sprint Complete!** 🎉
+
+You've been embodying *"${identity}"* for ${daysSinceStart} days. That's real neural rewiring.
+
+How did it feel? Three options:
+
+1. **Continue** - This identity is becoming second nature, keep reinforcing it
+2. **Evolve** - Build on this foundation with a deeper or adjacent identity  
+3. **Pivot** - Try a completely different identity for your next sprint
+
+What feels right?`
+      }]);
+      
+      // Set flag to watch for their response
+      setAwaitingSprintRenewal(true);
+    }
+  }, [progress, isInitializing]);
+
   // Handle quick reply button clicks (no API call)
   const handleQuickReply = async (step: number) => {
     const replyConfig = introQuickReplies[step];
@@ -1171,6 +1254,81 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
     const userInput = input.trim().toLowerCase();
     
     // ============================================
+    // SPRINT RENEWAL HANDLING (after 21-day sprint complete)
+    // ============================================
+    if (awaitingSprintRenewal) {
+      setMessages(prev => [...prev, { role: 'user', content: input.trim() }]);
+      setInput('');
+      setAwaitingSprintRenewal(false);
+      
+      const isContinue = userInput.includes('continue') || userInput.includes('keep') || userInput === '1';
+      const isEvolve = userInput.includes('evolve') || userInput.includes('build') || userInput.includes('deeper') || userInput === '2';
+      const isPivot = userInput.includes('pivot') || userInput.includes('different') || userInput.includes('new') || userInput === '3';
+      
+      if (isContinue) {
+        // Reset sprint start date for continuation
+        try {
+          const supabase = createClient();
+          await supabase
+            .from('user_progress')
+            .update({ identity_sprint_start: new Date().toISOString() })
+            .eq('user_id', user.id);
+          
+          if (refetchProgress) await refetchProgress();
+        } catch (error) {
+          console.error('Error resetting sprint:', error);
+        }
+        
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: `Sprint renewed. You're continuing with your current identity for another 21 days. Keep stacking that proof - each day deepens the neural pathway.`
+        }]);
+      } else if (isEvolve || isPivot) {
+        // Start new identity setup
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: `Great - let's ${isEvolve ? 'evolve' : 'explore a new direction'}. I'll guide you through selecting your next identity.`
+        }]);
+        await startMicroActionSetup();
+      } else {
+        // Unclear response - start setup anyway
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: `Let's figure out what's next together. I'll guide you through the identity selection.`
+        }]);
+        await startMicroActionSetup();
+      }
+      return;
+    }
+    
+    // ============================================
+    // AWAITING MICRO-ACTION START (after Stage 3 unlock intro)
+    // ============================================
+    if (awaitingMicroActionStart) {
+      const isAffirmative = ['yes', 'yeah', 'yep', 'sure', 'ok', 'okay', 'ready', 'let\'s go', 'lets go', 'go', 'y', 'absolutely', 'yes please'].includes(userInput) ||
+                           userInput.includes('yes') || 
+                           userInput.includes('ready') ||
+                           userInput.includes('let\'s do');
+      
+      // Add user message
+      setMessages(prev => [...prev, { role: 'user', content: input.trim() }]);
+      setInput('');
+      setAwaitingMicroActionStart(false);
+      
+      if (isAffirmative) {
+        // Start the Micro-Action setup
+        await startMicroActionSetup();
+      } else {
+        // User declined for now
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: "No problem. When you're ready to set up your identity, just click the Morning Micro-Action in the sidebar or say 'set up my identity'. The practice will be waiting for you." 
+        }]);
+      }
+      return;
+    }
+    
+    // ============================================
     // MICRO-ACTION SETUP FLOW HANDLING (100% API)
     // ============================================
     if (microActionState.isActive) {
@@ -1242,6 +1400,8 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
     if (normalizedId === 'micro_action') {
       const extendedProgress = progress as any;
       const hasIdentity = !!(extendedProgress?.currentIdentity);
+      const currentIdentity = extendedProgress?.currentIdentity || '';
+      const microAction = extendedProgress?.microAction || '';
       
       if (!hasIdentity) {
         // No identity set - trigger setup flow
@@ -1250,7 +1410,48 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
         await startMicroActionSetup();
         return;
       }
-      // If identity exists, continue with normal practice flow
+      
+      // Identity exists - this is a "log completion" action
+      // Add user message
+      setMessages(prev => [...prev, { role: 'user', content: `I completed my Morning Micro-Action.` }]);
+      setLoading(true);
+      
+      try {
+        // Log the practice completion
+        const supabase = createClient();
+        await supabase.from('practice_logs').insert({
+          user_id: user.id,
+          practice_id: 'micro_action',
+          completed_at: new Date().toISOString(),
+          notes: `Identity: ${currentIdentity} | Action: ${microAction}`
+        });
+        
+        // Refresh progress
+        if (refetchProgress) {
+          await refetchProgress();
+        }
+        
+        // Add confirmation message
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: `**Identity proof logged.** ✓
+
+You acted as: *${currentIdentity}*
+
+Evidence: ${microAction}
+
+Each completion reinforces the neural pathway. You're not just doing an action - you're becoming this person. Keep stacking proof.` 
+        }]);
+      } catch (error) {
+        console.error('Error logging micro-action:', error);
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: `Micro-action logged. Keep building that identity proof! 💪` 
+        }]);
+      }
+      
+      setLoading(false);
+      return;
     }
     
     // Add user message
