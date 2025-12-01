@@ -408,15 +408,16 @@ function checkBasicUnlockEligibility(
   avgDelta: number,
   qualitativeRating: number | null
 ): boolean {
-  if (stage >= 7) return false;
+  // Stage 7 is manual unlock only - never auto-eligible
+  if (stage >= 6) return false;
 
   const thresholds: { [key: number]: { adherence: number; days: number; delta: number; qualitative: number } } = {
     1: { adherence: 80, days: 14, delta: 0.3, qualitative: 3 },
     2: { adherence: 80, days: 14, delta: 0.5, qualitative: 3 },
     3: { adherence: 80, days: 14, delta: 0.5, qualitative: 3 },
     4: { adherence: 80, days: 14, delta: 0.6, qualitative: 3 },
-    5: { adherence: 85, days: 14, delta: 0.7, qualitative: 3 },
-    6: { adherence: 85, days: 21, delta: 0.8, qualitative: 4 }
+    5: { adherence: 85, days: 14, delta: 0.7, qualitative: 3 }
+    // Stage 6→7 is manual review only - not in this table
   };
 
   const threshold = thresholds[stage];
