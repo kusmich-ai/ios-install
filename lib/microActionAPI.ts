@@ -29,9 +29,10 @@ Guide the user through discovering their identity and designing a daily proof ac
 ## THE PROCESS (follow this sequence naturally)
 
 ### Phase 1: Discovery
-1. First, ask if this is their first Identity Sprint or if they've done this before
-2. Ask: "Is there somewhere in your life that feels misaligned with who you are? It could be internal (thoughts, reactivity, overwhelm) or external (relationships, work, health)."
-3. Reflect back what you hear and probe deeper to get specific
+The opening message already asked about misalignment. Your job is to:
+1. Reflect back what they shared and probe deeper to get specific
+2. Ask follow-up questions to understand the root of the friction
+3. Don't re-ask "is there somewhere that feels misaligned" - they already answered that
 
 ### Phase 2: Identity Type Assessment  
 4. Determine if they need a SUBTRACTIVE identity (calming, regulatory - for when they feel scattered/stressed) or ADDITIVE identity (expansive, expressive - for when they're stable but under-expressed)
@@ -112,4 +113,6 @@ export const microActionOpeningMessage = `Let's set up your Morning Micro-Action
 
 This is designed to train your mental operating system by anchoring a new identity through one small, daily proof action. Over 21 days, you'll act as a specific identity — not as an affirmation, but as evidence-based training.
 
-Is this your first Identity Sprint, or have you done this before?`;
+By day 21, it won't feel like effort. It'll feel like you.
+
+Let's begin — is there somewhere in your life that feels misaligned with who you are? It could be internal (thoughts, reactivity, overwhelm) or external (relationships, work, health).`;
