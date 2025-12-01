@@ -126,13 +126,15 @@ export function useUserProgress() {
       // Transform practice logs into dailyPractices format
       const dailyPractices: UserProgress['dailyPractices'] = {};
       if (practicesData) {
-        console.log('[useUserProgress] Found practices:', practicesData.length);
+        console.log('[useUserProgress] Found practices:', practicesData.length, practicesData);
         (practicesData as PracticeLog[]).forEach((practice: PracticeLog) => {
+          console.log('[useUserProgress] Mapping practice:', practice.practice_type, practice.completed);
           dailyPractices[practice.practice_type] = {
             completed: practice.completed,
             time: practice.completed_at
           };
         });
+        console.log('[useUserProgress] Final dailyPractices:', dailyPractices);
       }
 
       // Fetch baseline data
@@ -251,12 +253,16 @@ export function useUserProgress() {
       // Determine unlocked tools based on stage
       const unlockedTools = getUnlockedTools(progressData.current_stage);
 
-      // Check unlock eligibility (simplified check)
+      // Get latest qualitative rating from weekly check-in
+      const latestQualitativeRating = latestDelta?.qualitative_rating || null;
+
+      // Check unlock eligibility (includes qualitative threshold)
       const unlockEligible = checkBasicUnlockEligibility(
         progressData.current_stage,
         progressData.adherence_percentage,
         progressData.consecutive_days,
-        domainDeltas.average
+        domainDeltas.average,
+        latestQualitativeRating
       );
 
       // Update last fetch date
@@ -399,25 +405,30 @@ function checkBasicUnlockEligibility(
   stage: number,
   adherence: number,
   consecutiveDays: number,
-  avgDelta: number
+  avgDelta: number,
+  qualitativeRating: number | null
 ): boolean {
   if (stage >= 7) return false;
 
-  const thresholds: { [key: number]: { adherence: number; days: number; delta: number } } = {
-    1: { adherence: 80, days: 14, delta: 0.3 },
-    2: { adherence: 80, days: 14, delta: 0.5 },
-    3: { adherence: 80, days: 14, delta: 0.5 },
-    4: { adherence: 80, days: 14, delta: 0.6 },
-    5: { adherence: 85, days: 14, delta: 0.7 },
-    6: { adherence: 85, days: 21, delta: 0.8 }
+  const thresholds: { [key: number]: { adherence: number; days: number; delta: number; qualitative: number } } = {
+    1: { adherence: 80, days: 14, delta: 0.3, qualitative: 3 },
+    2: { adherence: 80, days: 14, delta: 0.5, qualitative: 3 },
+    3: { adherence: 80, days: 14, delta: 0.5, qualitative: 3 },
+    4: { adherence: 80, days: 14, delta: 0.6, qualitative: 3 },
+    5: { adherence: 85, days: 14, delta: 0.7, qualitative: 3 },
+    6: { adherence: 85, days: 21, delta: 0.8, qualitative: 4 }
   };
 
   const threshold = thresholds[stage];
   if (!threshold) return false;
 
+  // Qualitative rating is required for unlock - must have completed at least one weekly check-in
+  const meetsQualitative = qualitativeRating !== null && qualitativeRating >= threshold.qualitative;
+
   return (
     adherence >= threshold.adherence &&
     consecutiveDays >= threshold.days &&
-    avgDelta >= threshold.delta
+    avgDelta >= threshold.delta &&
+    meetsQualitative
   );
 }
