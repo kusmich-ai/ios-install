@@ -1222,7 +1222,7 @@ ${qualQuestion} (0-5)`
       const rewiredIndex = Math.round(avgScore * 20);
       const qualRating = scores.qualitative || 0;
       
-      // Check unlock criteria
+      // Check unlock criteria (internal thresholds - not shown to user)
       const unlockThresholds: { [key: number]: { adherence: number; days: number; delta: number; qualitative: number } } = {
         1: { adherence: 80, days: 14, delta: 0.3, qualitative: 3 },
         2: { adherence: 80, days: 14, delta: 0.5, qualitative: 3 },
@@ -1246,7 +1246,6 @@ ${qualQuestion} (0-5)`
 • Stage Competence: ${scores.qualitative}/5
 
 **REwired Index:** ${rewiredIndex}/100
-**Average Delta from Baseline:** ${avgDelta >= 0 ? '+' : ''}${avgDelta.toFixed(2)}
 
 ---
 
@@ -1259,18 +1258,29 @@ ${qualQuestion} (0-5)`
         const meetsQualitative = qualRating >= threshold.qualitative;
         
         if (meetsAdherence && meetsDays && meetsDelta && meetsQualitative) {
-          feedbackMessage += `**🎉 You've met all unlock criteria for Stage ${currentStage + 1}!**
+          feedbackMessage += `**🎉 You've met all criteria for Stage ${currentStage + 1}!**
 
 The unlock prompt should appear shortly.`;
         } else {
-          feedbackMessage += `**Stage ${currentStage + 1} Unlock Progress:**
-• Adherence: ${adherence}% ${meetsAdherence ? '✓' : `(need ${threshold.adherence}%)`}
-• Consecutive Days: ${consecutiveDays} ${meetsDays ? '✓' : `(need ${threshold.days})`}
-• Average Delta: ${avgDelta >= 0 ? '+' : ''}${avgDelta.toFixed(2)} ${meetsDelta ? '✓' : `(need +${threshold.delta})`}
-• Stage Competence: ${qualRating}/5 ${meetsQualitative ? '✓' : `(need ${threshold.qualitative}/5)`}
+          // Softer feedback without exact numbers
+          const statusItems: string[] = [];
+          
+          statusItems.push(`• Consistency: ${meetsAdherence ? '✓ Strong' : 'Building...'}`);
+          statusItems.push(`• Daily Practice: ${meetsDays ? '✓ Established' : 'Keep showing up'}`);
+          statusItems.push(`• Transformation: ${meetsDelta ? '✓ Measurable growth' : 'In progress'}`);
+          statusItems.push(`• Stage Competence: ${meetsQualitative ? '✓ Ready' : 'Developing'}`);
+          
+          feedbackMessage += `**Stage ${currentStage + 1} Readiness:**
+${statusItems.join('\n')}`;
 
-${!meetsQualitative ? `\n**Focus Area:** ${stageQualitativeQuestions[currentStage]} Keep practicing until this feels more solid.` : ''}
-${!meetsDelta ? `\n**Focus Area:** Your domain scores are improving. Keep up the daily rituals to build that delta.` : ''}`;
+          // Add focus area if something specific is lagging
+          if (!meetsQualitative) {
+            feedbackMessage += `\n\n**Focus Area:** ${stageQualitativeQuestions[currentStage]} Keep practicing until this feels more natural.`;
+          } else if (!meetsDays) {
+            feedbackMessage += `\n\n**Focus Area:** Keep showing up daily. Consistency is what rewires the nervous system.`;
+          } else if (!meetsDelta) {
+            feedbackMessage += `\n\n**Focus Area:** The practices are landing. Trust the process - transformation takes time.`;
+          }
         }
       }
       
@@ -1421,6 +1431,8 @@ ${!meetsDelta ? `\n**Focus Area:** Your domain scores are improving. Keep up the
   useEffect(() => {
     // Only check after initialization is complete and we have progress
     if (isInitializing || !progress || !hasInitialized.current) return;
+    // Don't trigger if weekly check-in is already active
+    if (weeklyCheckInActive) return;
     
     const extendedProgress = progress as any;
     const sprintStartDate = extendedProgress?.identitySprintStart;
@@ -1443,6 +1455,9 @@ ${!meetsDelta ? `\n**Focus Area:** Your domain scores are improving. Keep up the
       if (sessionStorage.getItem(shownKey)) return;
       sessionStorage.setItem(shownKey, 'true');
       
+      // Mark that we're handling a prompt (prevents weekly check-in from also firing)
+      hasCheckedWeeklyDue.current = true;
+      
       const identity = extendedProgress?.currentIdentity || '';
       
       setMessages(prev => [...prev, {
@@ -1463,7 +1478,7 @@ What feels right?`
       // Set flag to watch for their response
       setAwaitingSprintRenewal(true);
     }
-  }, [progress, isInitializing]);
+  }, [progress, isInitializing, weeklyCheckInActive]);
 
   // ============================================
   // WEEKLY CHECK-IN DETECTION
