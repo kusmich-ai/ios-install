@@ -292,7 +292,7 @@ export default function ToolsSidebar({
                             {isMicroAction ? (
                               // MICRO-ACTION SPECIAL BUTTONS
                               hasIdentity ? (
-                                // Has identity - show only Done button (logs completion via chat)
+                                // Has identity - show Complete button (logs completion via chat)
                                 <>
                                   {!isCompleted && (
                                     <button
@@ -301,7 +301,7 @@ export default function ToolsSidebar({
                                       className={`flex-1 px-2 py-1.5 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1 ${
                                         isCompleting
                                           ? 'bg-gray-600 text-gray-400 cursor-wait'
-                                          : 'bg-[#ff9e19]/20 text-[#ff9e19] hover:bg-[#ff9e19]/30'
+                                          : 'bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30'
                                       }`}
                                     >
                                       {isCompleting ? (
@@ -309,7 +309,7 @@ export default function ToolsSidebar({
                                       ) : (
                                         <Check className="w-3 h-3" />
                                       )}
-                                      Log Complete
+                                      Mark Complete
                                     </button>
                                   )}
                                   {isCompleted && (
