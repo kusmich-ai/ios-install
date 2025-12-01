@@ -284,7 +284,7 @@ export default function FloatingActionButton({
                         {isMicroAction ? (
                           // MICRO-ACTION SPECIAL BUTTONS
                           hasIdentity ? (
-                            // Has identity - show only Log Complete button
+                            // Has identity - show Mark Complete button
                             <>
                               {!isCompleted && (
                                 <button
@@ -296,7 +296,7 @@ export default function FloatingActionButton({
                                   className={`flex-1 px-2 py-1.5 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1 ${
                                     isCompleting
                                       ? 'bg-gray-600 text-gray-400 cursor-wait'
-                                      : 'bg-[#ff9e19]/20 text-[#ff9e19] hover:bg-[#ff9e19]/30'
+                                      : 'bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30'
                                   }`}
                                 >
                                   {isCompleting ? (
@@ -304,7 +304,7 @@ export default function FloatingActionButton({
                                   ) : (
                                     <Check className="w-3 h-3" />
                                   )}
-                                  Log Complete
+                                  Mark Complete
                                 </button>
                               )}
                               {isCompleted && (
