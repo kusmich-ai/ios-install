@@ -1019,7 +1019,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
     const newStageTemplates = templateLibrary.stages[pendingUnlockStage as keyof typeof templateLibrary.stages];
     
     // Type-safe access (Stage 1 uses 'ritualIntro', other stages use 'intro')
-if (newStageTemplates && 'intro' in newStageTemplates && newStageTemplates.intro) {
+if (newStageTemplates && 'intro' in newStageTemplates && typeof newStageTemplates.intro === 'string') {
   const templateContext = buildTemplateContext();
   const processedMessage = processTemplate(newStageTemplates.intro, templateContext);
   setMessages(prev => [...prev, { role: 'assistant', content: processedMessage }]);
