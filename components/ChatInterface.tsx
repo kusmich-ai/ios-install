@@ -64,7 +64,6 @@ import {
   isSprintComplete,
   sprintCompleteMessage
 } from '@/lib/flowBlockAPI';
-}
 
 Current conversation:`;
 
