@@ -1121,15 +1121,15 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
         // Add assistant response to chat
         setMessages(prev => [...prev, { role: 'assistant', content: cleanResponse }]);
         
-        // Save to database
-        await saveMicroActionSetup(completion.identity, completion.action, microActionState.sprintNumber || 1);
+       // Save to database
+        await saveMicroActionSetup(completion.identity, completion.action, 1); // TODO: Add sprint tracking
         
         // Update state
         setMicroActionState(prev => ({
           ...prev,
           conversationHistory: [...updatedHistory, { role: 'assistant', content: cleanResponse }],
-          identity: completion.identity,
-          microAction: completion.microAction,
+          extractedIdentity: completion.identity,
+          extractedAction: completion.action,
           isComplete: true,
           isActive: false
         }));
