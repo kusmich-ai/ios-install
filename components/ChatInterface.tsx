@@ -1124,7 +1124,7 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
   
   // Start new sprint in database and get sprint info
   const sprintResult = await startNewMicroActionSprint(
-    userId,  // Make sure you have access to userId here
+    user.id,  // Make sure you have access to userId here
     completion.identity,
     completion.action
   );
@@ -1281,26 +1281,26 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
       // Check for completion marker
       const completion = parseFlowBlockCompletionMarker(assistantResponse);
       
-      if (flowCompletion) {
+      if (completion) {
   const cleanResponse = cleanFlowBlockResponseForDisplay(assistantResponse);
   setMessages(prev => [...prev, { role: 'assistant', content: cleanResponse }]);
   
   // Start new sprint in database and get sprint info
   const sprintResult = await startNewFlowBlockSprint(
-    userId,  // Make sure you have access to userId here
-    flowCompletion.weeklyMap,
-    flowCompletion.preferences,
-    flowCompletion.domains,
-    flowCompletion.focusType
+    user.id,  // Make sure you have access to userId here
+    completion.weeklyMap,  // ✅ Correct variable
+    completion.preferences,
+    completion.domains,
+    completion.focusType
   );
   
   setFlowBlockState(prev => ({
     ...prev,
     conversationHistory: [...updatedHistory, { role: 'assistant', content: cleanResponse }],
-    extractedDomains: flowCompletion.domains,
-    extractedWeeklyMap: flowCompletion.weeklyMap,
-    extractedPreferences: flowCompletion.preferences,
-    focusType: flowCompletion.focusType,
+   extractedDomains: completion.domains,
+extractedWeeklyMap: completion.weeklyMap,
+extractedPreferences: completion.preferences,
+focusType: completion.focusType,
     isComplete: true,
     isActive: false,
     sprintStartDate: sprintResult.startDate,
