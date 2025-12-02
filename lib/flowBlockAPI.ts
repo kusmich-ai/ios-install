@@ -47,6 +47,7 @@ export interface FlowBlockState {
   focusType: 'concentrated' | 'distributed' | null;
   isComplete: boolean;
   sprintStartDate: string | null;
+  sprintNumber: number;
 }
 
 export const initialFlowBlockState: FlowBlockState = {
@@ -59,7 +60,8 @@ export const initialFlowBlockState: FlowBlockState = {
   extractedPreferences: null,
   focusType: null,
   isComplete: false,
-  sprintStartDate: null
+  sprintStartDate: null,
+  sprintNumber: 1
 };
 
 // ============================================
@@ -511,23 +513,157 @@ What was the learning from today?
 
 Give me your ratings (e.g., "4, 3, 4, 5") and your reflection.`;
 
+
 // ============================================
-// 21-DAY CYCLE MANAGEMENT
+// SPRINT HELPER FUNCTIONS
 // ============================================
 
-export function getSprintDayNumber(sprintStartDate: string): number {
+/**
+ * Calculate which day of the current sprint we're on (1-21)
+ */
+export function getFlowBlockSprintDay(sprintStartDate: string): number {
   const start = new Date(sprintStartDate);
+  start.setHours(0, 0, 0, 0);
+  
   const now = new Date();
-  const diffTime = Math.abs(now.getTime() - start.getTime());
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  return diffDays;
+  now.setHours(0, 0, 0, 0);
+  
+  const diffTime = now.getTime() - start.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+  
+  return Math.max(1, Math.min(diffDays, 21));
 }
 
-export function isSprintComplete(sprintStartDate: string): boolean {
-  return getSprintDayNumber(sprintStartDate) > 21;
+/**
+ * Check if current sprint is complete
+ */
+export function isFlowBlockSprintComplete(sprintStartDate: string): boolean {
+  const start = new Date(sprintStartDate);
+  start.setHours(0, 0, 0, 0);
+  
+  const endDate = new Date(start);
+  endDate.setDate(endDate.getDate() + 21);
+  
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  
+  return now >= endDate;
 }
 
-export const sprintCompleteMessage = `**21-Day Flow Block Sprint Complete** 🎯
+/**
+ * Get formatted sprint status for FlowBlocks
+ */
+export function getFlowBlockSprintStatus(
+  sprintStartDate: string | null, 
+  sprintNumber: number,
+  weeklyMap: WeeklyMapEntry[] | null
+): string {
+  if (!sprintStartDate || !weeklyMap) {
+    return 'Not configured';
+  }
+  
+  const dayNumber = getFlowBlockSprintDay(sprintStartDate);
+  const complete = isFlowBlockSprintComplete(sprintStartDate);
+  const blocksConfigured = weeklyMap.length;
+  
+  if (complete) {
+    return `Sprint ${sprintNumber} Complete ✓ (${blocksConfigured} blocks/week)`;
+  }
+  
+  return `Sprint ${sprintNumber}, Day ${dayNumber}/21 • ${blocksConfigured} blocks/week`;
+}
+
+/**
+ * Get week number within the sprint (1-3)
+ */
+export function getSprintWeek(sprintStartDate: string): number {
+  const day = getFlowBlockSprintDay(sprintStartDate);
+  return Math.ceil(day / 7);
+}
+
+/**
+ * Check if it's time for weekly review (day 7, 14, or 21)
+ */
+export function isWeeklyReviewDay(sprintStartDate: string): boolean {
+  const day = getFlowBlockSprintDay(sprintStartDate);
+  return day === 7 || day === 14 || day === 21;
+}
+
+/**
+ * Get days remaining in current sprint
+ */
+export function getFlowBlockDaysRemaining(sprintStartDate: string): number {
+  const currentDay = getFlowBlockSprintDay(sprintStartDate);
+  return Math.max(0, 21 - currentDay);
+}
+
+/**
+ * Calculate state for starting a new FlowBlock sprint
+ * Optionally carries over preferences and weekly map from previous sprint
+ */
+export function startNewFlowBlockSprint(
+  currentSprintNumber: number,
+  carryOverMap: boolean = false,
+  previousMap?: WeeklyMapEntry[] | null,
+  previousPreferences?: SetupPreferences | null
+): Partial<FlowBlockState> {
+  return {
+    isActive: true,
+    conversationHistory: [],
+    phase: carryOverMap ? 'commitment' : 'discovery',
+    extractedDomains: null,
+    extractedMenu: null,
+    extractedWeeklyMap: carryOverMap ? previousMap : null,
+    extractedPreferences: carryOverMap ? previousPreferences : null,
+    focusType: null,
+    isComplete: false,
+    sprintStartDate: new Date().toISOString(),
+    sprintNumber: currentSprintNumber + 1
+  };
+}
+
+/**
+ * Get blocks completed this sprint (requires tracking data)
+ */
+export function getSprintProgress(
+  sprintStartDate: string,
+  completedBlocks: number,
+  weeklyMap: WeeklyMapEntry[]
+): {
+  dayNumber: number;
+  weekNumber: number;
+  blocksCompleted: number;
+  blocksExpected: number;
+  adherencePercent: number;
+} {
+  const dayNumber = getFlowBlockSprintDay(sprintStartDate);
+  const weekNumber = getSprintWeek(sprintStartDate);
+  
+  // Calculate expected blocks (5 per week, prorated for current day)
+  const fullWeeks = Math.floor((dayNumber - 1) / 7);
+  const daysInCurrentWeek = ((dayNumber - 1) % 7) + 1;
+  const workDaysInCurrentWeek = Math.min(daysInCurrentWeek, 5); // Mon-Fri only
+  
+  const blocksExpected = (fullWeeks * 5) + workDaysInCurrentWeek;
+  const adherencePercent = blocksExpected > 0 
+    ? Math.round((completedBlocks / blocksExpected) * 100) 
+    : 0;
+  
+  return {
+    dayNumber,
+    weekNumber,
+    blocksCompleted,
+    blocksExpected,
+    adherencePercent
+  };
+}
+
+
+// ============================================
+// SPRINT TRANSITION MESSAGES
+// ============================================
+
+export const flowBlockSprintCompleteMessage = (sprintNumber: number) => `**21-Day Flow Block Sprint ${sprintNumber} Complete** 🎯
 
 You've completed a full cycle. Let's review what your nervous system learned.
 
@@ -537,11 +673,27 @@ You've completed a full cycle. Let's review what your nervous system learned.
 - Did challenge or environment play a bigger role?
 - How did different domains compare in terms of flow quality?
 
-**Evolution Options:**
-- Increase difficulty (if boredom appeared or consistent high scores)
+**Evolution Options for Sprint ${sprintNumber + 1}:**
+- Keep the same weekly map (if it's working)
+- Adjust task difficulty (if boredom or overwhelm appeared)
 - Expand duration (60 → 75 → 90 min progression)
-- Broaden or shift category mix (adjust 3G distribution)
+- Shift 3G distribution based on current life phase
 - Add new domains or retire completed projects
-- Shift from Concentrated to Distributed focus (or vice versa)
+- Switch between Concentrated ↔ Distributed focus
 
-What stays? What changes? What new high-leverage work has emerged?`;
+Would you like to:
+1. **Continue** with the same weekly map for Sprint ${sprintNumber + 1}
+2. **Evolve** - make adjustments to your current setup
+3. **Redesign** - start fresh with new discovery
+
+What feels right?`;
+
+export const weeklyCheckInMessage = (weekNumber: number, sprintNumber: number) => `**Week ${weekNumber} of Sprint ${sprintNumber} Complete**
+
+Quick pulse check before we continue:
+
+- How did your Flow Blocks feel this week?
+- Any blocks that felt too easy or too hard?
+- Did your setup (location, playlist, timer) work consistently?
+
+Any adjustments needed, or keep rolling?`;
