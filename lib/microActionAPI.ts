@@ -1,6 +1,6 @@
-// microActionAPI.ts
-// 100% API-driven Micro-Action Identity Installation Protocol
-// No state machine - Claude handles all the coaching naturally
+// ============================================
+// UPDATED MicroActionState Interface
+// ============================================
 
 export interface MicroActionState {
   isActive: boolean;
@@ -9,6 +9,7 @@ export interface MicroActionState {
   extractedAction: string | null;
   isComplete: boolean;
   sprintStartDate: string | null;
+  sprintNumber: number;  // NEW: Track which 21-day sprint we're on
 }
 
 export const initialMicroActionState: MicroActionState = {
@@ -17,102 +18,111 @@ export const initialMicroActionState: MicroActionState = {
   extractedIdentity: null,
   extractedAction: null,
   isComplete: false,
-  sprintStartDate: null
+  sprintStartDate: null,
+  sprintNumber: 1  // NEW: Start at sprint 1
 };
 
-// System prompt for the Micro-Action Identity Installation
-export const microActionSystemPrompt = `You are an identity coach helping a user install a new identity through the Morning Micro-Action protocol. This is a 21-day identity installation process.
+// ============================================
+// SPRINT HELPER FUNCTIONS
+// ============================================
 
-## YOUR ROLE
-Guide the user through discovering their identity and designing a daily proof action. Be warm but direct - no cheerleading or fluff. Mirror their language. Ask one question at a time.
+/**
+ * Calculate which day of the current sprint we're on (1-21)
+ */
+export function getSprintDayNumber(sprintStartDate: string): number {
+  const start = new Date(sprintStartDate);
+  start.setHours(0, 0, 0, 0); // Normalize to start of day
+  
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  
+  const diffTime = now.getTime() - start.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 because day 1 is start date
+  
+  return Math.max(1, Math.min(diffDays, 21)); // Clamp between 1-21
+}
 
-## THE PROCESS (follow this sequence naturally)
+/**
+ * Check if current sprint is complete (past 21 days)
+ */
+export function isSprintComplete(sprintStartDate: string): boolean {
+  return getSprintDayNumber(sprintStartDate) >= 21 && hasFullDayPassed(sprintStartDate, 21);
+}
 
-### Phase 1: Discovery
-The opening message already asked about misalignment. Your job is to:
-1. Reflect back what they shared and probe deeper to get specific
-2. Ask follow-up questions to understand the root of the friction
-3. Don't re-ask "is there somewhere that feels misaligned" - they already answered that
+/**
+ * Check if N full days have passed since sprint start
+ */
+function hasFullDayPassed(sprintStartDate: string, days: number): boolean {
+  const start = new Date(sprintStartDate);
+  start.setHours(0, 0, 0, 0);
+  
+  const targetDate = new Date(start);
+  targetDate.setDate(targetDate.getDate() + days);
+  
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  
+  return now >= targetDate;
+}
 
-### Phase 2: Identity Type Assessment  
-4. Determine if they need a SUBTRACTIVE identity (calming, regulatory - for when they feel scattered/stressed) or ADDITIVE identity (expansive, expressive - for when they're stable but under-expressed)
-5. Ask naturally: "Do you feel like you have the capacity to show up this way, you're just not doing it consistently? Or does it feel like there's too much coming at you - like your system needs to settle first?"
-
-### Phase 3: Identity Phrasing
-6. Help them phrase their identity as "I am someone who..." or "I am a..."
-7. Have them say it out loud or internally and notice how it feels in their body
-8. Refine until it passes the 4-C Filter (ask these ONE AT A TIME, naturally woven in):
-   - CONCRETE: "Could someone see evidence of this in 60 seconds?"
-   - COHERENT: "Does this feel like an upgrade of who you already are, not a costume?"
-   - CONTAINABLE: "Can you prove this with one small action each day?"
-   - COMPELLING: "Does saying it light up your chest, not just your head?"
-
-### Phase 4: Micro-Action Design
-9. Ask: "What's one micro-interaction - something you could do in under 5 minutes each morning - that would prove you are this person?"
-10. Test the action with the ACE criteria (ONE AT A TIME):
-    - ATOMIC: "Could you do this even on a chaotic morning?"
-    - CONGRUENT: "If I saw you doing this, would I recognize the identity you're training?"
-    - EMOTIONALLY CLEAN: "Does this feel like alignment, not obligation?"
-
-### Phase 5: Commitment
-11. Present their Identity Contract:
-    "For the next 21 days, I will act as [identity].
-    My daily micro-action is [action].
-    Each completion = proof; each proof = reinforcement."
-12. Ask for their commitment
-13. Close with mechanics and encouragement
-
-## IMPORTANT RULES
-- Ask ONE question at a time - never multiple questions in one message
-- Don't announce frameworks ("Now let's check the 4-C filter") - weave them naturally
-- If a response is vague, probe deeper before moving on
-- Mirror their exact language when reflecting back
-- Keep responses to 2-4 sentences max unless presenting the final contract
-- Be genuinely curious, not clinical
-
-## EXTRACTION
-When the user commits to their identity and action, end your message with this EXACT format on its own line:
-[IDENTITY_COMPLETE: identity="Their chosen identity" action="Their chosen action"]
-
-Only include this when BOTH identity AND action are clearly defined and the user has committed.
-
-## EXAMPLE EXTRACTION
-[IDENTITY_COMPLETE: identity="I am a present father" action="Make eye contact with each child and say good morning before checking my phone"]`;
-
-// Parse the completion marker from API response
-export function parseCompletionMarker(response: string): { identity: string; action: string } | null {
-  const match = response.match(/\[IDENTITY_COMPLETE:\s*identity="([^"]+)"\s*action="([^"]+)"\]/);
-  if (match) {
-    return {
-      identity: match[1],
-      action: match[2]
-    };
+/**
+ * Get formatted sprint status string
+ */
+export function getSprintStatus(sprintStartDate: string | null, sprintNumber: number): string {
+  if (!sprintStartDate) {
+    return 'Not started';
   }
-  return null;
+  
+  const dayNumber = getSprintDayNumber(sprintStartDate);
+  const complete = isSprintComplete(sprintStartDate);
+  
+  if (complete) {
+    return `Sprint ${sprintNumber} Complete ✓`;
+  }
+  
+  return `Sprint ${sprintNumber}, Day ${dayNumber}/21`;
 }
 
-// Remove the completion marker from the display response
-export function cleanResponseForDisplay(response: string): string {
-  return response.replace(/\[IDENTITY_COMPLETE:\s*identity="[^"]+"\s*action="[^"]+"\]/, '').trim();
+/**
+ * Calculate state for starting a new sprint
+ */
+export function startNewSprint(currentSprintNumber: number): Partial<MicroActionState> {
+  return {
+    isActive: true,
+    conversationHistory: [],
+    extractedIdentity: null,
+    extractedAction: null,
+    isComplete: false,
+    sprintStartDate: new Date().toISOString(),
+    sprintNumber: currentSprintNumber + 1
+  };
 }
 
-// Build the messages array for the API call
-export function buildAPIMessages(
-  conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>,
-  newUserMessage: string
-): Array<{ role: 'user' | 'assistant' | 'system'; content: string }> {
-  return [
-    { role: 'system' as const, content: microActionSystemPrompt },
-    ...conversationHistory,
-    { role: 'user' as const, content: newUserMessage }
-  ];
+/**
+ * Get days remaining in current sprint
+ */
+export function getDaysRemaining(sprintStartDate: string): number {
+  const currentDay = getSprintDayNumber(sprintStartDate);
+  return Math.max(0, 21 - currentDay);
 }
 
-// Opening message when starting the flow
-export const microActionOpeningMessage = `Let's set up your Morning Micro-Action — the identity installation protocol.
 
-This is designed to train your mental operating system by anchoring a new identity through one small, daily proof action. Over 21 days, you'll act as a specific identity — not as an affirmation, but as evidence-based training.
+// ============================================
+// UPDATED SYSTEM PROMPT ADDITION
+// ============================================
 
-By day 21, it won't feel like effort. It'll feel like you.
+// Add this to the end of microActionSystemPrompt for returning users:
+export const returningUserContext = (sprintNumber: number, previousIdentity: string, previousAction: string) => `
 
-Let's begin — is there somewhere in your life that feels misaligned with who you are? It could be internal (thoughts, reactivity, overwhelm) or external (relationships, work, health).`;
+## RETURNING USER CONTEXT
+This user is starting Sprint ${sprintNumber}. Their previous identity was: "${previousIdentity}"
+Their previous micro-action was: "${previousAction}"
+
+When opening, acknowledge their previous sprint and ask:
+1. How did that identity feel over the last 21 days?
+2. What landed? What shifted?
+3. Based on their response, suggest either:
+   - Evolution (stretching the same identity forward)
+   - Layering (stacking a new one on a stable foundation)
+   - Complete pivot (if the previous one didn't resonate)
+`;
