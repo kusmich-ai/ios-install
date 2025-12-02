@@ -867,13 +867,55 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
           }));
         }
       } catch (error) {
-        // No config found - that's fine for new users
         console.log('[FlowBlock] No existing config found');
       }
     };
     
     loadFlowBlockStatus();
   }, [user?.id]);
+
+  // ⬇️ INSERT NEW useEffect HERE ⬇️
+  
+  // Load sprint state from database on init
+  useEffect(() => {
+    const loadSprintState = async () => {
+      if (!user?.id) return;
+      
+      try {
+        const { microActionSprint, flowBlockSprint } = await loadActiveSprintsForUser(user.id);
+        
+        // Restore MicroAction sprint state if exists
+        if (microActionSprint) {
+          setMicroActionState(prev => ({
+            ...prev,
+            extractedIdentity: microActionSprint.identity,
+            extractedAction: microActionSprint.action,
+            isComplete: true,
+            sprintStartDate: microActionSprint.start_date,
+            sprintNumber: microActionSprint.sprint_number
+          }));
+          console.log('[Sprint] Loaded MicroAction sprint:', microActionSprint.sprint_number);
+        }
+        
+        // Update FlowBlock sprint number if needed
+        if (flowBlockSprint) {
+          setFlowBlockState(prev => ({
+            ...prev,
+            sprintNumber: flowBlockSprint.sprint_number
+          }));
+          console.log('[Sprint] Loaded FlowBlock sprint:', flowBlockSprint.sprint_number);
+        }
+      } catch (error) {
+        console.log('[Sprint] Error loading sprint state:', error);
+      }
+    };
+    
+    loadSprintState();
+  }, [user?.id]);
+
+  // ============================================
+  // UNLOCK ELIGIBILITY CHECK
+  // ============================================
 
   // Load sprint state from database on init
   useEffect(() => {
