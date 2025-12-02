@@ -650,12 +650,12 @@ export function getSprintProgress(
     : 0;
   
   return {
-    dayNumber,
-    weekNumber,
-    blocksCompleted,
-    blocksExpected,
-    adherencePercent
-  };
+  dayNumber,
+  weekNumber,
+  blocksCompleted: completedBlocks,  // ✅ Map parameter to return property
+  blocksExpected,
+  adherencePercent
+};
 }
 
 
