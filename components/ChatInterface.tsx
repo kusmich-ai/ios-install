@@ -29,6 +29,13 @@ import {
   type SelectionContext,
   type TemplateTrigger
 } from '@/lib/templates';
+import { 
+  startNewMicroActionSprint, 
+  startNewFlowBlockSprint,
+  getCurrentMicroActionSprint,
+  getCurrentFlowBlockSprint,
+  loadActiveSprintsForUser
+} from '@/lib/sprintDatabase';
 
 // ============================================
 // MICRO-ACTION SETUP IMPORTS (100% API version)
@@ -1112,28 +1119,30 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
       const completion = parseCompletionMarker(assistantResponse);
       
       if (completion) {
-        // Extract identity and micro-action
-        console.log('[MicroAction] Completion detected:', completion);
-        
-        // Clean the response for display (remove the marker)
-        const cleanResponse = cleanResponseForDisplay(assistantResponse);
-        
-        // Add assistant response to chat
-        setMessages(prev => [...prev, { role: 'assistant', content: cleanResponse }]);
-        
-       // Save to database
-        await saveMicroActionSetup(completion.identity, completion.action, 1); // TODO: Add sprint tracking
-        
-        // Update state
-        setMicroActionState(prev => ({
-          ...prev,
-          conversationHistory: [...updatedHistory, { role: 'assistant', content: cleanResponse }],
-          extractedIdentity: completion.identity,
-          extractedAction: completion.action,
-          isComplete: true,
-          isActive: false
-        }));
-      } else {
+  const cleanResponse = cleanResponseForDisplay(assistantResponse);
+  setMessages(prev => [...prev, { role: 'assistant', content: cleanResponse }]);
+  
+  // Start new sprint in database and get sprint info
+  const sprintResult = await startNewMicroActionSprint(
+    userId,  // Make sure you have access to userId here
+    completion.identity,
+    completion.action
+  );
+  
+  // Also save to your existing table if you still need it
+  await saveMicroActionSetup(completion.identity, completion.action, sprintResult.sprintNumber);
+  
+  setMicroActionState(prev => ({
+    ...prev,
+    conversationHistory: [...updatedHistory, { role: 'assistant', content: cleanResponse }],
+    extractedIdentity: completion.identity,
+    extractedAction: completion.action,
+    isComplete: true,
+    isActive: false,
+    sprintStartDate: sprintResult.startDate,
+    sprintNumber: sprintResult.sprintNumber
+  }));
+} else {
         // Normal response - continue conversation
         setMessages(prev => [...prev, { role: 'assistant', content: assistantResponse }]);
         
@@ -1272,31 +1281,32 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
       // Check for completion marker
       const completion = parseFlowBlockCompletionMarker(assistantResponse);
       
-      if (completion) {
-        // Extract and save the configuration
-        console.log('[FlowBlock] Completion detected:', completion);
-        
-        // Clean the response for display (remove the marker)
-        const cleanResponse = cleanFlowBlockResponseForDisplay(assistantResponse);
-        
-        // Add assistant response to chat
-        setMessages(prev => [...prev, { role: 'assistant', content: cleanResponse }]);
-        
-        // Save to database
-        await completeFlowBlockSetup(completion);
-        
-        // Update state
-        setFlowBlockState(prev => ({
-          ...prev,
-          conversationHistory: [...updatedHistory, { role: 'assistant', content: cleanResponse }],
-          isComplete: true,
-          isActive: false,
-          extractedWeeklyMap: completion.weeklyMap,
-          extractedPreferences: completion.setupPreferences,
-          sprintStartDate: completion.sprintStartDate,
-          todaysBlock: getTodaysFlowBlock(completion.weeklyMap)
-        }));
-      } else {
+      if (flowCompletion) {
+  const cleanResponse = cleanFlowBlockResponseForDisplay(assistantResponse);
+  setMessages(prev => [...prev, { role: 'assistant', content: cleanResponse }]);
+  
+  // Start new sprint in database and get sprint info
+  const sprintResult = await startNewFlowBlockSprint(
+    userId,  // Make sure you have access to userId here
+    flowCompletion.weeklyMap,
+    flowCompletion.preferences,
+    flowCompletion.domains,
+    flowCompletion.focusType
+  );
+  
+  setFlowBlockState(prev => ({
+    ...prev,
+    conversationHistory: [...updatedHistory, { role: 'assistant', content: cleanResponse }],
+    extractedDomains: flowCompletion.domains,
+    extractedWeeklyMap: flowCompletion.weeklyMap,
+    extractedPreferences: flowCompletion.preferences,
+    focusType: flowCompletion.focusType,
+    isComplete: true,
+    isActive: false,
+    sprintStartDate: sprintResult.startDate,
+    sprintNumber: sprintResult.sprintNumber
+  }));
+} else {
         // Normal response - continue conversation
         setMessages(prev => [...prev, { role: 'assistant', content: assistantResponse }]);
         
