@@ -54,10 +54,8 @@ import {
   flowBlockSystemPrompt,
   flowBlockOpeningMessage,
   getFlowBlockOpeningWithIdentity,
-  parseFlowBlockCompletion,
   cleanFlowBlockResponseForDisplay,
   buildFlowBlockAPIMessages,
-  getTodaysBlock,
   getDailyFlowBlockPrompt,
   postBlockReflectionPrompt,
   getSprintDayNumber,
@@ -580,6 +578,17 @@ function normalizePracticeId(id: string): string {
 // FLOW BLOCK HELPER FUNCTIONS
 // ============================================
 
+// Flow Block configuration type for database storage
+interface FlowBlockConfig {
+  domains: string[];
+  weeklyMap: WeeklyMapEntry[];
+  setupPreferences: SetupPreferences;
+  focusType: string;
+  sprintStartDate: string;
+  sprintNumber: number;
+  isActive: boolean;
+}
+
 // Parse Flow Block completion marker from API response
 function parseFlowBlockCompletionMarker(response: string): FlowBlockConfig | null {
   const markerRegex = /\[FLOW_BLOCK_COMPLETE:\s*(\{[\s\S]*?\})\]/;
@@ -900,164 +909,130 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
       // User declined - reset state
       setUnlockFlowState('none');
       setPendingUnlockStage(null);
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: "No problem. Keep building consistency at your current stage. The unlock will be available whenever you're ready." 
-      }]);
+      
+      // Get the "not yet" message from templates
+      const currentStage = progress?.currentStage || 1;
+      const currentStageTemplates = templateLibrary.stages[currentStage as keyof typeof templateLibrary.stages];
+      const unlockTemplates = currentStageTemplates?.unlock as { eligible?: string; notYet?: string; confirmation?: string } | undefined;
+      
+      if (unlockTemplates?.notYet) {
+        const templateContext = buildTemplateContext();
+        const processedMessage = processTemplate(unlockTemplates.notYet, templateContext);
+        setMessages(prev => [...prev, { role: 'assistant', content: processedMessage }]);
+      } else {
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: "Understood. Continue with your current practices. The unlock will be here when you're ready." 
+        }]);
+      }
       return;
     }
-
-    setLoading(true);
     
+    // User confirmed - perform the unlock
     try {
       const supabase = createClient();
-      const previousStage = pendingUnlockStage - 1;
+      const now = new Date().toISOString();
       
-      // Update user's stage in database
+      // Update user_progress with new stage
       const { error: updateError } = await supabase
         .from('user_progress')
         .update({ 
           current_stage: pendingUnlockStage,
-          stage_start_date: new Date().toISOString().split('T')[0],
-          consecutive_days: 0  // Reset consecutive days for new stage
+          stage_start_date: now
         })
         .eq('user_id', user.id);
-
+      
       if (updateError) {
-        console.error('Error updating stage:', updateError);
-        setMessages(prev => [...prev, { 
-          role: 'assistant', 
-          content: "There was an error unlocking the next stage. Please try again." 
-        }]);
-        setLoading(false);
-        return;
+        console.error('[ChatInterface] Stage update error:', updateError);
+        throw updateError;
       }
-
-      // Get confirmation message from templates
-      const previousStageTemplates = templateLibrary.stages[previousStage as keyof typeof templateLibrary.stages];
-      // Type-safe access to confirmation (cast to any to avoid TS union type issues)
-      const unlockTemplates = previousStageTemplates?.unlock as { eligible?: string; notYet?: string; confirmation?: string } | undefined;
+      
+      // Log the stage unlock
+      await supabase.from('stage_unlocks').insert({
+        user_id: user.id,
+        stage_unlocked: pendingUnlockStage,
+        unlocked_at: now,
+        adherence_at_unlock: progress?.adherencePercentage || 0,
+        consecutive_days_at_unlock: progress?.consecutiveDays || 0,
+        avg_delta_at_unlock: progress?.domainDeltas?.average || 0
+      });
+      
+      console.log('[ChatInterface] Stage unlock successful:', pendingUnlockStage);
+      
+      // Refresh progress
+      if (refetchProgress) {
+        await refetchProgress();
+      }
+      
+      // Get the confirmation message
+      const currentStage = progress?.currentStage || 1;
+      const currentStageTemplates = templateLibrary.stages[currentStage as keyof typeof templateLibrary.stages];
+      const unlockTemplates = currentStageTemplates?.unlock as { eligible?: string; notYet?: string; confirmation?: string } | undefined;
+      
       if (unlockTemplates?.confirmation) {
         const templateContext = buildTemplateContext();
-        // Override current stage in context for correct placeholder processing
-        const updatedContext = { ...templateContext };
-        const processedMessage = processTemplate(unlockTemplates.confirmation, updatedContext);
-        
+        const processedMessage = processTemplate(unlockTemplates.confirmation, templateContext);
+        setMessages(prev => [...prev, { role: 'assistant', content: processedMessage }]);
+      } else {
         setMessages(prev => [...prev, { 
           role: 'assistant', 
-          content: processedMessage 
+          content: `**Stage ${pendingUnlockStage} Unlocked!** 🎉\n\nNew practices are now available. Let me introduce you to what's new.` 
         }]);
       }
-
-      // Update flow state - SPECIAL HANDLING FOR STAGE 3 AND STAGE 4
-      if (pendingUnlockStage === 3) {
-        // Stage 3: The confirmation message already asks "Ready to run Identity Installation?"
-        // So we skip the "Learn the new practices" button and go straight to awaiting response
-        setUnlockFlowState('none');
-        setPendingUnlockStage(null);
-        setAwaitingMicroActionStart(true);
-      } else if (pendingUnlockStage === 4) {
-        // Stage 4: Similar pattern - prompt for Flow Block setup
-        setUnlockFlowState('none');
-        setPendingUnlockStage(null);
-        setAwaitingFlowBlockStart(true);
-      } else {
-        // Other stages: Show "Learn the new practices" button
-        setUnlockFlowState('confirmed');
-      }
       
-      // Refresh progress data to reflect new stage
-      await refetchProgress();
+      // Update unlock flow state to show "Learn the new practices" button
+      setUnlockFlowState('confirmed');
       
     } catch (err) {
-      console.error('Error in unlock confirmation:', err);
+      console.error('[ChatInterface] Unlock failed:', err);
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: "There was an error processing the unlock. Please try again." 
+        content: "Something went wrong with the unlock. Let's try again - type 'unlock' when you're ready." 
       }]);
-    } finally {
-      setLoading(false);
+      setUnlockFlowState('none');
+      setPendingUnlockStage(null);
     }
   };
-
+  
   // ============================================
-  // START NEW STAGE INTRO
+  // NEW STAGE INTRO HANDLER
   // ============================================
-  const handleStartNewStageIntro = () => {
+  const handleStartNewStageIntro = async () => {
     if (!pendingUnlockStage) return;
     
     setUnlockFlowState('intro_started');
     
-    // SPECIAL HANDLING FOR STAGE 3: Trigger Micro-Action Identity Setup
-    if (pendingUnlockStage === 3) {
-      // Add intro message for Stage 3
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: `**Welcome to Stage 3: Identity Mode** 🎯
-
-You've built a solid foundation with regulation and embodied awareness. Now it's time to anchor a new identity through daily proof.
-
-The Morning Micro-Action is a 21-day protocol where you:
-1. Choose an identity you want to embody
-2. Design one small daily action that proves you ARE this person
-3. Complete that action every morning
-
-By day 21, it won't feel like effort. It'll feel like you.
-
-Ready to discover your identity and design your micro-action?`
-      }]);
-      
-      // Clear pending unlock
-      setPendingUnlockStage(null);
-      
-      // Set a flag to trigger setup when user responds
-      setAwaitingMicroActionStart(true);
-      return;
-    }
-    
-    // SPECIAL HANDLING FOR STAGE 4: Trigger Flow Block Setup
-    if (pendingUnlockStage === 4) {
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: `**Welcome to Stage 4: Flow Mode** 🎯
-
-You've built identity alignment through daily proof. Now it's time to train sustained attention on high-leverage work.
-
-Flow Blocks are 60-90 minute deep work sessions where you:
-1. Focus on ONE high-leverage task
-2. Challenge ≈ skill + 10%
-3. No phone, no distractions
-4. Track performance metrics
-
-By week 3, dropping into flow will feel like home.
-
-Ready to identify your highest-leverage work and design your Flow Block system?`
-      }]);
-      
-      // Clear pending unlock
-      setPendingUnlockStage(null);
-      
-      // Set a flag to trigger setup when user responds
-      setAwaitingFlowBlockStart(true);
-      return;
-    }
-    
-    // Get the ritual intro for the new stage (for other stages)
+    // Get the stage introduction from templates
     const newStageTemplates = templateLibrary.stages[pendingUnlockStage as keyof typeof templateLibrary.stages];
-    if (newStageTemplates?.ritualIntro?.intro) {
+    
+    if (newStageTemplates?.intro) {
       const templateContext = buildTemplateContext();
-      const processedMessage = processTemplate(newStageTemplates.ritualIntro.intro, templateContext);
-      
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: processedMessage 
-      }]);
-      
-      // Reset intro step for new stage walkthrough
-      setIntroStep(0);
+      const processedMessage = processTemplate(newStageTemplates.intro, templateContext);
+      setMessages(prev => [...prev, { role: 'assistant', content: processedMessage }]);
     }
     
-    // Clear pending unlock
+    // Handle stage-specific setup flows
+    if (pendingUnlockStage === 3) {
+      // Stage 3: Trigger Micro-Action setup
+      setAwaitingMicroActionStart(true);
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: `The new practice for Stage 3 is the **Morning Micro-Action** — a daily 2-3 minute identity proof that reinforces who you're becoming.
+
+Ready to set up your identity and micro-action? This takes about 5 minutes.`
+      }]);
+    } else if (pendingUnlockStage === 4) {
+      // Stage 4: Trigger Flow Block setup
+      setAwaitingFlowBlockStart(true);
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: `The new practice for Stage 4 is the **Flow Block** — a 60-90 minute deep work session that trains sustained attention.
+
+Ready to set up your Flow Block system? This involves identifying your highest-leverage work and building a weekly schedule.`
+      }]);
+    }
+    
+    // Clear pending state
     setPendingUnlockStage(null);
   };
 
@@ -1070,14 +1045,11 @@ Ready to identify your highest-leverage work and design your Flow Block system?`
     console.log('[MicroAction] Starting setup flow (100% API)');
     
     // Initialize state
-    setMicroActionState({
+    setMicroActionState(prev => ({
+      ...prev,
       isActive: true,
-      conversationHistory: [],
-      extractedIdentity: null,
-      extractedAction: null,
-      isComplete: false,
-      sprintStartDate: null
-    });
+      conversationHistory: []
+    }));
     
     // Show opening message
     setMessages(prev => [...prev, {
@@ -1126,7 +1098,7 @@ Ready to identify your highest-leverage work and design your Flow Block system?`
       const completion = parseCompletionMarker(assistantResponse);
       
       if (completion) {
-        // Extract and save the identity and action
+        // Extract identity and micro-action
         console.log('[MicroAction] Completion detected:', completion);
         
         // Clean the response for display (remove the marker)
@@ -1136,17 +1108,16 @@ Ready to identify your highest-leverage work and design your Flow Block system?`
         setMessages(prev => [...prev, { role: 'assistant', content: cleanResponse }]);
         
         // Save to database
-        await completeMicroActionSetup(completion.identity, completion.action);
+        await saveMicroActionSetup(completion.identity, completion.microAction, completion.sprintNumber || 1);
         
         // Update state
         setMicroActionState(prev => ({
           ...prev,
           conversationHistory: [...updatedHistory, { role: 'assistant', content: cleanResponse }],
-          extractedIdentity: completion.identity,
-          extractedAction: completion.action,
+          identity: completion.identity,
+          microAction: completion.microAction,
           isComplete: true,
-          isActive: false,
-          sprintStartDate: new Date().toISOString()
+          isActive: false
         }));
       } else {
         // Normal response - continue conversation
@@ -1169,20 +1140,45 @@ Ready to identify your highest-leverage work and design your Flow Block system?`
     setLoading(false);
   }, [microActionState]);
 
-  // Complete Micro-Action setup and save to database
-  const completeMicroActionSetup = async (identity: string, action: string) => {
-    console.log('[MicroAction] Setup complete:', { identity, action });
+  // Save Micro-Action setup to database
+  const saveMicroActionSetup = async (identity: string, microAction: string, sprintNumber: number) => {
+    console.log('[MicroAction] Saving setup:', { identity, microAction, sprintNumber });
     
     try {
       const supabase = createClient();
+      const now = new Date().toISOString();
       
-      // Save identity and action to user_progress
+      // Insert into identity_sprints table
+      const { error: insertError } = await supabase
+        .from('identity_sprints')
+        .insert({
+          user_id: user.id,
+          identity,
+          micro_action: microAction,
+          sprint_number: sprintNumber,
+          sprint_start_date: now,
+          is_active: true
+        });
+      
+      if (insertError) {
+        console.error('[MicroAction] Insert error:', insertError);
+        throw insertError;
+      }
+      
+      // Deactivate any previous sprints
+      await supabase
+        .from('identity_sprints')
+        .update({ is_active: false })
+        .eq('user_id', user.id)
+        .lt('sprint_start_date', now);
+      
+      // Update user_progress with current identity
       await supabase
         .from('user_progress')
-        .update({
+        .update({ 
           current_identity: identity,
-          micro_action: action,
-          identity_sprint_start: new Date().toISOString()
+          micro_action: microAction,
+          identity_sprint_start: now
         })
         .eq('user_id', user.id);
       
@@ -1598,21 +1594,14 @@ ${statusItems.join('\n')}`;
 
           // Add focus area if something specific is lagging
           if (!meetsQualitative) {
-            feedbackMessage += `\n\n**Focus Area:** ${stageQualitativeQuestions[currentStage]} Keep practicing until this feels more natural.`;
-          } else if (!meetsDays) {
-            feedbackMessage += `\n\n**Focus Area:** Keep showing up daily. Consistency is what rewires the nervous system.`;
-          } else if (!meetsTransformation) {
-            feedbackMessage += `\n\n**Focus Area:** The practices are landing. Trust the process - transformation takes time.`;
+            feedbackMessage += `\n\nFocus area: Your stage competence rating suggests there's room to deepen the current practices before advancing.`;
+          } else if (!meetsAdherence) {
+            feedbackMessage += `\n\nFocus area: Consistency is key. Keep showing up daily — your nervous system needs the repetition.`;
           }
         }
       }
       
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: feedbackMessage
-      }]);
-      
-      // Reset check-in state
+      // Reset check-in state and show feedback
       setWeeklyCheckInActive(false);
       setWeeklyCheckInStep(0);
       setWeeklyCheckInScores({
@@ -1623,955 +1612,611 @@ ${statusItems.join('\n')}`;
         qualitative: null
       });
       
-    } catch (error) {
-      console.error('[WeeklyCheckIn] Error saving:', error);
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: "There was an error saving your check-in. Let's try again later."
+        content: feedbackMessage
+      }]);
+      
+    } catch (error) {
+      console.error('[WeeklyCheckIn] Error saving check-in:', error);
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: "There was an error saving your check-in. Let's try again - just say 'weekly check-in'."
       }]);
       setWeeklyCheckInActive(false);
       setWeeklyCheckInStep(0);
     }
   };
 
-  // Initialize conversation with appropriate opening
+  // ============================================
+  // INITIALIZATION
+  // ============================================
+  
   useEffect(() => {
-    if (hasInitialized.current) return;
-    
-    const initConversation = async () => {
+    const initializeChat = async () => {
+      // Skip if already initialized or still loading progress
+      if (hasInitialized.current || progressLoading) return;
+      
+      hasInitialized.current = true;
+      
       try {
-        if (!baselineData || !user) {
-          setError('Missing data. Please complete assessment.');
-          setIsInitializing(false);
-          return;
-        }
-
         const supabase = createClient();
+        const userName = getUserName();
+        const currentStage = progress?.currentStage || baselineData.currentStage || 1;
         
-        // Check progress data from user_progress (using correct column names)
-        const { data: progressData } = await supabase
+        // Get user progress including last visit and onboarding status
+        const { data: progressData, error: fetchError } = await supabase
           .from('user_progress')
-          .select('system_initialized, baseline_completed, adherence_percentage, consecutive_days, stage_start_date, ritual_intro_completed, updated_at, current_stage')
+          .select('*')
           .eq('user_id', user.id)
           .single();
         
-        const lastVisit = progressData?.updated_at || null;
-        const hasCompletedOnboarding = progressData?.system_initialized || false;
-        const hasCompletedRitualIntro = progressData?.ritual_intro_completed || false;
-        const currentStage = progressData?.current_stage || 1;
+        // Determine opening type
+        const type = determineOpeningType(
+          progressData?.last_visit || null,
+          progressData?.ritual_intro_completed || false
+        );
+        setOpeningType(type);
         
-        console.log('[ChatInterface] Stage from DB:', progressData?.current_stage, '-> Using:', currentStage);
-        console.log('[ChatInterface] Progress data:', progressData);
+        // Set intro step based on existing progress
+        if (progressData?.ritual_intro_completed) {
+          setIntroStep(4); // Skip intro flow
+        }
         
-        // Get today's completed practices from practice_logs
-        const today = new Date();
-        const localDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-        
-        const { data: practiceLogsData } = await supabase
+        // Get practices completed today
+        const today = new Date().toISOString().split('T')[0];
+        const { data: todayLogs } = await supabase
           .from('practice_logs')
           .select('practice_type')
           .eq('user_id', user.id)
-          .eq('practice_date', localDate)
-          .eq('completed', true);
+          .gte('completed_at', `${today}T00:00:00`)
+          .lt('completed_at', `${today}T23:59:59`);
         
-        // Build completed practices array
-        const completedPractices = practiceLogsData 
-          ? practiceLogsData.map((p: { practice_type: string }) => p.practice_type)
-          : [];
+        const completedToday = todayLogs?.map(log => log.practice_type) || [];
+        setPracticesCompletedToday(completedToday);
         
-        if (completedPractices.length > 0) {
-          setPracticesCompletedToday(completedPractices);
-        }
-        
-        // Determine opening type
-        const detectedOpeningType = determineOpeningType(lastVisit, hasCompletedOnboarding);
-        setOpeningType(detectedOpeningType);
-        
-        // If first time AND ritual intro not completed, start at step 0
-        // If first time but ritual intro already completed (e.g., refreshed page), skip to step 4
-        // If returning user, skip intro entirely (step 4)
-        if (detectedOpeningType === 'first_time') {
-          setIntroStep(hasCompletedRitualIntro ? 4 : 0);
-        } else {
-          setIntroStep(4); // Returning users skip intro
-        }
-        
-        // Get user's first name
-        const userName = user?.user_metadata?.first_name || '';
-        
-        // Generate appropriate opening message
+        // Generate opening message based on type
         let openingMessage: string;
         
-        switch (detectedOpeningType) {
-          case 'first_time':
-            openingMessage = await getFirstTimeOpeningMessage(baselineData, userName);
-            // Mark onboarding as completed
-            await supabase
-              .from('user_progress')
-              .update({ 
-                system_initialized: true
-              })
-              .eq('user_id', user.id);
-            break;
-            
-          case 'same_day':
-            openingMessage = getSameDayReturnMessage(baselineData, progressData, currentStage, completedPractices);
-            break;
-            
-          case 'new_day':
-            openingMessage = getNewDayMorningMessage(baselineData, progressData, userName, currentStage);
-            break;
-            
-          default:
-            openingMessage = await getFirstTimeOpeningMessage(baselineData, userName);
+        if (type === 'first_time') {
+          openingMessage = await getFirstTimeOpeningMessage(baselineData, userName);
+        } else if (type === 'same_day') {
+          openingMessage = getSameDayReturnMessage(baselineData, progressData, currentStage, completedToday);
+        } else {
+          openingMessage = getNewDayMorningMessage(baselineData, progressData, userName, currentStage);
         }
         
-        // Set the opening message
         setMessages([{ role: 'assistant', content: openingMessage }]);
         
-        hasInitialized.current = true;
-        setIsInitializing(false);
+        // Update last visit timestamp
+        await supabase
+          .from('user_progress')
+          .update({ last_visit: new Date().toISOString() })
+          .eq('user_id', user.id);
         
-      } catch (error) {
-        console.error('Error initializing:', error);
-        // Fallback to first-time message if anything fails
-        const userName = user?.user_metadata?.first_name || '';
-        const openingMessage = await getFirstTimeOpeningMessage(baselineData, userName);
-        setMessages([{ role: 'assistant', content: openingMessage }]);
-        hasInitialized.current = true;
-        setIsInitializing(false);
+      } catch (err) {
+        console.error('Chat initialization error:', err);
+        // Fallback opening
+        setMessages([{ 
+          role: 'assistant', 
+          content: `Hey${getUserName() ? `, ${getUserName()}` : ''}. Welcome to the IOS. How can I help you today?` 
+        }]);
       }
+      
+      setIsInitializing(false);
     };
-
-    if (user && baselineData) {
-      initConversation();
-    }
-  }, [user, baselineData]);
+    
+    initializeChat();
+  }, [user, baselineData, progressLoading, progress]);
 
   // ============================================
-  // 21-DAY IDENTITY SPRINT CHECK
+  // MESSAGE HANDLERS
   // ============================================
-  useEffect(() => {
-    // Only check after initialization is complete and we have progress
-    if (isInitializing || !progress || !hasInitialized.current) return;
-    // Don't trigger if any other flow is active
-    if (weeklyCheckInActive || awaitingMicroActionStart || microActionState.isActive) return;
-    if (awaitingFlowBlockStart || flowBlockState.isSetupActive) return;
-    if (unlockFlowState !== 'none') return;
+  
+  const handleQuickReply = async (currentStep: number) => {
+    const reply = introQuickReplies[currentStep];
+    if (!reply) return;
     
-    const extendedProgress = progress as any;
-    const sprintStartDate = extendedProgress?.identitySprintStart;
-    const hasIdentity = !!(extendedProgress?.currentIdentity);
+    // Add user's quick reply to chat
+    setMessages(prev => [...prev, { role: 'user', content: reply.text }]);
+    setLoading(true);
     
-    // Only check if they have an identity
-    if (!hasIdentity || !sprintStartDate) return;
+    // Process based on current step
+    let responseMessage: string;
     
-    // Calculate days since sprint started
-    const startDate = new Date(sprintStartDate);
-    const today = new Date();
-    const daysSinceStart = Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-    
-    console.log('[MicroAction] Sprint check: days since start =', daysSinceStart);
-    
-    // If 21+ days, prompt for renewal
-    if (daysSinceStart >= 21) {
-      // Only show once per session
-      const shownKey = `sprint_renewal_shown_${sprintStartDate}`;
-      if (sessionStorage.getItem(shownKey)) return;
-      sessionStorage.setItem(shownKey, 'true');
+    if (currentStep === 0) {
+      // User clicked "Yes, let's go" - show Ritual 1
+      responseMessage = ritualIntroTemplates.ritual1Intro;
+      setIntroStep(1);
+    } else if (currentStep === 1) {
+      // User clicked "Got it, next ritual" - show Ritual 2
+      responseMessage = ritualIntroTemplates.ritual2Intro;
+      setIntroStep(2);
+    } else if (currentStep === 2) {
+      // User clicked "Got it, I'm ready" - show wrap-up
+      responseMessage = ritualIntroTemplates.wrapUp;
+      setIntroStep(3);
       
-      // Mark that we're handling a prompt (prevents weekly check-in from also firing)
-      hasCheckedWeeklyDue.current = true;
-      
-      const identity = extendedProgress?.currentIdentity || '';
-      
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: `**21-Day Identity Sprint Complete!** 🎉
-
-You've been embodying *"${identity}"* for ${daysSinceStart} days. That's real neural rewiring.
-
-How did it feel? Three options:
-
-1. **Continue** - This identity is becoming second nature, keep reinforcing it
-2. **Evolve** - Build on this foundation with a deeper or adjacent identity  
-3. **Pivot** - Try a completely different identity for your next sprint
-
-What feels right?`
-      }]);
-      
-      // Set flag to watch for their response
-      setAwaitingSprintRenewal(true);
-    }
-  }, [progress, isInitializing, weeklyCheckInActive, awaitingMicroActionStart, microActionState.isActive, unlockFlowState, awaitingFlowBlockStart, flowBlockState.isSetupActive]);
-
-  // ============================================
-  // WEEKLY CHECK-IN DETECTION
-  // ============================================
-  useEffect(() => {
-    // Only check once per session, after initialization, and when not in other flows
-    if (hasCheckedWeeklyDue.current || isInitializing || !progress || !hasInitialized.current) return;
-    if (weeklyCheckInActive || awaitingSprintRenewal || awaitingMicroActionStart || microActionState.isActive) return;
-    if (awaitingFlowBlockStart || flowBlockState.isSetupActive) return;
-    if (unlockFlowState !== 'none') return;
-    
-    const checkWeeklyDue = async () => {
+      // Mark ritual intro as completed in database
       try {
         const supabase = createClient();
-        const { data: { user: currentUser } } = await supabase.auth.getUser();
-        if (!currentUser) return;
-        
-        // Get the most recent weekly delta entry
-        const { data: lastCheckIn } = await supabase
-          .from('weekly_deltas')
-          .select('week_of')
-          .eq('user_id', currentUser.id)
-          .order('week_of', { ascending: false })
-          .limit(1)
-          .single();
-        
-        const today = new Date();
-        let daysSinceLastCheckIn = 999; // Default to long time if no check-in exists
-        
-        if (lastCheckIn?.week_of) {
-          const lastDate = new Date(lastCheckIn.week_of);
-          daysSinceLastCheckIn = Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
-        }
-        
-        console.log('[WeeklyCheckIn] Days since last check-in:', daysSinceLastCheckIn);
-        
-        // If 7+ days since last check-in (or never done), prompt for check-in
-        if (daysSinceLastCheckIn >= 7) {
-          hasCheckedWeeklyDue.current = true;
-          
-          // Only show once per session
-          const shownKey = `weekly_checkin_shown_${today.toISOString().split('T')[0]}`;
-          if (sessionStorage.getItem(shownKey)) return;
-          sessionStorage.setItem(shownKey, 'true');
-          
-          // Small delay to let other messages settle
-          setTimeout(() => {
-            setMessages(prev => [...prev, {
-              role: 'assistant',
-              content: `**Weekly Check-In Time** 📊
-
-It's been ${daysSinceLastCheckIn === 999 ? 'a while' : daysSinceLastCheckIn + ' days'} since your last check-in. This quick assessment helps track your progress and determines when you're ready for the next stage.
-
-Takes about 2 minutes. Ready to start?`
-            }]);
-            
-            // We'll handle the response in sendMessage
-            setWeeklyCheckInActive(true);
-            setWeeklyCheckInStep(0);
-          }, 1500);
-        }
-      } catch (error) {
-        console.error('[WeeklyCheckIn] Error checking due date:', error);
+        await supabase
+          .from('user_progress')
+          .update({ ritual_intro_completed: true })
+          .eq('user_id', user.id);
+      } catch (err) {
+        console.error('Failed to mark intro complete:', err);
       }
-    };
-    
-    checkWeeklyDue();
-  }, [progress, isInitializing, weeklyCheckInActive, awaitingSprintRenewal, awaitingMicroActionStart, microActionState.isActive, unlockFlowState, awaitingFlowBlockStart, flowBlockState.isSetupActive]);
-
-  // Handle quick reply button clicks (no API call)
-  const handleQuickReply = async (step: number) => {
-    const replyConfig = introQuickReplies[step];
-    if (!replyConfig) return;
-    
-    // Add user's reply to messages
-    const userMessage = { role: 'user', content: replyConfig.text };
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
-    
-    // Determine next template message based on current step
-    let assistantResponse = '';
-    let nextStep = step + 1;
-    
-    switch (step) {
-      case 0:
-        // User said yes to learning rituals -> show ritual 1
-        assistantResponse = ritualIntroTemplates.ritual1Intro;
-        break;
-      case 1:
-        // User confirmed ritual 1 -> show ritual 2
-        assistantResponse = ritualIntroTemplates.ritual2Intro;
-        break;
-      case 2:
-        // User confirmed ritual 2 -> show wrap-up
-        assistantResponse = ritualIntroTemplates.wrapUp;
-        nextStep = 4; // Skip to complete (step 3 is wrap-up display, step 4 is free text)
-        
-        // Mark ritual intro as completed in database
-        try {
-          const supabase = createClient();
-          await supabase
-            .from('user_progress')
-            .update({ ritual_intro_completed: true })
-            .eq('user_id', user.id);
-        } catch (err) {
-          console.error('Failed to mark ritual intro complete:', err);
-        }
-        break;
-      default:
-        return;
+    } else {
+      responseMessage = "What would you like to explore?";
     }
     
-    // Add assistant response
-    setMessages([...newMessages, { role: 'assistant', content: assistantResponse }]);
-    setIntroStep(nextStep);
-  };
-
-  const sendToAPI = async (messageHistory: Message[]) => {
-    try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: messageHistory,
-          userId: user?.id,
-          baselineData: baselineData,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`API request failed: ${response.status}`);
-      }
-
-      const data = await response.json();
-      if (data.error) throw new Error(data.error);
-      
-      // After a successful API call that might have logged a practice,
-      // refresh the progress to update sidebar
-      if (refetchProgress) {
-        setTimeout(() => refetchProgress(), 500);
-      }
-      
-      return data.content[0].text;
-    } catch (error) {
-      console.error('sendToAPI error:', error);
-      setError(`API error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      return null;
-    }
-  };
-
-  const sendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || loading) return;
-
-    const userInput = input.trim().toLowerCase();
-    
-    // ============================================
-    // MANUAL WEEKLY CHECK-IN TRIGGER
-    // ============================================
-    if (userInput.includes('weekly check') || userInput === 'check in' || userInput === 'check-in') {
-      if (!weeklyCheckInActive) {
-        setMessages(prev => [...prev, 
-          { role: 'user', content: input.trim() },
-          { role: 'assistant', content: `**Weekly Check-In** 📊
-
-This quick assessment helps track your progress and determines when you're ready for the next stage.
-
-Takes about 2 minutes. Ready to start?` }
-        ]);
-        setInput('');
-        setWeeklyCheckInActive(true);
-        setWeeklyCheckInStep(0);
-        return;
-      }
-    }
-    
-    // ============================================
-    // SPRINT RENEWAL HANDLING (after 21-day sprint complete)
-    // ============================================
-    if (awaitingSprintRenewal) {
-      setMessages(prev => [...prev, { role: 'user', content: input.trim() }]);
-      setInput('');
-      setAwaitingSprintRenewal(false);
-      
-      const isContinue = userInput.includes('continue') || userInput.includes('keep') || userInput === '1';
-      const isEvolve = userInput.includes('evolve') || userInput.includes('build') || userInput.includes('deeper') || userInput === '2';
-      const isPivot = userInput.includes('pivot') || userInput.includes('different') || userInput.includes('new') || userInput === '3';
-      
-      if (isContinue) {
-        // Reset sprint start date for continuation
-        try {
-          const supabase = createClient();
-          await supabase
-            .from('user_progress')
-            .update({ identity_sprint_start: new Date().toISOString() })
-            .eq('user_id', user.id);
-          
-          if (refetchProgress) await refetchProgress();
-        } catch (error) {
-          console.error('Error resetting sprint:', error);
-        }
-        
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: `Sprint renewed. You're continuing with your current identity for another 21 days. Keep stacking that proof - each day deepens the neural pathway.`
-        }]);
-      } else if (isEvolve || isPivot) {
-        // Start new identity setup
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: `Great - let's ${isEvolve ? 'evolve' : 'explore a new direction'}. I'll guide you through selecting your next identity.`
-        }]);
-        await startMicroActionSetup();
-      } else {
-        // Unclear response - start setup anyway
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: `Let's figure out what's next together. I'll guide you through the identity selection.`
-        }]);
-        await startMicroActionSetup();
-      }
-      return;
-    }
-    
-    // ============================================
-    // WEEKLY CHECK-IN FLOW HANDLING
-    // ============================================
-    if (weeklyCheckInActive) {
-      setMessages(prev => [...prev, { role: 'user', content: input.trim() }]);
-      setInput('');
-      await processWeeklyCheckInResponse(input.trim());
-      return;
-    }
-    
-    // ============================================
-    // AWAITING MICRO-ACTION START (after Stage 3 unlock intro)
-    // ============================================
-    if (awaitingMicroActionStart) {
-      const isAffirmative = ['yes', 'yeah', 'yep', 'sure', 'ok', 'okay', 'ready', 'let\'s go', 'lets go', 'go', 'y', 'absolutely', 'yes please'].includes(userInput) ||
-                           userInput.includes('yes') || 
-                           userInput.includes('ready') ||
-                           userInput.includes('let\'s do');
-      
-      // Add user message
-      setMessages(prev => [...prev, { role: 'user', content: input.trim() }]);
-      setInput('');
-      setAwaitingMicroActionStart(false);
-      
-      if (isAffirmative) {
-        // Start the Micro-Action setup
-        await startMicroActionSetup();
-      } else {
-        // User declined for now
-        setMessages(prev => [...prev, { 
-          role: 'assistant', 
-          content: "No problem. When you're ready to set up your identity, just click the Morning Micro-Action in the sidebar or say 'set up my identity'. The practice will be waiting for you." 
-        }]);
-      }
-      return;
-    }
-    
-    // ============================================
-    // AWAITING FLOW BLOCK START (after Stage 4 unlock intro)
-    // ============================================
-    if (awaitingFlowBlockStart) {
-      const isAffirmative = ['yes', 'yeah', 'yep', 'sure', 'ok', 'okay', 'ready', 'let\'s go', 'lets go', 'go', 'y', 'absolutely', 'yes please'].includes(userInput) ||
-                           userInput.includes('yes') || 
-                           userInput.includes('ready') ||
-                           userInput.includes('let\'s do');
-      
-      // Add user message
-      setMessages(prev => [...prev, { role: 'user', content: input.trim() }]);
-      setInput('');
-      setAwaitingFlowBlockStart(false);
-      
-      if (isAffirmative) {
-        // Start the Flow Block setup
-        await startFlowBlockSetup();
-      } else {
-        // User declined for now
-        setMessages(prev => [...prev, { 
-          role: 'assistant', 
-          content: "No problem. When you're ready to set up your Flow Blocks, just click the Flow Block in the sidebar or say 'set up my flow blocks'. The practice will be waiting for you." 
-        }]);
-      }
-      return;
-    }
-    
-    // ============================================
-    // MICRO-ACTION SETUP FLOW HANDLING (100% API)
-    // ============================================
-    if (microActionState.isActive) {
-      console.log('[sendMessage] Routing to Micro-Action setup flow (API)');
-      setInput('');
-      await processMicroActionResponse(input.trim());
-      return;
-    }
-    
-    // ============================================
-    // FLOW BLOCK SETUP FLOW HANDLING (100% API)
-    // ============================================
-    if (flowBlockState.isSetupActive) {
-      console.log('[sendMessage] Routing to Flow Block setup flow (API)');
-      setInput('');
-      await processFlowBlockResponse(input.trim());
-      return;
-    }
-    
-    // Check if we're in intro flow and user types something that should use template
-    // (for first-time users who type instead of clicking button)
-    if (openingType === 'first_time' && introStep < 3) {
-      const isAffirmative = ['yes', 'yeah', 'yep', 'sure', 'ok', 'okay', 'ready', 'let\'s go', 'lets go', 'go', 'y'].includes(userInput) ||
-                           userInput.includes('yes') || 
-                           userInput.includes('ready') ||
-                           userInput.includes('got it') ||
-                           userInput.includes('makes sense') ||
-                           userInput.includes('next');
-      
-      if (isAffirmative) {
-        // Treat as quick reply
-        setInput('');
-        handleQuickReply(introStep);
-        return;
-      }
-    }
-    
-    // Track if user escaped intro to ask a question
-    const escapedIntro = openingType === 'first_time' && introStep < 4;
-
-    setError(null);
-    const userMessage = { role: 'user', content: input };
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
-    setInput('');
-    setLoading(true);
-
-    const response = await sendToAPI(newMessages);
-    if (response) {
-      let finalMessages = [...newMessages, { role: 'assistant', content: response }];
-      
-      // If they escaped intro to ask a question, add a redirect prompt after Claude's response
-      if (escapedIntro) {
-        const redirectMessage = getIntroRedirectMessage(introStep);
-        finalMessages = [...finalMessages, { role: 'assistant', content: redirectMessage }];
-        // Don't change introStep - keep them at their current position so button still works
-      }
-      
-      setMessages(finalMessages);
-    }
-    setLoading(false);
+    // Add AI response
+    setTimeout(() => {
+      setMessages(prev => [...prev, { role: 'assistant', content: responseMessage }]);
+      setLoading(false);
+    }, 500);
   };
 
   // ============================================
-  // PRACTICE CLICK HANDLER - NOW USES TEMPLATES
+  // PRACTICE CLICK HANDLER (from toolbar)
   // ============================================
-  const handlePracticeClick = async (practiceId: string) => {
-    // If in intro flow, complete it first
-    if (introStep < 4) {
-      setIntroStep(4);
-    }
-    
+  
+  const handlePracticeClick = useCallback((practiceId: string) => {
     const normalizedId = normalizePracticeId(practiceId);
     const practiceName = practiceIdToName[normalizedId] || practiceId;
     
-    // ============================================
-    // MICRO-ACTION SPECIAL HANDLING
-    // ============================================
-    if (normalizedId === 'micro_action') {
-      const extendedProgress = progress as any;
-      const hasIdentity = !!(extendedProgress?.currentIdentity);
-      const currentIdentity = extendedProgress?.currentIdentity || '';
-      const microAction = extendedProgress?.microAction || '';
-      
-      if (!hasIdentity) {
-        // No identity set - trigger setup flow
-        const userMessage = { role: 'user', content: `I want to set up my Morning Micro-Action.` };
-        setMessages(prev => [...prev, userMessage]);
-        await startMicroActionSetup();
-        return;
-      }
-      
-      // Identity exists - this is a "log completion" action
-      // Add user message
-      setMessages(prev => [...prev, { role: 'user', content: `I completed my Morning Micro-Action.` }]);
-      setLoading(true);
-      
-      try {
-        // Log the practice completion
-        const supabase = createClient();
-        const today = new Date();
-        const localDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-        
-        // Get current stage from progress
-        const currentStage = progress?.currentStage || 3; // Default to 3 since micro_action is Stage 3+
-        
-        const insertPayload = {
-          user_id: user.id,
-          practice_type: 'micro_action',
-          practice_date: localDate,
-          completed: true,
-          stage: currentStage,
-          completed_at: new Date().toISOString()
-        };
-        
-        console.log('[MicroAction] Inserting practice log:', insertPayload);
-        
-        const { data: insertData, error: insertError } = await supabase
-          .from('practice_logs')
-          .insert(insertPayload)
-          .select();
-        
-        console.log('[MicroAction] Insert response - data:', insertData, 'error:', insertError);
-        
-        if (insertError) {
-          console.error('[MicroAction] Insert error:', insertError);
-          throw insertError;
-        }
-        
-        console.log('[MicroAction] Insert success:', insertData);
-        
-        // Refresh progress to update button state
-        console.log('[MicroAction] Calling refetchProgress...');
-        if (refetchProgress) {
-          await refetchProgress();
-          console.log('[MicroAction] refetchProgress completed');
+    console.log('[ChatInterface] Practice clicked:', { practiceId, normalizedId, practiceName });
+    
+    // Add a message to chat about starting the practice
+    setMessages(prev => [...prev, { 
+      role: 'assistant', 
+      content: `Starting **${practiceName}**...\n\nThe practice window will open. Complete it and I'll log your progress.` 
+    }]);
+  }, []);
+
+  // ============================================
+  // TOOL CLICK HANDLER (from toolbar)
+  // ============================================
+  
+  const handleToolClick = useCallback((toolId: string) => {
+    console.log('[ChatInterface] Tool clicked:', toolId);
+    
+    // Handle different tool types
+    switch (toolId) {
+      case 'micro_action':
+        // Trigger Micro-Action setup or renewal
+        if (microActionState.isComplete) {
+          setMessages(prev => [...prev, { 
+            role: 'assistant', 
+            content: `Your current identity is **${microActionState.identity}**.\n\nYour daily micro-action: **${microActionState.microAction}**\n\nWould you like to start a new 21-day sprint with a different identity?`
+          }]);
+          setAwaitingSprintRenewal(true);
         } else {
-          console.log('[MicroAction] refetchProgress not available!');
+          startMicroActionSetup();
         }
+        break;
         
-        // Add confirmation message
-        setMessages(prev => [...prev, { 
-          role: 'assistant', 
-          content: `**Identity proof logged.** ✓
-
-You acted as: *${currentIdentity}*
-
-Evidence: ${microAction}
-
-Each completion reinforces the neural pathway. You're not just doing an action - you're becoming this person. Keep stacking proof.` 
-        }]);
-      } catch (error) {
-        console.error('Error logging micro-action:', error);
-        setMessages(prev => [...prev, { 
-          role: 'assistant', 
-          content: `Micro-action logged. Keep building that identity proof! 💪` 
-        }]);
-      }
-      
-      setLoading(false);
-      return;
-    }
-    
-    // ============================================
-    // FLOW BLOCK SPECIAL HANDLING
-    // ============================================
-    if (normalizedId === 'flow_block') {
-      if (!flowBlockState.isSetupComplete) {
-        // No flow block setup yet - trigger setup flow
-        const userMessage = { role: 'user', content: `I want to set up my Flow Blocks.` };
-        setMessages(prev => [...prev, userMessage]);
-        await startFlowBlockSetup();
-        return;
-      }
-      
-      // Flow block is set up - show today's block or log completion
-      const todaysBlock = getTodaysFlowBlock(flowBlockState.weeklyMap);
-      
-      if (!todaysBlock) {
-        // No block scheduled today (weekend)
-        setMessages(prev => [...prev, 
-          { role: 'user', content: `I want to do my Flow Block.` },
-          { role: 'assistant', content: `No Flow Block scheduled for today. Your blocks run Monday-Friday. Enjoy the rest! 🌟` }
-        ]);
-        return;
-      }
-      
-      // Show today's block info and offer to start/complete
-      setMessages(prev => [...prev, { role: 'user', content: `I want to do my Flow Block.` }]);
-      setLoading(true);
-      
-      // Check if already completed today
-      const supabase = createClient();
-      const today = new Date();
-      const localDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-      
-      const { data: existingLog } = await supabase
-        .from('practice_logs')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('practice_type', 'flow_block')
-        .eq('practice_date', localDate)
-        .single();
-      
-      if (existingLog) {
-        setMessages(prev => [...prev, { 
-          role: 'assistant', 
-          content: `Your Flow Block for today is already logged! ✓
-
-**${todaysBlock.task}** (${todaysBlock.domain})
-
-Great work staying consistent. See you tomorrow for the next block.` 
-        }]);
-      } else {
-        setMessages(prev => [...prev, { 
-          role: 'assistant', 
-          content: `**Today's Flow Block** 🎯
-
-**Task:** ${todaysBlock.task}
-**Domain:** ${todaysBlock.domain}
-**Type:** ${todaysBlock.flowType} / ${todaysBlock.category}
-**Duration:** ${todaysBlock.duration} minutes
-
-**Setup Check:**
-${flowBlockState.setupPreferences ? `
-• Location: ${todaysBlock.domain === 'Professional' ? flowBlockState.setupPreferences.professionalLocation : flowBlockState.setupPreferences.personalLocation}
-• Playlist: ${flowBlockState.setupPreferences.playlist}
-• Timer: ${flowBlockState.setupPreferences.timerMethod}
-• Notifications: OFF` : ''}
-
-**Intention:** "For the next ${todaysBlock.duration} minutes, my only job is ${todaysBlock.task}."
-
-Say **"starting"** when you begin, and **"done"** when complete to log your performance metrics.` 
-        }]);
-      }
-      
-      setLoading(false);
-      return;
-    }
-    
-    // Add user message
-    const practiceMessage = `I want to do the ${practiceName} practice now.`;
-    const userMessage = { role: 'user', content: practiceMessage };
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
-    
-    // Build contexts for template selection
-    const templateContext = buildTemplateContext();
-    const selectionContext = buildSelectionContext();
-    
-    // Select template
-    const trigger: TemplateTrigger = { 
-      type: 'practice_click', 
-      practiceId: normalizedId,
-      practiceName 
-    };
-    
-    const result = selectTemplate(trigger, selectionContext);
-    
-    if (result.template) {
-      // Process template with variables
-      const processedContent = processTemplate(result.template, templateContext);
-      setMessages([...newMessages, { role: 'assistant', content: processedContent }]);
-    } else {
-      // Fallback to API if no template
-      setLoading(true);
-      const response = await sendToAPI(newMessages);
-      if (response) {
-        setMessages([...newMessages, { role: 'assistant', content: response }]);
-      }
-      setLoading(false);
-    }
-  };
-
-  // ============================================
-  // TOOL CLICK HANDLER - HYBRID: TEMPLATE + API
-  // ============================================
-  const handleToolClick = async (toolId: string) => {
-    // If in intro flow, complete it first
-    if (introStep < 4) {
-      setIntroStep(4);
-    }
-    
-    const toolMessage = `I want to run the ${toolId} protocol.`;
-    const userMessage = { role: 'user', content: toolMessage };
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
-    
-    // Build contexts
-    const templateContext = buildTemplateContext();
-    const selectionContext = buildSelectionContext();
-    
-    // Select template
-    const trigger: TemplateTrigger = { type: 'tool_click', toolId };
-    const result = selectTemplate(trigger, selectionContext);
-    
-    if (result.template && !result.additionalContext?.markToolIntroduced) {
-      // Tool has been introduced before - show start prompt, then let API take over
-      const processedContent = processTemplate(result.template, templateContext);
-      setMessages([...newMessages, { role: 'assistant', content: processedContent }]);
-      // Note: The next user input will go to API for dynamic tool execution
-    } else if (result.template) {
-      // First time introduction - show intro, mark as introduced
-      const processedContent = processTemplate(result.template, templateContext);
-      setMessages([...newMessages, { role: 'assistant', content: processedContent }]);
-      
-      // Mark tool as introduced in database
-      if (result.additionalContext?.markToolIntroduced) {
-        try {
-          const supabase = createClient();
-          const extendedProgress = progress as any;
-          const currentTools = extendedProgress?.toolsIntroduced || [];
-          await supabase
-            .from('user_progress')
-            .update({ 
-              tools_introduced: [...currentTools, toolId]
-            })
-            .eq('user_id', user.id);
-        } catch (err) {
-          console.error('Failed to mark tool introduced:', err);
+      case 'flow_block':
+        // Trigger Flow Block setup
+        if (flowBlockState.isSetupComplete) {
+          const todaysBlock = getTodaysFlowBlock(flowBlockState.weeklyMap);
+          if (todaysBlock) {
+            setMessages(prev => [...prev, { 
+              role: 'assistant', 
+              content: `Today's Flow Block: **${todaysBlock.task}** (${todaysBlock.domain})\n\nDuration: ${todaysBlock.duration} minutes\n\nReady to start your session?`
+            }]);
+          } else {
+            setMessages(prev => [...prev, { 
+              role: 'assistant', 
+              content: `No Flow Block scheduled for today. Would you like to adjust your weekly schedule?`
+            }]);
+          }
+        } else {
+          startFlowBlockSetup();
         }
-      }
-    } else {
-      // No template - use API directly
-      setLoading(true);
-      const response = await sendToAPI(newMessages);
-      if (response) {
-        setMessages([...newMessages, { role: 'assistant', content: response }]);
-      }
-      setLoading(false);
+        break;
+        
+      case 'weekly_checkin':
+        // Trigger weekly check-in
+        setWeeklyCheckInActive(true);
+        setWeeklyCheckInStep(0);
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: `**Weekly Check-In**\n\nTime to assess your progress across the four domains. This takes about 2 minutes and helps track your transformation.\n\nReady to begin?`
+        }]);
+        break;
+        
+      default:
+        // Generic tool response
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: `Opening ${toolId}...`
+        }]);
     }
-  };
+  }, [microActionState, flowBlockState, startMicroActionSetup, startFlowBlockSetup]);
 
-  // Callback for ToolsSidebar/FAB to trigger progress refresh only
+  // ============================================
+  // PROGRESS UPDATE HANDLER
+  // ============================================
+  
   const handleProgressUpdate = useCallback(async () => {
+    console.log('[ChatInterface] Progress update requested');
     if (refetchProgress) {
       await refetchProgress();
     }
   }, [refetchProgress]);
 
   // ============================================
-  // PRACTICE COMPLETED HANDLER - NOW USES TEMPLATES
+  // PRACTICE COMPLETED HANDLER
   // ============================================
-  const handlePracticeCompleted = useCallback(async (practiceId: string, practiceName: string) => {
-    console.log('[ChatInterface] Practice completed:', practiceId, practiceName);
+  
+  const handlePracticeCompleted = useCallback((practiceId: string) => {
+    const normalizedId = normalizePracticeId(practiceId);
+    const practiceName = practiceIdToName[normalizedId] || practiceId;
     
-    // First, refresh progress to update sidebar
+    console.log('[ChatInterface] Practice completed callback:', { practiceId, normalizedId, practiceName });
+    
+    // Add completion message
+    setMessages(prev => [...prev, { 
+      role: 'assistant', 
+      content: `**${practiceName}** completed! ✓\n\nNice work. Your progress has been logged.` 
+    }]);
+    
+    // Update local state
+    setPracticesCompletedToday(prev => {
+      if (!prev.includes(normalizedId)) {
+        return [...prev, normalizedId];
+      }
+      return prev;
+    });
+    
+    // Refresh progress from server
     if (refetchProgress) {
       refetchProgress();
     }
+  }, [refetchProgress]);
+
+  // ============================================
+  // SEND MESSAGE
+  // ============================================
+  
+  const sendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || loading) return;
     
-    // If still in intro, complete it
-    if (introStep < 4) {
-      setIntroStep(4);
-    }
+    const userMessage = input.trim();
+    setInput('');
     
-    const normalizedId = normalizePracticeId(practiceId);
+    // ============================================
+    // SPECIAL FLOW HANDLERS (priority order)
+    // ============================================
     
-    // Update local state for practices completed today
-    const updatedPracticesCompleted = [...practicesCompletedToday, normalizedId];
-    setPracticesCompletedToday(updatedPracticesCompleted);
-    
-    // Create completion message
-    const completionNotification = `[PRACTICE COMPLETED] I just finished my ${practiceName} ritual and clicked "Done" to log it.`;
-    const userMessage = { role: 'user', content: completionNotification };
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
-    
-    // Build contexts
-    const templateContext = buildTemplateContext();
-    const selectionContext = {
-      ...buildSelectionContext(),
-      practicesCompletedToday: updatedPracticesCompleted
-    };
-    
-    // Select template
-    const trigger: TemplateTrigger = { 
-      type: 'practice_completed', 
-      practiceId: normalizedId,
-      practiceName 
-    };
-    
-    const result = selectTemplate(trigger, selectionContext);
-    
-    if (result.template) {
-      // Process template with variables
-      const processedContent = processTemplate(result.template, templateContext);
-      setMessages([...newMessages, { role: 'assistant', content: processedContent }]);
-    } else {
-      // Fallback to API if no template
+    // 1. Weekly Check-In Flow
+    if (weeklyCheckInActive) {
+      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
       setLoading(true);
-      const response = await sendToAPI(newMessages);
-      if (response) {
-        setMessages([...newMessages, { role: 'assistant', content: response }]);
-      }
+      await processWeeklyCheckInResponse(userMessage);
       setLoading(false);
+      return;
     }
-  }, [messages, refetchProgress, introStep, practicesCompletedToday, buildTemplateContext, buildSelectionContext]);
+    
+    // 2. Micro-Action Setup Flow (100% API)
+    if (microActionState.isActive) {
+      await processMicroActionResponse(userMessage);
+      return;
+    }
+    
+    // 3. Flow Block Setup Flow (100% API)
+    if (flowBlockState.isSetupActive) {
+      await processFlowBlockResponse(userMessage);
+      return;
+    }
+    
+    // 4. Awaiting Micro-Action Start confirmation
+    if (awaitingMicroActionStart) {
+      const isAffirmative = ['yes', 'yeah', 'yep', 'sure', 'ok', 'okay', 'ready', 'let\'s go', 'lets go', 'y'].some(
+        word => userMessage.toLowerCase().includes(word)
+      );
+      
+      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+      
+      if (isAffirmative) {
+        setAwaitingMicroActionStart(false);
+        startMicroActionSetup();
+      } else {
+        setAwaitingMicroActionStart(false);
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: "No problem. You can set up your identity and micro-action anytime by clicking the ⚡ icon or saying 'set up my identity'." 
+        }]);
+      }
+      return;
+    }
+    
+    // 5. Awaiting Flow Block Start confirmation
+    if (awaitingFlowBlockStart) {
+      const isAffirmative = ['yes', 'yeah', 'yep', 'sure', 'ok', 'okay', 'ready', 'let\'s go', 'lets go', 'y'].some(
+        word => userMessage.toLowerCase().includes(word)
+      );
+      
+      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+      
+      if (isAffirmative) {
+        setAwaitingFlowBlockStart(false);
+        startFlowBlockSetup();
+      } else {
+        setAwaitingFlowBlockStart(false);
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: "No problem. You can set up your Flow Blocks anytime by clicking the 🎯 icon or saying 'set up flow blocks'." 
+        }]);
+      }
+      return;
+    }
+    
+    // 6. Awaiting Sprint Renewal confirmation
+    if (awaitingSprintRenewal) {
+      const isAffirmative = ['yes', 'yeah', 'yep', 'sure', 'ok', 'okay', 'new', 'different', 'change'].some(
+        word => userMessage.toLowerCase().includes(word)
+      );
+      
+      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+      
+      if (isAffirmative) {
+        setAwaitingSprintRenewal(false);
+        // Reset micro-action state for new sprint
+        setMicroActionState(prev => ({
+          ...prev,
+          isComplete: false,
+          sprintNumber: prev.sprintNumber + 1
+        }));
+        startMicroActionSetup();
+      } else {
+        setAwaitingSprintRenewal(false);
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: "Got it. Continue with your current identity. Remember: consistency is what rewires the nervous system." 
+        }]);
+      }
+      return;
+    }
+    
+    // ============================================
+    // INTRO FLOW HANDLING
+    // ============================================
+    
+    // During intro flow, handle both quick replies and free-text questions
+    if (openingType === 'first_time' && introStep < 3) {
+      // Add user message
+      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+      setLoading(true);
+      
+      // Check if this is an affirmative response to continue intro
+      const isAffirmative = ['yes', 'yeah', 'yep', 'sure', 'ok', 'okay', 'ready', 'got it', 'makes sense', 'let\'s go', 'lets go', 'next', 'continue'].some(
+        word => userMessage.toLowerCase().includes(word)
+      );
+      
+      if (isAffirmative) {
+        // Progress through intro flow
+        let responseMessage: string;
+        
+        if (introStep === 0) {
+          responseMessage = ritualIntroTemplates.ritual1Intro;
+          setIntroStep(1);
+        } else if (introStep === 1) {
+          responseMessage = ritualIntroTemplates.ritual2Intro;
+          setIntroStep(2);
+        } else if (introStep === 2) {
+          responseMessage = ritualIntroTemplates.wrapUp;
+          setIntroStep(3);
+          
+          // Mark ritual intro as completed
+          try {
+            const supabase = createClient();
+            await supabase
+              .from('user_progress')
+              .update({ ritual_intro_completed: true })
+              .eq('user_id', user.id);
+          } catch (err) {
+            console.error('Failed to mark intro complete:', err);
+          }
+        } else {
+          responseMessage = "What would you like to explore?";
+        }
+        
+        setTimeout(() => {
+          setMessages(prev => [...prev, { role: 'assistant', content: responseMessage }]);
+          setLoading(false);
+        }, 500);
+        return;
+      }
+      
+      // Not affirmative - treat as a question, send to API, then redirect
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: messages.map(m => ({ role: m.role, content: m.content })).concat([{ role: 'user', content: userMessage }]),
+            context: 'intro_question'
+          })
+        });
+        
+        if (!response.ok) throw new Error('API request failed');
+        
+        const data = await response.json();
+        const aiResponse = data.response || data.content || '';
+        
+        // Add the redirect message to bring them back to intro
+        const redirectMessage = getIntroRedirectMessage(introStep);
+        const fullResponse = aiResponse + '\n\n' + redirectMessage;
+        
+        setMessages(prev => [...prev, { role: 'assistant', content: fullResponse }]);
+      } catch (err) {
+        console.error('API error during intro:', err);
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: "Let me address that. " + getIntroRedirectMessage(introStep) 
+        }]);
+      }
+      
+      setLoading(false);
+      return;
+    }
+    
+    // ============================================
+    // TRIGGER DETECTION
+    // ============================================
+    
+    const lowerMessage = userMessage.toLowerCase();
+    
+    // Check for weekly check-in trigger
+    if (lowerMessage.includes('weekly check-in') || lowerMessage.includes('weekly checkin') || lowerMessage.includes('check in')) {
+      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+      setWeeklyCheckInActive(true);
+      setWeeklyCheckInStep(0);
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: `**Weekly Check-In**\n\nTime to assess your progress across the four domains. This takes about 2 minutes and helps track your transformation.\n\nReady to begin?`
+      }]);
+      return;
+    }
+    
+    // Check for identity/micro-action setup trigger
+    if (lowerMessage.includes('set up') && (lowerMessage.includes('identity') || lowerMessage.includes('micro'))) {
+      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+      startMicroActionSetup();
+      return;
+    }
+    
+    // Check for flow block setup trigger
+    if (lowerMessage.includes('set up') && lowerMessage.includes('flow')) {
+      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+      startFlowBlockSetup();
+      return;
+    }
+    
+    // ============================================
+    // NORMAL API FLOW
+    // ============================================
+    
+    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    setLoading(true);
+    
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: messages.map(m => ({ role: m.role, content: m.content })).concat([{ role: 'user', content: userMessage }]),
+          context: 'general'
+        })
+      });
+      
+      if (!response.ok) throw new Error('API request failed');
+      
+      const data = await response.json();
+      const aiResponse = data.response || data.content || "I'm having trouble responding right now. Please try again.";
+      
+      setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
+    } catch (err) {
+      console.error('Chat error:', err);
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: "I'm having trouble connecting right now. Please try again in a moment." 
+      }]);
+    }
+    
+    setLoading(false);
+  };
 
-  // Show loading state while initializing
-  if (isInitializing) {
+  // ============================================
+  // RENDER
+  // ============================================
+  
+  if (isInitializing || progressLoading) {
     return (
-      <div className="flex h-screen bg-[#0a0a0a] items-center justify-center">
-        <div className="text-center">
-          <div className="flex gap-2 justify-center mb-4">
-            <div className="w-3 h-3 bg-[#ff9e19] rounded-full animate-bounce" />
-            <div className="w-3 h-3 bg-[#ff9e19] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-            <div className="w-3 h-3 bg-[#ff9e19] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-          </div>
-          <p className="text-gray-400">Initializing IOS System...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || progressError) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen bg-[#0a0a0a]">
-        <div className="max-w-md p-8 rounded-lg bg-[#111111] border border-gray-800">
-          <h2 className="text-xl font-bold mb-4 text-[#ff9e19]">Error</h2>
-          <p className="text-gray-400 mb-4">{error || progressError}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-[#ff9e19] text-white rounded-lg hover:bg-orange-600 transition-colors"
-          >
-            Reload
-          </button>
+      <div className="flex h-screen bg-[#0a0a0a]">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-gray-400">Loading your IOS...</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-[#0a0a0a] text-white">
+    <div className="flex h-screen bg-[#0a0a0a]">
       {/* Left Sidebar - Dashboard (Desktop Only) */}
       {!isMobile && (
-        <aside className="w-72 bg-[#111111] border-r border-gray-800 flex flex-col overflow-y-auto">
-          <div className="p-4 border-b border-gray-800">
-            <h1 className="text-xl font-bold text-[#ff9e19]">IOS Dashboard</h1>
-            <p className="text-sm text-gray-400 mt-1">Welcome{getUserName() ? `, ${getUserName()}` : ''}</p>
-          </div>
-          
+        <aside className="hidden md:flex flex-col w-80 border-r border-gray-800 bg-[#0a0a0a] overflow-y-auto">
           <div className="p-4 space-y-4">
-            {/* Current Stage */}
-            <div className="p-3 bg-[#1a1a1a] rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-gray-400 uppercase tracking-wider">Current Stage</span>
-                <span className="text-sm font-bold text-[#ff9e19]">{progress?.currentStage || 1}/7</span>
-              </div>
-              <p className="text-white font-semibold">{getStageName(progress?.currentStage || 1)}</p>
+            {/* User Info Header */}
+            <div className="border-b border-gray-800 pb-4">
+              <h2 className="text-lg font-semibold text-white">
+                {getUserName() ? `Hey, ${getUserName()}` : 'Welcome'}
+              </h2>
+              <p className="text-sm text-gray-400">
+                Stage {progress?.currentStage || 1}: {getStageName(progress?.currentStage || 1)}
+              </p>
             </div>
 
             {/* REwired Index */}
-            <div className="p-3 bg-[#1a1a1a] rounded-lg">
+            <div className="bg-gray-900 rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-gray-400 uppercase tracking-wider">REwired Index</span>
-                <span className={`text-sm font-bold ${getStatusColor(baselineData.rewiredIndex)}`}>
-                  {baselineData.rewiredIndex}/100
+                <span className="text-sm text-gray-400">REwired Index</span>
+                <span className={`text-2xl font-bold ${getStatusColor(baselineData.rewiredIndex)}`}>
+                  {baselineData.rewiredIndex}
                 </span>
               </div>
-              <div className="w-full rounded-full h-2 bg-[#2a2a2a]">
+              <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
                 <div 
-                  className={`h-2 rounded-full transition-all ${getStatusColor(baselineData.rewiredIndex).replace('text-', 'bg-')}`}
+                  className={`h-2 rounded-full transition-all ${
+                    baselineData.rewiredIndex <= 20 ? 'bg-red-500' :
+                    baselineData.rewiredIndex <= 40 ? 'bg-yellow-500' :
+                    baselineData.rewiredIndex <= 60 ? 'bg-blue-500' :
+                    baselineData.rewiredIndex <= 80 ? 'bg-green-500' :
+                    'bg-purple-500'
+                  }`}
                   style={{ width: `${baselineData.rewiredIndex}%` }}
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-2">{getStatusTier(baselineData.rewiredIndex)}</p>
+              <p className="text-xs text-gray-500 mt-1">{getStatusTier(baselineData.rewiredIndex)}</p>
             </div>
 
+            {/* Adherence Stats */}
+            {progress && (
+              <div className="bg-gray-900 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-gray-400">Adherence</span>
+                  <span className="text-lg font-semibold text-[#ff9e19]">
+                    {(progress.adherencePercentage || 0).toFixed(0)}%
+                  </span>
+                </div>
+                <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
+                  <div 
+                    className="h-2 rounded-full bg-[#ff9e19] transition-all"
+                    style={{ width: `${progress.adherencePercentage || 0}%` }}
+                  />
+                </div>
+                {progress.consecutiveDays !== undefined && progress.consecutiveDays > 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    🔥 {progress.consecutiveDays} day streak
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* Domain Scores */}
-            <div className="p-3 bg-[#1a1a1a] rounded-lg">
-              <span className="text-xs text-gray-400 uppercase tracking-wider block mb-3">Domain Scores</span>
+            <div className="bg-gray-900 rounded-lg p-4 space-y-3">
+              <h3 className="text-sm font-medium text-gray-300 mb-2">Domain Scores</h3>
               
               {/* Regulation */}
-              <div className="mb-3">
+              <div>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs text-gray-400">Regulation</span>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-[#10b981]">
+                    <span className="text-sm font-semibold text-[#22c55e]">
                       {(progress?.domainScores?.regulation ?? baselineData.domainScores.regulation).toFixed(1)}/5
                     </span>
                     {progress?.domainDeltas?.regulation !== undefined && progress.domainDeltas.regulation !== 0 && (
@@ -2583,14 +2228,14 @@ Say **"starting"** when you begin, and **"done"** when complete to log your perf
                 </div>
                 <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
                   <div 
-                    className="h-2 rounded-full transition-all bg-[#10b981]"
+                    className="h-2 rounded-full transition-all bg-[#22c55e]"
                     style={{ width: `${((progress?.domainScores?.regulation ?? baselineData.domainScores.regulation) / 5) * 100}%` }}
                   />
                 </div>
               </div>
               
               {/* Awareness */}
-              <div className="mb-3">
+              <div>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs text-gray-400">Awareness</span>
                   <div className="flex items-center gap-2">
@@ -2613,7 +2258,7 @@ Say **"starting"** when you begin, and **"done"** when complete to log your perf
               </div>
               
               {/* Outlook */}
-              <div className="mb-3">
+              <div>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs text-gray-400">Outlook</span>
                   <div className="flex items-center gap-2">
