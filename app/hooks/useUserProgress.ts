@@ -256,13 +256,14 @@ export function useUserProgress() {
       // Get latest qualitative rating from weekly check-in
       const latestQualitativeRating = latestDelta?.qualitative_rating || null;
 
-      // Check unlock eligibility (includes qualitative threshold)
+      // Check unlock eligibility (includes qualitative threshold + competence check)
       const unlockEligible = checkBasicUnlockEligibility(
         progressData.current_stage,
         progressData.adherence_percentage,
         progressData.consecutive_days,
         domainDeltas.average,
-        latestQualitativeRating
+        latestQualitativeRating,
+        avgScore // Current average score for competence check
       );
 
       // Update last fetch date
@@ -401,12 +402,14 @@ function getUnlockedTools(stage: number): string[] {
 }
 
 // Simplified unlock eligibility check
+// Uses hybrid approach: unlock via improvement (delta) OR existing competence (high score)
 function checkBasicUnlockEligibility(
   stage: number,
   adherence: number,
   consecutiveDays: number,
   avgDelta: number,
-  qualitativeRating: number | null
+  qualitativeRating: number | null,
+  currentAvgScore: number
 ): boolean {
   // Stage 7 is manual unlock only - never auto-eligible
   if (stage >= 6) return false;
@@ -425,11 +428,19 @@ function checkBasicUnlockEligibility(
 
   // Qualitative rating is required for unlock - must have completed at least one weekly check-in
   const meetsQualitative = qualitativeRating !== null && qualitativeRating >= threshold.qualitative;
+  
+  // HYBRID TRANSFORMATION CHECK:
+  // Either show improvement (delta) OR demonstrate existing competence (high score)
+  // This prevents high performers from being penalized for starting strong,
+  // while still rewarding improvement for those starting lower
+  const COMPETENCE_THRESHOLD = 4.0; // Score of 4.0+ out of 5.0 = already competent
+  const meetsTransformation = avgDelta >= threshold.delta;
+  const alreadyCompetent = currentAvgScore >= COMPETENCE_THRESHOLD;
 
   return (
     adherence >= threshold.adherence &&
     consecutiveDays >= threshold.days &&
-    avgDelta >= threshold.delta &&
+    (meetsTransformation || alreadyCompetent) &&
     meetsQualitative
   );
 }
