@@ -1122,7 +1122,7 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
         setMessages(prev => [...prev, { role: 'assistant', content: cleanResponse }]);
         
         // Save to database
-        await saveMicroActionSetup(completion.identity, completion.action, completion.sprintNumber || 1);
+        await saveMicroActionSetup(completion.identity, completion.action, microActionState.sprintNumber || 1);
         
         // Update state
         setMicroActionState(prev => ({
