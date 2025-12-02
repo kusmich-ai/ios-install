@@ -33,12 +33,14 @@ export interface UserProgress {
     };
   };
   unlockEligible: boolean;
-  // NEW: Track the date this data is for
+  // Track the date this data is for
   dataDate: string;
-  // NEW: Identity fields for Micro-Action
+  // Identity fields for Micro-Action
   currentIdentity: string | null;
   microAction: string | null;
   identitySprintStart: string | null;
+  // NEW: Flow Block field
+  hasFlowBlockConfig: boolean;
 }
 
 interface PracticeLog {
@@ -147,6 +149,14 @@ export function useUserProgress() {
       if (baselineError && baselineError.code !== 'PGRST116') {
         console.error('Error fetching baseline:', baselineError);
       }
+
+      // NEW: Fetch Flow Block config to check if setup is complete
+      const { data: flowBlockConfig } = await supabase
+        .from('flow_block_config')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .maybeSingle();
 
       // Fetch latest 2 weekly deltas to calculate week-over-week change
       const { data: weeklyDeltas } = await supabase
@@ -286,7 +296,9 @@ export function useUserProgress() {
         // Identity fields for Micro-Action
         currentIdentity: progressData.current_identity || null,
         microAction: progressData.micro_action || null,
-        identitySprintStart: progressData.identity_sprint_start || null
+        identitySprintStart: progressData.identity_sprint_start || null,
+        // NEW: Flow Block field
+        hasFlowBlockConfig: !!flowBlockConfig
       };
 
       console.log('[useUserProgress] Setting progress:', {
@@ -299,7 +311,8 @@ export function useUserProgress() {
         rewiredIndex: newProgress.rewiredIndex,
         rewiredDelta: newProgress.rewiredDelta,
         hasWeeklyData: !!latestDelta,
-        hasPreviousWeek: !!previousDelta
+        hasPreviousWeek: !!previousDelta,
+        hasFlowBlockConfig: newProgress.hasFlowBlockConfig
       });
 
       setProgress(newProgress);
@@ -319,7 +332,7 @@ export function useUserProgress() {
     fetchProgress();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // NEW: Check for new day every minute and auto-refresh
+  // Check for new day every minute and auto-refresh
   useEffect(() => {
     const checkNewDay = () => {
       const today = getLocalDateString();
@@ -343,7 +356,7 @@ export function useUserProgress() {
     return () => clearInterval(interval);
   }, [fetchProgress]);
 
-  // NEW: Also refresh when window regains focus (user comes back to tab)
+  // Also refresh when window regains focus (user comes back to tab)
   useEffect(() => {
     const handleFocus = () => {
       const today = getLocalDateString();
@@ -378,7 +391,7 @@ export function useUserProgress() {
     loading, 
     error, 
     refetchProgress,
-    isRefreshing // NEW: expose refreshing state for UI feedback
+    isRefreshing // Expose refreshing state for UI feedback
   };
 }
 
