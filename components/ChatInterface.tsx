@@ -63,6 +63,18 @@ import {
   sprintCompleteMessage
 } from '@/lib/flowBlockAPI';
 
+// ============================================
+// EXTENDED FLOW BLOCK STATE (adds todaysBlock for local tracking)
+// ============================================
+interface ExtendedFlowBlockState extends FlowBlockState {
+  todaysBlock: WeeklyMapEntry | null;
+}
+
+const initialExtendedFlowBlockState: ExtendedFlowBlockState = {
+  ...initialFlowBlockState,
+  todaysBlock: null
+};
+
 // Simple markdown renderer for chat messages
 function renderMarkdown(text: string): string {
   return text
@@ -680,8 +692,9 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   
   // ============================================
   // FLOW BLOCK SETUP STATE (100% API version)
+  // Using extended state that adds todaysBlock
   // ============================================
-  const [flowBlockState, setFlowBlockState] = useState<FlowBlockState>(initialFlowBlockState);
+  const [flowBlockState, setFlowBlockState] = useState<ExtendedFlowBlockState>(initialExtendedFlowBlockState);
   const [awaitingFlowBlockStart, setAwaitingFlowBlockStart] = useState(false);
   
   // ============================================
@@ -797,7 +810,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
       weeklyCheckInDue: false, // TODO: Implement weekly check-in logic
       isMobile
     };
-  }, [baselineData, progress, practicesCompletedToday, introStep, isMobile, flowBlockState.isSetupComplete]);
+  }, [baselineData, progress, practicesCompletedToday, introStep, isMobile, flowBlockState.isComplete]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -839,9 +852,9 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
         if (config) {
           setFlowBlockState(prev => ({
             ...prev,
-            isSetupComplete: true,
-            weeklyMap: config.weekly_map,
-            setupPreferences: config.setup_preferences,
+            isComplete: true,
+            extractedWeeklyMap: config.weekly_map,
+            extractedPreferences: config.setup_preferences,
             sprintStartDate: config.sprint_start_date,
             todaysBlock: getTodaysFlowBlock(config.weekly_map)
           }));
@@ -864,7 +877,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
     if (hasCheckedUnlock.current || !progress || isInitializing || unlockFlowState !== 'none') return;
     // Don't trigger if any other flow is active
     if (weeklyCheckInActive || awaitingSprintRenewal || awaitingMicroActionStart || microActionState.isActive) return;
-    if (awaitingFlowBlockStart || flowBlockState.isSetupActive) return;
+    if (awaitingFlowBlockStart || flowBlockState.isActive) return;
     
     // Only check if user is eligible for unlock
     console.log('[ChatInterface] Unlock check:', {
@@ -899,7 +912,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
         }]);
       }
     }
-  }, [progress, isInitializing, unlockFlowState, buildTemplateContext, weeklyCheckInActive, awaitingSprintRenewal, awaitingMicroActionStart, microActionState.isActive, awaitingFlowBlockStart, flowBlockState.isSetupActive]);
+  }, [progress, isInitializing, unlockFlowState, buildTemplateContext, weeklyCheckInActive, awaitingSprintRenewal, awaitingMicroActionStart, microActionState.isActive, awaitingFlowBlockStart, flowBlockState.isActive]);
 
   // ============================================
   // UNLOCK CONFIRMATION HANDLER
@@ -1208,7 +1221,7 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
     // Initialize state
     setFlowBlockState(prev => ({
       ...prev,
-      isSetupActive: true,
+      isActive: true,
       conversationHistory: []
     }));
     
@@ -1221,7 +1234,7 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
 
   // Process user response in Flow Block setup (100% API version)
   const processFlowBlockResponse = useCallback(async (userResponse: string) => {
-    if (!flowBlockState.isSetupActive) return;
+    if (!flowBlockState.isActive) return;
     
     console.log('[FlowBlock] Processing response (API):', userResponse);
     
@@ -1275,10 +1288,10 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
         setFlowBlockState(prev => ({
           ...prev,
           conversationHistory: [...updatedHistory, { role: 'assistant', content: cleanResponse }],
-          isSetupComplete: true,
-          isSetupActive: false,
-          weeklyMap: completion.weeklyMap,
-          setupPreferences: completion.setupPreferences,
+          isComplete: true,
+          isActive: false,
+          extractedWeeklyMap: completion.weeklyMap,
+          extractedPreferences: completion.setupPreferences,
           sprintStartDate: completion.sprintStartDate,
           todaysBlock: getTodaysFlowBlock(completion.weeklyMap)
         }));
@@ -1349,7 +1362,7 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
     console.log('[FlowBlock] Setup cancelled');
     setFlowBlockState(prev => ({
       ...prev,
-      isSetupActive: false,
+      isActive: false,
       conversationHistory: []
     }));
   }, []);
@@ -1799,8 +1812,8 @@ ${statusItems.join('\n')}`;
         
       case 'flow_block':
         // Trigger Flow Block setup
-        if (flowBlockState.isSetupComplete) {
-          const todaysBlock = getTodaysFlowBlock(flowBlockState.weeklyMap);
+        if (flowBlockState.isComplete) {
+          const todaysBlock = getTodaysFlowBlock(flowBlockState.extractedWeeklyMap);
           if (todaysBlock) {
             setMessages(prev => [...prev, { 
               role: 'assistant', 
@@ -1908,7 +1921,7 @@ ${statusItems.join('\n')}`;
     }
     
     // 3. Flow Block Setup Flow (100% API)
-    if (flowBlockState.isSetupActive) {
+    if (flowBlockState.isActive) {
       await processFlowBlockResponse(userMessage);
       return;
     }
@@ -2421,7 +2434,7 @@ ${statusItems.join('\n')}`;
                 placeholder={
                   microActionState.isActive 
                     ? "Type your response..."
-                    : flowBlockState.isSetupActive
+                    : flowBlockState.isActive
                       ? "Type your response..."
                       : currentQuickReply 
                         ? "Or type a question..." 
@@ -2442,7 +2455,7 @@ ${statusItems.join('\n')}`;
             <p className="text-xs text-gray-500 mt-2 text-center">
               {microActionState.isActive
                 ? "Setting up your identity - type your responses"
-                : flowBlockState.isSetupActive
+                : flowBlockState.isActive
                   ? "Setting up your Flow Blocks - type your responses"
                   : currentQuickReply 
                     ? "Click the button above or type your own response" 
