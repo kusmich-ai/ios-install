@@ -611,21 +611,6 @@ function parseFlowBlockCompletionMarker(response: string): FlowBlockConfig | nul
   return null;
 }
 
-// Clean Flow Block response for display (remove marker)
-function cleanFlowBlockResponseForDisplay(response: string): string {
-  return response.replace(/\[FLOW_BLOCK_COMPLETE:\s*\{[\s\S]*?\}\]/, '').trim();
-}
-
-// Build API messages for Flow Block conversation
-function buildFlowBlockAPIMessages(history: { role: 'user' | 'assistant'; content: string }[], userMessage: string) {
-  const messages = [
-    { role: 'system' as const, content: flowBlockSystemPrompt },
-    ...history,
-    { role: 'user' as const, content: userMessage }
-  ];
-  return messages;
-}
-
 // Get today's scheduled Flow Block from weekly map
 function getTodaysFlowBlock(weeklyMap: WeeklyMapEntry[] | null): WeeklyMapEntry | null {
   if (!weeklyMap) return null;
