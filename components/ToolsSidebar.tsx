@@ -255,6 +255,10 @@ export default function ToolsSidebar({
                   const hasIdentity = isMicroAction && !!(progress.currentIdentity);
                   const currentIdentity = progress.currentIdentity || '';
                   
+                  // Special handling for Flow Block
+                  const isFlowBlock = practice.id === 'flow_block';
+                  const hasFlowBlockConfig = isFlowBlock && !!(progress.hasFlowBlockConfig);
+                  
                   return (
                     <div
                       key={practice.id}
@@ -284,10 +288,15 @@ export default function ToolsSidebar({
                           )}
                           
                           <div className="text-xs text-gray-400 mb-2">
-                            {isMicroAction ? (hasIdentity ? '2-5 min' : 'Setup required') : `${practice.duration} min`}
+                            {isMicroAction 
+                              ? (hasIdentity ? '2-5 min' : 'Setup required') 
+                              : isFlowBlock
+                                ? (hasFlowBlockConfig ? '60-90 min' : 'Setup required')
+                                : `${practice.duration} min`
+                            }
                           </div>
                           
-                          {/* Action Buttons - Special handling for Micro-Action */}
+                          {/* Action Buttons */}
                           <div className="flex gap-2">
                             {isMicroAction ? (
                               // MICRO-ACTION SPECIAL BUTTONS
@@ -326,6 +335,45 @@ export default function ToolsSidebar({
                                   className="flex-1 px-2 py-1.5 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1 bg-[#ff9e19]/20 text-[#ff9e19] hover:bg-[#ff9e19]/30"
                                 >
                                   Set Up Identity
+                                </button>
+                              )
+                            ) : isFlowBlock ? (
+                              // FLOW BLOCK SPECIAL BUTTONS
+                              hasFlowBlockConfig ? (
+                                // Has config - show Complete button (logs completion via chat)
+                                <>
+                                  {!isCompleted && (
+                                    <button
+                                      onClick={() => handleStartPractice(practice.id)}
+                                      disabled={isCompleting}
+                                      className={`flex-1 px-2 py-1.5 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1 ${
+                                        isCompleting
+                                          ? 'bg-gray-600 text-gray-400 cursor-wait'
+                                          : 'bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30'
+                                      }`}
+                                    >
+                                      {isCompleting ? (
+                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                      ) : (
+                                        <Check className="w-3 h-3" />
+                                      )}
+                                      Mark Complete
+                                    </button>
+                                  )}
+                                  {isCompleted && (
+                                    <span className="flex-1 px-2 py-1.5 text-xs text-green-400 flex items-center justify-center gap-1">
+                                      <Check className="w-3 h-3" />
+                                      Done for today
+                                    </span>
+                                  )}
+                                </>
+                              ) : (
+                                // No config - show Setup button
+                                <button
+                                  onClick={() => handleStartPractice(practice.id)}
+                                  className="flex-1 px-2 py-1.5 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1 bg-[#ff9e19]/20 text-[#ff9e19] hover:bg-[#ff9e19]/30"
+                                >
+                                  Set Up Flow Block
                                 </button>
                               )
                             ) : (
