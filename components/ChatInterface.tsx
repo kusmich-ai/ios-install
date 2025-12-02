@@ -1295,17 +1295,17 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
         );
         
         setFlowBlockState(prev => ({
-          ...prev,
-          conversationHistory: [...updatedHistory, { role: 'assistant', content: cleanResponse }],
-          extractedDomains: completion.domains,  // ✅ Fix 7: Was 'flowCompletion.domains'
-          extractedWeeklyMap: completion.weeklyMap,  // ✅ Fix 8: Was 'flowCompletion.weeklyMap'
-          extractedPreferences: completion.setupPreferences,  // ✅ Fix 9: Was 'flowCompletion.preferences'
-          focusType: completion.focusType,  // ✅ Fix 10: Was 'flowCompletion.focusType'
-          isComplete: true,
-          isActive: false,
-          sprintStartDate: sprintResult.startDate,
-          sprintNumber: sprintResult.sprintNumber
-        }));
+  ...prev,
+  conversationHistory: [...updatedHistory, { role: 'assistant', content: cleanResponse }],
+  extractedDomains: completion.domains,
+  extractedWeeklyMap: completion.weeklyMap,
+  extractedPreferences: completion.setupPreferences,
+  focusType: completion.focusType as 'concentrated' | 'distributed' | null,  // ✅ Add type assertion here too
+  isComplete: true,
+  isActive: false,
+  sprintStartDate: sprintResult.startDate,
+  sprintNumber: sprintResult.sprintNumber
+}));
       } else {
         // Normal response - continue conversation
         setMessages(prev => [...prev, { role: 'assistant', content: assistantResponse }]);
