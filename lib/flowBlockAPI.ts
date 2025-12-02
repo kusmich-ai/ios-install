@@ -697,3 +697,10 @@ Quick pulse check before we continue:
 - Did your setup (location, playlist, timer) work consistently?
 
 Any adjustments needed, or keep rolling?`;
+
+// Aliases for backwards compatibility with ChatInterface imports
+export const getSprintDayNumber = getFlowBlockSprintDay;
+export const isSprintComplete = isFlowBlockSprintComplete;
+export const sprintCompleteMessage = flowBlockSprintCompleteMessage;
+
+
