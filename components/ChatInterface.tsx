@@ -1234,6 +1234,9 @@ ${qualQuestion} (0-5)`
         5: { adherence: 85, days: 14, delta: 0.7, qualitative: 3 }
       };
       
+      // Competence threshold - if score is this high, delta requirement is waived
+      const COMPETENCE_THRESHOLD = 4.0;
+      
       const threshold = unlockThresholds[currentStage];
       const adherence = progress?.adherencePercentage || 0;
       const consecutiveDays = progress?.consecutiveDays || 0;
@@ -1261,10 +1264,14 @@ This is an advanced tier requiring application and manual review. When you're re
       } else if (threshold && currentStage < 6) {
         const meetsAdherence = adherence >= threshold.adherence;
         const meetsDays = consecutiveDays >= threshold.days;
-        const meetsDelta = avgDelta >= threshold.delta;
         const meetsQualitative = qualRating >= threshold.qualitative;
         
-        if (meetsAdherence && meetsDays && meetsDelta && meetsQualitative) {
+        // HYBRID: Either improvement (delta) OR existing competence (high score)
+        const meetsDelta = avgDelta >= threshold.delta;
+        const alreadyCompetent = avgScore >= COMPETENCE_THRESHOLD;
+        const meetsTransformation = meetsDelta || alreadyCompetent;
+        
+        if (meetsAdherence && meetsDays && meetsTransformation && meetsQualitative) {
           feedbackMessage += `**🎉 You've met all criteria for Stage ${currentStage + 1}!**
 
 The unlock prompt should appear shortly.`;
@@ -1274,7 +1281,14 @@ The unlock prompt should appear shortly.`;
           
           statusItems.push(`• Consistency: ${meetsAdherence ? '✓ Strong' : 'Building...'}`);
           statusItems.push(`• Daily Practice: ${meetsDays ? '✓ Established' : 'Keep showing up'}`);
-          statusItems.push(`• Transformation: ${meetsDelta ? '✓ Measurable growth' : 'In progress'}`);
+          
+          // Show transformation status with context
+          if (meetsTransformation) {
+            statusItems.push(`• Transformation: ✓ ${alreadyCompetent ? 'Strong baseline' : 'Measurable growth'}`);
+          } else {
+            statusItems.push(`• Transformation: In progress`);
+          }
+          
           statusItems.push(`• Stage Competence: ${meetsQualitative ? '✓ Ready' : 'Developing'}`);
           
           feedbackMessage += `**Stage ${currentStage + 1} Readiness:**
@@ -1285,7 +1299,7 @@ ${statusItems.join('\n')}`;
             feedbackMessage += `\n\n**Focus Area:** ${stageQualitativeQuestions[currentStage]} Keep practicing until this feels more natural.`;
           } else if (!meetsDays) {
             feedbackMessage += `\n\n**Focus Area:** Keep showing up daily. Consistency is what rewires the nervous system.`;
-          } else if (!meetsDelta) {
+          } else if (!meetsTransformation) {
             feedbackMessage += `\n\n**Focus Area:** The practices are landing. Trust the process - transformation takes time.`;
           }
         }
