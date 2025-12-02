@@ -44,117 +44,27 @@ import {
 } from '@/lib/microActionAPI';
 
 // ============================================
-// FLOW BLOCK TYPES (100% API version)
+// FLOW BLOCK SETUP IMPORTS (100% API version)
 // ============================================
-interface WeeklyMapEntry {
-  day: string;
-  domain: string;
-  task: string;
-  flowType: string;  // Creative, Strategic, Learning
-  category: string;  // Goal, Growth, Gratitude
-  identityLink: string;
-  duration: number;
+import {
+  FlowBlockState,
+  initialFlowBlockState,
+  WeeklyMapEntry,
+  SetupPreferences,
+  flowBlockSystemPrompt,
+  flowBlockOpeningMessage,
+  getFlowBlockOpeningWithIdentity,
+  parseFlowBlockCompletion,
+  cleanFlowBlockResponseForDisplay,
+  buildFlowBlockAPIMessages,
+  getTodaysBlock,
+  getDailyFlowBlockPrompt,
+  postBlockReflectionPrompt,
+  getSprintDayNumber,
+  isSprintComplete,
+  sprintCompleteMessage
+} from '@/lib/flowBlockAPI';
 }
-
-interface FlowBlockSetupPreferences {
-  professionalLocation: string;
-  personalLocation: string;
-  playlist: string;
-  timerMethod: string;
-  notificationsOff: boolean;
-}
-
-interface FlowBlockConfig {
-  domains: string[];
-  weeklyMap: WeeklyMapEntry[];
-  setupPreferences: FlowBlockSetupPreferences;
-  focusType: 'concentrated' | 'distributed';
-  sprintStartDate: string;
-  sprintNumber: number;
-  isActive: boolean;
-}
-
-interface FlowBlockState {
-  isSetupActive: boolean;
-  isSetupComplete: boolean;
-  conversationHistory: { role: 'user' | 'assistant'; content: string }[];
-  weeklyMap: WeeklyMapEntry[] | null;
-  setupPreferences: FlowBlockSetupPreferences | null;
-  sprintStartDate: string | null;
-  todaysBlock: WeeklyMapEntry | null;
-}
-
-const initialFlowBlockState: FlowBlockState = {
-  isSetupActive: false,
-  isSetupComplete: false,
-  conversationHistory: [],
-  weeklyMap: null,
-  setupPreferences: null,
-  sprintStartDate: null,
-  todaysBlock: null
-};
-
-// Flow Block Opening Message (100% API version)
-const flowBlockOpeningMessage = `**Welcome to Flow Mode** 🎯
-
-Flow Blocks are the performance element of the IOS. They're designed to train your nervous system to drop into sustained focus on command.
-
-Here's how this works:
-1. We'll identify your highest-leverage work across multiple life domains
-2. Design a weekly schedule with 5 blocks (Mon-Fri)
-3. Set up your environment for consistent flow entry
-4. You'll execute daily and track performance
-
-By day 21, dropping into flow won't feel like effort - it'll feel like home.
-
-First question: **Do you currently have a Micro-Action Identity** you want to connect this to? If so, what is it? If not, just say "no identity yet."`;
-
-// Flow Block System Prompt for API calls
-const flowBlockSystemPrompt = `You are the Flow Block Setup Guide within the IOS (Integrated Operating System). Your job is to help users build a comprehensive Flow Block system for deep work.
-
-IMPORTANT: You are having a multi-turn conversation. Guide the user through these phases IN ORDER:
-
-PHASE 1 - DOMAIN PRIORITIZATION:
-Ask user to rank their top 3 domains from: Professional Work, Personal Development, Relationships, Creative Projects, Learning, Health.
-
-PHASE 2 - TASK DISCOVERY (per domain):
-For each of top 3 domains, ask: "If you completed only ONE thing in [domain] today, what would genuinely move your world forward?"
-Collect 1-2 high-leverage tasks per domain.
-
-PHASE 3 - CLASSIFICATION:
-Classify each task by:
-- Flow Type: Creative (generation), Strategic (planning/decisions), Learning (study/skill)
-- 3G Category: Goal (moves outcomes forward, 60-80% of blocks), Growth (learning/skill), Gratitude (creative exploration, no outcome pressure)
-
-PHASE 4 - WEEKLY MAP:
-Build a 5-block weekly schedule (Mon-Fri):
-- Default: 1 block per day, 60-90 min
-- Ask: Concentrated Focus (fewer tasks, multiple times/week) or Distributed Coverage (more variety)?
-- Ensure 3G balance: ideally 3 Goal + 1 Growth + 1 Gratitude
-
-PHASE 5 - SETUP REQUIREMENTS (ask one at a time):
-1. "Where will you do your professional Flow Blocks?" (same place = neurological anchor)
-2. "Where will you do relational/personal blocks?" (might differ)
-3. "Do you have a focus playlist, or should I suggest options?"
-4. "How will you track time? Physical timer, phone in another room, or desktop timer?"
-5. "Can you commit to notifications OFF during blocks?"
-
-PHASE 6 - COMMITMENT:
-Present final weekly map as a table.
-Get explicit commitment: "Do you commit to 5 blocks/week for 21 days?"
-
-COMPLETION MARKER:
-When setup is FULLY complete (all 5 phases done, user committed), include this EXACT marker on its own line:
-[FLOW_BLOCK_COMPLETE: {"weeklyMap": [{"day": "Monday", "domain": "...", "task": "...", "flowType": "...", "category": "...", "identityLink": "...", "duration": 90}...], "setupPreferences": {"professionalLocation": "...", "personalLocation": "...", "playlist": "...", "timerMethod": "...", "notificationsOff": true}, "focusType": "concentrated|distributed"}]
-
-ONLY include this marker when ALL setup is complete and user has committed.
-
-COACHING STYLE:
-- Be direct, not preachy
-- Explain the "why" briefly when helpful (dopamine, neural pathways)
-- Use "evidence" and "proof" language
-- If user proposes multiple tasks, redirect: "Which ONE would be the clearest proof?"
-- Don't rush - each phase matters
 
 Current conversation:`;
 
