@@ -875,6 +875,44 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
     loadFlowBlockStatus();
   }, [user?.id]);
 
+  // Load sprint state from database on init
+  useEffect(() => {
+    const loadSprintState = async () => {
+      if (!user?.id) return;
+      
+      try {
+        const { microAction, flowBlock } = await loadActiveSprintsForUser(user.id);
+        
+        // Restore MicroAction sprint state if exists
+        if (microAction) {
+          setMicroActionState(prev => ({
+            ...prev,
+            extractedIdentity: microAction.identity,
+            extractedAction: microAction.action,
+            isComplete: true,
+            sprintStartDate: microAction.start_date,
+            sprintNumber: microAction.sprint_number
+          }));
+          console.log('[Sprint] Loaded MicroAction sprint:', microAction.sprint_number);
+        }
+        
+        // FlowBlock sprint state is already loaded by the existing useEffect
+        // but we can update sprint number if needed
+        if (flowBlock) {
+          setFlowBlockState(prev => ({
+            ...prev,
+            sprintNumber: flowBlock.sprint_number
+          }));
+          console.log('[Sprint] Loaded FlowBlock sprint:', flowBlock.sprint_number);
+        }
+      } catch (error) {
+        console.log('[Sprint] Error loading sprint state:', error);
+      }
+    };
+    
+    loadSprintState();
+  }, [user?.id]);
+  
   // ============================================
   // UNLOCK ELIGIBILITY CHECK
   // ============================================
@@ -1813,7 +1851,7 @@ ${statusItems.join('\n')}`;
         if (microActionState.isComplete) {
           setMessages(prev => [...prev, { 
             role: 'assistant', 
-            content: `Your current identity is **${microActionState.identity}**.\n\nYour daily micro-action: **${microActionState.microAction}**\n\nWould you like to start a new 21-day sprint with a different identity?`
+            content: `Your current identity is **${microActionState.extractedIdentity}**.\n\nYour daily micro-action: **${microActionState.extractedAction}**\n\nWould you like to start a new 21-day sprint with a different identity?`
           }]);
           setAwaitingSprintRenewal(true);
         } else {
