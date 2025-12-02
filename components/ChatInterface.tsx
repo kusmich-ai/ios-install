@@ -65,8 +65,6 @@ import {
   sprintCompleteMessage
 } from '@/lib/flowBlockAPI';
 
-Current conversation:`;
-
 // Simple markdown renderer for chat messages
 function renderMarkdown(text: string): string {
   return text
