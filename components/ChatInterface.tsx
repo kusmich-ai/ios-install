@@ -881,30 +881,26 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
       if (!user?.id) return;
       
       try {
-        const { microAction, flowBlock } = await loadActiveSprintsForUser(user.id);
-        
-        // Restore MicroAction sprint state if exists
-        if (microAction) {
-          setMicroActionState(prev => ({
-            ...prev,
-            extractedIdentity: microAction.identity,
-            extractedAction: microAction.action,
-            isComplete: true,
-            sprintStartDate: microAction.start_date,
-            sprintNumber: microAction.sprint_number
-          }));
-          console.log('[Sprint] Loaded MicroAction sprint:', microAction.sprint_number);
-        }
-        
-        // FlowBlock sprint state is already loaded by the existing useEffect
-        // but we can update sprint number if needed
-        if (flowBlock) {
-          setFlowBlockState(prev => ({
-            ...prev,
-            sprintNumber: flowBlock.sprint_number
-          }));
-          console.log('[Sprint] Loaded FlowBlock sprint:', flowBlock.sprint_number);
-        }
+const { microActionSprint, flowBlockSprint } = await loadActiveSprintsForUser(user.id);
+if (microActionSprint) {
+  setMicroActionState(prev => ({
+    ...prev,
+    extractedIdentity: microActionSprint.identity,
+    extractedAction: microActionSprint.action,
+    isComplete: true,
+    sprintStartDate: microActionSprint.start_date,
+    sprintNumber: microActionSprint.sprint_number
+  }));
+  console.log('[Sprint] Loaded MicroAction sprint:', microActionSprint.sprint_number);
+}
+
+if (flowBlockSprint) {
+  setFlowBlockState(prev => ({
+    ...prev,
+    sprintNumber: flowBlockSprint.sprint_number
+  }));
+  console.log('[Sprint] Loaded FlowBlock sprint:', flowBlockSprint.sprint_number);
+}
       } catch (error) {
         console.log('[Sprint] Error loading sprint state:', error);
       }
