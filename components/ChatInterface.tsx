@@ -792,7 +792,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
       identityDayInCycle: extendedProgress?.identitySprintStart 
         ? Math.floor((Date.now() - new Date(extendedProgress.identitySprintStart).getTime()) / (1000 * 60 * 60 * 24)) + 1
         : undefined,
-      flowBlockSetupCompleted: extendedProgress?.flowBlockSetupCompleted || flowBlockState.isSetupComplete,
+      flowBlockSetupCompleted: extendedProgress?.flowBlockSetupCompleted || flowBlockState.isComplete,
       toolsIntroduced: extendedProgress?.toolsIntroduced || [],
       weeklyCheckInDue: false, // TODO: Implement weekly check-in logic
       isMobile
