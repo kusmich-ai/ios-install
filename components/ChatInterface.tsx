@@ -43,6 +43,121 @@ import {
   buildAPIMessages
 } from '@/lib/microActionAPI';
 
+// ============================================
+// FLOW BLOCK TYPES (100% API version)
+// ============================================
+interface WeeklyMapEntry {
+  day: string;
+  domain: string;
+  task: string;
+  flowType: string;  // Creative, Strategic, Learning
+  category: string;  // Goal, Growth, Gratitude
+  identityLink: string;
+  duration: number;
+}
+
+interface FlowBlockSetupPreferences {
+  professionalLocation: string;
+  personalLocation: string;
+  playlist: string;
+  timerMethod: string;
+  notificationsOff: boolean;
+}
+
+interface FlowBlockConfig {
+  domains: string[];
+  weeklyMap: WeeklyMapEntry[];
+  setupPreferences: FlowBlockSetupPreferences;
+  focusType: 'concentrated' | 'distributed';
+  sprintStartDate: string;
+  sprintNumber: number;
+  isActive: boolean;
+}
+
+interface FlowBlockState {
+  isSetupActive: boolean;
+  isSetupComplete: boolean;
+  conversationHistory: { role: 'user' | 'assistant'; content: string }[];
+  weeklyMap: WeeklyMapEntry[] | null;
+  setupPreferences: FlowBlockSetupPreferences | null;
+  sprintStartDate: string | null;
+  todaysBlock: WeeklyMapEntry | null;
+}
+
+const initialFlowBlockState: FlowBlockState = {
+  isSetupActive: false,
+  isSetupComplete: false,
+  conversationHistory: [],
+  weeklyMap: null,
+  setupPreferences: null,
+  sprintStartDate: null,
+  todaysBlock: null
+};
+
+// Flow Block Opening Message (100% API version)
+const flowBlockOpeningMessage = `**Welcome to Flow Mode** 🎯
+
+Flow Blocks are the performance element of the IOS. They're designed to train your nervous system to drop into sustained focus on command.
+
+Here's how this works:
+1. We'll identify your highest-leverage work across multiple life domains
+2. Design a weekly schedule with 5 blocks (Mon-Fri)
+3. Set up your environment for consistent flow entry
+4. You'll execute daily and track performance
+
+By day 21, dropping into flow won't feel like effort - it'll feel like home.
+
+First question: **Do you currently have a Micro-Action Identity** you want to connect this to? If so, what is it? If not, just say "no identity yet."`;
+
+// Flow Block System Prompt for API calls
+const flowBlockSystemPrompt = `You are the Flow Block Setup Guide within the IOS (Integrated Operating System). Your job is to help users build a comprehensive Flow Block system for deep work.
+
+IMPORTANT: You are having a multi-turn conversation. Guide the user through these phases IN ORDER:
+
+PHASE 1 - DOMAIN PRIORITIZATION:
+Ask user to rank their top 3 domains from: Professional Work, Personal Development, Relationships, Creative Projects, Learning, Health.
+
+PHASE 2 - TASK DISCOVERY (per domain):
+For each of top 3 domains, ask: "If you completed only ONE thing in [domain] today, what would genuinely move your world forward?"
+Collect 1-2 high-leverage tasks per domain.
+
+PHASE 3 - CLASSIFICATION:
+Classify each task by:
+- Flow Type: Creative (generation), Strategic (planning/decisions), Learning (study/skill)
+- 3G Category: Goal (moves outcomes forward, 60-80% of blocks), Growth (learning/skill), Gratitude (creative exploration, no outcome pressure)
+
+PHASE 4 - WEEKLY MAP:
+Build a 5-block weekly schedule (Mon-Fri):
+- Default: 1 block per day, 60-90 min
+- Ask: Concentrated Focus (fewer tasks, multiple times/week) or Distributed Coverage (more variety)?
+- Ensure 3G balance: ideally 3 Goal + 1 Growth + 1 Gratitude
+
+PHASE 5 - SETUP REQUIREMENTS (ask one at a time):
+1. "Where will you do your professional Flow Blocks?" (same place = neurological anchor)
+2. "Where will you do relational/personal blocks?" (might differ)
+3. "Do you have a focus playlist, or should I suggest options?"
+4. "How will you track time? Physical timer, phone in another room, or desktop timer?"
+5. "Can you commit to notifications OFF during blocks?"
+
+PHASE 6 - COMMITMENT:
+Present final weekly map as a table.
+Get explicit commitment: "Do you commit to 5 blocks/week for 21 days?"
+
+COMPLETION MARKER:
+When setup is FULLY complete (all 5 phases done, user committed), include this EXACT marker on its own line:
+[FLOW_BLOCK_COMPLETE: {"weeklyMap": [{"day": "Monday", "domain": "...", "task": "...", "flowType": "...", "category": "...", "identityLink": "...", "duration": 90}...], "setupPreferences": {"professionalLocation": "...", "personalLocation": "...", "playlist": "...", "timerMethod": "...", "notificationsOff": true}, "focusType": "concentrated|distributed"}]
+
+ONLY include this marker when ALL setup is complete and user has committed.
+
+COACHING STYLE:
+- Be direct, not preachy
+- Explain the "why" briefly when helpful (dopamine, neural pathways)
+- Use "evidence" and "proof" language
+- If user proposes multiple tasks, redirect: "Which ONE would be the clearest proof?"
+- Don't rush - each phase matters
+
+Current conversation:`;
+
 // Simple markdown renderer for chat messages
 function renderMarkdown(text: string): string {
   return text
@@ -555,6 +670,66 @@ function normalizePracticeId(id: string): string {
 }
 
 // ============================================
+// FLOW BLOCK HELPER FUNCTIONS
+// ============================================
+
+// Parse Flow Block completion marker from API response
+function parseFlowBlockCompletionMarker(response: string): FlowBlockConfig | null {
+  const markerRegex = /\[FLOW_BLOCK_COMPLETE:\s*(\{[\s\S]*?\})\]/;
+  const match = response.match(markerRegex);
+  
+  if (match && match[1]) {
+    try {
+      const parsed = JSON.parse(match[1]);
+      return {
+        domains: parsed.weeklyMap?.map((e: WeeklyMapEntry) => e.domain) || [],
+        weeklyMap: parsed.weeklyMap || [],
+        setupPreferences: parsed.setupPreferences || {
+          professionalLocation: '',
+          personalLocation: '',
+          playlist: '',
+          timerMethod: '',
+          notificationsOff: true
+        },
+        focusType: parsed.focusType || 'distributed',
+        sprintStartDate: new Date().toISOString(),
+        sprintNumber: 1,
+        isActive: true
+      };
+    } catch (e) {
+      console.error('[FlowBlock] Failed to parse completion marker:', e);
+      return null;
+    }
+  }
+  return null;
+}
+
+// Clean Flow Block response for display (remove marker)
+function cleanFlowBlockResponseForDisplay(response: string): string {
+  return response.replace(/\[FLOW_BLOCK_COMPLETE:\s*\{[\s\S]*?\}\]/, '').trim();
+}
+
+// Build API messages for Flow Block conversation
+function buildFlowBlockAPIMessages(history: { role: 'user' | 'assistant'; content: string }[], userMessage: string) {
+  const messages = [
+    { role: 'system' as const, content: flowBlockSystemPrompt },
+    ...history,
+    { role: 'user' as const, content: userMessage }
+  ];
+  return messages;
+}
+
+// Get today's scheduled Flow Block from weekly map
+function getTodaysFlowBlock(weeklyMap: WeeklyMapEntry[] | null): WeeklyMapEntry | null {
+  if (!weeklyMap) return null;
+  
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const today = dayNames[new Date().getDay()];
+  
+  return weeklyMap.find(entry => entry.day === today) || null;
+}
+
+// ============================================
 // MAIN COMPONENT
 // ============================================
 
@@ -603,6 +778,12 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   const [awaitingSprintRenewal, setAwaitingSprintRenewal] = useState(false);
   
   // ============================================
+  // FLOW BLOCK SETUP STATE (100% API version)
+  // ============================================
+  const [flowBlockState, setFlowBlockState] = useState<FlowBlockState>(initialFlowBlockState);
+  const [awaitingFlowBlockStart, setAwaitingFlowBlockStart] = useState(false);
+  
+  // ============================================
   // WEEKLY CHECK-IN STATE
   // ============================================
   const [weeklyCheckInActive, setWeeklyCheckInActive] = useState(false);
@@ -628,6 +809,12 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
 
   const isMobile = useIsMobile();
   const { progress, loading: progressLoading, error: progressError, refetchProgress, isRefreshing } = useUserProgress();
+
+  // Get user's name
+  const getUserName = () => user?.user_metadata?.first_name || '';
+
+  // Get current quick reply configuration
+  const currentQuickReply = openingType === 'first_time' && introStep < 3 ? introQuickReplies[introStep] : null;
 
   // ============================================
   // BUILD TEMPLATE CONTEXT
@@ -704,12 +891,12 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
       identityDayInCycle: extendedProgress?.identitySprintStart 
         ? Math.floor((Date.now() - new Date(extendedProgress.identitySprintStart).getTime()) / (1000 * 60 * 60 * 24)) + 1
         : undefined,
-      flowBlockSetupCompleted: extendedProgress?.flowBlockSetupCompleted || false,
+      flowBlockSetupCompleted: extendedProgress?.flowBlockSetupCompleted || flowBlockState.isSetupComplete,
       toolsIntroduced: extendedProgress?.toolsIntroduced || [],
       weeklyCheckInDue: false, // TODO: Implement weekly check-in logic
       isMobile
     };
-  }, [baselineData, progress, practicesCompletedToday, introStep, isMobile]);
+  }, [baselineData, progress, practicesCompletedToday, introStep, isMobile, flowBlockState.isSetupComplete]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -734,6 +921,39 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
     }
   }, [progress]);
 
+  // Load Flow Block setup status from database
+  useEffect(() => {
+    const loadFlowBlockStatus = async () => {
+      if (!user?.id) return;
+      
+      try {
+        const supabase = createClient();
+        const { data: config } = await supabase
+          .from('flow_block_config')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .single();
+        
+        if (config) {
+          setFlowBlockState(prev => ({
+            ...prev,
+            isSetupComplete: true,
+            weeklyMap: config.weekly_map,
+            setupPreferences: config.setup_preferences,
+            sprintStartDate: config.sprint_start_date,
+            todaysBlock: getTodaysFlowBlock(config.weekly_map)
+          }));
+        }
+      } catch (error) {
+        // No config found - that's fine for new users
+        console.log('[FlowBlock] No existing config found');
+      }
+    };
+    
+    loadFlowBlockStatus();
+  }, [user?.id]);
+
   // ============================================
   // UNLOCK ELIGIBILITY CHECK
   // ============================================
@@ -743,6 +963,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
     if (hasCheckedUnlock.current || !progress || isInitializing || unlockFlowState !== 'none') return;
     // Don't trigger if any other flow is active
     if (weeklyCheckInActive || awaitingSprintRenewal || awaitingMicroActionStart || microActionState.isActive) return;
+    if (awaitingFlowBlockStart || flowBlockState.isSetupActive) return;
     
     // Only check if user is eligible for unlock
     console.log('[ChatInterface] Unlock check:', {
@@ -777,7 +998,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
         }]);
       }
     }
-  }, [progress, isInitializing, unlockFlowState, buildTemplateContext, weeklyCheckInActive, awaitingSprintRenewal, awaitingMicroActionStart, microActionState.isActive]);
+  }, [progress, isInitializing, unlockFlowState, buildTemplateContext, weeklyCheckInActive, awaitingSprintRenewal, awaitingMicroActionStart, microActionState.isActive, awaitingFlowBlockStart, flowBlockState.isSetupActive]);
 
   // ============================================
   // UNLOCK CONFIRMATION HANDLER
@@ -836,13 +1057,18 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
         }]);
       }
 
-      // Update flow state - SPECIAL HANDLING FOR STAGE 3
+      // Update flow state - SPECIAL HANDLING FOR STAGE 3 AND STAGE 4
       if (pendingUnlockStage === 3) {
         // Stage 3: The confirmation message already asks "Ready to run Identity Installation?"
         // So we skip the "Learn the new practices" button and go straight to awaiting response
         setUnlockFlowState('none');
         setPendingUnlockStage(null);
         setAwaitingMicroActionStart(true);
+      } else if (pendingUnlockStage === 4) {
+        // Stage 4: Similar pattern - prompt for Flow Block setup
+        setUnlockFlowState('none');
+        setPendingUnlockStage(null);
+        setAwaitingFlowBlockStart(true);
       } else {
         // Other stages: Show "Learn the new practices" button
         setUnlockFlowState('confirmed');
@@ -894,6 +1120,33 @@ Ready to discover your identity and design your micro-action?`
       
       // Set a flag to trigger setup when user responds
       setAwaitingMicroActionStart(true);
+      return;
+    }
+    
+    // SPECIAL HANDLING FOR STAGE 4: Trigger Flow Block Setup
+    if (pendingUnlockStage === 4) {
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: `**Welcome to Stage 4: Flow Mode** 🎯
+
+You've built identity alignment through daily proof. Now it's time to train sustained attention on high-leverage work.
+
+Flow Blocks are 60-90 minute deep work sessions where you:
+1. Focus on ONE high-leverage task
+2. Challenge ≈ skill + 10%
+3. No phone, no distractions
+4. Track performance metrics
+
+By week 3, dropping into flow will feel like home.
+
+Ready to identify your highest-leverage work and design your Flow Block system?`
+      }]);
+      
+      // Clear pending unlock
+      setPendingUnlockStage(null);
+      
+      // Set a flag to trigger setup when user responds
+      setAwaitingFlowBlockStart(true);
       return;
     }
     
@@ -1054,6 +1307,163 @@ Ready to discover your identity and design your micro-action?`
   const cancelMicroActionSetup = useCallback(() => {
     console.log('[MicroAction] Setup cancelled');
     setMicroActionState(initialMicroActionState);
+  }, []);
+
+  // ============================================
+  // FLOW BLOCK SETUP HANDLERS
+  // ============================================
+  
+  // Start Flow Block setup flow (100% API version)
+  const startFlowBlockSetup = useCallback(async () => {
+    console.log('[FlowBlock] Starting setup flow (100% API)');
+    
+    // Initialize state
+    setFlowBlockState(prev => ({
+      ...prev,
+      isSetupActive: true,
+      conversationHistory: []
+    }));
+    
+    // Show opening message
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      content: flowBlockOpeningMessage
+    }]);
+  }, []);
+
+  // Process user response in Flow Block setup (100% API version)
+  const processFlowBlockResponse = useCallback(async (userResponse: string) => {
+    if (!flowBlockState.isSetupActive) return;
+    
+    console.log('[FlowBlock] Processing response (API):', userResponse);
+    
+    // Add user message to chat
+    setMessages(prev => [...prev, { role: 'user', content: userResponse }]);
+    setLoading(true);
+    
+    // Build conversation history for API
+    const updatedHistory = [
+      ...flowBlockState.conversationHistory,
+      { role: 'user' as const, content: userResponse }
+    ];
+    
+    try {
+      // Call the main chat API with the Flow Block system prompt
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: buildFlowBlockAPIMessages(flowBlockState.conversationHistory, userResponse),
+          context: 'flow_block_setup'
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('API request failed');
+      }
+      
+      const data = await response.json();
+      let assistantResponse = data.response || data.content || '';
+      
+      console.log('[FlowBlock] API response:', assistantResponse);
+      
+      // Check for completion marker
+      const completion = parseFlowBlockCompletionMarker(assistantResponse);
+      
+      if (completion) {
+        // Extract and save the configuration
+        console.log('[FlowBlock] Completion detected:', completion);
+        
+        // Clean the response for display (remove the marker)
+        const cleanResponse = cleanFlowBlockResponseForDisplay(assistantResponse);
+        
+        // Add assistant response to chat
+        setMessages(prev => [...prev, { role: 'assistant', content: cleanResponse }]);
+        
+        // Save to database
+        await completeFlowBlockSetup(completion);
+        
+        // Update state
+        setFlowBlockState(prev => ({
+          ...prev,
+          conversationHistory: [...updatedHistory, { role: 'assistant', content: cleanResponse }],
+          isSetupComplete: true,
+          isSetupActive: false,
+          weeklyMap: completion.weeklyMap,
+          setupPreferences: completion.setupPreferences,
+          sprintStartDate: completion.sprintStartDate,
+          todaysBlock: getTodaysFlowBlock(completion.weeklyMap)
+        }));
+      } else {
+        // Normal response - continue conversation
+        setMessages(prev => [...prev, { role: 'assistant', content: assistantResponse }]);
+        
+        // Update conversation history
+        setFlowBlockState(prev => ({
+          ...prev,
+          conversationHistory: [...updatedHistory, { role: 'assistant', content: assistantResponse }]
+        }));
+      }
+    } catch (error) {
+      console.error('[FlowBlock] API call failed:', error);
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: "I had trouble processing that. Let's continue - what were you saying?" 
+      }]);
+    }
+    
+    setLoading(false);
+  }, [flowBlockState]);
+
+  // Complete Flow Block setup and save to database
+  const completeFlowBlockSetup = async (config: FlowBlockConfig) => {
+    console.log('[FlowBlock] Setup complete:', config);
+    
+    try {
+      const supabase = createClient();
+      
+      // Insert into flow_block_config table
+      const { error: insertError } = await supabase
+        .from('flow_block_config')
+        .upsert({
+          user_id: user.id,
+          domains: config.domains,
+          weekly_map: config.weeklyMap,
+          setup_preferences: config.setupPreferences,
+          focus_type: config.focusType,
+          sprint_start_date: config.sprintStartDate,
+          sprint_number: config.sprintNumber,
+          is_active: true
+        }, { onConflict: 'user_id' });
+      
+      if (insertError) {
+        console.error('[FlowBlock] Insert error:', insertError);
+        throw insertError;
+      }
+      
+      // Update user_progress to mark flow block setup as complete
+      await supabase
+        .from('user_progress')
+        .update({ flow_block_setup_completed: true })
+        .eq('user_id', user.id);
+      
+      // Refresh progress
+      if (refetchProgress) {
+        await refetchProgress();
+      }
+    } catch (error) {
+      console.error('[FlowBlock] Failed to save setup:', error);
+    }
+  };
+
+  // Cancel Flow Block setup (if user wants to exit)
+  const cancelFlowBlockSetup = useCallback(() => {
+    console.log('[FlowBlock] Setup cancelled');
+    setFlowBlockState(prev => ({
+      ...prev,
+      isSetupActive: false,
+      conversationHistory: []
+    }));
   }, []);
 
   // ============================================
@@ -1454,6 +1864,7 @@ ${statusItems.join('\n')}`;
     if (isInitializing || !progress || !hasInitialized.current) return;
     // Don't trigger if any other flow is active
     if (weeklyCheckInActive || awaitingMicroActionStart || microActionState.isActive) return;
+    if (awaitingFlowBlockStart || flowBlockState.isSetupActive) return;
     if (unlockFlowState !== 'none') return;
     
     const extendedProgress = progress as any;
@@ -1500,7 +1911,7 @@ What feels right?`
       // Set flag to watch for their response
       setAwaitingSprintRenewal(true);
     }
-  }, [progress, isInitializing, weeklyCheckInActive, awaitingMicroActionStart, microActionState.isActive, unlockFlowState]);
+  }, [progress, isInitializing, weeklyCheckInActive, awaitingMicroActionStart, microActionState.isActive, unlockFlowState, awaitingFlowBlockStart, flowBlockState.isSetupActive]);
 
   // ============================================
   // WEEKLY CHECK-IN DETECTION
@@ -1509,6 +1920,7 @@ What feels right?`
     // Only check once per session, after initialization, and when not in other flows
     if (hasCheckedWeeklyDue.current || isInitializing || !progress || !hasInitialized.current) return;
     if (weeklyCheckInActive || awaitingSprintRenewal || awaitingMicroActionStart || microActionState.isActive) return;
+    if (awaitingFlowBlockStart || flowBlockState.isSetupActive) return;
     if (unlockFlowState !== 'none') return;
     
     const checkWeeklyDue = async () => {
@@ -1567,7 +1979,7 @@ Takes about 2 minutes. Ready to start?`
     };
     
     checkWeeklyDue();
-  }, [progress, isInitializing, weeklyCheckInActive, awaitingSprintRenewal, awaitingMicroActionStart, microActionState.isActive, unlockFlowState]);
+  }, [progress, isInitializing, weeklyCheckInActive, awaitingSprintRenewal, awaitingMicroActionStart, microActionState.isActive, unlockFlowState, awaitingFlowBlockStart, flowBlockState.isSetupActive]);
 
   // Handle quick reply button clicks (no API call)
   const handleQuickReply = async (step: number) => {
@@ -1762,12 +2174,49 @@ Takes about 2 minutes. Ready to start?` }
     }
     
     // ============================================
+    // AWAITING FLOW BLOCK START (after Stage 4 unlock intro)
+    // ============================================
+    if (awaitingFlowBlockStart) {
+      const isAffirmative = ['yes', 'yeah', 'yep', 'sure', 'ok', 'okay', 'ready', 'let\'s go', 'lets go', 'go', 'y', 'absolutely', 'yes please'].includes(userInput) ||
+                           userInput.includes('yes') || 
+                           userInput.includes('ready') ||
+                           userInput.includes('let\'s do');
+      
+      // Add user message
+      setMessages(prev => [...prev, { role: 'user', content: input.trim() }]);
+      setInput('');
+      setAwaitingFlowBlockStart(false);
+      
+      if (isAffirmative) {
+        // Start the Flow Block setup
+        await startFlowBlockSetup();
+      } else {
+        // User declined for now
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: "No problem. When you're ready to set up your Flow Blocks, just click the Flow Block in the sidebar or say 'set up my flow blocks'. The practice will be waiting for you." 
+        }]);
+      }
+      return;
+    }
+    
+    // ============================================
     // MICRO-ACTION SETUP FLOW HANDLING (100% API)
     // ============================================
     if (microActionState.isActive) {
       console.log('[sendMessage] Routing to Micro-Action setup flow (API)');
       setInput('');
       await processMicroActionResponse(input.trim());
+      return;
+    }
+    
+    // ============================================
+    // FLOW BLOCK SETUP FLOW HANDLING (100% API)
+    // ============================================
+    if (flowBlockState.isSetupActive) {
+      console.log('[sendMessage] Routing to Flow Block setup flow (API)');
+      setInput('');
+      await processFlowBlockResponse(input.trim());
       return;
     }
     
@@ -1908,6 +2357,83 @@ Each completion reinforces the neural pathway. You're not just doing an action -
         setMessages(prev => [...prev, { 
           role: 'assistant', 
           content: `Micro-action logged. Keep building that identity proof! 💪` 
+        }]);
+      }
+      
+      setLoading(false);
+      return;
+    }
+    
+    // ============================================
+    // FLOW BLOCK SPECIAL HANDLING
+    // ============================================
+    if (normalizedId === 'flow_block') {
+      if (!flowBlockState.isSetupComplete) {
+        // No flow block setup yet - trigger setup flow
+        const userMessage = { role: 'user', content: `I want to set up my Flow Blocks.` };
+        setMessages(prev => [...prev, userMessage]);
+        await startFlowBlockSetup();
+        return;
+      }
+      
+      // Flow block is set up - show today's block or log completion
+      const todaysBlock = getTodaysFlowBlock(flowBlockState.weeklyMap);
+      
+      if (!todaysBlock) {
+        // No block scheduled today (weekend)
+        setMessages(prev => [...prev, 
+          { role: 'user', content: `I want to do my Flow Block.` },
+          { role: 'assistant', content: `No Flow Block scheduled for today. Your blocks run Monday-Friday. Enjoy the rest! 🌟` }
+        ]);
+        return;
+      }
+      
+      // Show today's block info and offer to start/complete
+      setMessages(prev => [...prev, { role: 'user', content: `I want to do my Flow Block.` }]);
+      setLoading(true);
+      
+      // Check if already completed today
+      const supabase = createClient();
+      const today = new Date();
+      const localDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      
+      const { data: existingLog } = await supabase
+        .from('practice_logs')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('practice_type', 'flow_block')
+        .eq('practice_date', localDate)
+        .single();
+      
+      if (existingLog) {
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: `Your Flow Block for today is already logged! ✓
+
+**${todaysBlock.task}** (${todaysBlock.domain})
+
+Great work staying consistent. See you tomorrow for the next block.` 
+        }]);
+      } else {
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: `**Today's Flow Block** 🎯
+
+**Task:** ${todaysBlock.task}
+**Domain:** ${todaysBlock.domain}
+**Type:** ${todaysBlock.flowType} / ${todaysBlock.category}
+**Duration:** ${todaysBlock.duration} minutes
+
+**Setup Check:**
+${flowBlockState.setupPreferences ? `
+• Location: ${todaysBlock.domain === 'Professional' ? flowBlockState.setupPreferences.professionalLocation : flowBlockState.setupPreferences.personalLocation}
+• Playlist: ${flowBlockState.setupPreferences.playlist}
+• Timer: ${flowBlockState.setupPreferences.timerMethod}
+• Notifications: OFF` : ''}
+
+**Intention:** "For the next ${todaysBlock.duration} minutes, my only job is ${todaysBlock.task}."
+
+Say **"starting"** when you begin, and **"done"** when complete to log your performance metrics.` 
         }]);
       }
       
@@ -2098,187 +2624,163 @@ Each completion reinforces the neural pathway. You're not just doing an action -
           <p className="text-gray-400 mb-4">{error || progressError}</p>
           <button
             onClick={() => window.location.reload()}
-            className="w-full px-6 py-2 text-white rounded-lg bg-[#ff9e19] hover:bg-orange-600"
+            className="px-4 py-2 bg-[#ff9e19] text-white rounded-lg hover:bg-orange-600 transition-colors"
           >
-            Reload Page
+            Reload
           </button>
         </div>
       </div>
     );
   }
 
-  const getUserName = () => {
-    if (user?.user_metadata?.first_name) return user.user_metadata.first_name;
-    if (user?.email) return user.email.split('@')[0];
-    return 'User';
-  };
-
-  const stageProgress = ((progress?.currentStage || 1) - 1) / 6 * 100;
-  
-  // Determine if we should show quick reply button
-  const currentQuickReply = openingType === 'first_time' && introStep < 3 ? introQuickReplies[introStep] : null;
-
   return (
-    <div className="flex h-screen bg-[#0a0a0a]">
-      {/* Desktop Sidebar - Your existing dashboard */}
-      <aside className="hidden md:block w-80 border-r border-gray-800 bg-[#111111] overflow-y-auto">
-        <div className="p-4">
-          <div className="mb-6">
-            <h1 className="text-xl font-bold text-white mb-1">IOS System Installer</h1>
-            <p className="text-xs text-gray-400 mb-2">Neural & Mental Operating System</p>
-            <p className="text-sm font-medium text-white">{getUserName()}</p>
+    <div className="flex h-screen bg-[#0a0a0a] text-white">
+      {/* Left Sidebar - Dashboard (Desktop Only) */}
+      {!isMobile && (
+        <aside className="w-72 bg-[#111111] border-r border-gray-800 flex flex-col overflow-y-auto">
+          <div className="p-4 border-b border-gray-800">
+            <h1 className="text-xl font-bold text-[#ff9e19]">IOS Dashboard</h1>
+            <p className="text-sm text-gray-400 mt-1">Welcome{getUserName() ? `, ${getUserName()}` : ''}</p>
           </div>
-
-          <div className="mb-6 p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-sm text-[#ff9e19] font-semibold">
-                Stage {progress?.currentStage || 1} of 7
-              </span>
-            </div>
-            <div className="text-xs text-gray-300 mb-2">
-              {getStageName(progress?.currentStage || 1)}
-            </div>
-            <div className="w-full rounded-full h-1.5 bg-[#1a1a1a]">
-              <div 
-                className="h-1.5 rounded-full transition-all bg-[#ff9e19]"
-                style={{ width: `${stageProgress}%` }}
-              />
-            </div>
-          </div>
-
-          <div className="mb-6 p-4 rounded-lg text-center border-2 bg-[#0a0a0a] border-[#ff9e19]">
-            <div className="text-xs text-gray-400 mb-1 uppercase tracking-wide">REwired Index</div>
-            <div className="flex items-center justify-center gap-2">
-              <div className="text-4xl font-bold text-[#ff9e19]">
-                {progress?.rewiredIndex ?? baselineData.rewiredIndex}
+          
+          <div className="p-4 space-y-4">
+            {/* Current Stage */}
+            <div className="p-3 bg-[#1a1a1a] rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-gray-400 uppercase tracking-wider">Current Stage</span>
+                <span className="text-sm font-bold text-[#ff9e19]">{progress?.currentStage || 1}/7</span>
               </div>
-              {progress?.rewiredDelta !== undefined && progress.rewiredDelta !== 0 && (
-                <span className={`text-sm font-semibold ${progress.rewiredDelta > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {progress.rewiredDelta > 0 ? '↑' : '↓'}{Math.abs(progress.rewiredDelta)}
+              <p className="text-white font-semibold">{getStageName(progress?.currentStage || 1)}</p>
+            </div>
+
+            {/* REwired Index */}
+            <div className="p-3 bg-[#1a1a1a] rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-gray-400 uppercase tracking-wider">REwired Index</span>
+                <span className={`text-sm font-bold ${getStatusColor(baselineData.rewiredIndex)}`}>
+                  {baselineData.rewiredIndex}/100
                 </span>
+              </div>
+              <div className="w-full rounded-full h-2 bg-[#2a2a2a]">
+                <div 
+                  className={`h-2 rounded-full transition-all ${getStatusColor(baselineData.rewiredIndex).replace('text-', 'bg-')}`}
+                  style={{ width: `${baselineData.rewiredIndex}%` }}
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-2">{getStatusTier(baselineData.rewiredIndex)}</p>
+            </div>
+
+            {/* Domain Scores */}
+            <div className="p-3 bg-[#1a1a1a] rounded-lg">
+              <span className="text-xs text-gray-400 uppercase tracking-wider block mb-3">Domain Scores</span>
+              
+              {/* Regulation */}
+              <div className="mb-3">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-gray-400">Regulation</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-[#10b981]">
+                      {(progress?.domainScores?.regulation ?? baselineData.domainScores.regulation).toFixed(1)}/5
+                    </span>
+                    {progress?.domainDeltas?.regulation !== undefined && progress.domainDeltas.regulation !== 0 && (
+                      <span className={`text-xs font-medium ${progress.domainDeltas.regulation > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {progress.domainDeltas.regulation > 0 ? '↑' : '↓'}{Math.abs(progress.domainDeltas.regulation).toFixed(1)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
+                  <div 
+                    className="h-2 rounded-full transition-all bg-[#10b981]"
+                    style={{ width: `${((progress?.domainScores?.regulation ?? baselineData.domainScores.regulation) / 5) * 100}%` }}
+                  />
+                </div>
+              </div>
+              
+              {/* Awareness */}
+              <div className="mb-3">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-gray-400">Awareness</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-[#3b82f6]">
+                      {(progress?.domainScores?.awareness ?? baselineData.domainScores.awareness).toFixed(1)}/5
+                    </span>
+                    {progress?.domainDeltas?.awareness !== undefined && progress.domainDeltas.awareness !== 0 && (
+                      <span className={`text-xs font-medium ${progress.domainDeltas.awareness > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {progress.domainDeltas.awareness > 0 ? '↑' : '↓'}{Math.abs(progress.domainDeltas.awareness).toFixed(1)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
+                  <div 
+                    className="h-2 rounded-full transition-all bg-[#3b82f6]"
+                    style={{ width: `${((progress?.domainScores?.awareness ?? baselineData.domainScores.awareness) / 5) * 100}%` }}
+                  />
+                </div>
+              </div>
+              
+              {/* Outlook */}
+              <div className="mb-3">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-gray-400">Outlook</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-[#f59e0b]">
+                      {(progress?.domainScores?.outlook ?? baselineData.domainScores.outlook).toFixed(1)}/5
+                    </span>
+                    {progress?.domainDeltas?.outlook !== undefined && progress.domainDeltas.outlook !== 0 && (
+                      <span className={`text-xs font-medium ${progress.domainDeltas.outlook > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {progress.domainDeltas.outlook > 0 ? '↑' : '↓'}{Math.abs(progress.domainDeltas.outlook).toFixed(1)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
+                  <div 
+                    className="h-2 rounded-full transition-all bg-[#f59e0b]"
+                    style={{ width: `${((progress?.domainScores?.outlook ?? baselineData.domainScores.outlook) / 5) * 100}%` }}
+                  />
+                </div>
+              </div>
+              
+              {/* Attention */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-gray-400">Attention</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-[#8b5cf6]">
+                      {(progress?.domainScores?.attention ?? baselineData.domainScores.attention).toFixed(1)}/5
+                    </span>
+                    {progress?.domainDeltas?.attention !== undefined && progress.domainDeltas.attention !== 0 && (
+                      <span className={`text-xs font-medium ${progress.domainDeltas.attention > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {progress.domainDeltas.attention > 0 ? '↑' : '↓'}{Math.abs(progress.domainDeltas.attention).toFixed(1)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
+                  <div 
+                    className="h-2 rounded-full transition-all bg-[#8b5cf6]"
+                    style={{ width: `${((progress?.domainScores?.attention ?? baselineData.domainScores.attention) / 5) * 100}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Average Delta indicator */}
+              {progress?.domainDeltas?.average !== undefined && progress.domainDeltas.average !== 0 && (
+                <div className="mt-2 pt-2 border-t border-gray-800">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-400">Avg. Weekly Delta</span>
+                    <span className={`text-sm font-semibold ${progress.domainDeltas.average > 0 ? 'text-green-400' : progress.domainDeltas.average < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                      {progress.domainDeltas.average > 0 ? '+' : ''}{progress.domainDeltas.average.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
               )}
             </div>
-            <div className={`text-xs font-medium mb-2 ${getStatusColor(progress?.rewiredIndex ?? baselineData.rewiredIndex)}`}>
-              {progress?.tier ?? getStatusTier(baselineData.rewiredIndex)}
-            </div>
-            <div className="w-full rounded-full h-1.5 bg-[#1a1a1a]">
-              <div 
-                className="h-1.5 rounded-full transition-all bg-[#ff9e19]"
-                style={{ width: `${progress?.rewiredIndex ?? baselineData.rewiredIndex}%` }}
-              />
-            </div>
           </div>
-
-          {/* Domain Scores with Deltas */}
-          <div className="space-y-3">
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Domain Scores</h3>
-            
-            {/* Regulation */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-sm text-gray-300">Regulation</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-[#3b82f6]">
-                    {(progress?.domainScores?.regulation ?? baselineData.domainScores.regulation).toFixed(1)}/5
-                  </span>
-                  {progress?.domainDeltas?.regulation !== undefined && progress.domainDeltas.regulation !== 0 && (
-                    <span className={`text-xs font-medium ${progress.domainDeltas.regulation > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {progress.domainDeltas.regulation > 0 ? '↑' : '↓'}{Math.abs(progress.domainDeltas.regulation).toFixed(1)}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
-                <div 
-                  className="h-2 rounded-full transition-all bg-[#3b82f6]"
-                  style={{ width: `${((progress?.domainScores?.regulation ?? baselineData.domainScores.regulation) / 5) * 100}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Awareness */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-sm text-gray-300">Awareness</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-[#10b981]">
-                    {(progress?.domainScores?.awareness ?? baselineData.domainScores.awareness).toFixed(1)}/5
-                  </span>
-                  {progress?.domainDeltas?.awareness !== undefined && progress.domainDeltas.awareness !== 0 && (
-                    <span className={`text-xs font-medium ${progress.domainDeltas.awareness > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {progress.domainDeltas.awareness > 0 ? '↑' : '↓'}{Math.abs(progress.domainDeltas.awareness).toFixed(1)}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
-                <div 
-                  className="h-2 rounded-full transition-all bg-[#10b981]"
-                  style={{ width: `${((progress?.domainScores?.awareness ?? baselineData.domainScores.awareness) / 5) * 100}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Outlook */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-sm text-gray-300">Outlook</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-[#f59e0b]">
-                    {(progress?.domainScores?.outlook ?? baselineData.domainScores.outlook).toFixed(1)}/5
-                  </span>
-                  {progress?.domainDeltas?.outlook !== undefined && progress.domainDeltas.outlook !== 0 && (
-                    <span className={`text-xs font-medium ${progress.domainDeltas.outlook > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {progress.domainDeltas.outlook > 0 ? '↑' : '↓'}{Math.abs(progress.domainDeltas.outlook).toFixed(1)}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
-                <div 
-                  className="h-2 rounded-full transition-all bg-[#f59e0b]"
-                  style={{ width: `${((progress?.domainScores?.outlook ?? baselineData.domainScores.outlook) / 5) * 100}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Attention */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-sm text-gray-300">Attention</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-[#8b5cf6]">
-                    {(progress?.domainScores?.attention ?? baselineData.domainScores.attention).toFixed(1)}/5
-                  </span>
-                  {progress?.domainDeltas?.attention !== undefined && progress.domainDeltas.attention !== 0 && (
-                    <span className={`text-xs font-medium ${progress.domainDeltas.attention > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {progress.domainDeltas.attention > 0 ? '↑' : '↓'}{Math.abs(progress.domainDeltas.attention).toFixed(1)}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
-                <div 
-                  className="h-2 rounded-full transition-all bg-[#8b5cf6]"
-                  style={{ width: `${((progress?.domainScores?.attention ?? baselineData.domainScores.attention) / 5) * 100}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Average Delta indicator */}
-            {progress?.domainDeltas?.average !== undefined && progress.domainDeltas.average !== 0 && (
-              <div className="mt-2 pt-2 border-t border-gray-800">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-400">Avg. Weekly Delta</span>
-                  <span className={`text-sm font-semibold ${progress.domainDeltas.average > 0 ? 'text-green-400' : progress.domainDeltas.average < 0 ? 'text-red-400' : 'text-gray-400'}`}>
-                    {progress.domainDeltas.average > 0 ? '+' : ''}{progress.domainDeltas.average.toFixed(2)}
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </aside>
+        </aside>
+      )}
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col">
@@ -2382,9 +2884,11 @@ Each completion reinforces the neural pathway. You're not just doing an action -
                 placeholder={
                   microActionState.isActive 
                     ? "Type your response..."
-                    : currentQuickReply 
-                      ? "Or type a question..." 
-                      : "Type your message..."
+                    : flowBlockState.isSetupActive
+                      ? "Type your response..."
+                      : currentQuickReply 
+                        ? "Or type a question..." 
+                        : "Type your message..."
                 }
                 disabled={loading}
                 rows={1}
@@ -2401,9 +2905,11 @@ Each completion reinforces the neural pathway. You're not just doing an action -
             <p className="text-xs text-gray-500 mt-2 text-center">
               {microActionState.isActive
                 ? "Setting up your identity - type your responses"
-                : currentQuickReply 
-                  ? "Click the button above or type your own response" 
-                  : "Press Enter to send, Shift+Enter for new line"}
+                : flowBlockState.isSetupActive
+                  ? "Setting up your Flow Blocks - type your responses"
+                  : currentQuickReply 
+                    ? "Click the button above or type your own response" 
+                    : "Press Enter to send, Shift+Enter for new line"}
             </p>
           </div>
         </div>
