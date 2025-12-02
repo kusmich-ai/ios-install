@@ -1289,7 +1289,7 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
   const sprintResult = await startNewFlowBlockSprint(
     user.id,  // Make sure you have access to userId here
     completion.weeklyMap,  // ✅ Correct variable
-    completion.preferences,
+    completion.setupPreferences,
     completion.domains,
     completion.focusType
   );
@@ -1299,7 +1299,7 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
     conversationHistory: [...updatedHistory, { role: 'assistant', content: cleanResponse }],
    extractedDomains: completion.domains,
 extractedWeeklyMap: completion.weeklyMap,
-extractedPreferences: completion.preferences,
+extractedPreferences: completion.setupPreferences,
 focusType: completion.focusType,
     isComplete: true,
     isActive: false,
