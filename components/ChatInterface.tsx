@@ -1696,7 +1696,7 @@ ${statusItems.join('\n')}`;
           .gte('completed_at', `${today}T00:00:00`)
           .lt('completed_at', `${today}T23:59:59`);
         
-        const completedToday = todayLogs?.map(log => log.practice_type) || [];
+        const completedToday = todayLogs?.map((log: { practice_type: string }) => log.practice_type) || [];
         setPracticesCompletedToday(completedToday);
         
         // Generate opening message based on type
