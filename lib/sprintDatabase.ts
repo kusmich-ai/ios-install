@@ -1,7 +1,7 @@
 // lib/sprintDatabase.ts
 // Database functions for sprint tracking
 
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase-client';
 import type { WeeklyMapEntry, SetupPreferences } from '@/lib/flowBlockAPI';
 
 // ============================================
