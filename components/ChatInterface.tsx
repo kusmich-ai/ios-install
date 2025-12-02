@@ -1124,10 +1124,10 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
   
   // Start new sprint in database and get sprint info
   const sprintResult = await startNewMicroActionSprint(
-    user.id,  // Make sure you have access to userId here
-    completion.identity,
-    completion.action
-  );
+          user.id,  // ✅ Was 'userId'
+          completion.identity,
+          completion.action
+        );
   
   // Also save to your existing table if you still need it
   await saveMicroActionSetup(completion.identity, completion.action, sprintResult.sprintNumber);
@@ -1281,32 +1281,32 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
       // Check for completion marker
       const completion = parseFlowBlockCompletionMarker(assistantResponse);
       
-      if (completion) {
-  const cleanResponse = cleanFlowBlockResponseForDisplay(assistantResponse);
-  setMessages(prev => [...prev, { role: 'assistant', content: cleanResponse }]);
-  
-  // Start new sprint in database and get sprint info
-  const sprintResult = await startNewFlowBlockSprint(
-    user.id,  // Make sure you have access to userId here
-    completion.weeklyMap,  // ✅ Correct variable
-    completion.setupPreferences,
-    completion.domains,
-    completion.focusType
-  );
-  
-  setFlowBlockState(prev => ({
-    ...prev,
-    conversationHistory: [...updatedHistory, { role: 'assistant', content: cleanResponse }],
-   extractedDomains: completion.domains,
-extractedWeeklyMap: completion.weeklyMap,
-extractedPreferences: completion.setupPreferences,
-focusType: completion.focusType,
-    isComplete: true,
-    isActive: false,
-    sprintStartDate: sprintResult.startDate,
-    sprintNumber: sprintResult.sprintNumber
-  }));
-} else {
+      if (completion) {  // ✅ Fix 1: Was 'flowCompletion'
+        const cleanResponse = cleanFlowBlockResponseForDisplay(assistantResponse);
+        setMessages(prev => [...prev, { role: 'assistant', content: cleanResponse }]);
+        
+        // Start new sprint in database and get sprint info
+        const sprintResult = await startNewFlowBlockSprint(
+          user.id,  // ✅ Fix 2: Was 'userId'
+          completion.weeklyMap,  // ✅ Fix 3: Was 'flowCompletion.weeklyMap'
+          completion.setupPreferences,  // ✅ Fix 4: Was 'flowCompletion.preferences'
+          completion.domains,  // ✅ Fix 5: Was 'flowCompletion.domains'
+          completion.focusType as 'concentrated' | 'distributed'  // ✅ Fix 6: Type assertion + was 'flowCompletion'
+        );
+        
+        setFlowBlockState(prev => ({
+          ...prev,
+          conversationHistory: [...updatedHistory, { role: 'assistant', content: cleanResponse }],
+          extractedDomains: completion.domains,  // ✅ Fix 7: Was 'flowCompletion.domains'
+          extractedWeeklyMap: completion.weeklyMap,  // ✅ Fix 8: Was 'flowCompletion.weeklyMap'
+          extractedPreferences: completion.setupPreferences,  // ✅ Fix 9: Was 'flowCompletion.preferences'
+          focusType: completion.focusType,  // ✅ Fix 10: Was 'flowCompletion.focusType'
+          isComplete: true,
+          isActive: false,
+          sprintStartDate: sprintResult.startDate,
+          sprintNumber: sprintResult.sprintNumber
+        }));
+      } else {
         // Normal response - continue conversation
         setMessages(prev => [...prev, { role: 'assistant', content: assistantResponse }]);
         
