@@ -20,14 +20,8 @@ import {
   areAllPracticesComplete,
   getPracticeById,
   isToolUnlocked,
-  getStageName as getStageNameFromHelper,
-  getStatusTier as getStatusTierFromHelper,
-  getStatusColor as getStatusColorFromHelper,
-  calculateDaysInStage,
-  getTimeOfDayGreeting,
   type TemplateContext,
-  type SelectionContext,
-  type TemplateTrigger
+  type SelectionContext
 } from '@/lib/templates';
 import { 
   startNewMicroActionSprint, 
@@ -71,6 +65,14 @@ import {
 } from '@/lib/flowBlockAPI';
 
 // ============================================
+// DEV LOGGING UTILITY
+// ============================================
+const isDev = process.env.NODE_ENV === 'development';
+const devLog = (tag: string, ...args: any[]) => {
+  if (isDev) console.log(tag, ...args);
+};
+
+// ============================================
 // EXTENDED FLOW BLOCK STATE (adds todaysBlock for local tracking)
 // ============================================
 interface ExtendedFlowBlockState extends FlowBlockState {
@@ -105,7 +107,7 @@ function renderMarkdown(text: string): string {
     .replace(/\n/g, '<br />');
 }
 
-// Get stage name from number (local version for backward compatibility)
+// Get stage name from number
 function getStageName(stage: number): string {
   const names: { [key: number]: string } = {
     1: 'Neural Priming',
@@ -867,15 +869,13 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
           }));
         }
       } catch (error) {
-        console.log('[FlowBlock] No existing config found');
+        devLog('[FlowBlock]', 'No existing config found');
       }
     };
     
     loadFlowBlockStatus();
   }, [user?.id]);
 
-  // ⬇️ INSERT NEW useEffect HERE ⬇️
-  
   // Load sprint state from database on init
   useEffect(() => {
     const loadSprintState = async () => {
@@ -894,7 +894,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
             sprintStartDate: microActionSprint.start_date,
             sprintNumber: microActionSprint.sprint_number
           }));
-          console.log('[Sprint] Loaded MicroAction sprint:', microActionSprint.sprint_number);
+          devLog('[Sprint]', 'Loaded MicroAction sprint:', microActionSprint.sprint_number);
         }
         
         // Update FlowBlock sprint number if needed
@@ -903,48 +903,10 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
             ...prev,
             sprintNumber: flowBlockSprint.sprint_number
           }));
-          console.log('[Sprint] Loaded FlowBlock sprint:', flowBlockSprint.sprint_number);
+          devLog('[Sprint]', 'Loaded FlowBlock sprint:', flowBlockSprint.sprint_number);
         }
       } catch (error) {
-        console.log('[Sprint] Error loading sprint state:', error);
-      }
-    };
-    
-    loadSprintState();
-  }, [user?.id]);
-
-  // ============================================
-  // UNLOCK ELIGIBILITY CHECK
-  // ============================================
-
-  // Load sprint state from database on init
-  useEffect(() => {
-    const loadSprintState = async () => {
-      if (!user?.id) return;
-      
-      try {
-const { microActionSprint, flowBlockSprint } = await loadActiveSprintsForUser(user.id);
-if (microActionSprint) {
-  setMicroActionState(prev => ({
-    ...prev,
-    extractedIdentity: microActionSprint.identity,
-    extractedAction: microActionSprint.action,
-    isComplete: true,
-    sprintStartDate: microActionSprint.start_date,
-    sprintNumber: microActionSprint.sprint_number
-  }));
-  console.log('[Sprint] Loaded MicroAction sprint:', microActionSprint.sprint_number);
-}
-
-if (flowBlockSprint) {
-  setFlowBlockState(prev => ({
-    ...prev,
-    sprintNumber: flowBlockSprint.sprint_number
-  }));
-  console.log('[Sprint] Loaded FlowBlock sprint:', flowBlockSprint.sprint_number);
-}
-      } catch (error) {
-        console.log('[Sprint] Error loading sprint state:', error);
+        devLog('[Sprint]', 'Error loading sprint state:', error);
       }
     };
     
@@ -963,7 +925,7 @@ if (flowBlockSprint) {
     if (awaitingFlowBlockStart || flowBlockState.isActive) return;
     
     // Only check if user is eligible for unlock
-    console.log('[ChatInterface] Unlock check:', {
+    devLog('[ChatInterface]', 'Unlock check:', {
       unlockEligible: progress.unlockEligible,
       currentStage: progress.currentStage,
       adherence: progress.adherencePercentage,
@@ -973,7 +935,7 @@ if (flowBlockSprint) {
     
     if (progress.unlockEligible && progress.currentStage < 7) {
       hasCheckedUnlock.current = true;
-      console.log('[ChatInterface] User eligible for unlock! Showing eligible message...');
+      devLog('[ChatInterface]', 'User eligible for unlock! Showing eligible message...');
       
       // Get the eligible message from templates
       const currentStageTemplates = templateLibrary.stages[progress.currentStage as keyof typeof templateLibrary.stages];
@@ -1053,7 +1015,7 @@ if (flowBlockSprint) {
         avg_delta_at_unlock: progress?.domainDeltas?.average || 0
       });
       
-      console.log('[ChatInterface] Stage unlock successful:', pendingUnlockStage);
+      devLog('[ChatInterface]', 'Stage unlock successful:', pendingUnlockStage);
       
       // Refresh progress
       if (refetchProgress) {
@@ -1102,11 +1064,11 @@ if (flowBlockSprint) {
     const newStageTemplates = templateLibrary.stages[pendingUnlockStage as keyof typeof templateLibrary.stages];
     
     // Type-safe access (Stage 1 uses 'ritualIntro', other stages use 'intro')
-if (newStageTemplates && 'intro' in newStageTemplates && typeof newStageTemplates.intro === 'string') {
-  const templateContext = buildTemplateContext();
-  const processedMessage = processTemplate(newStageTemplates.intro, templateContext);
-  setMessages(prev => [...prev, { role: 'assistant', content: processedMessage }]);
-}
+    if (newStageTemplates && 'intro' in newStageTemplates && typeof newStageTemplates.intro === 'string') {
+      const templateContext = buildTemplateContext();
+      const processedMessage = processTemplate(newStageTemplates.intro, templateContext);
+      setMessages(prev => [...prev, { role: 'assistant', content: processedMessage }]);
+    }
     
     // Handle stage-specific setup flows
     if (pendingUnlockStage === 3) {
@@ -1133,7 +1095,7 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
   
   // Start Micro-Action setup flow (100% API version)
   const startMicroActionSetup = useCallback(async () => {
-    console.log('[MicroAction] Starting setup flow (100% API)');
+    devLog('[MicroAction]', 'Starting setup flow (100% API)');
     
     // Initialize state
     setMicroActionState(prev => ({
@@ -1153,7 +1115,7 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
   const processMicroActionResponse = useCallback(async (userResponse: string) => {
     if (!microActionState.isActive) return;
     
-    console.log('[MicroAction] Processing response (API):', userResponse);
+    devLog('[MicroAction]', 'Processing response (API):', userResponse);
     
     // Add user message to chat
     setMessages(prev => [...prev, { role: 'user', content: userResponse }]);
@@ -1183,36 +1145,36 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
       const data = await response.json();
       let assistantResponse = data.response || data.content || '';
       
-      console.log('[MicroAction] API response:', assistantResponse);
+      devLog('[MicroAction]', 'API response:', assistantResponse);
       
       // Check for completion marker
       const completion = parseCompletionMarker(assistantResponse);
       
       if (completion) {
-  const cleanResponse = cleanResponseForDisplay(assistantResponse);
-  setMessages(prev => [...prev, { role: 'assistant', content: cleanResponse }]);
-  
-  // Start new sprint in database and get sprint info
-  const sprintResult = await startNewMicroActionSprint(
-          user.id,  // ✅ Was 'userId'
+        const cleanResponse = cleanResponseForDisplay(assistantResponse);
+        setMessages(prev => [...prev, { role: 'assistant', content: cleanResponse }]);
+        
+        // Start new sprint in database and get sprint info
+        const sprintResult = await startNewMicroActionSprint(
+          user.id,
           completion.identity,
           completion.action
         );
-  
-  // Also save to your existing table if you still need it
-  await saveMicroActionSetup(completion.identity, completion.action, sprintResult.sprintNumber);
-  
-  setMicroActionState(prev => ({
-    ...prev,
-    conversationHistory: [...updatedHistory, { role: 'assistant', content: cleanResponse }],
-    extractedIdentity: completion.identity,
-    extractedAction: completion.action,
-    isComplete: true,
-    isActive: false,
-    sprintStartDate: sprintResult.startDate,
-    sprintNumber: sprintResult.sprintNumber
-  }));
-} else {
+        
+        // Also save to your existing table if you still need it
+        await saveMicroActionSetup(completion.identity, completion.action, sprintResult.sprintNumber);
+        
+        setMicroActionState(prev => ({
+          ...prev,
+          conversationHistory: [...updatedHistory, { role: 'assistant', content: cleanResponse }],
+          extractedIdentity: completion.identity,
+          extractedAction: completion.action,
+          isComplete: true,
+          isActive: false,
+          sprintStartDate: sprintResult.startDate,
+          sprintNumber: sprintResult.sprintNumber
+        }));
+      } else {
         // Normal response - continue conversation
         setMessages(prev => [...prev, { role: 'assistant', content: assistantResponse }]);
         
@@ -1231,11 +1193,11 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
     }
     
     setLoading(false);
-  }, [microActionState]);
+  }, [microActionState, user?.id]);
 
   // Save Micro-Action setup to database
   const saveMicroActionSetup = async (identity: string, microAction: string, sprintNumber: number) => {
-    console.log('[MicroAction] Saving setup:', { identity, microAction, sprintNumber });
+    devLog('[MicroAction]', 'Saving setup:', { identity, microAction, sprintNumber });
     
     try {
       const supabase = createClient();
@@ -1286,7 +1248,7 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
 
   // Cancel Micro-Action setup (if user wants to exit)
   const cancelMicroActionSetup = useCallback(() => {
-    console.log('[MicroAction] Setup cancelled');
+    devLog('[MicroAction]', 'Setup cancelled');
     setMicroActionState(initialMicroActionState);
   }, []);
 
@@ -1296,7 +1258,7 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
   
   // Start Flow Block setup flow (100% API version)
   const startFlowBlockSetup = useCallback(async () => {
-    console.log('[FlowBlock] Starting setup flow (100% API)');
+    devLog('[FlowBlock]', 'Starting setup flow (100% API)');
     
     // Initialize state
     setFlowBlockState(prev => ({
@@ -1316,7 +1278,7 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
   const processFlowBlockResponse = useCallback(async (userResponse: string) => {
     if (!flowBlockState.isActive) return;
     
-    console.log('[FlowBlock] Processing response (API):', userResponse);
+    devLog('[FlowBlock]', 'Processing response (API):', userResponse);
     
     // Add user message to chat
     setMessages(prev => [...prev, { role: 'user', content: userResponse }]);
@@ -1346,36 +1308,36 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
       const data = await response.json();
       let assistantResponse = data.response || data.content || '';
       
-      console.log('[FlowBlock] API response:', assistantResponse);
+      devLog('[FlowBlock]', 'API response:', assistantResponse);
       
       // Check for completion marker
       const completion = parseFlowBlockCompletionMarker(assistantResponse);
       
-      if (completion) {  // ✅ Fix 1: Was 'flowCompletion'
+      if (completion) {
         const cleanResponse = cleanFlowBlockResponseForDisplay(assistantResponse);
         setMessages(prev => [...prev, { role: 'assistant', content: cleanResponse }]);
         
         // Start new sprint in database and get sprint info
         const sprintResult = await startNewFlowBlockSprint(
-          user.id,  // ✅ Fix 2: Was 'userId'
-          completion.weeklyMap,  // ✅ Fix 3: Was 'flowCompletion.weeklyMap'
-          completion.setupPreferences,  // ✅ Fix 4: Was 'flowCompletion.preferences'
-          completion.domains,  // ✅ Fix 5: Was 'flowCompletion.domains'
-          completion.focusType as 'concentrated' | 'distributed'  // ✅ Fix 6: Type assertion + was 'flowCompletion'
+          user.id,
+          completion.weeklyMap,
+          completion.setupPreferences,
+          completion.domains,
+          completion.focusType as 'concentrated' | 'distributed'
         );
         
         setFlowBlockState(prev => ({
-  ...prev,
-  conversationHistory: [...updatedHistory, { role: 'assistant', content: cleanResponse }],
-  extractedDomains: completion.domains,
-  extractedWeeklyMap: completion.weeklyMap,
-  extractedPreferences: completion.setupPreferences,
-  focusType: completion.focusType as 'concentrated' | 'distributed' | null,  // ✅ Add type assertion here too
-  isComplete: true,
-  isActive: false,
-  sprintStartDate: sprintResult.startDate,
-  sprintNumber: sprintResult.sprintNumber
-}));
+          ...prev,
+          conversationHistory: [...updatedHistory, { role: 'assistant', content: cleanResponse }],
+          extractedDomains: completion.domains,
+          extractedWeeklyMap: completion.weeklyMap,
+          extractedPreferences: completion.setupPreferences,
+          focusType: completion.focusType as 'concentrated' | 'distributed' | null,
+          isComplete: true,
+          isActive: false,
+          sprintStartDate: sprintResult.startDate,
+          sprintNumber: sprintResult.sprintNumber
+        }));
       } else {
         // Normal response - continue conversation
         setMessages(prev => [...prev, { role: 'assistant', content: assistantResponse }]);
@@ -1395,108 +1357,49 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
     }
     
     setLoading(false);
-  }, [flowBlockState]);
-
-  // Complete Flow Block setup and save to database
-  const completeFlowBlockSetup = async (config: FlowBlockConfig) => {
-    console.log('[FlowBlock] Setup complete:', config);
-    
-    try {
-      const supabase = createClient();
-      
-      // Insert into flow_block_config table
-      const { error: insertError } = await supabase
-        .from('flow_block_config')
-        .upsert({
-          user_id: user.id,
-          domains: config.domains,
-          weekly_map: config.weeklyMap,
-          setup_preferences: config.setupPreferences,
-          focus_type: config.focusType,
-          sprint_start_date: config.sprintStartDate,
-          sprint_number: config.sprintNumber,
-          is_active: true
-        }, { onConflict: 'user_id' });
-      
-      if (insertError) {
-        console.error('[FlowBlock] Insert error:', insertError);
-        throw insertError;
-      }
-      
-      // Update user_progress to mark flow block setup as complete
-      await supabase
-        .from('user_progress')
-        .update({ flow_block_setup_completed: true })
-        .eq('user_id', user.id);
-      
-      // Refresh progress
-      if (refetchProgress) {
-        await refetchProgress();
-      }
-    } catch (error) {
-      console.error('[FlowBlock] Failed to save setup:', error);
-    }
-  };
-
-  // Cancel Flow Block setup (if user wants to exit)
-  const cancelFlowBlockSetup = useCallback(() => {
-    console.log('[FlowBlock] Setup cancelled');
-    setFlowBlockState(prev => ({
-      ...prev,
-      isActive: false,
-      conversationHistory: []
-    }));
-  }, []);
+  }, [flowBlockState, user?.id]);
 
   // ============================================
   // WEEKLY CHECK-IN HANDLERS
   // ============================================
   
-  const processWeeklyCheckInResponse = async (userInput: string) => {
-    const input = userInput.trim().toLowerCase();
+  const processWeeklyCheckInResponse = async (response: string) => {
+    const rating = parseFloat(response);
+    const currentStage = progress?.currentStage || 1;
     
-    // Step 0: User confirms they want to start
+    // Validate rating
     if (weeklyCheckInStep === 0) {
-      const isAffirmative = ['yes', 'yeah', 'yep', 'sure', 'ok', 'okay', 'ready', 'let\'s go', 'lets go', 'y'].some(
-        word => input.includes(word)
+      // User confirmed they're ready to start
+      const isReady = ['yes', 'yeah', 'yep', 'sure', 'ok', 'okay', 'ready', 'let\'s go', 'lets go', 'y'].some(
+        word => response.toLowerCase().includes(word)
       );
       
-      if (isAffirmative) {
+      if (isReady) {
         setWeeklyCheckInStep(1);
         setMessages(prev => [...prev, {
           role: 'assistant',
-          content: `Great. Five quick ratings (0-5 scale).
-
-${weeklyDomainQuestions.regulation}`
+          content: weeklyDomainQuestions.regulation
         }]);
       } else {
-        // User declined
         setWeeklyCheckInActive(false);
-        setWeeklyCheckInStep(0);
         setMessages(prev => [...prev, {
           role: 'assistant',
-          content: "No problem. The check-in will be here when you're ready. Just say 'weekly check-in' anytime."
+          content: "No problem. Let me know when you're ready for your weekly check-in."
         }]);
       }
       return;
     }
     
-    // Parse numeric rating from input
-    const ratingMatch = input.match(/[0-5]/);
-    const rating = ratingMatch ? parseInt(ratingMatch[0]) : null;
-    
-    if (rating === null) {
+    // Validate numeric responses
+    if (isNaN(rating) || rating < 0 || rating > 5) {
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: "I need a number from 0-5. Try again?"
+        content: "Please enter a number between 0 and 5."
       }]);
       return;
     }
     
-    // Steps 1-4: Domain ratings
-    // Steps 5: Qualitative rating
-    const currentStage = progress?.currentStage || 1;
-    
+    // Process based on current step
     switch (weeklyCheckInStep) {
       case 1: // Regulation
         setWeeklyCheckInScores(prev => ({ ...prev, regulation: rating }));
@@ -1603,7 +1506,7 @@ ${qualQuestion} (0-5)`
         throw insertError;
       }
       
-      console.log('[WeeklyCheckIn] Saved successfully');
+      devLog('[WeeklyCheckIn]', 'Saved successfully');
       
       // Refresh progress
       if (refetchProgress) {
@@ -1860,7 +1763,7 @@ ${statusItems.join('\n')}`;
     const normalizedId = normalizePracticeId(practiceId);
     const practiceName = practiceIdToName[normalizedId] || practiceId;
     
-    console.log('[ChatInterface] Practice clicked:', { practiceId, normalizedId, practiceName });
+    devLog('[ChatInterface]', 'Practice clicked:', { practiceId, normalizedId, practiceName });
     
     // Add a message to chat about starting the practice
     setMessages(prev => [...prev, { 
@@ -1874,7 +1777,7 @@ ${statusItems.join('\n')}`;
   // ============================================
   
   const handleToolClick = useCallback((toolId: string) => {
-    console.log('[ChatInterface] Tool clicked:', toolId);
+    devLog('[ChatInterface]', 'Tool clicked:', toolId);
     
     // Handle different tool types
     switch (toolId) {
@@ -1898,12 +1801,12 @@ ${statusItems.join('\n')}`;
           if (todaysBlock) {
             setMessages(prev => [...prev, { 
               role: 'assistant', 
-              content: `Today's Flow Block: **${todaysBlock.task}** (${todaysBlock.domain})\n\nDuration: ${todaysBlock.duration} minutes\n\nReady to start your session?`
+              content: `**Today's Flow Block:**\n\n${todaysBlock.task} (${todaysBlock.domain})\n\n${todaysBlock.duration} minutes, ${todaysBlock.flowType} work.\n\nReady to start?`
             }]);
           } else {
             setMessages(prev => [...prev, { 
               role: 'assistant', 
-              content: `No Flow Block scheduled for today. Would you like to adjust your weekly schedule?`
+              content: "No Flow Block scheduled for today. Would you like to update your weekly schedule?"
             }]);
           }
         } else {
@@ -1911,45 +1814,33 @@ ${statusItems.join('\n')}`;
         }
         break;
         
-      case 'weekly_checkin':
-        // Trigger weekly check-in
-        setWeeklyCheckInActive(true);
-        setWeeklyCheckInStep(0);
-        setMessages(prev => [...prev, { 
-          role: 'assistant', 
-          content: `**Weekly Check-In**\n\nTime to assess your progress across the four domains. This takes about 2 minutes and helps track your transformation.\n\nReady to begin?`
-        }]);
-        break;
-        
       default:
-        // Generic tool response
         setMessages(prev => [...prev, { 
           role: 'assistant', 
-          content: `Opening ${toolId}...`
+          content: `Tool "${toolId}" is not yet implemented. Coming soon!` 
         }]);
     }
   }, [microActionState, flowBlockState, startMicroActionSetup, startFlowBlockSetup]);
 
   // ============================================
-  // PROGRESS UPDATE HANDLER
+  // PROGRESS UPDATE HANDLER (from toolbar)
   // ============================================
   
-  const handleProgressUpdate = useCallback(async () => {
-    console.log('[ChatInterface] Progress update requested');
+  const handleProgressUpdate = useCallback(() => {
     if (refetchProgress) {
-      await refetchProgress();
+      refetchProgress();
     }
   }, [refetchProgress]);
 
   // ============================================
-  // PRACTICE COMPLETED HANDLER
+  // PRACTICE COMPLETED HANDLER (from toolbar)
   // ============================================
   
   const handlePracticeCompleted = useCallback((practiceId: string) => {
     const normalizedId = normalizePracticeId(practiceId);
     const practiceName = practiceIdToName[normalizedId] || practiceId;
     
-    console.log('[ChatInterface] Practice completed callback:', { practiceId, normalizedId, practiceName });
+    devLog('[ChatInterface]', 'Practice completed callback:', { practiceId, normalizedId, practiceName });
     
     // Add completion message
     setMessages(prev => [...prev, { 
