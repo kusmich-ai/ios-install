@@ -112,11 +112,12 @@ export async function POST(req) {
       console.log('[Practice Log] Using client-provided date:', today);
     } else {
       // Fallback to server time (UTC on Vercel)
+      // WARNING: This will be wrong for users not in UTC timezone!
       const serverDate = new Date();
       today = serverDate.getFullYear() + '-' + 
         String(serverDate.getMonth() + 1).padStart(2, '0') + '-' + 
         String(serverDate.getDate()).padStart(2, '0');
-      console.log('[Practice Log] Using server date (UTC):', today);
+      console.log('[Practice Log] WARNING: Using server date (UTC fallback):', today);
     }
     const now = new Date().toISOString();
 
@@ -278,6 +279,7 @@ export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
     let userId = searchParams.get('userId');
+    const localDate = searchParams.get('localDate'); // Accept client's local date
 
     // Try to get from session if not provided
     if (!userId) {
@@ -312,7 +314,22 @@ export async function GET(req) {
       .single();
 
     const currentStage = progressData?.current_stage || 1;
-    const today = new Date().toISOString().split('T')[0];
+    
+    // Use client-provided local date if available, otherwise fall back to server date
+    // IMPORTANT: Server runs in UTC, so without localDate, this will be wrong for non-UTC users
+    let today;
+    if (localDate && /^\d{4}-\d{2}-\d{2}$/.test(localDate)) {
+      today = localDate;
+      console.log('[Practice Log GET] Using client-provided date:', today);
+    } else {
+      // Fallback to server time (UTC on Vercel)
+      // WARNING: This will be wrong for users not in UTC timezone!
+      const serverDate = new Date();
+      today = serverDate.getFullYear() + '-' + 
+        String(serverDate.getMonth() + 1).padStart(2, '0') + '-' + 
+        String(serverDate.getDate()).padStart(2, '0');
+      console.log('[Practice Log GET] WARNING: Using server date (UTC fallback):', today);
+    }
 
     const { data: todayLogs } = await supabaseAdmin
       .from('practice_logs')
