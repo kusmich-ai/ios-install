@@ -1109,16 +1109,11 @@ if (newStageTemplates && 'intro' in newStageTemplates && typeof newStageTemplate
 }
     
     // Handle stage-specific setup flows
-    if (pendingUnlockStage === 3) {
-      // Stage 3: Trigger Micro-Action setup
-      setAwaitingMicroActionStart(true);
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: `The new practice for Stage 3 is the **Morning Micro-Action** — a daily 2-3 minute identity proof that reinforces who you're becoming.
-
-Ready to set up your identity and micro-action? This takes about 5 minutes.`
-      }]);
-    } else if (pendingUnlockStage === 4) {
+if (pendingUnlockStage === 3) {
+  // Stage 3: Go directly to Micro-Action setup (confirmation template already explained it)
+  setAwaitingMicroActionStart(true);
+  // No additional message needed - confirmation template ended with "Ready to run the Identity Installation Protocol?"
+} else if (pendingUnlockStage === 4) {
       // Stage 4: Trigger Flow Block setup
       setAwaitingFlowBlockStart(true);
       setMessages(prev => [...prev, { 
@@ -2496,7 +2491,7 @@ ${statusItems.join('\n')}`;
                   onClick={handleStartNewStageIntro}
                   className="px-6 py-3 bg-[#ff9e19] hover:bg-orange-600 text-white font-semibold rounded-xl transition-colors shadow-lg"
                 >
-                  Learn the new practices
+                  Start Identity Installation
                 </button>
               </div>
             )}
