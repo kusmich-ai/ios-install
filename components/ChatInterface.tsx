@@ -2356,6 +2356,93 @@ ${statusItems.join('\n')}`;
                 </div>
               )}
             </div>
+            {/* Unlock Progress */}
+            {progress && progress.currentStage < 6 && progress.unlockProgress && (
+              <div className={`bg-gray-900 rounded-lg p-4 ${
+                progress.unlockEligible 
+                  ? 'ring-1 ring-emerald-500/50' 
+                  : ''
+              }`}>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-medium text-gray-300">
+                    {progress.unlockEligible ? '🔓 Unlock Available' : 'Unlock Progress'}
+                  </h3>
+                  <span className="text-xs text-gray-500">→ Stage {progress.currentStage + 1}</span>
+                </div>
+                
+                {progress.unlockEligible ? (
+                  <p className="text-xs text-emerald-400">
+                    You've proven consistency and transformation. Ready to advance!
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {/* Days Progress */}
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs w-14 ${progress.unlockProgress.daysMet ? 'text-green-400' : 'text-gray-400'}`}>
+                        {progress.unlockProgress.daysMet ? '✓' : ''} Days
+                      </span>
+                      <div className="flex-1 h-1.5 bg-[#1a1a1a] rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full transition-all ${progress.unlockProgress.daysMet ? 'bg-green-500' : 'bg-[#ff9e19]'}`}
+                          style={{ width: `${Math.min(100, ((progress.daysInStage || 0) / progress.unlockProgress.requiredDays) * 100)}%` }}
+                        />
+                      </div>
+                      <span className="text-xs text-gray-500 w-10 text-right">
+                        {progress.daysInStage || 0}/{progress.unlockProgress.requiredDays}
+                      </span>
+                    </div>
+                    
+                    {/* Adherence Progress */}
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs w-14 ${progress.unlockProgress.adherenceMet ? 'text-green-400' : 'text-gray-400'}`}>
+                        {progress.unlockProgress.adherenceMet ? '✓' : ''} Adhere
+                      </span>
+                      <div className="flex-1 h-1.5 bg-[#1a1a1a] rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full transition-all ${progress.unlockProgress.adherenceMet ? 'bg-green-500' : 'bg-[#ff9e19]'}`}
+                          style={{ width: `${Math.min(100, (progress.adherencePercentage / progress.unlockProgress.requiredAdherence) * 100)}%` }}
+                        />
+                      </div>
+                      <span className="text-xs text-gray-500 w-10 text-right">
+                        {progress.adherencePercentage}%
+                      </span>
+                    </div>
+                    
+                    {/* Delta/Growth Progress */}
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs w-14 ${progress.unlockProgress.deltaMet ? 'text-green-400' : 'text-gray-400'}`}>
+                        {progress.unlockProgress.deltaMet ? '✓' : ''} Growth
+                      </span>
+                      <div className="flex-1 h-1.5 bg-[#1a1a1a] rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full transition-all ${progress.unlockProgress.deltaMet ? 'bg-green-500' : 'bg-[#ff9e19]'}`}
+                          style={{ width: progress.unlockProgress.deltaMet ? '100%' : `${Math.min(100, Math.max(0, ((progress.domainDeltas?.average || 0) / progress.unlockProgress.requiredDelta) * 100))}%` }}
+                        />
+                      </div>
+                      <span className="text-xs text-gray-500 w-10 text-right">
+                        {progress.unlockProgress.deltaMet ? '✓' : `+${(progress.domainDeltas?.average || 0).toFixed(1)}`}
+                      </span>
+                    </div>
+                    
+                    {/* Weekly Check-in */}
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs w-14 ${progress.unlockProgress.qualitativeMet ? 'text-green-400' : 'text-gray-400'}`}>
+                        {progress.unlockProgress.qualitativeMet ? '✓' : ''} Check-in
+                      </span>
+                      <div className="flex-1 h-1.5 bg-[#1a1a1a] rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full transition-all ${progress.unlockProgress.qualitativeMet ? 'bg-green-500' : 'bg-gray-600'}`}
+                          style={{ width: progress.unlockProgress.qualitativeMet ? '100%' : '0%' }}
+                        />
+                      </div>
+                      <span className="text-xs text-gray-500 w-10 text-right">
+                        {progress.unlockProgress.qualitativeMet ? '✓' : '—'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </aside>
       )}
