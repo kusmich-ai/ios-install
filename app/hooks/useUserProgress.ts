@@ -39,8 +39,19 @@ export interface UserProgress {
   currentIdentity: string | null;
   microAction: string | null;
   identitySprintStart: string | null;
-  // NEW: Flow Block field
+  // Flow Block field
   hasFlowBlockConfig: boolean;
+  // NEW: Progress tracking for unlock visualization
+  daysInStage: number;
+  unlockProgress: {
+    adherenceMet: boolean;
+    daysMet: boolean;
+    deltaMet: boolean;
+    qualitativeMet: boolean;
+    requiredAdherence: number;
+    requiredDays: number;
+    requiredDelta: number;
+  };
 }
 
 interface PracticeLog {
@@ -55,6 +66,16 @@ function getLocalDateString(): string {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
+
+// Unlock thresholds per stage (Stage 5 changed from 85% to 80%)
+const UNLOCK_THRESHOLDS: { [key: number]: { adherence: number; days: number; delta: number; qualitative: number } } = {
+  1: { adherence: 80, days: 14, delta: 0.3, qualitative: 3 },
+  2: { adherence: 80, days: 14, delta: 0.5, qualitative: 3 },
+  3: { adherence: 80, days: 14, delta: 0.5, qualitative: 3 },
+  4: { adherence: 80, days: 14, delta: 0.6, qualitative: 3 },
+  5: { adherence: 80, days: 14, delta: 0.7, qualitative: 3 }  // Changed from 85% to 80%
+  // Stage 6→7 is manual review only - not in this table
+};
 
 export function useUserProgress() {
   const [progress, setProgress] = useState<UserProgress | null>(null);
@@ -150,7 +171,7 @@ export function useUserProgress() {
         console.error('Error fetching baseline:', baselineError);
       }
 
-      // NEW: Fetch Flow Block config to check if setup is complete
+      // Fetch Flow Block config to check if setup is complete
       const { data: flowBlockConfig } = await supabase
         .from('flow_block_config')
         .select('id')
@@ -207,7 +228,6 @@ export function useUserProgress() {
       else tier = 'System Offline';
 
       // Calculate week-over-week deltas
-      // Priority: weekly_deltas comparison > user_progress deltas > zero
       let domainDeltas = {
         regulation: 0,
         awareness: 0,
@@ -217,7 +237,6 @@ export function useUserProgress() {
       };
 
       if (latestDelta && previousDelta) {
-        // Week-over-week comparison from weekly_deltas table
         domainDeltas = {
           regulation: (latestDelta.regulation_score || 0) - (previousDelta.regulation_score || 0),
           awareness: (latestDelta.awareness_score || 0) - (previousDelta.awareness_score || 0),
@@ -226,7 +245,6 @@ export function useUserProgress() {
           average: 0
         };
       } else if (latestDelta && baselineData) {
-        // Compare latest week to baseline (for users with only 1 week of data)
         domainDeltas = {
           regulation: (latestDelta.regulation_score || 0) - (baselineData.calm_core_score || 0),
           awareness: (latestDelta.awareness_score || 0) - (baselineData.observer_index_score || 0),
@@ -235,7 +253,6 @@ export function useUserProgress() {
           average: 0
         };
       } else {
-        // Fallback to user_progress deltas (cumulative from baseline)
         domainDeltas = {
           regulation: progressData.regulation_delta || 0,
           awareness: progressData.awareness_delta || 0,
@@ -266,14 +283,41 @@ export function useUserProgress() {
       // Get latest qualitative rating from weekly check-in
       const latestQualitativeRating = latestDelta?.qualitative_rating || null;
 
-      // Check unlock eligibility (includes qualitative threshold + competence check)
+      // Calculate days in current stage
+      const stageStartDate = progressData.stage_start_date ? new Date(progressData.stage_start_date) : new Date();
+      const todayDate = new Date();
+      const daysInStage = Math.floor((todayDate.getTime() - stageStartDate.getTime()) / (1000 * 60 * 60 * 24));
+
+      // Calculate unlock progress
+      const threshold = UNLOCK_THRESHOLDS[progressData.current_stage];
+      const COMPETENCE_THRESHOLD = 4.0;
+      
+      const unlockProgress = threshold ? {
+        adherenceMet: progressData.adherence_percentage >= threshold.adherence,
+        daysMet: daysInStage >= threshold.days,
+        deltaMet: domainDeltas.average >= threshold.delta || avgScore >= COMPETENCE_THRESHOLD,
+        qualitativeMet: latestQualitativeRating !== null && latestQualitativeRating >= threshold.qualitative,
+        requiredAdherence: threshold.adherence,
+        requiredDays: threshold.days,
+        requiredDelta: threshold.delta
+      } : {
+        adherenceMet: false,
+        daysMet: false,
+        deltaMet: false,
+        qualitativeMet: false,
+        requiredAdherence: 0,
+        requiredDays: 0,
+        requiredDelta: 0
+      };
+
+      // Check unlock eligibility
       const unlockEligible = checkBasicUnlockEligibility(
         progressData.current_stage,
         progressData.adherence_percentage,
-        progressData.consecutive_days,
+        daysInStage, // Use calculated daysInStage, not consecutiveDays
         domainDeltas.average,
         latestQualitativeRating,
-        avgScore // Current average score for competence check
+        avgScore
       );
 
       // Update last fetch date
@@ -293,12 +337,13 @@ export function useUserProgress() {
         dailyPractices,
         unlockEligible,
         dataDate: today,
-        // Identity fields for Micro-Action
         currentIdentity: progressData.current_identity || null,
         microAction: progressData.micro_action || null,
         identitySprintStart: progressData.identity_sprint_start || null,
-        // NEW: Flow Block field
-        hasFlowBlockConfig: !!flowBlockConfig
+        hasFlowBlockConfig: !!flowBlockConfig,
+        // NEW fields
+        daysInStage,
+        unlockProgress
       };
 
       console.log('[useUserProgress] Setting progress:', {
@@ -306,13 +351,9 @@ export function useUserProgress() {
         dailyPractices,
         adherence: newProgress.adherencePercentage,
         consecutiveDays: newProgress.consecutiveDays,
-        domainScores: newProgress.domainScores,
-        domainDeltas: newProgress.domainDeltas,
-        rewiredIndex: newProgress.rewiredIndex,
-        rewiredDelta: newProgress.rewiredDelta,
-        hasWeeklyData: !!latestDelta,
-        hasPreviousWeek: !!previousDelta,
-        hasFlowBlockConfig: newProgress.hasFlowBlockConfig
+        daysInStage: newProgress.daysInStage,
+        unlockProgress: newProgress.unlockProgress,
+        unlockEligible: newProgress.unlockEligible
       });
 
       setProgress(newProgress);
@@ -337,41 +378,31 @@ export function useUserProgress() {
     const checkNewDay = () => {
       const today = getLocalDateString();
       
-      // If the date has changed since we last fetched, refresh
       if (lastFetchDate.current && lastFetchDate.current !== today) {
         console.log('[useUserProgress] New day detected! Refreshing...', {
           was: lastFetchDate.current,
           now: today
         });
-        fetchProgress(true); // Force refresh
+        fetchProgress(true);
       }
     };
 
-    // Check immediately
     checkNewDay();
-    
-    // Then check every minute
     const interval = setInterval(checkNewDay, 60000);
     
     return () => clearInterval(interval);
   }, [fetchProgress]);
 
-  // Also refresh when window regains focus (user comes back to tab)
+  // Refresh when window regains focus
   useEffect(() => {
     const handleFocus = () => {
       const today = getLocalDateString();
-      
-      // If it's a new day or it's been more than 5 minutes, refresh
       const timeSinceLastFetch = Date.now() - lastFetchTime.current;
       const isNewDay = lastFetchDate.current !== today;
-      const isStale = timeSinceLastFetch > 5 * 60 * 1000; // 5 minutes
+      const isStale = timeSinceLastFetch > 5 * 60 * 1000;
       
       if (isNewDay || isStale) {
-        console.log('[useUserProgress] Window focused, refreshing...', {
-          isNewDay,
-          isStale,
-          minutesSinceLastFetch: Math.round(timeSinceLastFetch / 60000)
-        });
+        console.log('[useUserProgress] Window focused, refreshing...');
         fetchProgress(true);
       }
     };
@@ -380,7 +411,6 @@ export function useUserProgress() {
     return () => window.removeEventListener('focus', handleFocus);
   }, [fetchProgress]);
 
-  // Public refetch function - always forces refresh
   const refetchProgress = useCallback(() => {
     console.log('[useUserProgress] Manual refetch triggered');
     return fetchProgress(true);
@@ -391,68 +421,45 @@ export function useUserProgress() {
     loading, 
     error, 
     refetchProgress,
-    isRefreshing // Expose refreshing state for UI feedback
+    isRefreshing
   };
 }
 
 // Helper function to determine unlocked tools based on stage
 function getUnlockedTools(stage: number): string[] {
-  const tools: string[] = ['decentering']; // Unlocked from Stage 1
-  
-  if (stage >= 2) {
-    tools.push('meta_reflection');
-  }
-  
-  if (stage >= 3) {
-    tools.push('reframe');
-  }
-  
-  if (stage >= 4) {
-    tools.push('thought_hygiene');
-  }
-  
+  const tools: string[] = ['decentering'];
+  if (stage >= 2) tools.push('meta_reflection');
+  if (stage >= 3) tools.push('reframe');
+  if (stage >= 4) tools.push('thought_hygiene');
   return tools;
 }
 
-// Simplified unlock eligibility check
-// Uses hybrid approach: unlock via improvement (delta) OR existing competence (high score)
+// Unlock eligibility check with hybrid approach
 function checkBasicUnlockEligibility(
   stage: number,
   adherence: number,
-  consecutiveDays: number,
+  daysInStage: number,
   avgDelta: number,
   qualitativeRating: number | null,
   currentAvgScore: number
 ): boolean {
-  // Stage 7 is manual unlock only - never auto-eligible
+  // Stage 7 is manual unlock only
   if (stage >= 6) return false;
 
-  const thresholds: { [key: number]: { adherence: number; days: number; delta: number; qualitative: number } } = {
-    1: { adherence: 80, days: 14, delta: 0.3, qualitative: 3 },
-    2: { adherence: 80, days: 14, delta: 0.5, qualitative: 3 },
-    3: { adherence: 80, days: 14, delta: 0.5, qualitative: 3 },
-    4: { adherence: 80, days: 14, delta: 0.6, qualitative: 3 },
-    5: { adherence: 85, days: 14, delta: 0.7, qualitative: 3 }
-    // Stage 6→7 is manual review only - not in this table
-  };
-
-  const threshold = thresholds[stage];
+  const threshold = UNLOCK_THRESHOLDS[stage];
   if (!threshold) return false;
 
-  // Qualitative rating is required for unlock - must have completed at least one weekly check-in
+  // Qualitative rating required
   const meetsQualitative = qualitativeRating !== null && qualitativeRating >= threshold.qualitative;
   
-  // HYBRID TRANSFORMATION CHECK:
-  // Either show improvement (delta) OR demonstrate existing competence (high score)
-  // This prevents high performers from being penalized for starting strong,
-  // while still rewarding improvement for those starting lower
-  const COMPETENCE_THRESHOLD = 4.0; // Score of 4.0+ out of 5.0 = already competent
+  // Hybrid: either improvement OR existing competence
+  const COMPETENCE_THRESHOLD = 4.0;
   const meetsTransformation = avgDelta >= threshold.delta;
   const alreadyCompetent = currentAvgScore >= COMPETENCE_THRESHOLD;
 
   return (
     adherence >= threshold.adherence &&
-    consecutiveDays >= threshold.days &&
+    daysInStage >= threshold.days &&
     (meetsTransformation || alreadyCompetent) &&
     meetsQualitative
   );
