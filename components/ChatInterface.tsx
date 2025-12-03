@@ -699,6 +699,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   const [unlockFlowState, setUnlockFlowState] = useState<'none' | 'eligible_shown' | 'confirmed' | 'intro_started'>('none');
   const [pendingUnlockStage, setPendingUnlockStage] = useState<number | null>(null);
   const hasCheckedUnlock = useRef<boolean>(false);
+  const hasCheckedWeeklyMilestone = useRef<boolean>(false);
   
   // ============================================
   // MICRO-ACTION SETUP STATE (100% API version)
@@ -966,6 +967,56 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
       }
     }
   }, [progress, isInitializing, unlockFlowState, buildTemplateContext, weeklyCheckInActive, awaitingSprintRenewal, awaitingMicroActionStart, microActionState.isActive, awaitingFlowBlockStart, flowBlockState.isActive]);
+
+  // ============================================
+  // WEEKLY MILESTONE CHECK (Day 7, 14, 21, etc.)
+  // ============================================
+  useEffect(() => {
+    // Only check once per session and when we have progress data
+    if (hasCheckedWeeklyMilestone.current || !progress || isInitializing) return;
+    // Don't trigger if any flow is active
+    if (unlockFlowState !== 'none' || weeklyCheckInActive) return;
+    if (awaitingSprintRenewal || awaitingMicroActionStart || microActionState.isActive) return;
+    if (awaitingFlowBlockStart || flowBlockState.isActive) return;
+    
+    const daysInStage = progress.daysInStage || 0;
+    const weeksComplete = Math.floor(daysInStage / 7);
+    
+    // Only celebrate on exact week boundaries (day 7, 14, 21, etc.)
+    // Check if today is a milestone day
+    if (daysInStage > 0 && daysInStage % 7 === 0 && weeksComplete > 0) {
+      hasCheckedWeeklyMilestone.current = true;
+      
+      const stageName = getStageName(progress.currentStage);
+      const adherence = progress.adherencePercentage || 0;
+      
+      // Generate milestone message
+      let milestoneMessage = `**Week ${weeksComplete} Complete** 🎉\n\n`;
+      
+      if (weeksComplete === 1) {
+        milestoneMessage += `You've completed your first week in **${stageName}**. `;
+        milestoneMessage += adherence >= 80 
+          ? `${adherence}% adherence — your nervous system is starting to recognize this as the new normal.`
+          : `${adherence}% adherence — keep building that consistency. The compound effect is real.`;
+      } else if (weeksComplete === 2) {
+        milestoneMessage += `Two weeks of **${stageName}**. `;
+        milestoneMessage += adherence >= 80
+          ? `${adherence}% adherence — you're approaching unlock eligibility. The patterns are embedding.`
+          : `${adherence}% adherence — push for 80%+ this week to qualify for unlock.`;
+      } else {
+        milestoneMessage += `${weeksComplete} weeks in **${stageName}**. `;
+        milestoneMessage += `${adherence}% adherence. You're building deep neural grooves. Keep going.`;
+      }
+      
+      // Add milestone message to chat
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: milestoneMessage 
+      }]);
+      
+      devLog('[ChatInterface]', 'Weekly milestone message shown:', { weeksComplete, daysInStage, adherence });
+    }
+  }, [progress, isInitializing, unlockFlowState, weeklyCheckInActive, awaitingSprintRenewal, awaitingMicroActionStart, microActionState.isActive, awaitingFlowBlockStart, flowBlockState.isActive]);
 
   // ============================================
   // UNLOCK CONFIRMATION HANDLER
