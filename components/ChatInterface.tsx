@@ -1774,22 +1774,79 @@ ${statusItems.join('\n')}`;
         devLog('[ChatInterface]', 'Practices completed today:', completedToday);
         
         // Generate opening message based on type
-        // Create a corrected baselineData with the actual current stage
-        const correctedBaselineData: BaselineData = {
-          ...baselineData,
-          currentStage: currentStage
-        };
-        let openingMessage: string;
-        
-        if (type === 'first_time') {
-          openingMessage = await getFirstTimeOpeningMessage(correctedBaselineData, userName);
-        } else if (type === 'same_day') {
-          openingMessage = getSameDayReturnMessage(correctedBaselineData, progressData, currentStage, completedToday);
-        } else {
-          openingMessage = getNewDayMorningMessage(correctedBaselineData, progressData, userName, currentStage);
-        }
-        
-        setMessages([{ role: 'assistant', content: openingMessage }]);
+// Create a corrected baselineData with the actual current stage
+const correctedBaselineData: BaselineData = {
+  ...baselineData,
+  currentStage: currentStage
+};
+let openingMessage: string;
+
+// Check if weekly check-in is due (takes priority over normal greeting for returning users)
+const isWeeklyCheckInDue = (() => {
+  // Only for returning users who have completed onboarding
+  if (type === 'first_time') return false;
+  
+  const lastCheckin = progressData?.last_weekly_checkin;
+  const now = new Date();
+  const today = now.getDay(); // 0 = Sunday
+  
+  // Calculate days in stage
+  let daysInStage = 1;
+  if (progressData?.stage_start_date) {
+    const startDate = new Date(progressData.stage_start_date);
+    daysInStage = Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+  }
+  
+  // If never done check-in, due after 7 days in stage
+  if (!lastCheckin) {
+    return daysInStage >= 7;
+  }
+  
+  const lastCheckinDate = new Date(lastCheckin);
+  const daysSinceCheckin = Math.floor((now.getTime() - lastCheckinDate.getTime()) / (1000 * 60 * 60 * 24));
+  
+  // Due if 7+ days since last check-in
+  if (daysSinceCheckin >= 7) {
+    return true;
+  }
+  
+  // Also due if Sunday and last check-in before this week started
+  if (today === 0) {
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+    return lastCheckinDate < startOfWeek;
+  }
+  
+  return false;
+})();
+
+if (isWeeklyCheckInDue) {
+  // Weekly check-in takes priority - activate check-in flow
+  openingMessage = `Hey${userName ? `, ${userName}` : ''}. It's time for your weekly check-in.
+
+Rate each domain **0-5** based on this past week:
+
+1. **Regulation:** How easily could you calm yourself when stressed? (0 = couldn't, 5 = instantly)
+2. **Awareness:** How quickly did you notice when lost in thought? (0 = never, 5 = immediately)  
+3. **Outlook:** How open and positive did you feel toward life? (0 = closed/negative, 5 = open/positive)
+4. **Attention:** How focused were you on what truly matters? (0 = scattered, 5 = laser-focused)
+
+Give me your four numbers (e.g., "4 3 4 5").`;
+  
+  // Activate the weekly check-in state
+  setWeeklyCheckInActive(true);
+  setWeeklyCheckInStep(1);
+  
+} else if (type === 'first_time') {
+  openingMessage = await getFirstTimeOpeningMessage(correctedBaselineData, userName);
+} else if (type === 'same_day') {
+  openingMessage = getSameDayReturnMessage(correctedBaselineData, progressData, currentStage, completedToday);
+} else {
+  openingMessage = getNewDayMorningMessage(correctedBaselineData, progressData, userName, currentStage);
+}
+
+setMessages([{ role: 'assistant', content: openingMessage }]);
         
         // Update last visit timestamp
         await supabase
