@@ -286,7 +286,7 @@ export function useUserProgress() {
       // Calculate days in current stage
       const stageStartDate = progressData.stage_start_date ? new Date(progressData.stage_start_date) : new Date();
       const todayDate = new Date();
-      const daysInStage = Math.floor((todayDate.getTime() - stageStartDate.getTime()) / (1000 * 60 * 60 * 24));
+      const daysInStage = Math.floor((todayDate.getTime() - stageStartDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
       // Calculate unlock progress
       const threshold = UNLOCK_THRESHOLDS[progressData.current_stage];
@@ -295,7 +295,7 @@ export function useUserProgress() {
       const unlockProgress = threshold ? {
         adherenceMet: progressData.adherence_percentage >= threshold.adherence,
         daysMet: daysInStage >= threshold.days,
-        deltaMet: domainDeltas.average >= threshold.delta || avgScore >= COMPETENCE_THRESHOLD,
+        deltaMet: latestDelta !== null && (domainDeltas.average >= threshold.delta || avgScore >= COMPETENCE_THRESHOLD),
         qualitativeMet: latestQualitativeRating !== null && latestQualitativeRating >= threshold.qualitative,
         requiredAdherence: threshold.adherence,
         requiredDays: threshold.days,
