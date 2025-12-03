@@ -421,18 +421,20 @@ Is there anything else you need? Or see you tomorrow morning.`
     },
 
     unlock: {
-      eligible: `**Stage 1 Complete.** 🎉
+      eligible: `**🔓 SYSTEM UPGRADE AVAILABLE**
 
-You've hit the unlock criteria:
-- ≥80% adherence over 14 days ✓
-- ≥+0.3 average delta improvement ✓
-- Calm rating ≥3/5 ✓
+You've proven consistency and transformation:
+- {{adherence}}% adherence over 14+ days ✓
+- +{{avgDelta}} average delta improvement ✓
+- {{consecutiveDays}} day streak ✓
 
 **Neural Priming stabilized.** Heart-mind coherence online.
 
-You're ready to bring awareness into motion.
+Before we unlock **Stage 2: Embodied Awareness**, quick reflection:
 
-**Unlock Stage 2: Embodied Awareness?**`,
+**What's different about how you respond to stress now compared to when you started?**
+
+Take a moment to notice the shift. Then type **"unlock"** when you're ready to advance.`,
 
       notYet: `**Stage 1 Progress Check**
 
@@ -443,7 +445,7 @@ Current status vs unlock criteria:
 
 Keep going. The system unlocks when your nervous system is ready — not before.`,
 
-      confirmation: `**Stage 2 Unlocked: Embodied Awareness** ✓
+      confirmation: `**🎉 Stage 2 Unlocked: Embodied Awareness**
 
 You've proven your nervous system can maintain coherence. Now we bring awareness into motion.
 
@@ -562,18 +564,20 @@ Anything else? Or see you tomorrow.`
     },
 
     unlock: {
-      eligible: `**Stage 2 Complete.** 🎉
+      eligible: `**🔓 SYSTEM UPGRADE AVAILABLE**
 
-You've hit the unlock criteria:
-- ≥80% adherence over 14 days ✓
-- ≥+0.5 average delta improvement ✓
-- Felt-sense rating ≥3/5 ✓
+You've proven consistency and transformation:
+- {{adherence}}% adherence over 14+ days ✓
+- +{{avgDelta}} average delta improvement ✓
+- {{consecutiveDays}} day streak ✓
 
 **Embodiment achieved.** The body is now connected awareness.
 
-Time to act from coherence.
+Before we unlock **Stage 3: Identity Mode**, quick reflection:
 
-**Unlock Stage 3: Identity Mode?**`,
+**What did you notice about awareness during Somatic Flow? Did it stay present through the movement, or did it drift?**
+
+Take a moment to recall. Then type **"unlock"** when you're ready to advance.`,
 
       notYet: `**Stage 2 Progress Check**
 
@@ -584,7 +588,7 @@ Current status vs unlock criteria:
 
 Your body is learning. Keep the practice consistent.`,
 
-      confirmation: `**Stage 3 Unlocked: Identity Mode** ✓
+      confirmation: `**🎉 Stage 3 Unlocked: Identity Mode**
 
 You've embodied awareness. Now we anchor it into who you are.
 
@@ -711,19 +715,20 @@ You're not chasing perfection — you're training consistency.`
     },
 
     unlock: {
-      eligible: `**Stage 3 Complete.** 🎉
+      eligible: `**🔓 SYSTEM UPGRADE AVAILABLE**
 
-You've hit the unlock criteria:
-- ≥80% adherence over 14 days ✓
-- ≥+0.5 average delta improvement ✓
-- Decreased emotional reactivity ✓
-- Clear identity articulation ✓
+You've proven consistency and transformation:
+- {{adherence}}% adherence over 14+ days ✓
+- +{{avgDelta}} average delta improvement ✓
+- {{consecutiveDays}} day streak ✓
 
 **Identity proof installed.** You now act from awareness, not toward it.
 
-Ready to integrate high-level performance?
+Before we unlock **Stage 4: Flow Mode**, quick reflection:
 
-**Unlock Stage 4: Flow Mode?**`,
+**How has your relationship to reactive emotions shifted? Can you give me a specific example from the past two weeks?**
+
+Take a moment to recall. Then type **"unlock"** when you're ready to advance.`,
 
       notYet: `**Stage 3 Progress Check**
 
@@ -734,7 +739,7 @@ Current status vs unlock criteria:
 
 Your identity is forming. Keep the proof consistent.`,
 
-      confirmation: `**Stage 4 Unlocked: Flow Mode** ✓
+      confirmation: `**🎉 Stage 4 Unlocked: Flow Mode**
 
 Your identity is becoming aligned. Now we train sustained attention on performance drivers.
 
@@ -849,17 +854,20 @@ The mind is becoming the tool, not the operator.`
     },
 
     unlock: {
-      eligible: `**Stage 4 Complete.** 🎉
+      eligible: `**🔓 SYSTEM UPGRADE AVAILABLE**
 
-You've hit the unlock criteria:
-- ≥80% adherence over 14 days ✓
-- ≥+0.6 average delta improvement ✓
+You've proven consistency and transformation:
+- {{adherence}}% adherence over 14+ days ✓
+- +{{avgDelta}} average delta improvement ✓
+- {{consecutiveDays}} day streak ✓
 
 **Flow performance stabilized.** The mind is no longer the operator — it's the tool.
 
-Ready to train relational coherence?
+Before we unlock **Stage 5: Relational Coherence**, quick reflection:
 
-**Unlock Stage 5: Relational Coherence?**`,
+**What happened to time during your Flow Blocks? Did mental chatter fade? Describe what focus felt like.**
+
+Take a moment to recall. Then type **"unlock"** when you're ready to advance.`,
 
       notYet: `**Stage 4 Progress Check**
 
@@ -870,7 +878,7 @@ Current status vs unlock criteria:
 
 Keep training the flow state.`,
 
-      confirmation: `**Stage 5 Unlocked: Relational Coherence** ✓
+      confirmation: `**🎉 Stage 5 Unlocked: Relational Coherence**
 
 You can sustain attention in solitude. Now we train it in connection.
 
@@ -978,28 +986,31 @@ You're training relational coherence. The nervous system is learning to stay ope
     },
 
     unlock: {
-      eligible: `**Stage 5 Complete.** 🎉
+      eligible: `**🔓 SYSTEM UPGRADE AVAILABLE**
 
-You've hit the unlock criteria:
-- ≥85% adherence over 14 days ✓
-- ≥+0.7 average delta improvement ✓
+You've proven consistency and transformation:
+- {{adherence}}% adherence over 14+ days ✓
+- +{{avgDelta}} average delta improvement ✓
+- {{consecutiveDays}} day streak ✓
 
 **Relational coherence stabilized.** You are now connected.
 
-Ready to convert insight into stable trait-level awareness?
+Before we unlock **Stage 6: Integration**, quick reflection:
 
-**Unlock Stage 6: Integration?**`,
+**When did you notice feeling genuinely present with another person this week — not performing, not planning what to say, just... there?**
+
+Take a moment to recall. Then type **"unlock"** when you're ready to advance.`,
 
       notYet: `**Stage 5 Progress Check**
 
 Current status vs unlock criteria:
-- Adherence: {{currentAdherence}}% (need 85%)
+- Adherence: {{currentAdherence}}% (need 80%)
 - Avg Delta: {{currentAvgDelta}} (need +0.7)
 - Days: {{currentConsecutiveDays}} (need 14)
 
 Keep training relational presence.`,
 
-      confirmation: `**Stage 6 Unlocked: Integration** ✓
+      confirmation: `**🎉 Stage 6 Unlocked: Integration**
 
 You can stay regulated in solitude and connection. Now we seal it.
 
@@ -1401,7 +1412,7 @@ How's your movement been this week?`
 };
 
 // ============================================
-// STREAK MESSAGES
+// STREAK MESSAGES (Updated for Grace Period)
 // ============================================
 
 export function getStreakMessage(consecutiveDays: number, adherence: number): string {
@@ -1412,10 +1423,10 @@ export function getStreakMessage(consecutiveDays: number, adherence: number): st
     return `\n\n🔥 **${consecutiveDays} day streak.** Keep going.`;
   }
   if (consecutiveDays >= 3) {
-    return `\n\n**${consecutiveDays} days consecutive.** Building momentum.`;
+    return `\n\n🔥 **${consecutiveDays} days consecutive.** Building momentum.`;
   }
   if (consecutiveDays === 0 && adherence > 0) {
-    return `\n\nStreak reset. No judgment — start fresh today.`;
+    return `\n\nStreak paused. One day grace — get back on track today.`;
   }
   return '';
 }
