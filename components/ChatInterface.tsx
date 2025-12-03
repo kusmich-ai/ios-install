@@ -1649,9 +1649,13 @@ ${statusItems.join('\n')}`;
           .single();
         
         // Determine opening type
+        // If user is Stage 2+, they've clearly completed onboarding even if flag wasn't set
+        const hasCompletedOnboarding = progressData?.ritual_intro_completed || 
+                                        (currentStage > 1);
+        
         const type = determineOpeningType(
           progressData?.last_visit || null,
-          progressData?.ritual_intro_completed || false
+          hasCompletedOnboarding
         );
         setOpeningType(type);
         
