@@ -304,11 +304,11 @@ export default function ToolsSidebar({
                             {isMicroAction ? (
                               // MICRO-ACTION SPECIAL BUTTONS
                               hasIdentity ? (
-                                // Has identity - show Complete button (logs completion via chat)
-                                <>
-                                  {!isCompleted && (
-                                    <button
-                                      onClick={() => handleStartPractice(practice.id)}
+  // Has identity - show Complete button
+  <>
+    {!isCompleted && (
+      <button
+        onClick={(e) => handleMarkComplete(practice.id, practice.name, e)}
                                       disabled={isCompleting}
                                       className={`flex-1 px-2 py-1.5 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1 ${
                                         isCompleting
