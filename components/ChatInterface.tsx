@@ -1536,6 +1536,44 @@ ${qualQuestion} (0-5)`
         // Save to database and show results
         await saveWeeklyCheckIn(finalScores);
         break;
+
+        case 6: // All-at-once format (from auto-prompt)
+        // Parse all 4 numbers from response like "4 3 4 5"
+        const numbers = response.match(/\d+(\.\d+)?/g);
+        if (!numbers || numbers.length < 4) {
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: "Please enter 4 numbers between 0-5, separated by spaces (e.g., '4 3 4 5')."
+          }]);
+          return;
+        }
+        
+        const [reg, aware, outlook, attn] = numbers.slice(0, 4).map(n => parseFloat(n));
+        
+        // Validate all are in range
+        if ([reg, aware, outlook, attn].some(n => isNaN(n) || n < 0 || n > 5)) {
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: "Each rating should be between 0 and 5. Please try again."
+          }]);
+          return;
+        }
+        
+        // Set all scores and move to qualitative question
+        setWeeklyCheckInScores({
+          regulation: reg,
+          awareness: aware,
+          outlook: outlook,
+          attention: attn,
+          qualitative: null
+        });
+        setWeeklyCheckInStep(5); // Move to qualitative question
+        const qualQ = stageQualitativeQuestions[currentStage] || stageQualitativeQuestions[1];
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: `**Stage ${currentStage} Competence Check:**\n\n${qualQ} (0-5)`
+        }]);
+        break;
     }
   };
   
@@ -1594,7 +1632,15 @@ ${qualQuestion} (0-5)`
       }
       
       devLog('[WeeklyCheckIn]', 'Saved successfully');
+      // Update last_weekly_checkin timestamp
+      const { error: updateError } = await supabase
+        .from('user_progress')
+        .update({ last_weekly_checkin: new Date().toISOString() })
+        .eq('user_id', user.id);
       
+      if (updateError) {
+        console.error('[WeeklyCheckIn] Failed to update last_weekly_checkin:', updateError);
+      }
       // Refresh progress
       if (refetchProgress) {
         await refetchProgress();
@@ -1836,7 +1882,7 @@ Give me your four numbers (e.g., "4 3 4 5").`;
   
   // Activate the weekly check-in state
   setWeeklyCheckInActive(true);
-  setWeeklyCheckInStep(1);
+  setWeeklyCheckInStep(6);
   
 } else if (type === 'first_time') {
   openingMessage = await getFirstTimeOpeningMessage(correctedBaselineData, userName);
