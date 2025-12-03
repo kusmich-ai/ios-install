@@ -1,6 +1,6 @@
-// microActionAPI.ts
-// 100% API-driven Micro-Action Identity Installation Protocol
-// No state machine - Claude handles all the coaching naturally
+// microActionAPI.ts - v2.0
+// Cleaned up: eliminated redundant body-checks and awkward framing
+// Changes marked with // CHANGED comments
 
 export interface MicroActionState {
   isActive: boolean;
@@ -42,18 +42,34 @@ The opening message already asked about misalignment. Your job is to:
 
 ### Phase 3: Identity Phrasing
 6. Help them phrase their identity as "I am someone who..." or "I am a..."
-7. Have them say it out loud or internally and notice how it feels in their body
-8. Refine until it passes the 4-C Filter (ask these ONE AT A TIME, naturally woven in):
-   - CONCRETE: "Could someone see evidence of this in 60 seconds?"
+7. DO NOT do an early body-check here - save that for the Compelling filter
+
+// CHANGED: Removed the early "say it out loud, how does it feel?" step - this was redundant with Compelling filter
+
+8. Refine the identity using the 3-C Filter (ask ONE AT A TIME, naturally woven in):
+
+   // CHANGED: Reframed CONCRETE to ask about behaviors, not current display
+   - CONCRETE: "When you're being this person, what would I observe? What's the behavior that proves it?"
+     (We're designing what to train, not testing if they already do it)
+   
    - COHERENT: "Does this feel like an upgrade of who you already are, not a costume?"
-   - CONTAINABLE: "Can you prove this with one small action each day?"
-   - COMPELLING: "Does saying it light up your chest, not just your head?"
+   
+   // CHANGED: Removed CONTAINABLE - it's redundant setup for Phase 4
+   // The action design phase handles "can you prove this daily?" directly
+   
+   - COMPELLING: "Say it out loud or internally - does it light up your chest, or just make logical sense?"
+     (This is the ONE body-check moment - don't duplicate it elsewhere)
 
 ### Phase 4: Micro-Action Design
-9. Ask: "What's one micro-interaction - something you could do in under 5 minutes each morning - that would prove you are this person?"
+// CHANGED: Smoother transition since we didn't already ask about "one small action"
+9. Transition: "Good. Now let's design the proof. What's one thing you could do in under 5 minutes each morning that would show you're this person?"
+
 10. Test the action with the ACE criteria (ONE AT A TIME):
-    - ATOMIC: "Could you do this even on a chaotic morning?"
-    - CONGRUENT: "If I saw you doing this, would I recognize the identity you're training?"
+    - ATOMIC: "Could you do this even on a chaotic morning - running late, kid melting down, didn't sleep?"
+    
+    // CHANGED: Reframed CONGRUENT to avoid "if I saw you" repetition from Concrete filter
+    - CONGRUENT: "Does this action clearly prove the identity? Would completing it leave no doubt about who you're being?"
+    
     - EMOTIONALLY CLEAN: "Does this feel like alignment, not obligation?"
 
 ### Phase 5: Commitment
@@ -62,7 +78,7 @@ The opening message already asked about misalignment. Your job is to:
     My daily micro-action is [action].
     Each completion = proof; each proof = reinforcement."
 12. Ask for their commitment
-13. Close with mechanics and encouragement
+13. Close with brief encouragement - no lengthy explanation of mechanics needed
 
 ## IMPORTANT RULES
 - Ask ONE question at a time - never multiple questions in one message
@@ -71,6 +87,7 @@ The opening message already asked about misalignment. Your job is to:
 - Mirror their exact language when reflecting back
 - Keep responses to 2-4 sentences max unless presenting the final contract
 - Be genuinely curious, not clinical
+- ONLY ONE BODY-CHECK: The Compelling filter. Don't ask "how does it feel in your body" multiple times.
 
 ## EXTRACTION
 When the user commits to their identity and action, end your message with this EXACT format on its own line:
@@ -120,25 +137,19 @@ It could be internal (thoughts, reactivity, overwhelm) or external (relationship
 // SPRINT HELPER FUNCTIONS
 // ============================================
 
-/**
- * Calculate which day of the current sprint we're on (1-21)
- */
 export function getSprintDayNumber(sprintStartDate: string): number {
   const start = new Date(sprintStartDate);
-  start.setHours(0, 0, 0, 0); // Normalize to start of day
+  start.setHours(0, 0, 0, 0);
   
   const now = new Date();
   now.setHours(0, 0, 0, 0);
   
   const diffTime = now.getTime() - start.getTime();
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 because day 1 is start date
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
   
-  return Math.max(1, Math.min(diffDays, 21)); // Clamp between 1-21
+  return Math.max(1, Math.min(diffDays, 21));
 }
 
-/**
- * Check if current sprint is complete (past 21 days)
- */
 export function isSprintComplete(sprintStartDate: string): boolean {
   const start = new Date(sprintStartDate);
   start.setHours(0, 0, 0, 0);
@@ -152,9 +163,6 @@ export function isSprintComplete(sprintStartDate: string): boolean {
   return now >= endDate;
 }
 
-/**
- * Get formatted sprint status string
- */
 export function getSprintStatus(sprintStartDate: string | null, sprintNumber: number): string {
   if (!sprintStartDate) {
     return 'Not started';
@@ -170,17 +178,11 @@ export function getSprintStatus(sprintStartDate: string | null, sprintNumber: nu
   return `Sprint ${sprintNumber}, Day ${dayNumber}/21`;
 }
 
-/**
- * Get days remaining in current sprint
- */
 export function getDaysRemaining(sprintStartDate: string): number {
   const currentDay = getSprintDayNumber(sprintStartDate);
   return Math.max(0, 21 - currentDay);
 }
 
-/**
- * Calculate state for starting a new sprint
- */
 export function startNewSprint(currentSprintNumber: number): Partial<MicroActionState> {
   return {
     isActive: true,
@@ -193,7 +195,6 @@ export function startNewSprint(currentSprintNumber: number): Partial<MicroAction
   };
 }
 
-// Context to add to system prompt for returning users
 export const returningUserContext = (sprintNumber: number, previousIdentity: string, previousAction: string) => `
 
 ## RETURNING USER CONTEXT
@@ -209,7 +210,6 @@ When opening, acknowledge their previous sprint and ask:
    - Complete pivot (if the previous one didn't resonate)
 `;
 
-// Sprint complete message
 export const sprintCompleteMessage = (sprintNumber: number, identity: string) => `**🎉 21-Day Identity Sprint ${sprintNumber} Complete!**
 
 Your sprint as "${identity}" is complete.
