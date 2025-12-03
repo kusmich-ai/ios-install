@@ -196,8 +196,12 @@ export async function POST(req) {
       ? Math.min(100, Math.round((completedCount / totalRequired) * 100))
       : 0;
 
-    // Calculate consecutive days (using client-provided date as reference)
+    // Calculate consecutive days with 1-DAY GRACE PERIOD
+    // Grace period: Missing 1 day pauses the streak (doesn't reset it)
+    // Missing 2+ consecutive days resets the streak
     let consecutiveDays = 0;
+    let graceDayUsed = false; // Track if we've used the 1-day grace
+    
     const logsByDate = {};
     (recentLogs || []).forEach(log => {
       if (!logsByDate[log.practice_date]) {
@@ -216,18 +220,30 @@ export async function POST(req) {
         String(checkDate.getMonth() + 1).padStart(2, '0') + '-' + 
         String(checkDate.getDate()).padStart(2, '0');
       const dayPractices = logsByDate[dateStr];
+      const completedAllPractices = dayPractices && requiredPractices.every(p => dayPractices.has(p));
       
-      if (dayPractices && requiredPractices.every(p => dayPractices.has(p))) {
+      if (completedAllPractices) {
+        // Full day completed - add to streak
         consecutiveDays++;
         checkDate.setDate(checkDate.getDate() - 1);
       } else if (i === 0) {
         // Today can be incomplete - don't break streak, just skip today
         checkDate.setDate(checkDate.getDate() - 1);
         continue;
+      } else if (!graceDayUsed) {
+        // First missed day - use grace period (streak pauses but doesn't reset)
+        graceDayUsed = true;
+        checkDate.setDate(checkDate.getDate() - 1);
+        console.log('[Practice Log] Grace day used for:', dateStr);
+        continue;
       } else {
+        // Second consecutive missed day - break the streak
+        console.log('[Practice Log] Streak broken at:', dateStr, '(grace already used)');
         break;
       }
     }
+    
+    console.log('[Practice Log] Streak calculation:', { consecutiveDays, graceDayUsed });
 
     // Update user_progress
     await supabaseAdmin
