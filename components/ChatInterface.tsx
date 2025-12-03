@@ -554,8 +554,16 @@ function determineOpeningType(
   lastVisit: string | null,
   hasCompletedOnboarding: boolean
 ): 'first_time' | 'same_day' | 'new_day' {
-  if (!hasCompletedOnboarding || !lastVisit) {
+  // Only show first_time if they truly haven't completed onboarding
+  // (Don't require lastVisit - Stage 2+ users have completed onboarding)
+  if (!hasCompletedOnboarding) {
     return 'first_time';
+  }
+  
+  // If no lastVisit but completed onboarding, treat as new_day
+  if (!lastVisit) {
+    console.log('[ChatInterface] No lastVisit but onboarding completed - treating as new_day');
+    return 'new_day';
   }
   
   const lastVisitDate = new Date(lastVisit);
@@ -1652,7 +1660,13 @@ ${statusItems.join('\n')}`;
         // This ensures Stage 3 users see Stage 3 opening, not Stage 1
         const currentStage = progressData?.current_stage || progress?.currentStage || baselineData.currentStage || 1;
         
-        devLog('[ChatInterface]', 'Initialization - currentStage:', currentStage, 'from DB:', progressData?.current_stage);
+        // Production debugging - remove after confirmed working
+        console.log('[ChatInterface] Init:', {
+          currentStage,
+          dbStage: progressData?.current_stage,
+          lastVisit: progressData?.last_visit,
+          ritualIntroCompleted: progressData?.ritual_intro_completed
+        });
         
         // Determine opening type
         // If user is Stage 2+, they've clearly completed onboarding even if flag wasn't set
@@ -1665,7 +1679,12 @@ ${statusItems.join('\n')}`;
         );
         setOpeningType(type);
         
-        devLog('[ChatInterface]', 'Opening type:', type, 'hasCompletedOnboarding:', hasCompletedOnboarding);
+        // Production debugging - remove after confirmed working
+        console.log('[ChatInterface] Opening decision:', {
+          type,
+          hasCompletedOnboarding,
+          lastVisit: progressData?.last_visit
+        });
         
         // Set intro step based on existing progress
         // If Stage 2+, they've completed intro even if flag not set
