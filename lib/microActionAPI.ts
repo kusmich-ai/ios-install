@@ -111,13 +111,9 @@ export function buildAPIMessages(
 }
 
 // Opening message when starting the flow
-export const microActionOpeningMessage = `Let's set up your Morning Micro-Action — the identity installation protocol.
+export const microActionOpeningMessage = `Is there somewhere in your life that feels misaligned with who you are right now?
 
-This is designed to train your mental operating system by anchoring a new identity through one small, daily proof action. Over 21 days, you'll act as a specific identity — not as an affirmation, but as evidence-based training.
-
-By day 21, it won't feel like effort. It'll feel like you.
-
-Let's begin — is there somewhere in your life that feels misaligned with who you are? It could be internal (thoughts, reactivity, overwhelm) or external (relationships, work, health).`;
+It could be internal (thoughts, reactivity, overwhelm) or external (relationships, work, health). Just name what's present.`;
 
 
 // ============================================
