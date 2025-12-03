@@ -192,10 +192,22 @@ export function selectTemplate(
 // PRACTICE START TEMPLATE SELECTION
 // ============================================
 
-function selectPracticeStartTemplate(
+function selectDailyPromptTemplate(
   trigger: TemplateTrigger,
   context: SelectionContext
 ): TemplateSelectionResult {
+  
+  // Check if weekly check-in is due - takes priority over normal daily prompt
+  if (context.weeklyCheckInDue) {
+    return {
+      template: templateLibrary.weeklyDelta.checkInPrompt,
+      needsProcessing: true,
+      followUpAction: 'wait_for_input'
+    };
+  }
+  
+  const stage = context.currentStage;
+  const stageTemplates = templateLibrary.stages[stage as keyof typeof templateLibrary.stages];
   const practiceId = trigger.practiceId;
   
   if (!practiceId) {
