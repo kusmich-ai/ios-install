@@ -293,14 +293,14 @@ export default function FloatingActionButton({
                         {isMicroAction ? (
                           // MICRO-ACTION SPECIAL BUTTONS
                           hasIdentity ? (
-                            // Has identity - show Mark Complete button
-                            <>
-                              {!isCompleted && (
-                                <button
-                                  onClick={() => {
-                                    handleStartPractice(practice.id);
-                                    setIsOpen(false);
-                                  }}
+  // Has identity - show Mark Complete button
+  <>
+    {!isCompleted && (
+      <button
+        onClick={(e) => {
+          handleMarkComplete(practice.id, practice.name, e);
+          setIsOpen(false);
+        }}
                                   disabled={isCompleting}
                                   className={`flex-1 px-2 py-1.5 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1 ${
                                     isCompleting
