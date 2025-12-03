@@ -1481,8 +1481,9 @@ ${qualQuestion} (0-5)`
       };
       const avgDelta = (deltas.regulation + deltas.awareness + deltas.outlook + deltas.attention) / 4;
       
-      // Insert into weekly_deltas
-      const today = new Date().toISOString().split('T')[0];
+      // Insert into weekly_deltas - USE LOCAL DATE, NOT UTC
+      const nowDate = new Date();
+      const today = `${nowDate.getFullYear()}-${String(nowDate.getMonth() + 1).padStart(2, '0')}-${String(nowDate.getDate()).padStart(2, '0')}`;
       const { error: insertError } = await supabase
         .from('weekly_deltas')
         .upsert({
@@ -1639,7 +1640,6 @@ ${statusItems.join('\n')}`;
       try {
         const supabase = createClient();
         const userName = getUserName();
-        const currentStage = progress?.currentStage || baselineData.currentStage || 1;
         
         // Get user progress including last visit and onboarding status
         const { data: progressData, error: fetchError } = await supabase
@@ -1647,6 +1647,12 @@ ${statusItems.join('\n')}`;
           .select('*')
           .eq('user_id', user.id)
           .single();
+        
+        // IMPORTANT: Use database-fetched stage, not stale baselineData
+        // This ensures Stage 3 users see Stage 3 opening, not Stage 1
+        const currentStage = progressData?.current_stage || progress?.currentStage || baselineData.currentStage || 1;
+        
+        devLog('[ChatInterface]', 'Initialization - currentStage:', currentStage, 'from DB:', progressData?.current_stage);
         
         // Determine opening type
         // If user is Stage 2+, they've clearly completed onboarding even if flag wasn't set
@@ -1659,13 +1665,20 @@ ${statusItems.join('\n')}`;
         );
         setOpeningType(type);
         
+        devLog('[ChatInterface]', 'Opening type:', type, 'hasCompletedOnboarding:', hasCompletedOnboarding);
+        
         // Set intro step based on existing progress
-        if (progressData?.ritual_intro_completed) {
+        // If Stage 2+, they've completed intro even if flag not set
+        if (progressData?.ritual_intro_completed || currentStage > 1) {
           setIntroStep(4); // Skip intro flow
         }
         
-        // Get practices completed today
-        const today = new Date().toISOString().split('T')[0];
+        // Get practices completed today - USE LOCAL DATE, NOT UTC!
+        // UTC causes timezone bugs (e.g., 8PM Calgary = next day in UTC)
+        const now = new Date();
+        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        devLog('[ChatInterface]', 'Querying practices for local date:', today);
+        
         const { data: todayLogs } = await supabase
           .from('practice_logs')
           .select('practice_type')
@@ -1676,15 +1689,22 @@ ${statusItems.join('\n')}`;
         const completedToday = todayLogs?.map((log: { practice_type: string }) => log.practice_type) || [];
         setPracticesCompletedToday(completedToday);
         
+        devLog('[ChatInterface]', 'Practices completed today:', completedToday);
+        
         // Generate opening message based on type
+        // Create a corrected baselineData with the actual current stage
+        const correctedBaselineData: BaselineData = {
+          ...baselineData,
+          currentStage: currentStage
+        };
         let openingMessage: string;
         
         if (type === 'first_time') {
-          openingMessage = await getFirstTimeOpeningMessage(baselineData, userName);
+          openingMessage = await getFirstTimeOpeningMessage(correctedBaselineData, userName);
         } else if (type === 'same_day') {
-          openingMessage = getSameDayReturnMessage(baselineData, progressData, currentStage, completedToday);
+          openingMessage = getSameDayReturnMessage(correctedBaselineData, progressData, currentStage, completedToday);
         } else {
-          openingMessage = getNewDayMorningMessage(baselineData, progressData, userName, currentStage);
+          openingMessage = getNewDayMorningMessage(correctedBaselineData, progressData, userName, currentStage);
         }
         
         setMessages([{ role: 'assistant', content: openingMessage }]);
@@ -2172,29 +2192,6 @@ ${statusItems.join('\n')}`;
               </div>
               <p className="text-xs text-gray-500 mt-1">{getStatusTier(baselineData.rewiredIndex)}</p>
             </div>
-
-            {/* Adherence Stats */}
-            {progress && (
-              <div className="bg-gray-900 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-400">Adherence</span>
-                  <span className="text-lg font-semibold text-[#ff9e19]">
-                    {(progress.adherencePercentage || 0).toFixed(0)}%
-                  </span>
-                </div>
-                <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
-                  <div 
-                    className="h-2 rounded-full bg-[#ff9e19] transition-all"
-                    style={{ width: `${progress.adherencePercentage || 0}%` }}
-                  />
-                </div>
-                {progress.consecutiveDays !== undefined && progress.consecutiveDays > 0 && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    🔥 {progress.consecutiveDays} day streak
-                  </p>
-                )}
-              </div>
-            )}
 
             {/* Domain Scores */}
             <div className="bg-gray-900 rounded-lg p-4 space-y-3">
