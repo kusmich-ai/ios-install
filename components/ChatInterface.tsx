@@ -825,7 +825,34 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
         : undefined,
       flowBlockSetupCompleted: extendedProgress?.flowBlockSetupCompleted || flowBlockState.isComplete,
       toolsIntroduced: extendedProgress?.toolsIntroduced || [],
-      weeklyCheckInDue: false, // TODO: Implement weekly check-in logic
+      weeklyCheckInDue: (() => {
+  const lastCheckin = extendedProgress?.lastWeeklyCheckin;
+  const now = new Date();
+  const today = now.getDay(); // 0 = Sunday
+  
+  // If never done a check-in, due after 7 days in stage
+  if (!lastCheckin) {
+    return daysInStage >= 7;
+  }
+  
+  const lastCheckinDate = new Date(lastCheckin);
+  const daysSinceCheckin = Math.floor((now.getTime() - lastCheckinDate.getTime()) / (1000 * 60 * 60 * 24));
+  
+  // Due if 7+ days since last check-in
+  if (daysSinceCheckin >= 7) {
+    return true;
+  }
+  
+  // Also due if it's Sunday and last check-in was before this week started
+  if (today === 0) { // Sunday
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay()); // Go back to Sunday
+    startOfWeek.setHours(0, 0, 0, 0);
+    return lastCheckinDate < startOfWeek;
+  }
+  
+  return false;
+})(),
       isMobile
     };
   }, [baselineData, progress, practicesCompletedToday, introStep, isMobile, flowBlockState.isComplete]);
