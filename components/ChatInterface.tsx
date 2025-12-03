@@ -1656,17 +1656,9 @@ ${statusItems.join('\n')}`;
           .eq('user_id', user.id)
           .single();
         
-        // IMPORTANT: Use database-fetched stage, not stale baselineData
-        // This ensures Stage 3 users see Stage 3 opening, not Stage 1
+        /// IMPORTANT: Use database-fetched stage, not stale baselineData
+       // This ensures users see their actual stage opening, not Stage 1
         const currentStage = progressData?.current_stage || progress?.currentStage || baselineData.currentStage || 1;
-        
-        // Production debugging - remove after confirmed working
-        console.log('[ChatInterface] Init:', {
-          currentStage,
-          dbStage: progressData?.current_stage,
-          lastVisit: progressData?.last_visit,
-          ritualIntroCompleted: progressData?.ritual_intro_completed
-        });
         
         // Determine opening type
         // If user is Stage 2+, they've clearly completed onboarding even if flag wasn't set
@@ -1678,13 +1670,6 @@ ${statusItems.join('\n')}`;
           hasCompletedOnboarding
         );
         setOpeningType(type);
-        
-        // Production debugging - remove after confirmed working
-        console.log('[ChatInterface] Opening decision:', {
-          type,
-          hasCompletedOnboarding,
-          lastVisit: progressData?.last_visit
-        });
         
         // Set intro step based on existing progress
         // If Stage 2+, they've completed intro even if flag not set
