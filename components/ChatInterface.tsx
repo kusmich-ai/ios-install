@@ -1110,8 +1110,9 @@ if (newStageTemplates && 'intro' in newStageTemplates && typeof newStageTemplate
     
     // Handle stage-specific setup flows
 if (pendingUnlockStage === 3) {
-  // Stage 3: Go directly to Micro-Action setup (confirmation template already explained it)
-  setAwaitingMicroActionStart(true);
+  // Stage 3: Go directly to Micro-Action setup (confirmation template already asked)
+  startMicroActionSetup();
+}
   // No additional message needed - confirmation template ended with "Ready to run the Identity Installation Protocol?"
 } else if (pendingUnlockStage === 4) {
       // Stage 4: Trigger Flow Block setup
