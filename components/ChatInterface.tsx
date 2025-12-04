@@ -1957,7 +1957,7 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
       case 'flow_block':
         // Trigger Flow Block setup
         if (flowBlockState.isComplete) {
-          const todaysBlock = getTodaysFlowBlock(flowBlockState.extractedWeeklyMap);
+          const todaysBlock = getTodaysBlock(flowBlockState.extractedWeeklyMap);
           if (todaysBlock) {
             setMessages(prev => [...prev, { 
               role: 'assistant', 
