@@ -39,8 +39,11 @@ export interface UserProgress {
   currentIdentity: string | null;
   microAction: string | null;
   identitySprintStart: string | null;
-  // Flow Block field
+  // Flow Block fields
   hasFlowBlockConfig: boolean;
+  flowBlockSprintNumber: number | null;
+  flowBlockSprintStart: string | null;
+  flowBlockSprintDay: number | null;  // Day 1-21 within current sprint
   // NEW: Progress tracking for unlock visualization
   daysInStage: number;
   unlockProgress: {
@@ -178,6 +181,18 @@ export function useUserProgress() {
         .eq('user_id', user.id)
         .eq('completion_status', 'active')
         .maybeSingle();
+
+      // Calculate sprint day (1-21) if active sprint exists
+      let flowBlockSprintDay: number | null = null;
+      if (flowBlockSprint?.start_date) {
+        const sprintStart = new Date(flowBlockSprint.start_date);
+        sprintStart.setHours(0, 0, 0, 0);
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        const diffTime = now.getTime() - sprintStart.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        flowBlockSprintDay = Math.max(1, Math.min(diffDays, 21));
+      }
 
       // Fetch latest 2 weekly deltas to calculate week-over-week change
       const { data: weeklyDeltas } = await supabase
@@ -341,6 +356,9 @@ export function useUserProgress() {
         microAction: progressData.micro_action || null,
         identitySprintStart: progressData.identity_sprint_start || null,
         hasFlowBlockConfig: !!flowBlockSprint,
+        flowBlockSprintNumber: flowBlockSprint?.sprint_number || null,
+        flowBlockSprintStart: flowBlockSprint?.start_date || null,
+        flowBlockSprintDay: flowBlockSprintDay,
         // NEW fields
         daysInStage,
         unlockProgress
