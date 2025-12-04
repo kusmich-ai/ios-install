@@ -264,6 +264,8 @@ export default function ToolsSidebar({
                   // Special handling for Flow Block
                   const isFlowBlock = practice.id === 'flow_block';
                   const hasFlowBlockConfig = isFlowBlock && !!(progress.hasFlowBlockConfig);
+                  const flowBlockDay = progress.flowBlockSprintDay;
+                  const flowBlockSprintNum = progress.flowBlockSprintNumber;
                   
                   return (
                     <div
@@ -297,7 +299,9 @@ export default function ToolsSidebar({
                             {isMicroAction 
                               ? (hasIdentity ? '2-5 min' : 'Setup required') 
                               : isFlowBlock
-                                ? (hasFlowBlockConfig ? '60-90 min' : 'Setup required')
+                                ? (hasFlowBlockConfig 
+                                    ? `Day ${flowBlockDay} of 21 • 60-90 min` 
+                                    : 'Setup required')
                                 : `${practice.duration} min`
                             }
                           </div>
@@ -346,11 +350,11 @@ export default function ToolsSidebar({
                             ) : isFlowBlock ? (
                               // FLOW BLOCK SPECIAL BUTTONS
                               hasFlowBlockConfig ? (
-                                // Has config - show Complete button (logs completion via chat)
+                                // Has active sprint - show appropriate button
                                 <>
                                   {!isCompleted && (
                                     <button
-                                      onClick={() => handleStartPractice(practice.id)}
+                                      onClick={(e) => handleMarkComplete(practice.id, practice.name, e)}
                                       disabled={isCompleting}
                                       className={`flex-1 px-2 py-1.5 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1 ${
                                         isCompleting
@@ -363,18 +367,18 @@ export default function ToolsSidebar({
                                       ) : (
                                         <Check className="w-3 h-3" />
                                       )}
-                                      Mark Complete
+                                      Complete Today's Block
                                     </button>
                                   )}
                                   {isCompleted && (
                                     <span className="flex-1 px-2 py-1.5 text-xs text-green-400 flex items-center justify-center gap-1">
                                       <Check className="w-3 h-3" />
-                                      Done for today
+                                      Flow Block Complete
                                     </span>
                                   )}
                                 </>
                               ) : (
-                                // No config - show Setup button
+                                // No active sprint - show Setup button
                                 <button
                                   onClick={() => handleStartPractice(practice.id)}
                                   className="flex-1 px-2 py-1.5 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1 bg-[#ff9e19]/20 text-[#ff9e19] hover:bg-[#ff9e19]/30"
