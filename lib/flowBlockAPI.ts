@@ -1,5 +1,5 @@
 // flowBlockAPI.ts
-// 100% API-driven Flow Block Integration Protocol v2.1
+// 100% API-driven Flow Block Integration Protocol v2.2
 // Claude handles all the discovery, planning, and setup naturally
 
 // ============================================
@@ -16,18 +16,6 @@ export interface WeeklyMapEntry {
   duration: number;      // 60 or 90 minutes
 }
 
-export interface FlowMenuEntry {
-  domain: string;
-  task: string;
-  flowType: string;
-}
-
-export interface FlowMenu {
-  goal: FlowMenuEntry[];
-  growth: FlowMenuEntry[];
-  gratitude: FlowMenuEntry[];
-}
-
 export interface SetupPreferences {
   professionalLocation: string;
   personalLocation: string;
@@ -41,7 +29,6 @@ export interface FlowBlockState {
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>;
   phase: 'discovery' | 'planning' | 'setup' | 'commitment' | null;
   extractedDomains: string[] | null;
-  extractedMenu: FlowMenu | null;
   extractedWeeklyMap: WeeklyMapEntry[] | null;
   extractedPreferences: SetupPreferences | null;
   focusType: 'concentrated' | 'distributed' | null;
@@ -55,7 +42,6 @@ export const initialFlowBlockState: FlowBlockState = {
   conversationHistory: [],
   phase: null,
   extractedDomains: null,
-  extractedMenu: null,
   extractedWeeklyMap: null,
   extractedPreferences: null,
   focusType: null,
@@ -65,7 +51,7 @@ export const initialFlowBlockState: FlowBlockState = {
 };
 
 // ============================================
-// SYSTEM PROMPT v2.1
+// SYSTEM PROMPT v2.2
 // ============================================
 
 export const flowBlockSystemPrompt = `You are a performance coach helping a user set up their Flow Block system — the "performance element" of the Mental Operating System (MOS).
@@ -97,15 +83,6 @@ Guide users through pre-block preparation, secure commitment, and support calend
 - Setup Requirements (not optional): Same location, same playlist, timer usage, notifications off
 - Get written commitment to protocol
 - Support calendar scheduling with templates and guidance
-- During setup: Deliver short intention prompts to prime focus
-- During closure: Prompt one-sentence reflection ("What was the learning from today?")
-- Standard post-block: Conduct performance tagging using 1-5 scale assessment for all four metrics
-- Have users set daily reminder to check in after each block
-
-### Pattern Analyst (Ongoing)
-- Daily check-ins (first 7 days): Analyze performance data, wait for patterns before suggesting adjustments
-- After 7 days: Comprehensive pattern analysis for high-level modifications
-- After 21 days: Full cycle review with evolution suggestions
 
 ## SESSION FLOW BLUEPRINT
 
@@ -316,22 +293,15 @@ Restate the finalized weekly map and setup preferences. Once they commit, end wi
 - Too many Goal blocks → Rebalance toward Growth/Gratitude
 - All blocks in one domain → Redistribute across domains
 
-## CROSS-PROJECT INTEGRATION
-- Morning Micro-Action: Ask about identity connection during Discovery Phase. If user's nervous system feels unregulated at Flow Block entry, suggest completing Micro-Action first to stabilize identity signal.
-- The Reframe Protocol: If frustration, guilt, or avoidance arises, initiate short Audit to debug cognitive distortions before re-engaging Flow Block.
-- Awareness Reps: Can be used pre-block as 1–2 minute grounding protocol for regulation.
+## EXTRACTION FORMAT
+When the user commits to their Flow Block system, end your message with this EXACT marker on its own line:
 
-## EXTRACTION
-When the user commits to their Flow Block system, end your message with this EXACT format:
+[FLOWBLOCK_SETUP_COMPLETE]
 
-[FLOWBLOCK_COMPLETE:
-domains=["Domain1", "Domain2", "Domain3"]
-weeklyMap=[{"day":"Monday","domain":"Domain","task":"Task","flowType":"Type","category":"Cat","identityLink":"Link","duration":90}, ...]
-preferences={"professionalLocation":"Location","personalLocation":"Location","playlist":"Playlist","timerMethod":"Method","notificationsOff":true}
-focusType="concentrated"|"distributed"
-]
+Then on the next line, output valid JSON with this structure:
+{"domains":["Domain1","Domain2","Domain3"],"weeklyMap":[{"day":"Monday","domain":"Professional Work","task":"Task name","flowType":"Strategic","category":"Goal","identityLink":"Direct","duration":90}],"preferences":{"professionalLocation":"Home office","personalLocation":"Living room","playlist":"Deep Focus","timerMethod":"Phone timer","notificationsOff":true},"focusType":"concentrated"}
 
-Only include this when setup is complete and the user has committed.`;
+Only include this marker and JSON when setup is complete and the user has committed.`;
 
 // ============================================
 // OPENING MESSAGES
@@ -370,55 +340,57 @@ Ready to identify your highest-leverage work?`;
 }
 
 // ============================================
-// HELPER FUNCTIONS
+// COMPLETION PARSING (matches new format)
 // ============================================
 
-// Parse the completion marker from API response
-export function parseFlowBlockCompletion(response: string): {
+export interface FlowBlockCompletion {
   domains: string[];
   weeklyMap: WeeklyMapEntry[];
-  preferences: SetupPreferences;
+  setupPreferences: SetupPreferences;
   focusType: 'concentrated' | 'distributed';
-} | null {
-  // Look for the completion marker
-  const completionMatch = response.match(/\[FLOWBLOCK_COMPLETE:\s*([\s\S]*?)\]/);
-  if (!completionMatch) return null;
+}
 
-  const content = completionMatch[1];
+// Parse the completion marker from API response
+export function parseFlowBlockCompletion(response: string): FlowBlockCompletion | null {
+  // Look for the completion marker followed by JSON
+  const markerIndex = response.indexOf('[FLOWBLOCK_SETUP_COMPLETE]');
+  if (markerIndex === -1) return null;
+
+  // Get everything after the marker
+  const afterMarker = response.substring(markerIndex + '[FLOWBLOCK_SETUP_COMPLETE]'.length).trim();
+  
+  // Find JSON object (starts with { ends with })
+  const jsonMatch = afterMarker.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) return null;
 
   try {
-    // Extract domains
-    const domainsMatch = content.match(/domains=(\[[\s\S]*?\])/);
-    const domains = domainsMatch ? JSON.parse(domainsMatch[1]) : [];
-
-    // Extract weekly map
-    const weeklyMapMatch = content.match(/weeklyMap=(\[[\s\S]*?\](?=\s*(?:preferences|focusType|$)))/);
-    const weeklyMap = weeklyMapMatch ? JSON.parse(weeklyMapMatch[1]) : [];
-
-    // Extract preferences
-    const preferencesMatch = content.match(/preferences=(\{[\s\S]*?\})/);
-    const preferences = preferencesMatch ? JSON.parse(preferencesMatch[1]) : {
-      professionalLocation: '',
-      personalLocation: '',
-      playlist: '',
-      timerMethod: '',
-      notificationsOff: true
+    const parsed = JSON.parse(jsonMatch[0]);
+    
+    return {
+      domains: parsed.domains || [],
+      weeklyMap: parsed.weeklyMap || [],
+      setupPreferences: parsed.preferences || {
+        professionalLocation: '',
+        personalLocation: '',
+        playlist: '',
+        timerMethod: '',
+        notificationsOff: true
+      },
+      focusType: parsed.focusType || 'distributed'
     };
-
-    // Extract focus type
-    const focusTypeMatch = content.match(/focusType="(concentrated|distributed)"/);
-    const focusType = focusTypeMatch ? focusTypeMatch[1] as 'concentrated' | 'distributed' : 'distributed';
-
-    return { domains, weeklyMap, preferences, focusType };
   } catch (error) {
-    console.error('[FlowBlock] Error parsing completion:', error);
+    console.error('[FlowBlock] Error parsing completion JSON:', error);
     return null;
   }
 }
 
 // Remove the completion marker from the display response
 export function cleanFlowBlockResponseForDisplay(response: string): string {
-  return response.replace(/\[FLOWBLOCK_COMPLETE:[\s\S]*?\]/, '').trim();
+  // Remove the marker and everything after it
+  const markerIndex = response.indexOf('[FLOWBLOCK_SETUP_COMPLETE]');
+  if (markerIndex === -1) return response.trim();
+  
+  return response.substring(0, markerIndex).trim();
 }
 
 // Build the messages array for the API call
@@ -439,6 +411,10 @@ export function buildFlowBlockAPIMessages(
     { role: 'user' as const, content: newUserMessage }
   ];
 }
+
+// ============================================
+// DAILY EXECUTION HELPERS
+// ============================================
 
 // Get today's scheduled block from the weekly map
 export function getTodaysBlock(weeklyMap: WeeklyMapEntry[]): WeeklyMapEntry | null {
@@ -461,10 +437,6 @@ export function formatWeeklyMapForDisplay(weeklyMap: WeeklyMapEntry[]): string {
 
   return table;
 }
-
-// ============================================
-// DAILY EXECUTION PROMPTS
-// ============================================
 
 // Daily block prompt for when setup is complete
 export function getDailyFlowBlockPrompt(block: WeeklyMapEntry, preferences: SetupPreferences): string {
@@ -513,15 +485,12 @@ What was the learning from today?
 
 Give me your ratings (e.g., "4, 3, 4, 5") and your reflection.`;
 
-
 // ============================================
-// SPRINT HELPER FUNCTIONS
+// SPRINT STATUS HELPERS
 // ============================================
 
-/**
- * Calculate which day of the current sprint we're on (1-21)
- */
-export function getFlowBlockSprintDay(sprintStartDate: string): number {
+// Calculate which day of the current sprint we're on (1-21)
+export function getSprintDayNumber(sprintStartDate: string): number {
   const start = new Date(sprintStartDate);
   start.setHours(0, 0, 0, 0);
   
@@ -534,10 +503,8 @@ export function getFlowBlockSprintDay(sprintStartDate: string): number {
   return Math.max(1, Math.min(diffDays, 21));
 }
 
-/**
- * Check if current sprint is complete
- */
-export function isFlowBlockSprintComplete(sprintStartDate: string): boolean {
+// Check if current sprint is complete
+export function isSprintComplete(sprintStartDate: string): boolean {
   const start = new Date(sprintStartDate);
   start.setHours(0, 0, 0, 0);
   
@@ -550,120 +517,8 @@ export function isFlowBlockSprintComplete(sprintStartDate: string): boolean {
   return now >= endDate;
 }
 
-/**
- * Get formatted sprint status for FlowBlocks
- */
-export function getFlowBlockSprintStatus(
-  sprintStartDate: string | null, 
-  sprintNumber: number,
-  weeklyMap: WeeklyMapEntry[] | null
-): string {
-  if (!sprintStartDate || !weeklyMap) {
-    return 'Not configured';
-  }
-  
-  const dayNumber = getFlowBlockSprintDay(sprintStartDate);
-  const complete = isFlowBlockSprintComplete(sprintStartDate);
-  const blocksConfigured = weeklyMap.length;
-  
-  if (complete) {
-    return `Sprint ${sprintNumber} Complete ✓ (${blocksConfigured} blocks/week)`;
-  }
-  
-  return `Sprint ${sprintNumber}, Day ${dayNumber}/21 • ${blocksConfigured} blocks/week`;
-}
-
-/**
- * Get week number within the sprint (1-3)
- */
-export function getSprintWeek(sprintStartDate: string): number {
-  const day = getFlowBlockSprintDay(sprintStartDate);
-  return Math.ceil(day / 7);
-}
-
-/**
- * Check if it's time for weekly review (day 7, 14, or 21)
- */
-export function isWeeklyReviewDay(sprintStartDate: string): boolean {
-  const day = getFlowBlockSprintDay(sprintStartDate);
-  return day === 7 || day === 14 || day === 21;
-}
-
-/**
- * Get days remaining in current sprint
- */
-export function getFlowBlockDaysRemaining(sprintStartDate: string): number {
-  const currentDay = getFlowBlockSprintDay(sprintStartDate);
-  return Math.max(0, 21 - currentDay);
-}
-
-/**
- * Calculate state for starting a new FlowBlock sprint
- * Optionally carries over preferences and weekly map from previous sprint
- */
-export function startNewFlowBlockSprint(
-  currentSprintNumber: number,
-  carryOverMap: boolean = false,
-  previousMap?: WeeklyMapEntry[] | null,
-  previousPreferences?: SetupPreferences | null
-): Partial<FlowBlockState> {
-  return {
-    isActive: true,
-    conversationHistory: [],
-    phase: carryOverMap ? 'commitment' : 'discovery',
-    extractedDomains: null,
-    extractedMenu: null,
-    extractedWeeklyMap: carryOverMap ? previousMap : null,
-    extractedPreferences: carryOverMap ? previousPreferences : null,
-    focusType: null,
-    isComplete: false,
-    sprintStartDate: new Date().toISOString(),
-    sprintNumber: currentSprintNumber + 1
-  };
-}
-
-/**
- * Get blocks completed this sprint (requires tracking data)
- */
-export function getSprintProgress(
-  sprintStartDate: string,
-  completedBlocks: number,
-  weeklyMap: WeeklyMapEntry[]
-): {
-  dayNumber: number;
-  weekNumber: number;
-  blocksCompleted: number;
-  blocksExpected: number;
-  adherencePercent: number;
-} {
-  const dayNumber = getFlowBlockSprintDay(sprintStartDate);
-  const weekNumber = getSprintWeek(sprintStartDate);
-  
-  // Calculate expected blocks (5 per week, prorated for current day)
-  const fullWeeks = Math.floor((dayNumber - 1) / 7);
-  const daysInCurrentWeek = ((dayNumber - 1) % 7) + 1;
-  const workDaysInCurrentWeek = Math.min(daysInCurrentWeek, 5); // Mon-Fri only
-  
-  const blocksExpected = (fullWeeks * 5) + workDaysInCurrentWeek;
-  const adherencePercent = blocksExpected > 0 
-    ? Math.round((completedBlocks / blocksExpected) * 100) 
-    : 0;
-  
-  return {
-  dayNumber,
-  weekNumber,
-  blocksCompleted: completedBlocks,  // ✅ Map parameter to return property
-  blocksExpected,
-  adherencePercent
-};
-}
-
-
-// ============================================
-// SPRINT TRANSITION MESSAGES
-// ============================================
-
-export const flowBlockSprintCompleteMessage = (sprintNumber: number) => `**21-Day Flow Block Sprint ${sprintNumber} Complete** 🎯
+// Sprint complete message
+export const sprintCompleteMessage = (sprintNumber: number) => `**21-Day Flow Block Sprint ${sprintNumber} Complete** 🎉
 
 You've completed a full cycle. Let's review what your nervous system learned.
 
@@ -687,20 +542,3 @@ Would you like to:
 3. **Redesign** - start fresh with new discovery
 
 What feels right?`;
-
-export const weeklyCheckInMessage = (weekNumber: number, sprintNumber: number) => `**Week ${weekNumber} of Sprint ${sprintNumber} Complete**
-
-Quick pulse check before we continue:
-
-- How did your Flow Blocks feel this week?
-- Any blocks that felt too easy or too hard?
-- Did your setup (location, playlist, timer) work consistently?
-
-Any adjustments needed, or keep rolling?`;
-
-// Aliases for backwards compatibility with ChatInterface imports
-export const getSprintDayNumber = getFlowBlockSprintDay;
-export const isSprintComplete = isFlowBlockSprintComplete;
-export const sprintCompleteMessage = flowBlockSprintCompleteMessage;
-
-
