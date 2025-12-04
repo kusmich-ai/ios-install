@@ -852,7 +852,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
             extractedWeeklyMap: config.weekly_map,
             extractedPreferences: config.setup_preferences,
             sprintStartDate: config.sprint_start_date,
-            todaysBlock: getTodaysFlowBlock(config.weekly_map)
+            todaysBlock: getTodaysBlock(config.weekly_map)
           }));
         }
       } catch (error) {
