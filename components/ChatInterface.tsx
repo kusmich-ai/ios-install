@@ -55,9 +55,11 @@ import {
   flowBlockSystemPrompt,
   flowBlockOpeningMessage,
   getFlowBlockOpeningWithIdentity,
-  parseFlowBlockCompletion,
-  cleanFlowBlockResponseForDisplay,
+  isCommitmentResponse,
   buildFlowBlockAPIMessages,
+  buildFlowBlockExtractionMessages,
+  parseFlowBlockExtraction,
+  cleanFlowBlockResponseForDisplay,
   getTodaysBlock,
   getDailyFlowBlockPrompt,
   postBlockReflectionPrompt,
@@ -1323,14 +1325,23 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
     setMessages(prev => [...prev, { role: 'user', content: userResponse }]);
     setLoading(true);
     
-    // Build conversation history for API
+    // Get last assistant message to check for commitment question
+    const lastAssistantMsg = flowBlockState.conversationHistory
+      .filter(m => m.role === 'assistant')
+      .pop()?.content || '';
+    
+    // Check if this is a commitment response
+    const isCommitment = isCommitmentResponse(userResponse, lastAssistantMsg);
+    devLog('[FlowBlock]', 'Is commitment response:', isCommitment);
+    
+    // Build updated history with user message
     const updatedHistory = [
       ...flowBlockState.conversationHistory,
       { role: 'user' as const, content: userResponse }
     ];
     
     try {
-      // Call the main chat API with the Flow Block system prompt
+      // STAGE 1: Get natural response from Claude
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1349,42 +1360,82 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
       
       devLog('[FlowBlock]', 'API response:', assistantResponse);
       
-      // Check for completion marker (using library parser)
-      const completion = parseFlowBlockCompletion(assistantResponse);
+      // Clean and display response
+      const cleanResponse = cleanFlowBlockResponseForDisplay(assistantResponse);
+      setMessages(prev => [...prev, { role: 'assistant', content: cleanResponse }]);
       
-      if (completion) {
-        const cleanResponse = cleanFlowBlockResponseForDisplay(assistantResponse);
-        setMessages(prev => [...prev, { role: 'assistant', content: cleanResponse }]);
+      // Update conversation history with assistant response
+      const fullHistory = [...updatedHistory, { role: 'assistant' as const, content: cleanResponse }];
+      
+      // STAGE 2: If commitment detected, run extraction
+      if (isCommitment) {
+        devLog('[FlowBlock]', 'Commitment detected, running extraction...');
         
-        // Start new sprint in database and get sprint info
-        const sprintResult = await startNewFlowBlockSprint(
-          user.id,
-          completion.weeklyMap,
-          completion.setupPreferences,
-          completion.domains,
-          completion.focusType
-        );
+        const extractionMessages = buildFlowBlockExtractionMessages(fullHistory);
         
-        setFlowBlockState(prev => ({
-          ...prev,
-          conversationHistory: [...updatedHistory, { role: 'assistant', content: cleanResponse }],
-          extractedDomains: completion.domains,
-          extractedWeeklyMap: completion.weeklyMap,
-          extractedPreferences: completion.setupPreferences,
-          focusType: completion.focusType,
-          isComplete: true,
-          isActive: false,
-          sprintStartDate: sprintResult.startDate,
-          sprintNumber: sprintResult.sprintNumber
-        }));
+        const extractionResponse = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: extractionMessages,
+            context: 'flow_block_extraction'
+          })
+        });
+        
+        if (extractionResponse.ok) {
+          const extractionData = await extractionResponse.json();
+          const extractionText = extractionData.response || extractionData.content || '';
+          
+          devLog('[FlowBlock]', 'Extraction response:', extractionText);
+          
+          const extracted = parseFlowBlockExtraction(extractionText);
+          
+          if (extracted) {
+            devLog('[FlowBlock]', 'Extraction successful:', extracted);
+            
+            // Save to database
+            const sprintResult = await startNewFlowBlockSprint(
+              user.id,
+              extracted.weeklyMap,
+              extracted.setupPreferences,
+              extracted.domains,
+              extracted.focusType
+            );
+            
+            devLog('[FlowBlock]', 'Sprint saved:', sprintResult);
+            
+            // Update state to complete
+            setFlowBlockState(prev => ({
+              ...prev,
+              conversationHistory: fullHistory,
+              extractedDomains: extracted.domains,
+              extractedWeeklyMap: extracted.weeklyMap,
+              extractedPreferences: extracted.setupPreferences,
+              focusType: extracted.focusType,
+              isComplete: true,
+              isActive: false,
+              sprintStartDate: sprintResult.startDate,
+              sprintNumber: sprintResult.sprintNumber
+            }));
+          } else {
+            devLog('[FlowBlock]', 'Extraction parsing failed, continuing conversation');
+            setFlowBlockState(prev => ({
+              ...prev,
+              conversationHistory: fullHistory
+            }));
+          }
+        } else {
+          devLog('[FlowBlock]', 'Extraction API call failed');
+          setFlowBlockState(prev => ({
+            ...prev,
+            conversationHistory: fullHistory
+          }));
+        }
       } else {
-        // Normal response - continue conversation
-        setMessages(prev => [...prev, { role: 'assistant', content: assistantResponse }]);
-        
-        // Update conversation history
+        // Normal response - just update conversation history
         setFlowBlockState(prev => ({
           ...prev,
-          conversationHistory: [...updatedHistory, { role: 'assistant', content: assistantResponse }]
+          conversationHistory: fullHistory
         }));
       }
     } catch (error) {
