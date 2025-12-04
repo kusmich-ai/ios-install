@@ -36,16 +36,35 @@ export interface UserProgress {
   // Track the date this data is for
   dataDate: string;
  // Micro-Action Identity fields
-currentIdentity: string | null;
-currentMicroAction: string | null;
-identitySprintNumber: number | null;
-identitySprintStart: string | null;
+currentIdentity: identitySprint?.identity_statement || null,
+currentMicroAction: identitySprint?.micro_action || null,
+identitySprintNumber: identitySprint?.sprint_number || null,
+identitySprintStart: identitySprint?.start_date || null,
 identitySprintDay: number | null;  // Day 1-21 within current sprint
   // Flow Block fields
   hasFlowBlockConfig: boolean;
   flowBlockSprintNumber: number | null;
   flowBlockSprintStart: string | null;
   flowBlockSprintDay: number | null;  // Day 1-21 within current sprint
+  // Fetch active identity sprint
+const { data: identitySprint } = await supabase
+  .from('identity_sprints')
+  .select('id, sprint_number, start_date, identity_statement, micro_action')
+  .eq('user_id', user.id)
+  .eq('completion_status', 'active')
+  .maybeSingle();
+
+// Calculate identity sprint day
+let identitySprintDay: number | null = null;
+if (identitySprint?.start_date) {
+  const sprintStart = new Date(identitySprint.start_date);
+  sprintStart.setHours(0, 0, 0, 0);
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const diffTime = now.getTime() - sprintStart.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+  identitySprintDay = Math.max(1, Math.min(diffDays, 21));
+}
   // NEW: Progress tracking for unlock visualization
   daysInStage: number;
   unlockProgress: {
