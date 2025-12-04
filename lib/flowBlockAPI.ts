@@ -1,6 +1,7 @@
 // flowBlockAPI.ts
-// 100% API-driven Flow Block Integration Protocol v2.2
+// 100% API-driven Flow Block Integration Protocol v2.3
 // Claude handles all the discovery, planning, and setup naturally
+// v2.3: Added commitment detection to ensure completion marker is always output
 
 // ============================================
 // TYPE DEFINITIONS
@@ -51,7 +52,7 @@ export const initialFlowBlockState: FlowBlockState = {
 };
 
 // ============================================
-// SYSTEM PROMPT v2.2
+// SYSTEM PROMPT v2.3
 // ============================================
 
 export const flowBlockSystemPrompt = `You are a performance coach helping a user set up their Flow Block system — the "performance element" of the Mental Operating System (MOS).
@@ -254,11 +255,7 @@ Are you in?"
 Wait for explicit commitment.
 
 ### 6. Close
-When the user confirms their commitment (says yes, I'm in, committed, etc.), you MUST:
-1. Give a brief congratulatory message
-2. Output the completion marker EXACTLY as shown below
-
-CRITICAL: You MUST include the completion marker when the user commits. Without it, their setup will not be saved.
+Restate the finalized weekly map and setup preferences. Once they commit, end with the completion marker.
 
 ## IMPORTANT RULES
 - Ask ONE question at a time
@@ -295,26 +292,7 @@ CRITICAL: You MUST include the completion marker when the user commits. Without 
 - Skipping closure ritual → Remind of daily check-in commitment
 - Working from stress state → Suggest Awareness Reset first
 - Too many Goal blocks → Rebalance toward Growth/Gratitude
-- All blocks in one domain → Redistribute across domains
-
-## CRITICAL: COMPLETION MARKER (REQUIRED)
-
-When the user commits to their Flow Block system (says "yes", "I'm in", "committed", etc.), you MUST end your response with the completion marker. THIS IS REQUIRED - without it, their data will not be saved.
-
-Your final message should be:
-1. A brief congratulations (1-2 sentences)
-2. Then this EXACT marker on its own line:
-
-[FLOWBLOCK_SETUP_COMPLETE]
-{"domains":["Professional Work","Creative Projects","Health"],"weeklyMap":[{"day":"Monday","domain":"Professional Work","task":"Deep work on main project","flowType":"Strategic","category":"Goal","identityLink":"Direct","duration":90},{"day":"Tuesday","domain":"Professional Work","task":"Deep work on main project","flowType":"Strategic","category":"Goal","identityLink":"Direct","duration":90},{"day":"Wednesday","domain":"Creative Projects","task":"Creative writing","flowType":"Creative","category":"Goal","identityLink":"Indirect","duration":90},{"day":"Thursday","domain":"Health","task":"Movement practice","flowType":"Strategic","category":"Growth","identityLink":"Direct","duration":60},{"day":"Friday","domain":"Professional Work","task":"Weekly planning","flowType":"Strategic","category":"Goal","identityLink":"Direct","duration":60}],"preferences":{"professionalLocation":"Home office","personalLocation":"Living room","playlist":"Deep Focus on Spotify","timerMethod":"Phone timer in other room","notificationsOff":true},"focusType":"distributed"}
-
-Replace the example values with the ACTUAL data from your conversation:
-- domains: The user's top 3 chosen domains
-- weeklyMap: The actual weekly schedule you created together
-- preferences: Their actual answers to the 4 setup questions
-- focusType: "concentrated" or "distributed" based on what you discussed
-
-DO NOT forget this marker. The user's setup depends on it.`;
+- All blocks in one domain → Redistribute across domains`;
 
 // ============================================
 // OPENING MESSAGES
@@ -353,7 +331,7 @@ Ready to identify your highest-leverage work?`;
 }
 
 // ============================================
-// COMPLETION PARSING (matches new format)
+// COMPLETION PARSING
 // ============================================
 
 export interface FlowBlockCompletion {
@@ -406,6 +384,28 @@ export function cleanFlowBlockResponseForDisplay(response: string): string {
   return response.substring(0, markerIndex).trim();
 }
 
+// ============================================
+// COMMITMENT REMINDER (Injected when user commits)
+// ============================================
+
+const commitmentReminderSuffix = `
+
+---
+SYSTEM INSTRUCTION: The user just committed to the Flow Block system. You MUST end your response with the completion marker.
+
+After your closing message, add this EXACT format on its own line:
+
+[FLOWBLOCK_SETUP_COMPLETE]
+{"domains":["Domain1","Domain2","Domain3"],"weeklyMap":[{"day":"Monday","domain":"Domain","task":"Task","flowType":"Type","category":"Category","identityLink":"Link","duration":90},{"day":"Tuesday","domain":"Domain","task":"Task","flowType":"Type","category":"Category","identityLink":"Link","duration":90},{"day":"Wednesday","domain":"Domain","task":"Task","flowType":"Type","category":"Category","identityLink":"Link","duration":90},{"day":"Thursday","domain":"Domain","task":"Task","flowType":"Type","category":"Category","identityLink":"Link","duration":60},{"day":"Friday","domain":"Domain","task":"Task","flowType":"Type","category":"Category","identityLink":"Link","duration":60}],"preferences":{"professionalLocation":"location","personalLocation":"location","playlist":"playlist","timerMethod":"timer","notificationsOff":true},"focusType":"concentrated"}
+
+Replace ALL placeholder values with the ACTUAL data from this conversation:
+- domains: The 3 domains they prioritized
+- weeklyMap: The exact weekly map you built together (all 5 days)
+- preferences: Their specific answers for location, playlist, timer, notifications
+- focusType: "concentrated" or "distributed" based on what you recommended
+
+THIS IS REQUIRED. Without this marker, their setup will NOT be saved and they will have to redo everything.`;
+
 // Build the messages array for the API call
 export function buildFlowBlockAPIMessages(
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>,
@@ -418,11 +418,65 @@ export function buildFlowBlockAPIMessages(
     systemPrompt += `\n\n## IDENTITY CONTEXT\nThe user's current Micro-Action identity is: "${currentIdentity}". Look for opportunities to connect one of their Flow Blocks to this identity if it makes sense.`;
   }
 
-  return [
-    { role: 'system' as const, content: systemPrompt },
-    ...conversationHistory,
-    { role: 'user' as const, content: newUserMessage }
+  // Build messages array
+  const messages: Array<{ role: 'user' | 'assistant' | 'system'; content: string }> = [
+    { role: 'system' as const, content: systemPrompt }
   ];
+
+  // Add conversation history
+  conversationHistory.forEach(msg => {
+    messages.push({
+      role: msg.role as 'user' | 'assistant',
+      content: msg.content
+    });
+  });
+
+  // Check if this looks like a commitment response
+  const normalizedMessage = newUserMessage.trim().toLowerCase();
+  const commitmentPatterns = [
+    /^yes[.!,\s]*$/i,
+    /^yeah[.!,\s]*$/i,
+    /^yep[.!,\s]*$/i,
+    /^yup[.!,\s]*$/i,
+    /^i'm in[.!,\s]*$/i,
+    /^im in[.!,\s]*$/i,
+    /^i commit[.!,\s]*$/i,
+    /^committed[.!,\s]*$/i,
+    /^absolutely[.!,\s]*$/i,
+    /^let's do it[.!,\s]*$/i,
+    /^lets do it[.!,\s]*$/i,
+    /^let's go[.!,\s]*$/i,
+    /^lets go[.!,\s]*$/i,
+    /^i do[.!,\s]*$/i,
+    /^ready[.!,\s]*$/i,
+    /^do it[.!,\s]*$/i,
+    /^100%[.!,\s]*$/i,
+    /^definitely[.!,\s]*$/i,
+    /^for sure[.!,\s]*$/i,
+    /^all in[.!,\s]*$/i
+  ];
+
+  const isCommitment = commitmentPatterns.some(pattern => pattern.test(normalizedMessage));
+
+  // Also check if the previous assistant message asked for commitment
+  const lastAssistantMessage = conversationHistory.length > 0 
+    ? conversationHistory[conversationHistory.length - 1]?.content || ''
+    : '';
+  const askedForCommitment = lastAssistantMessage.toLowerCase().includes('are you in') ||
+                              lastAssistantMessage.toLowerCase().includes('do you commit') ||
+                              lastAssistantMessage.toLowerCase().includes('ready to commit');
+
+  if (isCommitment && askedForCommitment) {
+    // Inject the reminder along with the user's message
+    messages.push({
+      role: 'user' as const,
+      content: newUserMessage + commitmentReminderSuffix
+    });
+  } else {
+    messages.push({ role: 'user' as const, content: newUserMessage });
+  }
+
+  return messages;
 }
 
 // ============================================
