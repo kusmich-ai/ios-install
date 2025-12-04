@@ -1297,11 +1297,13 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
   const startFlowBlockSetup = useCallback(async () => {
     devLog('[FlowBlock]', 'Starting setup flow (100% API)');
     
-    // Initialize state
+    // Initialize state with opening message in conversation history
     setFlowBlockState(prev => ({
       ...prev,
       isActive: true,
-      conversationHistory: []
+      conversationHistory: [
+        { role: 'assistant', content: flowBlockOpeningMessage }
+      ]
     }));
     
     // Show opening message
