@@ -1,4 +1,4 @@
-// app/api/chat/route.ts
+// app/api/chat/route.js
 // Main chat API route with Micro-Action and Flow Block setup support
 
 import Anthropic from '@anthropic-ai/sdk';
@@ -93,7 +93,7 @@ Current stage practices are shown in the user's interface. Help them complete th
 Keep responses concise (2-4 sentences for simple interactions, longer for explanations).
 Use markdown formatting sparingly - bold for emphasis, but avoid excessive headers or lists in casual conversation.`;
 
-export async function POST(req: Request) {
+export async function POST(req) {
   try {
     const body = await req.json();
     const { messages, context } = body;
@@ -120,7 +120,7 @@ export async function POST(req: Request) {
 
     // Filter out any system messages from the input (we'll add our own)
     const conversationMessages = messages.filter(
-      (msg: { role: string; content: string }) => msg.role !== 'system'
+      (msg) => msg.role !== 'system'
     );
 
     // Make the API call
@@ -128,8 +128,8 @@ export async function POST(req: Request) {
       model: 'claude-sonnet-4-20250514',
       max_tokens: 2048,  // Increased for Flow Block's longer responses
       system: systemPrompt,
-      messages: conversationMessages.map((msg: { role: string; content: string }) => ({
-        role: msg.role as 'user' | 'assistant',
+      messages: conversationMessages.map((msg) => ({
+        role: msg.role,
         content: msg.content
       }))
     });
