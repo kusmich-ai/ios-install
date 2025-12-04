@@ -171,12 +171,12 @@ export function useUserProgress() {
         console.error('Error fetching baseline:', baselineError);
       }
 
-      // Fetch Flow Block config to check if setup is complete
-      const { data: flowBlockConfig } = await supabase
-        .from('flow_block_config')
-        .select('id')
+      // Fetch active Flow Block sprint to check if setup is complete
+      const { data: flowBlockSprint } = await supabase
+        .from('flow_block_sprints')
+        .select('id, sprint_number, start_date')
         .eq('user_id', user.id)
-        .eq('is_active', true)
+        .eq('completion_status', 'active')
         .maybeSingle();
 
       // Fetch latest 2 weekly deltas to calculate week-over-week change
@@ -340,7 +340,7 @@ export function useUserProgress() {
         currentIdentity: progressData.current_identity || null,
         microAction: progressData.micro_action || null,
         identitySprintStart: progressData.identity_sprint_start || null,
-        hasFlowBlockConfig: !!flowBlockConfig,
+        hasFlowBlockConfig: !!flowBlockSprint,
         // NEW fields
         daysInStage,
         unlockProgress
