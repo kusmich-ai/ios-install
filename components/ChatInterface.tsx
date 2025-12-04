@@ -55,8 +55,10 @@ import {
   flowBlockSystemPrompt,
   flowBlockOpeningMessage,
   getFlowBlockOpeningWithIdentity,
+  parseFlowBlockCompletion,
   cleanFlowBlockResponseForDisplay,
   buildFlowBlockAPIMessages,
+  getTodaysBlock,
   getDailyFlowBlockPrompt,
   postBlockReflectionPrompt,
   getSprintDayNumber,
@@ -606,58 +608,7 @@ function normalizePracticeId(id: string): string {
 // ============================================
 // FLOW BLOCK HELPER FUNCTIONS
 // ============================================
-
-// Flow Block configuration type for database storage
-interface FlowBlockConfig {
-  domains: string[];
-  weeklyMap: WeeklyMapEntry[];
-  setupPreferences: SetupPreferences;
-  focusType: string;
-  sprintStartDate: string;
-  sprintNumber: number;
-  isActive: boolean;
-}
-
-// Parse Flow Block completion marker from API response
-function parseFlowBlockCompletionMarker(response: string): FlowBlockConfig | null {
-  const markerRegex = /\[FLOW_BLOCK_COMPLETE:\s*(\{[\s\S]*?\})\]/;
-  const match = response.match(markerRegex);
-  
-  if (match && match[1]) {
-    try {
-      const parsed = JSON.parse(match[1]);
-      return {
-        domains: parsed.weeklyMap?.map((e: WeeklyMapEntry) => e.domain) || [],
-        weeklyMap: parsed.weeklyMap || [],
-        setupPreferences: parsed.setupPreferences || {
-          professionalLocation: '',
-          personalLocation: '',
-          playlist: '',
-          timerMethod: '',
-          notificationsOff: true
-        },
-        focusType: parsed.focusType || 'distributed',
-        sprintStartDate: new Date().toISOString(),
-        sprintNumber: 1,
-        isActive: true
-      };
-    } catch (e) {
-      console.error('[FlowBlock] Failed to parse completion marker:', e);
-      return null;
-    }
-  }
-  return null;
-}
-
-// Get today's scheduled Flow Block from weekly map
-function getTodaysFlowBlock(weeklyMap: WeeklyMapEntry[] | null): WeeklyMapEntry | null {
-  if (!weeklyMap) return null;
-  
-  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const today = dayNames[new Date().getDay()];
-  
-  return weeklyMap.find(entry => entry.day === today) || null;
-}
+// All Flow Block functions now imported from @/lib/flowBlockAPI
 
 // ============================================
 // MAIN COMPONENT
@@ -1396,8 +1347,8 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
       
       devLog('[FlowBlock]', 'API response:', assistantResponse);
       
-      // Check for completion marker
-      const completion = parseFlowBlockCompletionMarker(assistantResponse);
+      // Check for completion marker (using library parser)
+      const completion = parseFlowBlockCompletion(assistantResponse);
       
       if (completion) {
         const cleanResponse = cleanFlowBlockResponseForDisplay(assistantResponse);
@@ -1409,7 +1360,7 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
           completion.weeklyMap,
           completion.setupPreferences,
           completion.domains,
-          completion.focusType as 'concentrated' | 'distributed'
+          completion.focusType
         );
         
         setFlowBlockState(prev => ({
@@ -1418,7 +1369,7 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
           extractedDomains: completion.domains,
           extractedWeeklyMap: completion.weeklyMap,
           extractedPreferences: completion.setupPreferences,
-          focusType: completion.focusType as 'concentrated' | 'distributed' | null,
+          focusType: completion.focusType,
           isComplete: true,
           isActive: false,
           sprintStartDate: sprintResult.startDate,
