@@ -1,6 +1,5 @@
 // app/hooks/useUserProgress.ts
 'use client';
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase-client';
 
@@ -35,17 +34,18 @@ export interface UserProgress {
   unlockEligible: boolean;
   // Track the date this data is for
   dataDate: string;
- // Micro-Action Identity fields
-currentIdentity: identitySprint?.identity_statement || null,
-currentMicroAction: identitySprint?.micro_action || null,
-identitySprintNumber: identitySprint?.sprint_number || null,
-identitySprintStart: identitySprint?.start_date || null,
-identitySprintDay: number | null;  // Day 1-21 within current sprint
+  // Micro-Action Identity fields
+  currentIdentity: string | null;
+  currentMicroAction: string | null;
+  identitySprintNumber: number | null;
+  identitySprintStart: string | null;
+  identitySprintDay: number | null;
   // Flow Block fields
   hasFlowBlockConfig: boolean;
   flowBlockSprintNumber: number | null;
   flowBlockSprintStart: string | null;
-  flowBlockSprintDay: number | null;  // Day 1-21 within current sprint
+  flowBlockSprintDay: number | null;
+}
   // Fetch active identity sprint
 const { data: identitySprint } = await supabase
   .from('identity_sprints')
