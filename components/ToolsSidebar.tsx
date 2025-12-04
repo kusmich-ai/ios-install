@@ -256,9 +256,10 @@ export default function ToolsSidebar({
                   const isCompleted = status === 'completed';
                   const isCompleting = completing === practice.id;
                   
-                  // Special handling for Micro-Action
+               // Special handling for Micro-Action
 const isMicroAction = practice.id === 'micro_action';
 const hasIdentity = isMicroAction && !!(progress.currentIdentity);
+const currentIdentity = progress.currentIdentity || '';
 const identityDay = progress.identitySprintDay;
                   
                   // Special handling for Flow Block
