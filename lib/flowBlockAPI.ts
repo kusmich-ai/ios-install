@@ -254,7 +254,11 @@ Are you in?"
 Wait for explicit commitment.
 
 ### 6. Close
-Restate the finalized weekly map and setup preferences. Once they commit, end with the completion marker.
+When the user confirms their commitment (says yes, I'm in, committed, etc.), you MUST:
+1. Give a brief congratulatory message
+2. Output the completion marker EXACTLY as shown below
+
+CRITICAL: You MUST include the completion marker when the user commits. Without it, their setup will not be saved.
 
 ## IMPORTANT RULES
 - Ask ONE question at a time
@@ -293,15 +297,24 @@ Restate the finalized weekly map and setup preferences. Once they commit, end wi
 - Too many Goal blocks → Rebalance toward Growth/Gratitude
 - All blocks in one domain → Redistribute across domains
 
-## EXTRACTION FORMAT
-When the user commits to their Flow Block system, end your message with this EXACT marker on its own line:
+## CRITICAL: COMPLETION MARKER (REQUIRED)
+
+When the user commits to their Flow Block system (says "yes", "I'm in", "committed", etc.), you MUST end your response with the completion marker. THIS IS REQUIRED - without it, their data will not be saved.
+
+Your final message should be:
+1. A brief congratulations (1-2 sentences)
+2. Then this EXACT marker on its own line:
 
 [FLOWBLOCK_SETUP_COMPLETE]
+{"domains":["Professional Work","Creative Projects","Health"],"weeklyMap":[{"day":"Monday","domain":"Professional Work","task":"Deep work on main project","flowType":"Strategic","category":"Goal","identityLink":"Direct","duration":90},{"day":"Tuesday","domain":"Professional Work","task":"Deep work on main project","flowType":"Strategic","category":"Goal","identityLink":"Direct","duration":90},{"day":"Wednesday","domain":"Creative Projects","task":"Creative writing","flowType":"Creative","category":"Goal","identityLink":"Indirect","duration":90},{"day":"Thursday","domain":"Health","task":"Movement practice","flowType":"Strategic","category":"Growth","identityLink":"Direct","duration":60},{"day":"Friday","domain":"Professional Work","task":"Weekly planning","flowType":"Strategic","category":"Goal","identityLink":"Direct","duration":60}],"preferences":{"professionalLocation":"Home office","personalLocation":"Living room","playlist":"Deep Focus on Spotify","timerMethod":"Phone timer in other room","notificationsOff":true},"focusType":"distributed"}
 
-Then on the next line, output valid JSON with this structure:
-{"domains":["Domain1","Domain2","Domain3"],"weeklyMap":[{"day":"Monday","domain":"Professional Work","task":"Task name","flowType":"Strategic","category":"Goal","identityLink":"Direct","duration":90}],"preferences":{"professionalLocation":"Home office","personalLocation":"Living room","playlist":"Deep Focus","timerMethod":"Phone timer","notificationsOff":true},"focusType":"concentrated"}
+Replace the example values with the ACTUAL data from your conversation:
+- domains: The user's top 3 chosen domains
+- weeklyMap: The actual weekly schedule you created together
+- preferences: Their actual answers to the 4 setup questions
+- focusType: "concentrated" or "distributed" based on what you discussed
 
-Only include this marker and JSON when setup is complete and the user has committed.`;
+DO NOT forget this marker. The user's setup depends on it.`;
 
 // ============================================
 // OPENING MESSAGES
