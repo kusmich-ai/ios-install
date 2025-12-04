@@ -45,27 +45,7 @@ export interface UserProgress {
   flowBlockSprintNumber: number | null;
   flowBlockSprintStart: string | null;
   flowBlockSprintDay: number | null;
-}
-  // Fetch active identity sprint
-const { data: identitySprint } = await supabase
-  .from('identity_sprints')
-  .select('id, sprint_number, start_date, identity_statement, micro_action')
-  .eq('user_id', user.id)
-  .eq('completion_status', 'active')
-  .maybeSingle();
-
-// Calculate identity sprint day
-let identitySprintDay: number | null = null;
-if (identitySprint?.start_date) {
-  const sprintStart = new Date(identitySprint.start_date);
-  sprintStart.setHours(0, 0, 0, 0);
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  const diffTime = now.getTime() - sprintStart.getTime();
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-  identitySprintDay = Math.max(1, Math.min(diffDays, 21));
-}
-  // NEW: Progress tracking for unlock visualization
+  // Progress tracking for unlock visualization
   daysInStage: number;
   unlockProgress: {
     adherenceMet: boolean;
@@ -208,31 +188,33 @@ export function useUserProgress() {
       if (flowBlockSprint?.start_date) {
         const sprintStart = new Date(flowBlockSprint.start_date);
         sprintStart.setHours(0, 0, 0, 0);
-        const now = new Date();
-        now.setHours(0, 0, 0, 0);
-        const diffTime = now.getTime() - sprintStart.getTime();
+        const nowDate = new Date();
+        nowDate.setHours(0, 0, 0, 0);
+        const diffTime = nowDate.getTime() - sprintStart.getTime();
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
         flowBlockSprintDay = Math.max(1, Math.min(diffDays, 21));
       }
-// Fetch active identity sprint
-const { data: identitySprint } = await supabase
-  .from('identity_sprints')
-  .select('id, sprint_number, start_date, identity_statement, micro_action')
-  .eq('user_id', user.id)
-  .eq('completion_status', 'active')
-  .maybeSingle();
 
-// Calculate identity sprint day
-let identitySprintDay: number | null = null;
-if (identitySprint?.start_date) {
-  const sprintStart = new Date(identitySprint.start_date);
-  sprintStart.setHours(0, 0, 0, 0);
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  const diffTime = now.getTime() - sprintStart.getTime();
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-  identitySprintDay = Math.max(1, Math.min(diffDays, 21));
-}
+      // Fetch active identity sprint
+      const { data: identitySprint } = await supabase
+        .from('identity_sprints')
+        .select('id, sprint_number, start_date, identity_statement, micro_action')
+        .eq('user_id', user.id)
+        .eq('completion_status', 'active')
+        .maybeSingle();
+
+      // Calculate identity sprint day
+      let identitySprintDay: number | null = null;
+      if (identitySprint?.start_date) {
+        const sprintStart = new Date(identitySprint.start_date);
+        sprintStart.setHours(0, 0, 0, 0);
+        const nowDate = new Date();
+        nowDate.setHours(0, 0, 0, 0);
+        const diffTime = nowDate.getTime() - sprintStart.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        identitySprintDay = Math.max(1, Math.min(diffDays, 21));
+      }
+
       // Fetch latest 2 weekly deltas to calculate week-over-week change
       const { data: weeklyDeltas } = await supabase
         .from('weekly_deltas')
@@ -391,17 +373,18 @@ if (identitySprint?.start_date) {
         dailyPractices,
         unlockEligible,
         dataDate: today,
-currentIdentity: identitySprint?.identity_statement || null,
-currentMicroAction: identitySprint?.micro_action || null,
-identitySprintNumber: identitySprint?.sprint_number || null,
-identitySprintStart: identitySprint?.start_date || null,
-identitySprintDay: identitySprintDay,
-        identitySprintStart: progressData.identity_sprint_start || null,
+        // Identity Sprint fields
+        currentIdentity: identitySprint?.identity_statement || null,
+        currentMicroAction: identitySprint?.micro_action || null,
+        identitySprintNumber: identitySprint?.sprint_number || null,
+        identitySprintStart: identitySprint?.start_date || null,
+        identitySprintDay: identitySprintDay,
+        // Flow Block fields
         hasFlowBlockConfig: !!flowBlockSprint,
         flowBlockSprintNumber: flowBlockSprint?.sprint_number || null,
         flowBlockSprintStart: flowBlockSprint?.start_date || null,
         flowBlockSprintDay: flowBlockSprintDay,
-        // NEW fields
+        // Progress tracking fields
         daysInStage,
         unlockProgress
       };
