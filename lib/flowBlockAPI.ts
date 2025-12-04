@@ -1,7 +1,6 @@
 // flowBlockAPI.ts
-// 100% API-driven Flow Block Integration Protocol v2.3
-// Claude handles all the discovery, planning, and setup naturally
-// v2.3: Added commitment detection to ensure completion marker is always output
+// 100% API-driven Flow Block Integration Protocol v2.4
+// v2.4: Two-stage completion - natural response + silent extraction call
 
 // ============================================
 // TYPE DEFINITIONS
@@ -52,7 +51,7 @@ export const initialFlowBlockState: FlowBlockState = {
 };
 
 // ============================================
-// SYSTEM PROMPT v2.3
+// SYSTEM PROMPT v2.4 (Cleaner - no marker instructions)
 // ============================================
 
 export const flowBlockSystemPrompt = `You are a performance coach helping a user set up their Flow Block system — the "performance element" of the Mental Operating System (MOS).
@@ -255,7 +254,7 @@ Are you in?"
 Wait for explicit commitment.
 
 ### 6. Close
-Restate the finalized weekly map and setup preferences. Once they commit, end with the completion marker.
+After they commit, give a brief motivating close. Reference their specific setup and first block day.
 
 ## IMPORTANT RULES
 - Ask ONE question at a time
@@ -331,7 +330,7 @@ Ready to identify your highest-leverage work?`;
 }
 
 // ============================================
-// COMPLETION PARSING
+// COMPLETION DATA TYPES
 // ============================================
 
 export interface FlowBlockCompletion {
@@ -341,98 +340,17 @@ export interface FlowBlockCompletion {
   focusType: 'concentrated' | 'distributed';
 }
 
-// Parse the completion marker from API response
-export function parseFlowBlockCompletion(response: string): FlowBlockCompletion | null {
-  // Look for the completion marker followed by JSON
-  const markerIndex = response.indexOf('[FLOWBLOCK_SETUP_COMPLETE]');
-  if (markerIndex === -1) return null;
-
-  // Get everything after the marker
-  const afterMarker = response.substring(markerIndex + '[FLOWBLOCK_SETUP_COMPLETE]'.length).trim();
-  
-  // Find JSON object (starts with { ends with })
-  const jsonMatch = afterMarker.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) return null;
-
-  try {
-    const parsed = JSON.parse(jsonMatch[0]);
-    
-    return {
-      domains: parsed.domains || [],
-      weeklyMap: parsed.weeklyMap || [],
-      setupPreferences: parsed.preferences || {
-        professionalLocation: '',
-        personalLocation: '',
-        playlist: '',
-        timerMethod: '',
-        notificationsOff: true
-      },
-      focusType: parsed.focusType || 'distributed'
-    };
-  } catch (error) {
-    console.error('[FlowBlock] Error parsing completion JSON:', error);
-    return null;
-  }
-}
-
-// Remove the completion marker from the display response
-export function cleanFlowBlockResponseForDisplay(response: string): string {
-  // Remove the marker and everything after it
-  const markerIndex = response.indexOf('[FLOWBLOCK_SETUP_COMPLETE]');
-  if (markerIndex === -1) return response.trim();
-  
-  return response.substring(0, markerIndex).trim();
-}
-
 // ============================================
-// COMMITMENT REMINDER (Injected when user commits)
+// COMMITMENT DETECTION
 // ============================================
 
-const commitmentReminderSuffix = `
-
----
-SYSTEM INSTRUCTION: The user just committed to the Flow Block system. You MUST end your response with the completion marker.
-
-After your closing message, add this EXACT format on its own line:
-
-[FLOWBLOCK_SETUP_COMPLETE]
-{"domains":["Domain1","Domain2","Domain3"],"weeklyMap":[{"day":"Monday","domain":"Domain","task":"Task","flowType":"Type","category":"Category","identityLink":"Link","duration":90},{"day":"Tuesday","domain":"Domain","task":"Task","flowType":"Type","category":"Category","identityLink":"Link","duration":90},{"day":"Wednesday","domain":"Domain","task":"Task","flowType":"Type","category":"Category","identityLink":"Link","duration":90},{"day":"Thursday","domain":"Domain","task":"Task","flowType":"Type","category":"Category","identityLink":"Link","duration":60},{"day":"Friday","domain":"Domain","task":"Task","flowType":"Type","category":"Category","identityLink":"Link","duration":60}],"preferences":{"professionalLocation":"location","personalLocation":"location","playlist":"playlist","timerMethod":"timer","notificationsOff":true},"focusType":"concentrated"}
-
-Replace ALL placeholder values with the ACTUAL data from this conversation:
-- domains: The 3 domains they prioritized
-- weeklyMap: The exact weekly map you built together (all 5 days)
-- preferences: Their specific answers for location, playlist, timer, notifications
-- focusType: "concentrated" or "distributed" based on what you recommended
-
-THIS IS REQUIRED. Without this marker, their setup will NOT be saved and they will have to redo everything.`;
-
-// Build the messages array for the API call
-export function buildFlowBlockAPIMessages(
-  conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>,
-  newUserMessage: string,
-  currentIdentity?: string
-): Array<{ role: 'user' | 'assistant' | 'system'; content: string }> {
-  // Add identity context to system prompt if available
-  let systemPrompt = flowBlockSystemPrompt;
-  if (currentIdentity) {
-    systemPrompt += `\n\n## IDENTITY CONTEXT\nThe user's current Micro-Action identity is: "${currentIdentity}". Look for opportunities to connect one of their Flow Blocks to this identity if it makes sense.`;
-  }
-
-  // Build messages array
-  const messages: Array<{ role: 'user' | 'assistant' | 'system'; content: string }> = [
-    { role: 'system' as const, content: systemPrompt }
-  ];
-
-  // Add conversation history
-  conversationHistory.forEach(msg => {
-    messages.push({
-      role: msg.role as 'user' | 'assistant',
-      content: msg.content
-    });
-  });
-
-  // Check if this looks like a commitment response
-  const normalizedMessage = newUserMessage.trim().toLowerCase();
+// Check if user message is a commitment response
+export function isCommitmentResponse(
+  userMessage: string, 
+  lastAssistantMessage: string
+): boolean {
+  const normalizedMessage = userMessage.trim().toLowerCase();
+  
   const commitmentPatterns = [
     /^yes[.!,\s]*$/i,
     /^yeah[.!,\s]*$/i,
@@ -457,26 +375,178 @@ export function buildFlowBlockAPIMessages(
   ];
 
   const isCommitment = commitmentPatterns.some(pattern => pattern.test(normalizedMessage));
-
+  
   // Also check if the previous assistant message asked for commitment
-  const lastAssistantMessage = conversationHistory.length > 0 
-    ? conversationHistory[conversationHistory.length - 1]?.content || ''
-    : '';
   const askedForCommitment = lastAssistantMessage.toLowerCase().includes('are you in') ||
                               lastAssistantMessage.toLowerCase().includes('do you commit') ||
                               lastAssistantMessage.toLowerCase().includes('ready to commit');
 
-  if (isCommitment && askedForCommitment) {
-    // Inject the reminder along with the user's message
-    messages.push({
-      role: 'user' as const,
-      content: newUserMessage + commitmentReminderSuffix
-    });
-  } else {
-    messages.push({ role: 'user' as const, content: newUserMessage });
+  return isCommitment && askedForCommitment;
+}
+
+// ============================================
+// API MESSAGE BUILDERS
+// ============================================
+
+// Build messages for the main conversation
+export function buildFlowBlockAPIMessages(
+  conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>,
+  newUserMessage: string,
+  currentIdentity?: string
+): Array<{ role: 'user' | 'assistant' | 'system'; content: string }> {
+  // Add identity context to system prompt if available
+  let systemPrompt = flowBlockSystemPrompt;
+  if (currentIdentity) {
+    systemPrompt += `\n\n## IDENTITY CONTEXT\nThe user's current Micro-Action identity is: "${currentIdentity}". Look for opportunities to connect one of their Flow Blocks to this identity if it makes sense.`;
   }
 
-  return messages;
+  return [
+    { role: 'system' as const, content: systemPrompt },
+    ...conversationHistory,
+    { role: 'user' as const, content: newUserMessage }
+  ];
+}
+
+// Build messages for the silent extraction call (stage 2)
+export function buildFlowBlockExtractionMessages(
+  conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>
+): Array<{ role: 'user' | 'assistant' | 'system'; content: string }> {
+  
+  const extractionPrompt = `Based on the Flow Block setup conversation above, extract ALL the data into this exact JSON format.
+
+IMPORTANT: Output ONLY valid JSON. No markdown, no explanation, no backticks. Just the JSON object.
+
+{
+  "domains": ["Domain1", "Domain2", "Domain3"],
+  "weeklyMap": [
+    {"day": "Monday", "domain": "Professional Work", "task": "Task description", "flowType": "Strategic", "category": "Goal", "identityLink": "Direct", "duration": 90},
+    {"day": "Tuesday", "domain": "Domain", "task": "Task", "flowType": "Type", "category": "Category", "identityLink": "Link", "duration": 60},
+    {"day": "Wednesday", "domain": "Domain", "task": "Task", "flowType": "Type", "category": "Category", "identityLink": "Link", "duration": 90},
+    {"day": "Thursday", "domain": "Domain", "task": "Task", "flowType": "Type", "category": "Category", "identityLink": "Link", "duration": 60},
+    {"day": "Friday", "domain": "Domain", "task": "Task", "flowType": "Type", "category": "Category", "identityLink": "Link", "duration": 60}
+  ],
+  "preferences": {
+    "professionalLocation": "Their work location from conversation",
+    "personalLocation": "Their home/personal location from conversation",
+    "playlist": "Their playlist choice from conversation",
+    "timerMethod": "Their timer method from conversation",
+    "notificationsOff": true
+  },
+  "focusType": "concentrated"
+}
+
+Rules:
+- Extract the ACTUAL data from the conversation, not placeholders
+- domains: The 3 life domains they prioritized
+- weeklyMap: All 5 days with the exact tasks they agreed to
+- flowType must be: "Creative", "Strategic", or "Learning"
+- category must be: "Goal", "Growth", or "Gratitude"  
+- identityLink must be: "Direct", "Indirect", or "Autonomous"
+- duration: Use the actual durations discussed (60 or 90)
+- preferences: Their actual answers for location, playlist, timer
+- focusType: "concentrated" or "distributed" based on what was decided
+
+Output the JSON now:`;
+
+  return [
+    { role: 'system' as const, content: 'You are a data extraction assistant. Your only job is to output valid JSON based on conversation data. No explanation, no markdown formatting, just pure JSON.' },
+    ...conversationHistory,
+    { role: 'user' as const, content: extractionPrompt }
+  ];
+}
+
+// ============================================
+// EXTRACTION PARSING
+// ============================================
+
+// Parse the extraction response (expects pure JSON)
+export function parseFlowBlockExtraction(response: string): FlowBlockCompletion | null {
+  try {
+    // Clean up any markdown formatting that might have slipped through
+    let cleanResponse = response.trim();
+    
+    // Remove markdown code blocks if present
+    if (cleanResponse.startsWith('```json')) {
+      cleanResponse = cleanResponse.slice(7);
+    } else if (cleanResponse.startsWith('```')) {
+      cleanResponse = cleanResponse.slice(3);
+    }
+    if (cleanResponse.endsWith('```')) {
+      cleanResponse = cleanResponse.slice(0, -3);
+    }
+    cleanResponse = cleanResponse.trim();
+    
+    // Find JSON object boundaries
+    const startIndex = cleanResponse.indexOf('{');
+    const endIndex = cleanResponse.lastIndexOf('}');
+    
+    if (startIndex === -1 || endIndex === -1) {
+      console.error('[FlowBlock] No JSON object found in extraction response');
+      return null;
+    }
+    
+    const jsonString = cleanResponse.substring(startIndex, endIndex + 1);
+    const parsed = JSON.parse(jsonString);
+    
+    // Validate required fields exist
+    if (!parsed.domains || !parsed.weeklyMap || !parsed.preferences) {
+      console.error('[FlowBlock] Missing required fields in extraction');
+      return null;
+    }
+    
+    return {
+      domains: parsed.domains || [],
+      weeklyMap: parsed.weeklyMap || [],
+      setupPreferences: {
+        professionalLocation: parsed.preferences?.professionalLocation || '',
+        personalLocation: parsed.preferences?.personalLocation || '',
+        playlist: parsed.preferences?.playlist || '',
+        timerMethod: parsed.preferences?.timerMethod || '',
+        notificationsOff: parsed.preferences?.notificationsOff !== false
+      },
+      focusType: parsed.focusType === 'distributed' ? 'distributed' : 'concentrated'
+    };
+  } catch (error) {
+    console.error('[FlowBlock] Error parsing extraction JSON:', error);
+    console.error('[FlowBlock] Raw response:', response);
+    return null;
+  }
+}
+
+// Legacy function for backward compatibility (if marker approach is ever used)
+export function parseFlowBlockCompletion(response: string): FlowBlockCompletion | null {
+  const markerIndex = response.indexOf('[FLOWBLOCK_SETUP_COMPLETE]');
+  if (markerIndex === -1) return null;
+
+  const afterMarker = response.substring(markerIndex + '[FLOWBLOCK_SETUP_COMPLETE]'.length).trim();
+  const jsonMatch = afterMarker.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) return null;
+
+  try {
+    const parsed = JSON.parse(jsonMatch[0]);
+    return {
+      domains: parsed.domains || [],
+      weeklyMap: parsed.weeklyMap || [],
+      setupPreferences: parsed.preferences || {
+        professionalLocation: '',
+        personalLocation: '',
+        playlist: '',
+        timerMethod: '',
+        notificationsOff: true
+      },
+      focusType: parsed.focusType || 'distributed'
+    };
+  } catch (error) {
+    console.error('[FlowBlock] Error parsing completion JSON:', error);
+    return null;
+  }
+}
+
+// Remove any completion marker from display (legacy support)
+export function cleanFlowBlockResponseForDisplay(response: string): string {
+  const markerIndex = response.indexOf('[FLOWBLOCK_SETUP_COMPLETE]');
+  if (markerIndex === -1) return response.trim();
+  return response.substring(0, markerIndex).trim();
 }
 
 // ============================================
@@ -487,7 +557,6 @@ export function buildFlowBlockAPIMessages(
 export function getTodaysBlock(weeklyMap: WeeklyMapEntry[]): WeeklyMapEntry | null {
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const today = days[new Date().getDay()];
-
   return weeklyMap.find(entry => entry.day === today) || null;
 }
 
@@ -496,12 +565,10 @@ export function formatWeeklyMapForDisplay(weeklyMap: WeeklyMapEntry[]): string {
   let table = `| Day | Domain | Task | Type | Category | Duration |
 |-----|--------|------|------|----------|----------|
 `;
-
   for (const entry of weeklyMap) {
     table += `| ${entry.day} | ${entry.domain} | ${entry.task} | ${entry.flowType} | ${entry.category} | ${entry.duration} min |
 `;
   }
-
   return table;
 }
 
@@ -556,35 +623,26 @@ Give me your ratings (e.g., "4, 3, 4, 5") and your reflection.`;
 // SPRINT STATUS HELPERS
 // ============================================
 
-// Calculate which day of the current sprint we're on (1-21)
 export function getSprintDayNumber(sprintStartDate: string): number {
   const start = new Date(sprintStartDate);
   start.setHours(0, 0, 0, 0);
-  
   const now = new Date();
   now.setHours(0, 0, 0, 0);
-  
   const diffTime = now.getTime() - start.getTime();
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-  
   return Math.max(1, Math.min(diffDays, 21));
 }
 
-// Check if current sprint is complete
 export function isSprintComplete(sprintStartDate: string): boolean {
   const start = new Date(sprintStartDate);
   start.setHours(0, 0, 0, 0);
-  
   const endDate = new Date(start);
   endDate.setDate(endDate.getDate() + 21);
-  
   const now = new Date();
   now.setHours(0, 0, 0, 0);
-  
   return now >= endDate;
 }
 
-// Sprint complete message
 export const sprintCompleteMessage = (sprintNumber: number) => `**21-Day Flow Block Sprint ${sprintNumber} Complete** 🎉
 
 You've completed a full cycle. Let's review what your nervous system learned.
