@@ -79,6 +79,9 @@ export default function ToolsSidebar({
       openResonance();
     } else if (practiceId === 'awareness_rep') {
       openAwarenessRep();
+    } else if (practiceId === 'micro_action' || practiceId === 'flow_block') {
+      // Special tools route to tool click handler
+      onToolClick(practiceId);
     } else {
       // Other practices go to chat for guidance
       onPracticeClick(practiceId);
