@@ -1,8 +1,9 @@
-// app/api/chat/route.js
-// Main chat API route with Micro-Action setup support
+// app/api/chat/route.ts
+// Main chat API route with Micro-Action and Flow Block setup support
 
 import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
+import { flowBlockSystemPrompt } from '@/lib/flowBlockAPI';
 
 const anthropic = new Anthropic();
 
@@ -92,7 +93,7 @@ Current stage practices are shown in the user's interface. Help them complete th
 Keep responses concise (2-4 sentences for simple interactions, longer for explanations).
 Use markdown formatting sparingly - bold for emphasis, but avoid excessive headers or lists in casual conversation.`;
 
-export async function POST(req) {
+export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { messages, context } = body;
@@ -111,20 +112,24 @@ export async function POST(req) {
       // Use the specialized Micro-Action system prompt
       systemPrompt = microActionSystemPrompt;
       console.log('[API] Using Micro-Action setup system prompt');
+    } else if (context === 'flow_block_setup') {
+      // Use the specialized Flow Block system prompt
+      systemPrompt = flowBlockSystemPrompt;
+      console.log('[API] Using Flow Block setup system prompt');
     }
 
     // Filter out any system messages from the input (we'll add our own)
     const conversationMessages = messages.filter(
-      (msg) => msg.role !== 'system'
+      (msg: { role: string; content: string }) => msg.role !== 'system'
     );
 
     // Make the API call
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 1024,
+      max_tokens: 2048,  // Increased for Flow Block's longer responses
       system: systemPrompt,
-      messages: conversationMessages.map((msg) => ({
-        role: msg.role,
+      messages: conversationMessages.map((msg: { role: string; content: string }) => ({
+        role: msg.role as 'user' | 'assistant',
         content: msg.content
       }))
     });
