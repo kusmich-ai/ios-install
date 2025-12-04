@@ -295,18 +295,18 @@ const identityDay = progress.identitySprintDay;
                             </div>
                           )}
                           
-                          <div className="text-xs text-gray-400 mb-2">
-                           isMicroAction 
-  ? (hasIdentity 
-      ? `Day ${identityDay} of 21 • 2-5 min` 
-      : 'Setup required')
-                              : isFlowBlock
-                                ? (hasFlowBlockConfig 
-                                    ? `Day ${flowBlockDay} of 21 • 60-90 min` 
-                                    : 'Setup required')
-                                : `${practice.duration} min`
-                            }
-                          </div>
+                          <div className="text-xs text-gray-400 ml-8 mb-2">
+  {isMicroAction 
+    ? (hasIdentity 
+        ? `Day ${identityDay} of 21 • 2-5 min` 
+        : 'Setup required')
+    : isFlowBlock
+      ? (hasFlowBlockConfig 
+          ? `Day ${flowBlockDay} of 21 • 60-90 min` 
+          : 'Setup required')
+      : `${practice.duration} min`
+  }
+</div>
                           
                           {/* Action Buttons */}
                           <div className="flex gap-2">
