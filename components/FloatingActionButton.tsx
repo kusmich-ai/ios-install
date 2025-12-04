@@ -250,6 +250,7 @@ export default function FloatingActionButton({
                   // Special handling for Flow Block
                   const isFlowBlock = practice.id === 'flow_block';
                   const hasFlowBlockConfig = isFlowBlock && !!(progress.hasFlowBlockConfig);
+                  const flowBlockDay = progress.flowBlockSprintDay;
                   
                   return (
                     <div
@@ -283,7 +284,9 @@ export default function FloatingActionButton({
                         {isMicroAction 
                           ? (hasIdentity ? '2-5 min' : 'Setup required') 
                           : isFlowBlock
-                            ? (hasFlowBlockConfig ? '60-90 min' : 'Setup required')
+                            ? (hasFlowBlockConfig 
+                                ? `Day ${flowBlockDay} of 21 • 60-90 min` 
+                                : 'Setup required')
                             : `${practice.duration} min`
                         }
                       </div>
@@ -342,8 +345,8 @@ export default function FloatingActionButton({
                             <>
                               {!isCompleted && (
                                 <button
-                                  onClick={() => {
-                                    handleStartPractice(practice.id);
+                                  onClick={(e) => {
+                                    handleMarkComplete(practice.id, practice.name, e);
                                     setIsOpen(false);
                                   }}
                                   disabled={isCompleting}
@@ -358,7 +361,7 @@ export default function FloatingActionButton({
                                   ) : (
                                     <Check className="w-3 h-3" />
                                   )}
-                                  Mark Complete
+                                  Complete Today's Block
                                 </button>
                               )}
                               {isCompleted && (
