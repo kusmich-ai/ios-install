@@ -257,9 +257,9 @@ export default function ToolsSidebar({
                   const isCompleting = completing === practice.id;
                   
                   // Special handling for Micro-Action
-                  const isMicroAction = practice.id === 'micro_action';
-                  const hasIdentity = isMicroAction && !!(progress.currentIdentity);
-                  const currentIdentity = progress.currentIdentity || '';
+const isMicroAction = practice.id === 'micro_action';
+const hasIdentity = isMicroAction && !!(progress.currentIdentity);
+const identityDay = progress.identitySprintDay;
                   
                   // Special handling for Flow Block
                   const isFlowBlock = practice.id === 'flow_block';
@@ -296,8 +296,10 @@ export default function ToolsSidebar({
                           )}
                           
                           <div className="text-xs text-gray-400 mb-2">
-                            {isMicroAction 
-                              ? (hasIdentity ? '2-5 min' : 'Setup required') 
+                           isMicroAction 
+  ? (hasIdentity 
+      ? `Day ${identityDay} of 21 • 2-5 min` 
+      : 'Setup required')
                               : isFlowBlock
                                 ? (hasFlowBlockConfig 
                                     ? `Day ${flowBlockDay} of 21 • 60-90 min` 
@@ -328,7 +330,7 @@ export default function ToolsSidebar({
                                       ) : (
                                         <Check className="w-3 h-3" />
                                       )}
-                                      Mark Complete
+                                      Complete Today's Micro-Action
                                     </button>
                                   )}
                                   {isCompleted && (
