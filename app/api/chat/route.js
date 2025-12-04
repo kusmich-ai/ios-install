@@ -1,5 +1,6 @@
 // app/api/chat/route.js
 // Main chat API route with Micro-Action and Flow Block setup support
+// v2.1: Added flow_block_extraction context for two-stage completion
 
 import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
@@ -105,15 +106,44 @@ export async function POST(req) {
       );
     }
 
-    // Determine which system prompt to use based on context
+    // For extraction calls, extract system prompt from messages and use it
+    if (context === 'flow_block_extraction') {
+      console.log('[API] Using Flow Block extraction mode');
+      
+      // Find the system message in the array
+      const systemMessage = messages.find(msg => msg.role === 'system');
+      const conversationOnly = messages.filter(msg => msg.role !== 'system');
+      
+      const extractionSystemPrompt = systemMessage?.content || 
+        'You are a data extraction assistant. Output only valid JSON based on conversation data.';
+      
+      const response = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2048,
+        system: extractionSystemPrompt,
+        messages: conversationOnly.map((msg) => ({
+          role: msg.role,
+          content: msg.content
+        }))
+      });
+
+      const responseText = response.content[0].type === 'text' 
+        ? response.content[0].text 
+        : '';
+
+      return NextResponse.json({ 
+        response: responseText,
+        context: context
+      });
+    }
+
+    // For non-extraction calls, determine which system prompt to use
     let systemPrompt = mainSystemPrompt;
     
     if (context === 'micro_action_setup') {
-      // Use the specialized Micro-Action system prompt
       systemPrompt = microActionSystemPrompt;
       console.log('[API] Using Micro-Action setup system prompt');
     } else if (context === 'flow_block_setup') {
-      // Use the specialized Flow Block system prompt
       systemPrompt = flowBlockSystemPrompt;
       console.log('[API] Using Flow Block setup system prompt');
     }
@@ -126,7 +156,7 @@ export async function POST(req) {
     // Make the API call
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 2048,  // Increased for Flow Block's longer responses
+      max_tokens: 2048,
       system: systemPrompt,
       messages: conversationMessages.map((msg) => ({
         role: msg.role,
