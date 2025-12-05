@@ -1626,7 +1626,7 @@ ${avgDelta >= 0.3 ? '📈 Great progress! Keep the consistency going.' : avgDelt
           .eq('user_id', user.id)
           .gte('completed_at', today.toISOString());
         
-        const completedToday = todayPractices?.map(p => p.practice_type) || [];
+        const completedToday = todayPractices?.map((p: { practice_type: string }) => p.practice_type) || [];
         setPracticesCompletedToday(completedToday);
         
         // Determine opening type
