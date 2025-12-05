@@ -2326,9 +2326,9 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
               <div className="bg-gray-900 rounded-lg p-4">
                 <h3 className="text-sm font-medium text-gray-300 mb-2">Current Identity</h3>
                 <p className="text-sm text-[#ff9e19] font-medium">{progress.currentIdentity}</p>
-                {progress?.microAction && (
-                  <p className="text-xs text-gray-400 mt-1">Daily proof: {progress.microAction}</p>
-                )}
+                {(progress as any)?.microAction && (
+  <p className="text-xs text-gray-400 mt-1">Daily proof: {(progress as any).microAction}</p>
+)}
                 {progress?.identitySprint && (
                   <p className="text-xs text-gray-500 mt-2">
                     Day {progress.identitySprint.dayNumber} of 21
