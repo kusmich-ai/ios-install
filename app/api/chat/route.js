@@ -41,7 +41,7 @@ switch (context) {
     temperature = 0.7;
     break;
     
-  case 'micro_action_extraction':  // NEW - ADD THIS
+  case 'micro_action_extraction':  
     maxTokens = 500;
     temperature = 0.3;
     break;
