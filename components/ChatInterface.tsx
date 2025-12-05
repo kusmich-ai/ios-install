@@ -1147,10 +1147,10 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
             
             // Save to database using the sprint database function
             const sprintResult = await startNewMicroActionSprint(
-              user.id,
-              extracted.identity_statement,
-              extracted.micro_action
-            );
+  user.id,
+  extracted.identityStatement,
+  extracted.microAction
+);
             
             devLog('[MicroAction]', 'Sprint saved:', sprintResult);
             
