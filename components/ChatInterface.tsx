@@ -2338,7 +2338,7 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
             )}
 
             {/* Unlock Progress */}
-            {progress?.unlockProgress && !progress.unlockProgress.alreadyUnlocked && (
+            {progress?.unlockProgress && !progress.unlockEligible && (
               <div className="bg-gray-900 rounded-lg p-4">
                 <h3 className="text-sm font-medium text-gray-300 mb-3">
                   Stage {(progress.currentStage || 1) + 1} Unlock Progress
