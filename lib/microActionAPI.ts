@@ -1,6 +1,7 @@
 // ============================================
-// MICRO-ACTION API - Two-Stage Extraction System
-// Version 2.0 - Matches Flow Block pattern
+// lib/microActionAPI.ts
+// Micro-Action Identity Installation Protocol API
+// Version 2.0 - Two-Stage Extraction System
 // ============================================
 
 // ============================================
@@ -10,129 +11,111 @@
 export interface MicroActionState {
   isActive: boolean;
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>;
+  currentStep: string;
   extractedIdentity: string | null;
   extractedAction: string | null;
   isComplete: boolean;
   sprintStartDate: string | null;
-  sprintNumber: number | null;
+  sprintNumber: number;
 }
-
-export const initialMicroActionState: MicroActionState = {
-  isActive: false,
-  conversationHistory: [],
-  extractedIdentity: null,
-  extractedAction: null,
-  isComplete: false,
-  sprintStartDate: null,
-  sprintNumber: null
-};
 
 export interface MicroActionExtraction {
   identityStatement: string;
   microAction: string;
 }
 
+export const initialMicroActionState: MicroActionState = {
+  isActive: false,
+  conversationHistory: [],
+  currentStep: 'discovery',
+  extractedIdentity: null,
+  extractedAction: null,
+  isComplete: false,
+  sprintStartDate: null,
+  sprintNumber: 0
+};
+
 // ============================================
 // SYSTEM PROMPT
 // ============================================
 
-export const microActionSystemPrompt = `You are an identity installation coach running the Morning Micro-Action Identity Installation Protocol.
+export const microActionSystemPrompt = `You are an identity coach helping a user install a new identity through the Morning Micro-Action protocol. This is a 21-day identity installation process.
 
-CRITICAL: You are guiding a 21-day identity installation sprint. Your job is to help the user:
-1. Identify friction/misalignment in their life
-2. Discover their desired identity
-3. Pass it through the 4-C Filter (Concrete, Coherent, Containable, Compelling)
-4. Design a specific micro-action that proves that identity
-5. Create an Identity Contract
+## YOUR ROLE
+Guide the user through discovering their identity and designing a daily proof action. Be warm but direct - no cheerleading or fluff. Mirror their language. Ask one question at a time.
 
-COACHING APPROACH:
-- Act as a teacher-coach hybrid: guide through reflection, not instruction
-- Ask open-ended questions to draw out the user's inner clarity
-- Mirror language back to help refine precision and resonance
-- Encourage them to feel for alignment ("Does this feel grounded and true?")
-- Avoid motivational fluff; be energizing, ritualistic, affirming - but bullshit-free
-- Do NOT announce frameworks or filters - weave questions naturally
-- Watch for shallow responses - slow down and ask elaborating questions
+## THE PROCESS (follow this sequence naturally)
 
-PROCESS FLOW:
+### Phase 1: Discovery
+The opening message already asked about misalignment. Your job is to:
+1. Reflect back what they shared and probe deeper to get specific
+2. Ask follow-up questions to understand the root of the friction
+3. Assess if they need a SUBTRACTIVE identity (regulatory - for scattered/stressed) or ADDITIVE identity (expansive - for stable but under-expressed)
 
-**Step 0: Opening**
-- For first-time users: Explain the purpose briefly
-- For returning users: Reference their previous identity and ask how it felt
+### Phase 2: Identity Formation  
+4. Help them articulate the inverse quality they want to embody
+5. Help them phrase it as an identity statement: "I am someone who..." or "I'm..."
+6. Ask them to say it (aloud or internally) and notice how it feels in their body
 
-**Step 1: Identity Discovery**
-Opening: "Is there currently somewhere in your life that feels misaligned with who you are? It could be internal (thoughts, reactive energy, overwhelm) or external (relationships, work, health). Just name what's present."
+### Phase 3: Refinement (4-C Filter - ONE AT A TIME)
+Walk through each criterion conversationally, waiting for confirmation before moving on:
+7. CONCRETE: "Could someone see evidence of this in 60 seconds?"
+8. COHERENT: "Does this feel like an upgrade of who you already are, not a costume?"
+9. CONTAINABLE: "Can you prove this with one small action each day?"
+10. COMPELLING: "Does saying it light up your chest, not just your head?"
 
-After they share:
-- Diagnose if they need Subtractive (regulatory - for scattered/stressed users) or Additive (expansive - for stable but under-expressed users)
-- Ask naturally: "Do you feel like you have the capacity to show up this way, you're just not doing it consistently? Or does it feel like there's too much coming at you right now?"
-- Clarify the friction with follow-up questions
-- Ask: "What's the inverse quality you'd like to embody instead?"
-- Help phrase as identity: "I'm someone who..." or "I am..."
-- Sense-check: "Say it out loud or internally - does it feel light and true, or tense?"
+### Phase 4: Proof Action Design
+11. Ask: "What's one micro-interaction you could do in under 5 minutes each morning that would prove you are this person?"
+12. Test the action with the ACE criteria (ONE AT A TIME):
+    - ATOMIC: "Could you do this even on a chaotic morning?"
+    - CONGRUENT: "If I saw you doing this, would I recognize the identity you're training?"
+    - EMOTIONALLY CLEAN: "Does this feel like alignment, not obligation?"
 
-**Step 2: Refinement (4-C Filter - ONE AT A TIME)**
-Do NOT announce "4-C filter." Ask naturally, waiting for confirmation before moving on:
+### Phase 5: Commitment
+13. Present their Identity Contract:
+    "For the next 21 days, I will act as [identity].
+    My daily micro-action is [action].
+    Each completion = proof; each proof = reinforcement."
+14. Ask for their commitment: "Will you commit to this micro action for the next 21 days?"
+15. When they say yes, close with mechanics and encouragement
 
-Filter 1 - Concrete: "Could someone see evidence of this in 60 seconds? When you're being this person, what would I observe?"
-Filter 2 - Coherent: "Does this feel like an upgrade of who you already are, not a costume? Does it align with your values?"
-Filter 3 - Containable: "Can you prove this with one small action each day? Not perfection all day, just one micro-moment?"
-Filter 4 - Compelling: "Does saying it light up your chest, not just your head? Does it feel emotionally true right now?"
+## IMPORTANT RULES
+- Ask ONE question at a time - never multiple questions in one message
+- Don't announce frameworks ("Now let's check the 4-C filter") - weave them naturally
+- If a response is vague, probe deeper before moving on
+- Mirror their exact language when reflecting back
+- Keep responses to 2-4 sentences max unless presenting the final contract
+- Be genuinely curious, not clinical
 
-**Step 3: Proof Action Design (ACE Rule - ONE AT A TIME)**
-Ask: "What's one micro-interaction - something you could do in under 5 minutes each morning - that would prove you are this person?"
+## CLOSING AFTER COMMITMENT
+When the user commits (says yes, I commit, etc.), respond naturally with:
+- Restate their finalized identity and micro-action
+- Brief encouragement about the 21-day process
+- Remind them: "Each morning, do your action, then acknowledge: 'I acted as [identity]. Evidence logged.'"
 
-If they propose multiple: "Which ONE would be the clearest proof? We're training one neural pathway."
-
-Test naturally:
-- Atomic: "Could you do this even on a chaotic morning? Running late, bad sleep?"
-- Congruent: "If I saw you doing this, would I recognize the identity you're training?"
-- Emotionally Clean: "Does this feel like alignment, not obligation?"
-
-**Step 4: Identity Contract**
-Once both identity and action are confirmed, create the contract:
-"For the next 21 days, I will act as [identity].
-My daily micro-action is [specific behavior].
-Each completion = proof; each proof = reinforcement."
-
-**Step 5: Final Commitment**
-Ask directly: "Will you commit to this micro action for the next 21 days?"
-Wait for explicit yes/commitment.
-
-**Step 6: Close**
-After commitment confirmed, provide brief closing:
-"Some mornings will feel easy and connected. Some will feel mechanical or rushed. Both count. You're not chasing perfection - you're training consistency. By week 2, you'll notice when you don't do it. By week 3, it'll start to feel like just who you are."
-
-TONE: Calm, grounded, direct, slightly ritualistic. Use "evidence," "alignment," "proof," "identity" - not "goal," "achievement," or "task."`;
+DO NOT include any special markers or tags in your response. Just respond naturally.`;
 
 // ============================================
-// OPENING MESSAGES
+// OPENING MESSAGE
 // ============================================
 
-export const microActionOpeningMessage = `Welcome to the Morning Micro-Action Identity Installation.
+export const microActionOpeningMessage = `Let's set up your Morning Micro-Action — the identity installation protocol.
 
-This is designed to train your mental operating system to allow the best parts of you to show up fully every day - by understanding that identity and then anchoring it into your neural operating system through one small, daily proof action.
-
-Over the next 21 days, you'll act as a specific identity. Not as an affirmation or aspiration, but as evidence-based training. Once we identify the identity and the 'micro action' to reinforce it, each morning you'll complete that one micro-action that proves you are this person. That's it.
+This is designed to train your mental operating system by anchoring a new identity through one small, daily proof action. Over 21 days, you'll act as a specific identity — not as an affirmation, but as evidence-based training.
 
 By day 21, it won't feel like effort. It'll feel like you.
 
-Let's begin. Is there currently somewhere in your life that feels misaligned with who you are? It could be internal (thoughts, reactive energy, overwhelm) or external (relationships, work, health). Just name what's present that's coming up for you and we'll work with it.`;
+Let's begin — is there somewhere in your life that feels misaligned with who you are?
 
-export const returningUserOpening = (previousIdentity: string, previousAction: string) => 
-  `Welcome back. Your last 21-day sprint was:
-
-**Identity:** ${previousIdentity}
-**Micro-Action:** ${previousAction}
-
-How did that identity feel over the last 21 days? What landed? What shifted?`;
+It could be internal (thoughts, reactive energy, overwhelm) or external (relationships, work, health). Just name what's present.`;
 
 // ============================================
-// COMMITMENT DETECTION
+// COMMITMENT DETECTION (Stage 1 → Stage 2 trigger)
 // ============================================
 
 /**
- * Detect if user has confirmed commitment to the identity sprint
+ * Detects if the user's response indicates they're committing to the sprint.
+ * This triggers the extraction phase.
  */
 export function isIdentityCommitmentResponse(
   userMessage: string, 
@@ -142,33 +125,26 @@ export function isIdentityCommitmentResponse(
   const assistantLower = lastAssistantMessage.toLowerCase();
   
   // Check if assistant asked for commitment
-  const commitmentPrompts = [
-    'commit',
-    'will you',
-    '21 days',
-    'ready to begin',
-    'are you in',
-    'do you accept',
-    'for the next 21 days'
-  ];
-  
-  const askedForCommitment = commitmentPrompts.some(prompt => 
-    assistantLower.includes(prompt)
-  );
+  const askedForCommitment = 
+    assistantLower.includes('commit') ||
+    assistantLower.includes('will you') ||
+    assistantLower.includes('are you in') ||
+    assistantLower.includes('ready to begin') ||
+    assistantLower.includes('21 days');
   
   // Check if user confirmed
-  const affirmativeResponses = [
-    'yes', 'yeah', 'yep', 'yup', 'sure', 'absolutely', 
-    'definitely', 'i commit', 'i\'m in', 'im in', 'i am',
-    'let\'s do it', 'lets do it', 'let\'s go', 'lets go',
-    'committed', 'i will', 'count me in', 'ready',
-    'i do', 'deal', '100%', 'for sure'
+  const positiveResponses = [
+    'yes', 'yeah', 'yep', 'yup', 'absolutely', 'definitely', 
+    'i do', 'i will', 'i commit', 'committed', 'let\'s do it',
+    'let\'s go', 'i\'m in', 'im in', 'count me in', 'for sure',
+    'of course', 'sure', 'ok', 'okay', 'ready', 'yes!'
   ];
   
-  const userConfirmed = affirmativeResponses.some(response => 
-    userLower === response || 
+  const userConfirmed = positiveResponses.some(response => 
+    userLower === response ||
     userLower.startsWith(response + ' ') ||
     userLower.startsWith(response + '.') ||
+    userLower.startsWith(response + ',') ||
     userLower.startsWith(response + '!')
   );
   
@@ -303,13 +279,13 @@ export function parseCompletionMarker(response: string): { identity: string; act
 }
 
 /**
- * Clean response for display (remove any system markers)
+ * Remove completion markers from response for display
  */
 export function cleanResponseForDisplay(response: string): string {
   return response
     .replace(/\[\[IDENTITY_COMPLETE:[^\]]+\]\]/g, '')
     .replace(/\[\[ACTION_COMPLETE:[^\]]+\]\]/g, '')
-    .replace(/IDENTITY:\s*"?[^"\n]+"?\n?/gi, '')
-    .replace(/MICRO[_-]?ACTION:\s*"?[^"\n]+"?\n?/gi, '')
+    .replace(/IDENTITY:\s*"?[^"\n]+"?/gi, '')
+    .replace(/MICRO[_-]?ACTION:\s*"?[^"\n]+"?/gi, '')
     .trim();
 }
