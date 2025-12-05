@@ -4,6 +4,197 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 
 ---
 
+## [0.19.1] - 2025-12-04
+
+### Fixed
+- **TypeScript compilation error on deployment**
+  - Property name mismatch: `progress.unlockProgress.isEligible` → `progress.unlockEligible`
+  - Fixed in ChatInterface.tsx line 2347
+
+---
+
+## [0.19.0] - 2025-12-04
+
+### Added
+- **Two-Stage Extraction Pattern for Micro-Action**
+  - Stage 1: Claude responds naturally to user during identity discovery
+  - Stage 2: When user commitment detected (e.g., "yes", "I commit"), silent API call extracts structured data
+  - New functions: `isIdentityCommitmentResponse()`, `buildMicroActionExtractionMessages()`, `parseMicroActionExtraction()`
+  - Data saved to `identity_sprints` table with correct column names
+  - Sidebar updates to show "Day X of 21" after sprint creation
+
+- **Two-Stage Extraction Pattern for Flow Block**
+  - Mirrors Micro-Action pattern for consistency
+  - Stage 1: Natural conversation through Flow Block discovery and planning
+  - Stage 2: Silent extraction when user commits to weekly schedule
+  - New functions: `isFlowBlockCommitmentResponse()`, `buildFlowBlockExtractionMessages()`, `parseFlowBlockExtraction()`
+  - Weekly map, setup requirements, and sprint data saved to database
+
+- **Sprint Database Architecture**
+  - New `identity_sprints` table for 21-day cycle tracking
+  - Columns: `identity_statement`, `micro_action`, `start_date`, `completion_status`, `sprint_number`
+  - `flow_block_sprints` table for Flow Block tracking
+  - Columns: `weekly_map`, `setup_requirements`, `start_date`, `completion_status`
+  - SQL migration scripts for table creation
+
+- **Button Text Updates**
+  - "Complete Today's Flow Block" button text (dynamic based on sprint status)
+  - "Complete Today's Micro-Action" button text
+  - "Day X of 21" sprint progress display
+
+### Changed
+- **Flow Block API route handling**
+  - Added `flow_block_setup` context case
+  - Added `flow_block_extraction` context with lower temperature (0.3)
+  - Added `micro_action_extraction` context case
+
+### Fixed
+- **Database column name mismatches**
+  - `identity_statement` (not `identity`)
+  - `start_date` (not `sprint_start_date`)
+  - `completion_status: 'active'` (not `is_active: true`)
+  - `isComplete` and `isActive` (not `isSetupComplete` and `isSetupActive`)
+
+- **FlowBlockState interface alignment**
+  - Refactored variable names throughout ChatInterface.tsx to match imported FlowBlockState interface
+  - Fixed property references in buildSelectionContext, loadFlowBlockStatus, unlock checks, and tool handlers
+
+---
+
+## [0.18.2] - 2025-12-03
+
+### Fixed
+- **Weekly check-in duplicate flow conflict**
+  - Conflict between "all-at-once" prompt (4 numbers) and step-by-step handler
+  - Created new step 6 in check-in handler to parse all 4 numbers simultaneously
+  - Fixed `last_weekly_checkin` not updating in database after completion
+
+- **Data inconsistencies in user_progress**
+  - `stage_start_date` reset during testing affected days-in-stage calculation
+  - Manual database corrections applied
+
+---
+
+## [0.18.1] - 2025-12-03
+
+### Added
+- **Weekly Check-in Auto-Detection**
+  - Automatic prompt when user opens chat after 7+ days since last check-in
+  - Sunday detection for weekly timing
+  - Logic added to ChatInterface initialization
+  - Checks `last_weekly_checkin` field from Supabase
+
+### Changed
+- **Unlock Progress Element Repositioned**
+  - Moved from ToolsSidebar to left sidebar in ChatInterface
+  - Better organization of UI elements
+  - Reduced clutter in tools panel
+
+### Fixed
+- **Morning Micro-Action button behavior**
+  - "Mark Complete" button incorrectly triggering chat guidance
+  - Changed onClick handler from `handleStartPractice` to `handleMarkComplete`
+  - Fixed in both ToolsSidebar.tsx and FloatingActionButton.tsx
+
+---
+
+## [0.18.0] - 2025-12-03
+
+### Fixed
+- **Stage 3 Opening Message Bug**
+  - Users in Stage 3+ seeing Stage 1 content instead of appropriate stage content
+  - Root cause: Missing `last_visit` column causing `determineOpeningType` to default to 'first_time'
+  - Added null checks for all onboarding status fields
+
+- **Daily Ritual Reset Issues**
+  - Rituals showing as "completed" despite being done previous day
+  - UTC vs local date mismatch in multiple files
+  - Fixed in: ChatInterface, ProgressDisplay, useUserProgress, practice API
+
+- **Duplicate Adherence UI Elements**
+  - Removed duplicate tracking display from left sidebar
+  - Now only appears in tools panel
+
+### Changed
+- **Stage 3 Micro-Action Template Cleanup**
+  - Eliminated redundant body-check questions
+  - Fixed awkward framing issues
+  - Smoother conversation flow
+
+---
+
+## [0.17.0] - 2025-12-02
+
+### Added
+- **Code Cleanup for ChatInterface.tsx**
+  - Removed unused imports
+  - Removed duplicate useEffect hooks
+  - Removed dead comments
+  - Implemented development-only console logging (`devLog` function)
+  - File size reduced by ~5% while maintaining all functionality
+
+- **Sprint Tracking System Architecture**
+  - 21-day cycle tracking for MicroAction and FlowBlock
+  - Database tables for sprint history
+  - Completion tracking and performance metrics
+  - Sprint day calculation ("Day X of 21")
+
+### Fixed
+- **Opening Message Logic**
+  - Users in Stage 3+ incorrectly seeing first-time onboarding messages
+  - Added backup check based on user's current stage progression
+  - Fixed incomplete database flags issue
+
+---
+
+## [0.16.0] - 2025-12-02
+
+### Added
+- **Comprehensive Template Library Specification**
+  - All template scenarios mapped across 7 stages
+  - Stage 1: Ritual introduction flow (4 templates with quick-reply buttons)
+  - Stage 2-6: Daily prompts, stage introductions, completion acknowledgments
+  - Weekly delta check-in templates
+  - Stage unlock notification templates
+  - Progress summary templates
+  - Universal templates (greetings, missed day detection)
+
+- **Template Engine Implementation**
+  - `/lib/templates/templateLibrary.ts` - All template content
+  - `/lib/templates/selectTemplate.ts` - Selection logic based on context
+  - `/lib/templates/processTemplate.ts` - Variable interpolation
+  - Zustand store for shared state management
+
+### Changed
+- **Architecture Decision: Template vs Claude Split (80/20 rule)**
+  - Templates handle: daily prompts, stage unlocks, progress summaries, scripted intros
+  - Claude handles: questions, on-demand protocols, pattern recognition, coaching
+  - Benefits: 80% cost savings, instant responses, consistency
+
+---
+
+## [0.15.0] - 2025-11-28
+
+### Added
+- **Practice Tracking System Enhancements**
+  - `onPracticeCompleted` callback from FloatingActionButton to ChatInterface
+  - Chat automatically acknowledges when user completes practice via modal
+  - Real-time progress display updates
+  - Stage-specific practice requirements tracking
+
+- **Toolbar Refresh Fix**
+  - Zustand store for shared state management
+  - Practice tracking interface updates without page reload
+  - Resolved sync issues between chat and toolbar
+
+### Changed
+- **Terminology Consistency**
+  - "Start Practice" → "Start Ritual"
+  - Full practice names displayed (e.g., "Resonance Breathing" not "Resonance")
+  - "Daily Practices" → "Daily Rituals" throughout UI
+
+---
+
 ## [0.14.0] - 2025-11-27
 
 ### Added
@@ -126,8 +317,11 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 - **Decentering Practice Protocol v2.0**
   - Removed step labels ("Step 1", "Step 2") - now flows conversationally
   - Added bridge stages between decentering and re-engagement
+  - "Stay with the Felt Sense" stage - locate emotion as physical sensation
+  - "Soft Inquiry" stage - gentler awareness-pointing questions
   - Enhanced "player vs avatar" metaphor integration
   - Improved closing ritual with pause instructions
+  - Integration anchors connecting insight to real-world application
 
 ---
 
@@ -871,8 +1065,10 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 ### Current Development Stage
 - Assessment orchestrator: Complete and styled
 - Stage 1: Fully implemented with practice tracking
-- Stage 2-3: Architecture complete, implementation pending
-- Stage 4-7: Pending implementation
+- Stage 2: Architecture complete, ready for testing
+- Stage 3: Fully implemented with Identity Installation + Two-Stage Extraction
+- Stage 4: Fully implemented with Flow Block + Two-Stage Extraction
+- Stage 5-7: Pending implementation
 - Chat interface: Integrated with baseline data + hybrid template system
 - Supabase storage: Configured and functional
 - Mobile responsive: Complete with drawer navigation
@@ -888,6 +1084,7 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 
 #### HIGH PRIORITY: Template Library Development
 - [x] Stage 1 ritual introduction templates (COMPLETE - v0.14.0)
+- [x] Template engine implementation (COMPLETE - v0.16.0)
 - [ ] Stage 2 ritual introduction templates (Somatic Flow)
 - [ ] Stage 3 ritual introduction templates (Morning Micro-Action)
 - [ ] Stage 4-6 introduction templates
@@ -900,9 +1097,11 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 - [x] Define storage schema for all user data
 - [x] Build adherence calculation logic
 - [x] Create delta tracking system
-- [ ] Design unlock eligibility checker
 - [x] Daily ritual completion logging
 - [x] Weekly delta check-in automation
+- [x] Two-stage extraction for identity sprints
+- [x] Two-stage extraction for flow block sprints
+- [ ] Design unlock eligibility checker (auto-evaluation)
 
 #### Option C: Edge Cases & Troubleshooting
 - [ ] What happens when users miss days?
@@ -920,9 +1119,7 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 - [ ] **Develop and enable "coach" functionality after micro identity selection**
 - [ ] **Integration of coach with identity progression tracking**
 
-#### Stage 4-7 Implementation
-- [ ] Flow Block Integration mechanics
-- [ ] Thought Hygiene implementation
+#### Stage 5-7 Implementation
 - [ ] Intrapersonal Co-Regulation flow (Stage 5)
 - [ ] Nightly Debrief system (Stage 6)
 - [ ] Stage 7 application/qualification system
@@ -954,7 +1151,7 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 - [ ] Create media links placeholder system documentation
 
 ### Technical Stack
-- **Frontend**: Next.js, React, Tailwind CSS
+- **Frontend**: Next.js 16, React, Tailwind CSS
 - **Backend**: Supabase
 - **Deployment**: Vercel
 - **AI Integration**: Claude API
@@ -971,12 +1168,14 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 - **Components**: Dark theme throughout
 
 ### Database Schema (Key Tables)
-- `user_progress` - Stage, adherence, streaks, ritual_intro_completed
+- `user_progress` - Stage, adherence, streaks, ritual_intro_completed, current_identity
 - `baseline_assessments` - Initial 4-domain scores, REwired Index
 - `practice_logs` - Daily ritual completion records
 - `weekly_deltas` - Weekly check-in scores
 - `screening_responses` - Medical/psychiatric screening
 - `legal_acceptances` - Terms and consent records
+- `identity_sprints` - 21-day Micro-Action sprint tracking (NEW)
+- `flow_block_sprints` - Flow Block sprint tracking (NEW)
 
 ---
 
