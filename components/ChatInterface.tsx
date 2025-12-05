@@ -2344,7 +2344,7 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
                   Stage {(progress.currentStage || 1) + 1} Unlock Progress
                 </h3>
                 
-                {progress.unlockProgress.isEligible ? (
+                {progress.unlockEligible ? (
                   <div className="text-center py-2">
                     <span className="text-green-400 font-semibold">✓ Eligible for Unlock!</span>
                   </div>
