@@ -376,7 +376,7 @@ export function useUserProgress() {
         dataDate: today,
         // Identity Sprint fields
         currentIdentity: identitySprint?.identity_statement || null,
-        currentMicroAction: identitySprint?.micro_action || null,
+        microAction: identitySprint?.micro_action || null,
         identitySprintNumber: identitySprint?.sprint_number || null,
         identitySprintStart: identitySprint?.start_date || null,
         identitySprintDay: identitySprintDay,
