@@ -1161,8 +1161,8 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
             setMicroActionState(prev => ({
               ...prev,
               conversationHistory: fullHistory,
-              extractedIdentity: extracted.identity_statement,
-              extractedAction: extracted.micro_action,
+              extractedIdentity: extracted.identityStatement,
+extractedAction: extracted.microAction,
               isComplete: true,
               isActive: false,
               sprintStartDate: sprintResult.startDate,
