@@ -2329,11 +2329,11 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
                 {(progress as any)?.microAction && (
   <p className="text-xs text-gray-400 mt-1">Daily proof: {(progress as any).microAction}</p>
 )}
-                {progress?.identitySprint && (
-                  <p className="text-xs text-gray-500 mt-2">
-                    Day {progress.identitySprint.dayNumber} of 21
-                  </p>
-                )}
+                {progress?.identitySprintDay && (
+  <p className="text-xs text-gray-500 mt-2">
+    Day {progress.identitySprintDay} of 21
+  </p>
+)}
               </div>
             )}
 
