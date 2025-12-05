@@ -41,7 +41,11 @@ import {
   microActionOpeningMessage,
   parseCompletionMarker,
   cleanResponseForDisplay,
-  buildAPIMessages
+  buildAPIMessages,
+  // NEW: Two-stage extraction functions
+  isIdentityCommitmentResponse,
+  buildMicroActionExtractionMessages,
+  parseMicroActionExtraction
 } from '@/lib/microActionAPI';
 
 // ============================================
@@ -349,203 +353,134 @@ function getIntroRedirectMessage(currentStep: number): string {
     case 0:
       return `---
 
-Good question. Now — ready to learn the rituals? They're the foundation of everything else.`;
+Now, back to your rituals. Ready to learn them?`;
     case 1:
       return `---
 
-Alright, back to the installation. Ready to learn the second ritual?`;
+Back to the walkthrough. Make sense so far? Ready for the next ritual?`;
     case 2:
       return `---
 
-Got it. Let's finish up the ritual overview so you're set for tomorrow.`;
+Okay, back to wrapping up. Ready to get started?`;
     default:
-      return `---
-
-Now, let's continue with the ritual introduction.`;
+      return '';
   }
 }
 
 // ============================================
-// PERSONALIZED INSIGHT GENERATION
+// FIRST-TIME OPENING MESSAGE
 // ============================================
 
-// Generate personalized interpretation via API
-async function generatePersonalizedInsight(data: BaselineData, userName: string): Promise<string> {
-  try {
-    const response = await fetch('/api/chat/insight', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        rewiredIndex: data.rewiredIndex,
-        tier: data.tier,
-        domainScores: data.domainScores,
-        userName: userName
-      }),
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to generate insight');
-    }
-    
-    const result = await response.json();
-    return result.insight;
-  } catch (error) {
-    console.error('Error generating insight:', error);
-    // Fallback to generic insight if API fails
-    return getGenericInsight(data);
-  }
-}
-
-// Fallback generic insight based on scores
-function getGenericInsight(data: BaselineData): string {
-  const scores = data.domainScores;
-  const entries = Object.entries(scores) as [string, number][];
-  const lowest = entries.reduce((a, b) => a[1] < b[1] ? a : b);
-  const highest = entries.reduce((a, b) => a[1] > b[1] ? a : b);
+async function getFirstTimeOpeningMessage(baselineData: BaselineData, userName: string): Promise<string> {
+  const tier = getStatusTier(baselineData.rewiredIndex);
+  const tierInterpretation = tierInterpretations[tier] || tierInterpretations['Operational'];
+  const rituals = stageRituals[1] || stageRituals[1];
   
-  const lowestName = lowest[0].charAt(0).toUpperCase() + lowest[0].slice(1);
-  const highestName = highest[0].charAt(0).toUpperCase() + highest[0].slice(1);
-  
-  if (data.rewiredIndex >= 70) {
-    return `A ${data.rewiredIndex} baseline puts you ahead of most. Your ${highestName} is solid, but ${lowestName} is where the real gains are waiting. That's your growth edge.`;
-  } else if (data.rewiredIndex >= 50) {
-    return `A ${data.rewiredIndex} baseline shows potential with room to grow. ${highestName} is your strength - lean into it. ${lowestName} needs work, and that's exactly what we'll target.`;
-  } else {
-    return `A ${data.rewiredIndex} baseline means your system is running on survival mode. Good news: there's nowhere to go but up. We'll start with ${lowestName} - that's where the biggest shifts happen fastest.`;
-  }
-}
+  return `Hey${userName ? `, ${userName}` : ''}. Welcome to the IOS.
 
-// FIRST-TIME USER: Full onboarding message (async for personalized insight)
-async function getFirstTimeOpeningMessage(data: BaselineData, userName: string): Promise<string> {
-  const rituals = stageRituals[data.currentStage] || stageRituals[1];
-  const tierText = tierInterpretations[data.tier] || tierInterpretations['Operational'];
-  
-  // Get personalized insight via small API call
-  const personalizedInsight = await generatePersonalizedInsight(data, userName);
-  
-  return `Hey${userName ? `, ${userName}` : ''}. Your baseline diagnostic is complete. Nicely done.
+Your baseline diagnostic is complete. Here's where you're starting:
 
-**REwired Index: ${data.rewiredIndex}/100**
-**Status: ${data.tier}**
+**REwired Index: ${baselineData.rewiredIndex}/100** — *${tier}*
 
-**Domain Breakdown:**
-• Regulation: ${data.domainScores.regulation.toFixed(1)}/5.0
-• Awareness: ${data.domainScores.awareness.toFixed(1)}/5.0
-• Outlook: ${data.domainScores.outlook.toFixed(1)}/5.0
-• Attention: ${data.domainScores.attention.toFixed(1)}/5.0
+${tierInterpretation}
 
-The results will also appear on the left side (desktop) or by clicking on the hamburger icon (mobile) for quick reference any time.
-
-${personalizedInsight}
-
-${tierText}
-
----
-
-Now, let's dive in. 
-
-Here's how this works:
-
-The IOS installs in 7 progressive stages. Each stage adds new practices that stack — they don't replace, they accumulate.
-
-You advance when the system sees you're ready. So you need to do the daily rituals and follow the prompts. 
-
----
-
-You're starting at **Stage ${data.currentStage}: ${getStageName(data.currentStage)}**.
-
-**Your daily rituals (that start tomorrow morning):**
-
+**Your Stage 1 morning rituals:**
 ${rituals.list}
 
-**Total: ${rituals.total}** every morning, immediately upon waking.
+**Total: ${rituals.total}**
 
-These aren't optional. They're the kernel installation. Without them, nothing else sticks.
-
-For simplicity, they are also located on the right side (desktop) or under the lightning bolt icon (mobile).
-
-Ready to learn the rituals?`;
+Ready to learn each ritual?`;
 }
 
-// RETURNING USER (same day): Brief check-in
+// ============================================
+// SAME-DAY RETURN MESSAGE
+// ============================================
+
 function getSameDayReturnMessage(
-  data: BaselineData, 
-  progress: ProgressData | null, 
+  baselineData: BaselineData,
+  progressData: ProgressData | null,
   currentStage: number,
-  completedPractices: string[]
+  practicesCompletedToday: string[]
 ): string {
+  const adherence = progressData?.adherence_percentage || 0;
   const requiredPractices = stagePracticeIds[currentStage] || stagePracticeIds[1];
+  const completedCount = practicesCompletedToday.filter(p => requiredPractices.includes(p)).length;
   const totalRequired = requiredPractices.length;
   
-  // Normalize to lowercase for comparison
-  const completedLower = completedPractices.map(p => p.toLowerCase());
-  
-  // Count how many required practices have been completed (case-insensitive)
-  const completedRequired = requiredPractices.filter(p => completedLower.includes(p.toLowerCase()));
-  const completedCount = completedRequired.length;
-  const remainingCount = totalRequired - completedCount;
-  const allComplete = completedCount >= totalRequired;
-  
-  if (allComplete) {
-    return `Welcome back. Good to see you.
+  if (completedCount >= totalRequired) {
+    return `Welcome back. You've completed all your rituals for today — nice work.
 
-All ${totalRequired} rituals logged today. Nice work.
+**${completedCount}/${totalRequired}** practices done. That's consistency in action.
 
-What do you need?
-• Continue a conversation
-• Run an on-demand protocol (Reframe, Thought Hygiene, Decentering)
-• Check your progress
-• Ask a question
-
-What's on your mind?`;
+What else can I help you with?`;
   }
   
-  if (completedCount > 0) {
-    return `Welcome back.
-
-You've completed ${completedCount}/${totalRequired} rituals today. ${remainingCount} remaining.
-
-Ready to continue, or is there something else you need first?`;
-  }
+  const remaining = requiredPractices.filter(p => !practicesCompletedToday.includes(p));
+  const remainingNames = remaining.map(id => {
+    const nameMap: { [key: string]: string } = {
+      'hrvb': 'Resonance Breathing',
+      'awareness_rep': 'Awareness Rep',
+      'somatic_flow': 'Somatic Flow',
+      'micro_action': 'Morning Micro-Action',
+      'flow_block': 'Flow Block',
+      'co_regulation': 'Co-Regulation Practice',
+      'nightly_debrief': 'Nightly Debrief'
+    };
+    return nameMap[id] || id;
+  });
   
-  return `Welcome back.
+  return `Welcome back. You've done **${completedCount}/${totalRequired}** practices today.
 
-Your morning rituals are waiting. Ready to run through them now, or is there something else you need first?`;
+Still remaining: ${remainingNames.join(', ')}.
+
+Use the toolbar to start, or let me know how I can help.`;
 }
 
-// RETURNING USER (new day): Morning ritual prompt
-function getNewDayMorningMessage(data: BaselineData, progress: ProgressData | null, userName: string, currentStage: number): string {
+// ============================================
+// NEW-DAY MORNING MESSAGE
+// ============================================
+
+function getNewDayMorningMessage(
+  baselineData: BaselineData,
+  progressData: ProgressData | null,
+  userName: string,
+  currentStage: number
+): string {
+  const adherence = progressData?.adherence_percentage || 0;
+  const consecutiveDays = progressData?.consecutive_days || 0;
   const rituals = stageRituals[currentStage] || stageRituals[1];
-  const consecutiveDays = progress?.consecutive_days || 0;
-  const adherence = progress?.adherence_percentage || 0;
   
-  // Calculate days in current stage
-  let daysInStage = 1;
-  if (progress?.stage_start_date) {
-    const startDate = new Date(progress.stage_start_date);
-    const now = new Date();
-    daysInStage = Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-  }
-  
-  // Build streak message
   let streakMessage = '';
-  if (consecutiveDays >= 7) {
-    streakMessage = `\n\n🔥 **${consecutiveDays} day streak.** Your nervous system is rewiring. Keep going.`;
-  } else if (consecutiveDays >= 3) {
-    streakMessage = `\n\n**${consecutiveDays} days consecutive.** Building momentum.`;
-  } else if (consecutiveDays === 0 && adherence > 0) {
-    streakMessage = `\n\nStreak broken. All good. No judgment — just start fresh today.`;
+  if (consecutiveDays > 0) {
+    streakMessage = `**${consecutiveDays}-day streak** going. `;
   }
   
-  return `Morning${userName ? `, ${userName}` : ''}.
+  let adherenceMessage = '';
+  if (adherence > 0) {
+    adherenceMessage = `Current adherence: **${adherence}%**. `;
+  }
+  
+  return `Good morning${userName ? `, ${userName}` : ''}. New day, new training session.
 
-**Stage ${currentStage}: ${getStageName(currentStage)}** — Day ${daysInStage}
-**Adherence:** ${adherence.toFixed(0)}%${streakMessage}
+${streakMessage}${adherenceMessage}
 
----
+**Stage ${currentStage} Rituals:**
+${rituals.list}
 
-**Today's rituals:**
+Ready to start? Use the toolbar or let me know what you need.`;
+}
 
+// ============================================
+// STAGE INTRO MESSAGE
+// ============================================
+
+function getStageIntroMessage(stage: number, userName: string): string {
+  const rituals = stageRituals[stage] || stageRituals[1];
+  const stageName = getStageName(stage);
+  
+  return `${userName ? `${userName}, ` : ''}Welcome to **Stage ${stage}: ${stageName}**.
+
+Your new daily rituals:
 ${rituals.list}
 
 **Total: ${rituals.total}**
@@ -848,252 +783,232 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
           .single();
         
         if (config) {
+          devLog('[FlowBlock]', 'Loaded existing config:', config);
           setFlowBlockState(prev => ({
             ...prev,
             isComplete: true,
-            extractedWeeklyMap: config.weekly_map,
-            extractedPreferences: config.setup_preferences,
+            extractedWeeklyMap: config.weekly_map || [],
+            extractedPreferences: config.setup_preferences || {},
+            extractedDomains: config.domains || [],
+            focusType: config.focus_type || 'distributed',
             sprintStartDate: config.sprint_start_date,
-            todaysBlock: getTodaysBlock(config.weekly_map)
+            sprintNumber: config.sprint_number || 1
           }));
         }
       } catch (error) {
-        devLog('[FlowBlock]', 'No existing config found');
+        devLog('[FlowBlock]', 'No existing config found (expected for new users)');
       }
     };
     
     loadFlowBlockStatus();
   }, [user?.id]);
 
-  // Load sprint state from database on init
+  // Load Micro-Action setup status from database
   useEffect(() => {
-    const loadSprintState = async () => {
+    const loadMicroActionStatus = async () => {
       if (!user?.id) return;
       
       try {
-        const { microActionSprint, flowBlockSprint } = await loadActiveSprintsForUser(user.id);
+        const supabase = createClient();
+        const { data: sprint } = await supabase
+          .from('identity_sprints')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('completion_status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
         
-        // Restore MicroAction sprint state if exists
-        if (microActionSprint) {
+        if (sprint) {
+          devLog('[MicroAction]', 'Loaded existing sprint:', sprint);
           setMicroActionState(prev => ({
             ...prev,
-            extractedIdentity: microActionSprint.identity,
-            extractedAction: microActionSprint.action,
             isComplete: true,
-            sprintStartDate: microActionSprint.start_date,
-            sprintNumber: microActionSprint.sprint_number
+            extractedIdentity: sprint.identity_statement,
+            extractedAction: sprint.micro_action,
+            sprintStartDate: sprint.start_date,
+            sprintNumber: sprint.sprint_number || 1
           }));
-          devLog('[Sprint]', 'Loaded MicroAction sprint:', microActionSprint.sprint_number);
-        }
-        
-        // Update FlowBlock sprint number if needed
-        if (flowBlockSprint) {
-          setFlowBlockState(prev => ({
-            ...prev,
-            sprintNumber: flowBlockSprint.sprint_number
-          }));
-          devLog('[Sprint]', 'Loaded FlowBlock sprint:', flowBlockSprint.sprint_number);
         }
       } catch (error) {
-        devLog('[Sprint]', 'Error loading sprint state:', error);
+        devLog('[MicroAction]', 'No existing sprint found (expected for new users)');
       }
     };
     
-    loadSprintState();
+    loadMicroActionStatus();
   }, [user?.id]);
-  
-  // ============================================
-  // UNLOCK ELIGIBILITY CHECK
-  // ============================================
-  // Check if user is eligible for stage unlock and show message
-  useEffect(() => {
-    // Only check once per session and when we have progress data
-    if (hasCheckedUnlock.current || !progress || isInitializing || unlockFlowState !== 'none') return;
-    // Don't trigger if any other flow is active
-    if (weeklyCheckInActive || awaitingSprintRenewal || awaitingMicroActionStart || microActionState.isActive) return;
-    if (awaitingFlowBlockStart || flowBlockState.isActive) return;
-    
-    // Only check if user is eligible for unlock
-    devLog('[ChatInterface]', 'Unlock check:', {
-      unlockEligible: progress.unlockEligible,
-      currentStage: progress.currentStage,
-      adherence: progress.adherencePercentage,
-      consecutiveDays: progress.consecutiveDays,
-      avgDelta: progress.domainDeltas?.average
-    });
-    
-    if (progress.unlockEligible && progress.currentStage < 7) {
-      hasCheckedUnlock.current = true;
-      devLog('[ChatInterface]', 'User eligible for unlock! Showing eligible message...');
-      
-      // Get the eligible message from templates
-      const currentStageTemplates = templateLibrary.stages[progress.currentStage as keyof typeof templateLibrary.stages];
-      // Type-safe access (cast to avoid TS union type issues)
-      const unlockTemplates = currentStageTemplates?.unlock as { eligible?: string; notYet?: string; confirmation?: string } | undefined;
-      if (unlockTemplates?.eligible) {
-        const nextStage = progress.currentStage + 1;
-        setPendingUnlockStage(nextStage);
-        setUnlockFlowState('eligible_shown');
-        
-        // Process the template
-        const templateContext = buildTemplateContext();
-        const processedMessage = processTemplate(unlockTemplates.eligible, templateContext);
-        
-        // Add unlock eligible message to chat
-        setMessages(prev => [...prev, { 
-          role: 'assistant', 
-          content: processedMessage 
-        }]);
-      }
-    }
-  }, [progress, isInitializing, unlockFlowState, buildTemplateContext, weeklyCheckInActive, awaitingSprintRenewal, awaitingMicroActionStart, microActionState.isActive, awaitingFlowBlockStart, flowBlockState.isActive]);
 
   // ============================================
-  // WEEKLY MILESTONE CHECK (Day 7, 14, 21, etc.)
+  // CHECK FOR UNLOCK ELIGIBILITY
   // ============================================
+  
   useEffect(() => {
-    // Only check once per session and when we have progress data
-    if (hasCheckedWeeklyMilestone.current || !progress || isInitializing) return;
-    // Don't trigger if any flow is active
-    if (unlockFlowState !== 'none' || weeklyCheckInActive) return;
-    if (awaitingSprintRenewal || awaitingMicroActionStart || microActionState.isActive) return;
-    if (awaitingFlowBlockStart || flowBlockState.isActive) return;
+    // Only check once, and only when we have progress data
+    if (hasCheckedUnlock.current || !progress || progressLoading) return;
     
-    const daysInStage = progress.daysInStage || 0;
-    const weeksComplete = Math.floor(daysInStage / 7);
+    const extendedProgress = progress as any;
     
-    // Only celebrate on exact week boundaries (day 7, 14, 21, etc.)
-    // Check if today is a milestone day
-    if (daysInStage > 0 && daysInStage % 7 === 0 && weeksComplete > 0) {
+    // Check if eligible for unlock
+    if (extendedProgress?.unlockProgress?.isEligible && !extendedProgress?.unlockProgress?.alreadyUnlocked) {
+      const nextStage = (progress.currentStage || 1) + 1;
+      
+      // Mark as checked so we don't show again
+      hasCheckedUnlock.current = true;
+      
+      // Set up unlock flow state
+      setPendingUnlockStage(nextStage);
+      setUnlockFlowState('eligible_shown');
+      
+      // Show unlock message
+      const unlockMessages: { [key: number]: string } = {
+        2: `**Neural Priming stabilized.** Heart-mind coherence online.
+
+You've hit the unlock criteria:
+- ≥80% adherence over 14 consecutive days ✓
+- ≥+0.3 average delta improvement ✓
+
+You're ready to bring awareness into motion.
+
+**Unlock Stage 2: Embodied Awareness?**`,
+        3: `**Embodiment achieved.** The body is now connected awareness.
+
+You've hit the unlock criteria:
+- ≥80% adherence over 14 consecutive days ✓
+- ≥+0.5 average delta improvement ✓
+
+Time to act from coherence.
+
+**Unlock Stage 3: Identity Mode?**`,
+        4: `**Identity proof installed.** You now act from awareness, not toward it.
+
+You've hit the unlock criteria:
+- ≥80% adherence over 14 consecutive days ✓
+- ≥+0.5 average delta improvement ✓
+
+Ready to integrate high-level performance?
+
+**Unlock Stage 4: Flow Mode?**`,
+        5: `**Flow performance stabilized.** The mind is no longer the operator - it's the tool.
+
+You've hit the unlock criteria:
+- ≥80% adherence over 14 consecutive days ✓
+- ≥+0.6 average delta improvement ✓
+
+Ready to train relational coherence?
+
+**Unlock Stage 5: Relational Coherence?**`,
+        6: `**Relational coherence stabilized.** You are now connected.
+
+You've hit the unlock criteria:
+- ≥85% adherence over 14 consecutive days ✓
+- ≥+0.7 average delta improvement ✓
+
+Ready for full integration?
+
+**Unlock Stage 6: Integration?**`
+      };
+      
+      const message = unlockMessages[nextStage] || `Congratulations! You're eligible to unlock Stage ${nextStage}.`;
+      
+      // Add unlock message after a short delay to not interrupt other flows
+      setTimeout(() => {
+        setMessages(prev => [...prev, { role: 'assistant', content: message }]);
+      }, 1000);
+    }
+  }, [progress, progressLoading]);
+
+  // ============================================
+  // CHECK FOR WEEKLY MILESTONE
+  // ============================================
+  
+  useEffect(() => {
+    // Only check once per session
+    if (hasCheckedWeeklyMilestone.current || !progress || progressLoading) return;
+    
+    const extendedProgress = progress as any;
+    const daysInStage = extendedProgress?.consecutiveDays || 0;
+    
+    // Show milestone message at 7 days and 14 days
+    if (daysInStage === 7 || daysInStage === 14) {
       hasCheckedWeeklyMilestone.current = true;
       
-      const stageName = getStageName(progress.currentStage);
-      const adherence = progress.adherencePercentage || 0;
-      
-      // Generate milestone message
-      let milestoneMessage = `**Week ${weeksComplete} Complete** 🎉\n\n`;
-      
-      if (weeksComplete === 1) {
-        milestoneMessage += `You've completed your first week in **${stageName}**. `;
-        milestoneMessage += adherence >= 80 
-          ? `${adherence}% adherence — your nervous system is starting to recognize this as the new normal.`
-          : `${adherence}% adherence — keep building that consistency. The compound effect is real.`;
-      } else if (weeksComplete === 2) {
-        milestoneMessage += `Two weeks of **${stageName}**. `;
-        milestoneMessage += adherence >= 80
-          ? `${adherence}% adherence — you're approaching unlock eligibility. The patterns are embedding.`
-          : `${adherence}% adherence — push for 80%+ this week to qualify for unlock.`;
-      } else {
-        milestoneMessage += `${weeksComplete} weeks in **${stageName}**. `;
-        milestoneMessage += `${adherence}% adherence. You're building deep neural grooves. Keep going.`;
-      }
-      
-      // Add milestone message to chat
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: milestoneMessage 
-      }]);
-      
-      devLog('[ChatInterface]', 'Weekly milestone message shown:', { weeksComplete, daysInStage, adherence });
+      const milestoneMessage = daysInStage === 7 
+        ? `**Week 1 Complete!** 🎉
+
+You've maintained consistency for 7 days. Your nervous system is starting to recognize these patterns.
+
+Keep going - the real rewiring happens in weeks 2-3.`
+        : `**Week 2 Complete!** 🎉
+
+14 consecutive days. You're in the groove now. 
+
+If you've hit the other criteria, you may be approaching an unlock. Check your progress sidebar.`;
+
+      // Add milestone message after a short delay
+      setTimeout(() => {
+        setMessages(prev => [...prev, { role: 'assistant', content: milestoneMessage }]);
+      }, 2000);
     }
-  }, [progress, isInitializing, unlockFlowState, weeklyCheckInActive, awaitingSprintRenewal, awaitingMicroActionStart, microActionState.isActive, awaitingFlowBlockStart, flowBlockState.isActive]);
+  }, [progress, progressLoading]);
 
   // ============================================
-  // UNLOCK CONFIRMATION HANDLER
+  // HANDLE UNLOCK CONFIRMATION
   // ============================================
+  
   const handleUnlockConfirmation = async (confirmed: boolean) => {
-    if (!confirmed || !pendingUnlockStage || !user) {
-      // User declined - reset state
+    if (!pendingUnlockStage) return;
+    
+    if (confirmed) {
+      // Perform the unlock
+      try {
+        const supabase = createClient();
+        await supabase
+          .from('user_progress')
+          .update({ 
+            current_stage: pendingUnlockStage,
+            stage_start_date: new Date().toISOString()
+          })
+          .eq('user_id', user.id);
+        
+        // Refresh progress to get updated stage
+        if (refetchProgress) {
+          await refetchProgress();
+        }
+        
+        setUnlockFlowState('confirmed');
+        
+        // Show confirmation message
+        const stageName = getStageName(pendingUnlockStage);
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: `**Stage ${pendingUnlockStage}: ${stageName} unlocked!** 🔓
+
+Your new practices are now available.`
+        }]);
+      } catch (err) {
+        console.error('Failed to unlock stage:', err);
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: "There was an error unlocking the stage. Please try again." 
+        }]);
+        setUnlockFlowState('none');
+        setPendingUnlockStage(null);
+      }
+    } else {
+      // User declined unlock
       setUnlockFlowState('none');
       setPendingUnlockStage(null);
-      
-      // Get the "not yet" message from templates
-      const currentStage = progress?.currentStage || 1;
-      const currentStageTemplates = templateLibrary.stages[currentStage as keyof typeof templateLibrary.stages];
-      const unlockTemplates = currentStageTemplates?.unlock as { eligible?: string; notYet?: string; confirmation?: string } | undefined;
-      
-      if (unlockTemplates?.notYet) {
-        const templateContext = buildTemplateContext();
-        const processedMessage = processTemplate(unlockTemplates.notYet, templateContext);
-        setMessages(prev => [...prev, { role: 'assistant', content: processedMessage }]);
-      } else {
-        setMessages(prev => [...prev, { 
-          role: 'assistant', 
-          content: "Understood. Continue with your current practices. The unlock will be here when you're ready." 
-        }]);
-      }
-      return;
-    }
-    
-    // User confirmed - perform the unlock
-    try {
-      const supabase = createClient();
-      const now = new Date().toISOString();
-      
-      // Update user_progress with new stage
-      const { error: updateError } = await supabase
-        .from('user_progress')
-        .update({ 
-          current_stage: pendingUnlockStage,
-          stage_start_date: now
-        })
-        .eq('user_id', user.id);
-      
-      if (updateError) {
-        console.error('[ChatInterface] Stage update error:', updateError);
-        throw updateError;
-      }
-      
-      // Log the stage unlock
-      await supabase.from('stage_unlocks').insert({
-        user_id: user.id,
-        stage_unlocked: pendingUnlockStage,
-        unlocked_at: now,
-        adherence_at_unlock: progress?.adherencePercentage || 0,
-        consecutive_days_at_unlock: progress?.consecutiveDays || 0,
-        avg_delta_at_unlock: progress?.domainDeltas?.average || 0
-      });
-      
-      devLog('[ChatInterface]', 'Stage unlock successful:', pendingUnlockStage);
-      
-      // Refresh progress
-      if (refetchProgress) {
-        await refetchProgress();
-      }
-      
-      // Get the confirmation message
-      const currentStage = progress?.currentStage || 1;
-      const currentStageTemplates = templateLibrary.stages[currentStage as keyof typeof templateLibrary.stages];
-      const unlockTemplates = currentStageTemplates?.unlock as { eligible?: string; notYet?: string; confirmation?: string } | undefined;
-      
-      if (unlockTemplates?.confirmation) {
-        const templateContext = buildTemplateContext();
-        const processedMessage = processTemplate(unlockTemplates.confirmation, templateContext);
-        setMessages(prev => [...prev, { role: 'assistant', content: processedMessage }]);
-      } else {
-        setMessages(prev => [...prev, { 
-          role: 'assistant', 
-          content: `**Stage ${pendingUnlockStage} Unlocked!** 🎉\n\nNew practices are now available. Let me introduce you to what's new.` 
-        }]);
-      }
-      
-      // Update unlock flow state to show "Learn the new practices" button
-      setUnlockFlowState('confirmed');
-      
-    } catch (err) {
-      console.error('[ChatInterface] Unlock failed:', err);
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: "Something went wrong with the unlock. Let's try again - type 'unlock' when you're ready." 
+        content: "No problem. Take your time. You can unlock when you're ready - just ask or wait for the next check." 
       }]);
-      setUnlockFlowState('none');
-      setPendingUnlockStage(null);
     }
   };
+
+  // ============================================
+  // HANDLE START NEW STAGE INTRO
+  // ============================================
   
-  // ============================================
-  // NEW STAGE INTRO HANDLER
-  // ============================================
   const handleStartNewStageIntro = async () => {
     if (!pendingUnlockStage) return;
     
@@ -1150,7 +1065,9 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
     }]);
   }, []);
 
-  // Process user response in Micro-Action setup (100% API version)
+  // ============================================
+  // PROCESS MICRO-ACTION RESPONSE (TWO-STAGE PATTERN)
+  // ============================================
   const processMicroActionResponse = useCallback(async (userResponse: string) => {
     if (!microActionState.isActive) return;
     
@@ -1160,14 +1077,23 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
     setMessages(prev => [...prev, { role: 'user', content: userResponse }]);
     setLoading(true);
     
-    // Build conversation history for API
+    // Get last assistant message to check for commitment question
+    const lastAssistantMsg = microActionState.conversationHistory
+      .filter(m => m.role === 'assistant')
+      .pop()?.content || '';
+    
+    // Check if this is a commitment response
+    const isCommitment = isIdentityCommitmentResponse(userResponse, lastAssistantMsg);
+    devLog('[MicroAction]', 'Is commitment response:', isCommitment);
+    
+    // Build updated history with user message
     const updatedHistory = [
       ...microActionState.conversationHistory,
       { role: 'user' as const, content: userResponse }
     ];
     
     try {
-      // Call the main chat API with the Micro-Action system prompt
+      // STAGE 1: Get natural response from Claude
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1186,41 +1112,86 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
       
       devLog('[MicroAction]', 'API response:', assistantResponse);
       
-      // Check for completion marker
-      const completion = parseCompletionMarker(assistantResponse);
+      // Clean and display response
+      const cleanResponse = cleanResponseForDisplay(assistantResponse);
+      setMessages(prev => [...prev, { role: 'assistant', content: cleanResponse }]);
       
-      if (completion) {
-        const cleanResponse = cleanResponseForDisplay(assistantResponse);
-        setMessages(prev => [...prev, { role: 'assistant', content: cleanResponse }]);
+      // Update conversation history with assistant response
+      const fullHistory = [...updatedHistory, { role: 'assistant' as const, content: cleanResponse }];
+      
+      // STAGE 2: If commitment detected, run extraction
+      if (isCommitment) {
+        devLog('[MicroAction]', 'Commitment detected, running extraction...');
         
-        // Start new sprint in database and get sprint info
-        const sprintResult = await startNewMicroActionSprint(
-          user.id,
-          completion.identity,
-          completion.action
-        );
+        const extractionMessages = buildMicroActionExtractionMessages(fullHistory);
         
-        // Also save to your existing table if you still need it
-        await saveMicroActionSetup(completion.identity, completion.action, sprintResult.sprintNumber);
+        const extractionResponse = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: extractionMessages,
+            context: 'micro_action_extraction'
+          })
+        });
         
-        setMicroActionState(prev => ({
-          ...prev,
-          conversationHistory: [...updatedHistory, { role: 'assistant', content: cleanResponse }],
-          extractedIdentity: completion.identity,
-          extractedAction: completion.action,
-          isComplete: true,
-          isActive: false,
-          sprintStartDate: sprintResult.startDate,
-          sprintNumber: sprintResult.sprintNumber
-        }));
+        if (extractionResponse.ok) {
+          const extractionData = await extractionResponse.json();
+          const extractionText = extractionData.response || extractionData.content || '';
+          
+          devLog('[MicroAction]', 'Extraction response:', extractionText);
+          
+          const extracted = parseMicroActionExtraction(extractionText);
+          
+          if (extracted) {
+            devLog('[MicroAction]', 'Extraction successful:', extracted);
+            
+            // Save to database using the sprint database function
+            const sprintResult = await startNewMicroActionSprint(
+              user.id,
+              extracted.identity_statement,
+              extracted.micro_action
+            );
+            
+            devLog('[MicroAction]', 'Sprint saved:', sprintResult);
+            
+            // Also update user_progress for backward compatibility
+            await updateUserProgressIdentity(extracted.identity_statement, extracted.micro_action);
+            
+            // Update state to complete
+            setMicroActionState(prev => ({
+              ...prev,
+              conversationHistory: fullHistory,
+              extractedIdentity: extracted.identity_statement,
+              extractedAction: extracted.micro_action,
+              isComplete: true,
+              isActive: false,
+              sprintStartDate: sprintResult.startDate,
+              sprintNumber: sprintResult.sprintNumber
+            }));
+            
+            // Refresh progress to update sidebar
+            if (refetchProgress) {
+              await refetchProgress();
+            }
+          } else {
+            devLog('[MicroAction]', 'Extraction parsing failed, continuing conversation');
+            setMicroActionState(prev => ({
+              ...prev,
+              conversationHistory: fullHistory
+            }));
+          }
+        } else {
+          devLog('[MicroAction]', 'Extraction API call failed');
+          setMicroActionState(prev => ({
+            ...prev,
+            conversationHistory: fullHistory
+          }));
+        }
       } else {
-        // Normal response - continue conversation
-        setMessages(prev => [...prev, { role: 'assistant', content: assistantResponse }]);
-        
-        // Update conversation history
+        // Normal response - just update conversation history
         setMicroActionState(prev => ({
           ...prev,
-          conversationHistory: [...updatedHistory, { role: 'assistant', content: assistantResponse }]
+          conversationHistory: fullHistory
         }));
       }
     } catch (error) {
@@ -1232,56 +1203,26 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
     }
     
     setLoading(false);
-  }, [microActionState, user?.id]);
+  }, [microActionState, user?.id, refetchProgress]);
 
-  // Save Micro-Action setup to database
-  const saveMicroActionSetup = async (identity: string, microAction: string, sprintNumber: number) => {
-    devLog('[MicroAction]', 'Saving setup:', { identity, microAction, sprintNumber });
-    
+  // ============================================
+  // UPDATE USER PROGRESS IDENTITY (HELPER)
+  // ============================================
+  const updateUserProgressIdentity = async (identity: string, microAction: string) => {
     try {
       const supabase = createClient();
-      const now = new Date().toISOString();
-      
-      // Insert into identity_sprints table
-      const { error: insertError } = await supabase
-        .from('identity_sprints')
-        .insert({
-          user_id: user.id,
-          identity,
-          micro_action: microAction,
-          sprint_number: sprintNumber,
-          sprint_start_date: now,
-          is_active: true
-        });
-      
-      if (insertError) {
-        console.error('[MicroAction] Insert error:', insertError);
-        throw insertError;
-      }
-      
-      // Deactivate any previous sprints
-      await supabase
-        .from('identity_sprints')
-        .update({ is_active: false })
-        .eq('user_id', user.id)
-        .lt('sprint_start_date', now);
-      
-      // Update user_progress with current identity
       await supabase
         .from('user_progress')
         .update({ 
           current_identity: identity,
           micro_action: microAction,
-          identity_sprint_start: now
+          identity_sprint_start: new Date().toISOString()
         })
         .eq('user_id', user.id);
       
-      // Refresh progress
-      if (refetchProgress) {
-        await refetchProgress();
-      }
+      devLog('[MicroAction]', 'Updated user_progress with identity');
     } catch (error) {
-      console.error('[MicroAction] Failed to save setup:', error);
+      console.error('[MicroAction] Failed to update user_progress:', error);
     }
   };
 
@@ -1552,190 +1493,85 @@ ${qualQuestion} (0-5)`
           return;
         }
         
-        const [reg, aware, outlook, attn] = numbers.slice(0, 4).map(n => parseFloat(n));
+        const [reg, aware, out, att] = numbers.map(n => parseFloat(n));
         
         // Validate all are in range
-        if ([reg, aware, outlook, attn].some(n => isNaN(n) || n < 0 || n > 5)) {
+        if ([reg, aware, out, att].some(n => n < 0 || n > 5)) {
           setMessages(prev => [...prev, {
             role: 'assistant',
-            content: "Each rating should be between 0 and 5. Please try again."
+            content: "All numbers must be between 0 and 5. Please try again."
           }]);
           return;
         }
         
-        // Set all scores and move to qualitative question
-        setWeeklyCheckInScores({
+        // Save these scores
+        const allAtOnceScores = {
           regulation: reg,
           awareness: aware,
-          outlook: outlook,
-          attention: attn,
-          qualitative: null
-        });
-        setWeeklyCheckInStep(5); // Move to qualitative question
-        const qualQ = stageQualitativeQuestions[currentStage] || stageQualitativeQuestions[1];
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: `**Stage ${currentStage} Competence Check:**\n\n${qualQ} (0-5)`
-        }]);
+          outlook: out,
+          attention: att,
+          qualitative: null // Skip qualitative for auto-prompt version
+        };
+        
+        await saveWeeklyCheckIn(allAtOnceScores);
         break;
     }
   };
   
+  // Save weekly check-in to database
   const saveWeeklyCheckIn = async (scores: typeof weeklyCheckInScores) => {
     try {
       const supabase = createClient();
-      const currentStage = progress?.currentStage || 1;
       
-      // Get baseline for delta calculation
-      const { data: baseline } = await supabase
-        .from('baseline_assessments')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-      
-      const baselineScores = baseline ? {
-        regulation: baseline.calm_core_score || 0,
-        awareness: baseline.observer_index_score || 0,
-        outlook: baseline.vitality_index_score || 0,
-        attention: ((baseline.focus_diagnostic_score || 0) + (baseline.presence_test_score || 0)) / 2
-      } : { regulation: 0, awareness: 0, outlook: 0, attention: 0 };
-      
-      // Calculate deltas
-      const deltas = {
-        regulation: (scores.regulation || 0) - baselineScores.regulation,
-        awareness: (scores.awareness || 0) - baselineScores.awareness,
-        outlook: (scores.outlook || 0) - baselineScores.outlook,
-        attention: (scores.attention || 0) - baselineScores.attention
-      };
-      const avgDelta = (deltas.regulation + deltas.awareness + deltas.outlook + deltas.attention) / 4;
-      
-      // Insert into weekly_deltas - USE LOCAL DATE, NOT UTC
-      const nowDate = new Date();
-      const today = `${nowDate.getFullYear()}-${String(nowDate.getMonth() + 1).padStart(2, '0')}-${String(nowDate.getDate()).padStart(2, '0')}`;
+      // Save to weekly_checkins table
       const { error: insertError } = await supabase
-        .from('weekly_deltas')
-        .upsert({
+        .from('weekly_checkins')
+        .insert({
           user_id: user.id,
-          week_of: today,
           regulation_score: scores.regulation,
           awareness_score: scores.awareness,
           outlook_score: scores.outlook,
           attention_score: scores.attention,
-          regulation_delta: deltas.regulation,
-          awareness_delta: deltas.awareness,
-          outlook_delta: deltas.outlook,
-          attention_delta: deltas.attention,
-          average_delta: avgDelta,
-          qualitative_rating: scores.qualitative,
-          stage_at_checkin: currentStage
-        }, { onConflict: 'user_id,week_of' });
+          qualitative_score: scores.qualitative,
+          stage: progress?.currentStage || 1
+        });
       
-      if (insertError) {
-        console.error('[WeeklyCheckIn] Insert error:', insertError);
-        throw insertError;
-      }
+      if (insertError) throw insertError;
       
-      devLog('[WeeklyCheckIn]', 'Saved successfully');
-      // Update last_weekly_checkin timestamp
-      const { error: updateError } = await supabase
+      // Update last_weekly_checkin in user_progress
+      await supabase
         .from('user_progress')
         .update({ last_weekly_checkin: new Date().toISOString() })
         .eq('user_id', user.id);
       
-      if (updateError) {
-        console.error('[WeeklyCheckIn] Failed to update last_weekly_checkin:', updateError);
-      }
-      // Refresh progress
-      if (refetchProgress) {
-        await refetchProgress();
-      }
+      // Calculate deltas from baseline
+      const regulationDelta = (scores.regulation || 0) - baselineData.domainScores.regulation;
+      const awarenessDelta = (scores.awareness || 0) - baselineData.domainScores.awareness;
+      const outlookDelta = (scores.outlook || 0) - baselineData.domainScores.outlook;
+      const attentionDelta = (scores.attention || 0) - baselineData.domainScores.attention;
+      const avgDelta = (regulationDelta + awarenessDelta + outlookDelta + attentionDelta) / 4;
       
-      // Calculate results and show feedback
-      const avgScore = ((scores.regulation || 0) + (scores.awareness || 0) + 
-                        (scores.outlook || 0) + (scores.attention || 0)) / 4;
-      const rewiredIndex = Math.round(avgScore * 20);
-      const qualRating = scores.qualitative || 0;
+      // Calculate new REwired Index
+      const avgScore = ((scores.regulation || 0) + (scores.awareness || 0) + (scores.outlook || 0) + (scores.attention || 0)) / 4;
+      const newRewiredIndex = Math.round(avgScore * 20);
       
-      // Check unlock criteria (internal thresholds - not shown to user)
-      // Stage 6→7 is manual review only, so no threshold for Stage 6
-      const unlockThresholds: { [key: number]: { adherence: number; days: number; delta: number; qualitative: number } } = {
-        1: { adherence: 80, days: 14, delta: 0.3, qualitative: 3 },
-        2: { adherence: 80, days: 14, delta: 0.5, qualitative: 3 },
-        3: { adherence: 80, days: 14, delta: 0.5, qualitative: 3 },
-        4: { adherence: 80, days: 14, delta: 0.6, qualitative: 3 },
-        5: { adherence: 85, days: 14, delta: 0.7, qualitative: 3 }
-      };
-      
-      // Competence threshold - if score is this high, delta requirement is waived
-      const COMPETENCE_THRESHOLD = 4.0;
-      
-      const threshold = unlockThresholds[currentStage];
-      const adherence = progress?.adherencePercentage || 0;
-      const consecutiveDays = progress?.consecutiveDays || 0;
-      
-      let feedbackMessage = `**Weekly Check-In Complete** ✓
+      // Show results
+      const resultMessage = `**Weekly Check-In Complete!**
 
 **Your Scores:**
-• Regulation: ${scores.regulation}/5
-• Awareness: ${scores.awareness}/5
-• Outlook: ${scores.outlook}/5
-• Attention: ${scores.attention}/5
-• Stage Competence: ${scores.qualitative}/5
+- Regulation: ${scores.regulation}/5 (${regulationDelta >= 0 ? '+' : ''}${regulationDelta.toFixed(1)} from baseline)
+- Awareness: ${scores.awareness}/5 (${awarenessDelta >= 0 ? '+' : ''}${awarenessDelta.toFixed(1)} from baseline)
+- Outlook: ${scores.outlook}/5 (${outlookDelta >= 0 ? '+' : ''}${outlookDelta.toFixed(1)} from baseline)
+- Attention: ${scores.attention}/5 (${attentionDelta >= 0 ? '+' : ''}${attentionDelta.toFixed(1)} from baseline)
 
-**REwired Index:** ${rewiredIndex}/100
-**Average Delta from Baseline:** ${avgDelta >= 0 ? '+' : ''}${avgDelta.toFixed(2)}
+**Average Delta: ${avgDelta >= 0 ? '+' : ''}${avgDelta.toFixed(2)}**
+**Current REwired Index: ${newRewiredIndex}/100**
 
----
+${avgDelta >= 0.3 ? '📈 Great progress! Keep the consistency going.' : avgDelta >= 0 ? '📊 Moving in the right direction. Stay consistent.' : '📉 Some regression this week. That\'s normal - focus on consistency.'}`;
 
-`;
-
-      if (currentStage === 6) {
-        // Stage 6→7 is manual review only
-        feedbackMessage += `**Stage 7 (Accelerated Expansion):**
-This is an advanced tier requiring application and manual review. When you're ready to explore advanced protocols (supplements, nootropics, neurofeedback, psychedelics), let me know and we'll discuss the application process.`;
-      } else if (threshold && currentStage < 6) {
-        const meetsAdherence = adherence >= threshold.adherence;
-        const meetsDays = consecutiveDays >= threshold.days;
-        const meetsQualitative = qualRating >= threshold.qualitative;
-        
-        // HYBRID: Either improvement (delta) OR existing competence (high score)
-        const meetsDelta = avgDelta >= threshold.delta;
-        const alreadyCompetent = avgScore >= COMPETENCE_THRESHOLD;
-        const meetsTransformation = meetsDelta || alreadyCompetent;
-        
-        if (meetsAdherence && meetsDays && meetsTransformation && meetsQualitative) {
-          feedbackMessage += `**🎉 You've met all criteria for Stage ${currentStage + 1}!**
-
-The unlock prompt should appear shortly.`;
-        } else {
-          // Softer feedback without exact numbers
-          const statusItems: string[] = [];
-          
-          statusItems.push(`• Consistency: ${meetsAdherence ? '✓ Strong' : 'Building...'}`);
-          statusItems.push(`• Daily Practice: ${meetsDays ? '✓ Established' : 'Keep showing up'}`);
-          
-          // Show transformation status with context
-          if (meetsTransformation) {
-            statusItems.push(`• Transformation: ✓ ${alreadyCompetent ? 'Strong baseline' : 'Measurable growth'}`);
-          } else {
-            statusItems.push(`• Transformation: In progress`);
-          }
-          
-          statusItems.push(`• Stage Competence: ${meetsQualitative ? '✓ Ready' : 'Developing'}`);
-          
-          feedbackMessage += `**Stage ${currentStage + 1} Readiness:**
-${statusItems.join('\n')}`;
-
-          // Add focus area if something specific is lagging
-          if (!meetsQualitative) {
-            feedbackMessage += `\n\nFocus area: Your stage competence rating suggests there's room to deepen the current practices before advancing.`;
-          } else if (!meetsAdherence) {
-            feedbackMessage += `\n\nFocus area: Consistency is key. Keep showing up daily — your nervous system needs the repetition.`;
-          }
-        }
-      }
+      setMessages(prev => [...prev, { role: 'assistant', content: resultMessage }]);
       
-      // Reset check-in state and show feedback
+      // Reset check-in state
       setWeeklyCheckInActive(false);
       setWeeklyCheckInStep(0);
       setWeeklyCheckInScores({
@@ -1746,106 +1582,98 @@ ${statusItems.join('\n')}`;
         qualitative: null
       });
       
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: feedbackMessage
-      }]);
-      
+      // Refresh progress
+      if (refetchProgress) {
+        await refetchProgress();
+      }
     } catch (error) {
-      console.error('[WeeklyCheckIn] Error saving check-in:', error);
+      console.error('Failed to save weekly check-in:', error);
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: "There was an error saving your check-in. Let's try again - just say 'weekly check-in'."
+        content: "There was an error saving your check-in. Please try again."
       }]);
-      setWeeklyCheckInActive(false);
-      setWeeklyCheckInStep(0);
     }
   };
 
   // ============================================
-  // INITIALIZATION
+  // INITIALIZE CHAT
   // ============================================
-  
+
   useEffect(() => {
+    if (hasInitialized.current) return;
+    if (!user || progressLoading) return;
+    
+    hasInitialized.current = true;
+    
     const initializeChat = async () => {
-      // Skip if already initialized or still loading progress
-      if (hasInitialized.current || progressLoading) return;
-      
-      hasInitialized.current = true;
-      
       try {
         const supabase = createClient();
-        const userName = getUserName();
         
-        // Get user progress including last visit and onboarding status
-        const { data: progressData, error: fetchError } = await supabase
+        // Get user progress from database
+        const { data: progressData } = await supabase
           .from('user_progress')
           .select('*')
           .eq('user_id', user.id)
           .single();
         
-        /// IMPORTANT: Use database-fetched stage, not stale baselineData
-       // This ensures users see their actual stage opening, not Stage 1
-        const currentStage = progressData?.current_stage || progress?.currentStage || baselineData.currentStage || 1;
+        // Get today's completed practices
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
         
-        // Determine opening type
-        // If user is Stage 2+, they've clearly completed onboarding even if flag wasn't set
-        const hasCompletedOnboarding = progressData?.ritual_intro_completed || 
-                                        (currentStage > 1);
-        
-        const type = determineOpeningType(
-          progressData?.last_visit || null,
-          hasCompletedOnboarding
-        );
-        setOpeningType(type);
-        
-        // Set intro step based on existing progress
-        // If Stage 2+, they've completed intro even if flag not set
-        if (progressData?.ritual_intro_completed || currentStage > 1) {
-          setIntroStep(4); // Skip intro flow
-        }
-        
-        // Get practices completed today - USE LOCAL DATE, NOT UTC!
-        // UTC causes timezone bugs (e.g., 8PM Calgary = next day in UTC)
-        const now = new Date();
-        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-        devLog('[ChatInterface]', 'Querying practices for local date:', today);
-        
-        const { data: todayLogs } = await supabase
+        const { data: todayPractices } = await supabase
           .from('practice_logs')
           .select('practice_type')
           .eq('user_id', user.id)
-          .gte('completed_at', `${today}T00:00:00`)
-          .lt('completed_at', `${today}T23:59:59`);
+          .gte('completed_at', today.toISOString());
         
-        const completedToday = todayLogs?.map((log: { practice_type: string }) => log.practice_type) || [];
+        const completedToday = todayPractices?.map(p => p.practice_type) || [];
         setPracticesCompletedToday(completedToday);
         
-        devLog('[ChatInterface]', 'Practices completed today:', completedToday);
+        // Determine opening type
+        const hasCompletedOnboarding = progressData?.ritual_intro_completed || (progressData?.current_stage && progressData.current_stage > 1);
+        const type = determineOpeningType(progressData?.last_visit || null, hasCompletedOnboarding);
+        setOpeningType(type);
         
-        // Generate opening message based on type
-// Create a corrected baselineData with the actual current stage
-const correctedBaselineData: BaselineData = {
-  ...baselineData,
-  currentStage: currentStage
-};
-let openingMessage: string;
+        // If they've completed onboarding, set intro step to 4 (complete)
+        if (hasCompletedOnboarding) {
+          setIntroStep(4);
+        }
+        
+        devLog('[ChatInterface]', 'Opening type:', type, 'hasCompletedOnboarding:', hasCompletedOnboarding);
+        
+        const userName = getUserName();
+        const currentStage = progress?.currentStage || progressData?.current_stage || 1;
+        
+        // Apply same baseline correction
+        const correctedBaselineData = {
+          ...baselineData,
+          rewiredIndex: baselineData.rewiredIndex > 0 ? baselineData.rewiredIndex : 45,
+          domainScores: {
+            regulation: baselineData.domainScores.regulation > 0 ? baselineData.domainScores.regulation : 2.5,
+            awareness: baselineData.domainScores.awareness > 0 ? baselineData.domainScores.awareness : 2.0,
+            outlook: baselineData.domainScores.outlook > 0 ? baselineData.domainScores.outlook : 2.5,
+            attention: baselineData.domainScores.attention > 0 ? baselineData.domainScores.attention : 2.0
+          }
+        };
+        
+        let openingMessage: string;
 
-// Check if weekly check-in is due (takes priority over normal greeting for returning users)
+// Check if weekly check-in is due (for returning users)
+const extendedProgress = progress as any;
+let daysInStage = 1;
+if (extendedProgress?.stageStartDate) {
+  const startDate = new Date(extendedProgress.stageStartDate);
+  const now = new Date();
+  daysInStage = Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+}
+
 const isWeeklyCheckInDue = (() => {
-  // Only for returning users who have completed onboarding
+  // Don't show check-in for first-time users
   if (type === 'first_time') return false;
   
   const lastCheckin = progressData?.last_weekly_checkin;
   const now = new Date();
   const today = now.getDay(); // 0 = Sunday
-  
-  // Calculate days in stage
-  let daysInStage = 1;
-  if (progressData?.stage_start_date) {
-    const startDate = new Date(progressData.stage_start_date);
-    daysInStage = Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-  }
   
   // If never done check-in, due after 7 days in stage
   if (!lastCheckin) {
@@ -2401,14 +2229,14 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
                     )}
                   </div>
                 </div>
-                <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
+                <div className="w-full rounded-full h-1.5 bg-[#1a1a1a]">
                   <div 
-                    className="h-2 rounded-full transition-all bg-[#22c55e]"
+                    className="h-1.5 rounded-full bg-[#22c55e] transition-all"
                     style={{ width: `${((progress?.domainScores?.regulation ?? baselineData.domainScores.regulation) / 5) * 100}%` }}
                   />
                 </div>
               </div>
-              
+
               {/* Awareness */}
               <div>
                 <div className="flex items-center justify-between mb-1">
@@ -2424,14 +2252,14 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
                     )}
                   </div>
                 </div>
-                <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
+                <div className="w-full rounded-full h-1.5 bg-[#1a1a1a]">
                   <div 
-                    className="h-2 rounded-full transition-all bg-[#3b82f6]"
+                    className="h-1.5 rounded-full bg-[#3b82f6] transition-all"
                     style={{ width: `${((progress?.domainScores?.awareness ?? baselineData.domainScores.awareness) / 5) * 100}%` }}
                   />
                 </div>
               </div>
-              
+
               {/* Outlook */}
               <div>
                 <div className="flex items-center justify-between mb-1">
@@ -2447,20 +2275,20 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
                     )}
                   </div>
                 </div>
-                <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
+                <div className="w-full rounded-full h-1.5 bg-[#1a1a1a]">
                   <div 
-                    className="h-2 rounded-full transition-all bg-[#f59e0b]"
+                    className="h-1.5 rounded-full bg-[#f59e0b] transition-all"
                     style={{ width: `${((progress?.domainScores?.outlook ?? baselineData.domainScores.outlook) / 5) * 100}%` }}
                   />
                 </div>
               </div>
-              
+
               {/* Attention */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs text-gray-400">Attention</span>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-[#8b5cf6]">
+                    <span className="text-sm font-semibold text-[#a855f7]">
                       {(progress?.domainScores?.attention ?? baselineData.domainScores.attention).toFixed(1)}/5
                     </span>
                     {progress?.domainDeltas?.attention !== undefined && progress.domainDeltas.attention !== 0 && (
@@ -2470,46 +2298,74 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
                     )}
                   </div>
                 </div>
-                <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
+                <div className="w-full rounded-full h-1.5 bg-[#1a1a1a]">
                   <div 
-                    className="h-2 rounded-full transition-all bg-[#8b5cf6]"
+                    className="h-1.5 rounded-full bg-[#a855f7] transition-all"
                     style={{ width: `${((progress?.domainScores?.attention ?? baselineData.domainScores.attention) / 5) * 100}%` }}
                   />
                 </div>
               </div>
-
-              {/* Average Delta indicator */}
-              {progress?.domainDeltas?.average !== undefined && progress.domainDeltas.average !== 0 && (
-                <div className="mt-2 pt-2 border-t border-gray-800">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-400">Avg. Weekly Delta</span>
-                    <span className={`text-sm font-semibold ${progress.domainDeltas.average > 0 ? 'text-green-400' : progress.domainDeltas.average < 0 ? 'text-red-400' : 'text-gray-400'}`}>
-                      {progress.domainDeltas.average > 0 ? '+' : ''}{progress.domainDeltas.average.toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-              )}
             </div>
-            {/* Unlock Progress */}
-            {progress && progress.currentStage < 6 && progress.unlockProgress && (
-              <div className={`bg-gray-900 rounded-lg p-4 ${
-                progress.unlockEligible 
-                  ? 'ring-1 ring-emerald-500/50' 
-                  : ''
-              }`}>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-medium text-gray-300">
-                    {progress.unlockEligible ? '🔓 Unlock Available' : 'Unlock Progress'}
-                  </h3>
-                  <span className="text-xs text-gray-500">→ Stage {progress.currentStage + 1}</span>
+
+            {/* Streak & Adherence */}
+            <div className="bg-gray-900 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-2xl font-bold text-[#ff9e19]">{progress?.consecutiveDays || 0}</div>
+                  <div className="text-xs text-gray-400">Day Streak</div>
                 </div>
-                
-                {progress.unlockEligible ? (
-                  <p className="text-xs text-emerald-400">
-                    You've proven consistency and transformation. Ready to advance!
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-white">{progress?.adherencePercentage || 0}%</div>
+                  <div className="text-xs text-gray-400">Adherence</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Current Identity (if set) */}
+            {progress?.currentIdentity && (
+              <div className="bg-gray-900 rounded-lg p-4">
+                <h3 className="text-sm font-medium text-gray-300 mb-2">Current Identity</h3>
+                <p className="text-sm text-[#ff9e19] font-medium">{progress.currentIdentity}</p>
+                {progress?.microAction && (
+                  <p className="text-xs text-gray-400 mt-1">Daily proof: {progress.microAction}</p>
+                )}
+                {progress?.identitySprint && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    Day {progress.identitySprint.dayNumber} of 21
                   </p>
+                )}
+              </div>
+            )}
+
+            {/* Unlock Progress */}
+            {progress?.unlockProgress && !progress.unlockProgress.alreadyUnlocked && (
+              <div className="bg-gray-900 rounded-lg p-4">
+                <h3 className="text-sm font-medium text-gray-300 mb-3">
+                  Stage {(progress.currentStage || 1) + 1} Unlock Progress
+                </h3>
+                
+                {progress.unlockProgress.isEligible ? (
+                  <div className="text-center py-2">
+                    <span className="text-green-400 font-semibold">✓ Eligible for Unlock!</span>
+                  </div>
                 ) : (
                   <div className="space-y-2">
+                    {/* Adherence Progress */}
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs w-14 ${progress.unlockProgress.adherenceMet ? 'text-green-400' : 'text-gray-400'}`}>
+                        {progress.unlockProgress.adherenceMet ? '✓' : ''} Adherence
+                      </span>
+                      <div className="flex-1 h-1.5 bg-[#1a1a1a] rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full transition-all ${progress.unlockProgress.adherenceMet ? 'bg-green-500' : 'bg-[#ff9e19]'}`}
+                          style={{ width: progress.unlockProgress.adherenceMet ? '100%' : `${Math.min(100, (progress.adherencePercentage || 0) / progress.unlockProgress.requiredAdherence * 100)}%` }}
+                        />
+                      </div>
+                      <span className="text-xs text-gray-500 w-10 text-right">
+                        {progress.unlockProgress.adherenceMet ? '✓' : `${progress.adherencePercentage || 0}%`}
+                      </span>
+                    </div>
+                    
                     {/* Days Progress */}
                     <div className="flex items-center gap-2">
                       <span className={`text-xs w-14 ${progress.unlockProgress.daysMet ? 'text-green-400' : 'text-gray-400'}`}>
@@ -2518,31 +2374,15 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
                       <div className="flex-1 h-1.5 bg-[#1a1a1a] rounded-full overflow-hidden">
                         <div 
                           className={`h-full transition-all ${progress.unlockProgress.daysMet ? 'bg-green-500' : 'bg-[#ff9e19]'}`}
-                          style={{ width: `${Math.min(100, ((progress.daysInStage || 0) / progress.unlockProgress.requiredDays) * 100)}%` }}
+                          style={{ width: progress.unlockProgress.daysMet ? '100%' : `${Math.min(100, (progress.consecutiveDays || 0) / progress.unlockProgress.requiredDays * 100)}%` }}
                         />
                       </div>
                       <span className="text-xs text-gray-500 w-10 text-right">
-                        {progress.daysInStage || 0}/{progress.unlockProgress.requiredDays}
+                        {progress.unlockProgress.daysMet ? '✓' : `${progress.consecutiveDays || 0}/${progress.unlockProgress.requiredDays}`}
                       </span>
                     </div>
                     
-                    {/* Adherence Progress */}
-                    <div className="flex items-center gap-2">
-                      <span className={`text-xs w-14 ${progress.unlockProgress.adherenceMet ? 'text-green-400' : 'text-gray-400'}`}>
-                        {progress.unlockProgress.adherenceMet ? '✓' : ''} Adhere
-                      </span>
-                      <div className="flex-1 h-1.5 bg-[#1a1a1a] rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full transition-all ${progress.unlockProgress.adherenceMet ? 'bg-green-500' : 'bg-[#ff9e19]'}`}
-                          style={{ width: `${Math.min(100, (progress.adherencePercentage / progress.unlockProgress.requiredAdherence) * 100)}%` }}
-                        />
-                      </div>
-                      <span className="text-xs text-gray-500 w-10 text-right">
-                        {progress.adherencePercentage}%
-                      </span>
-                    </div>
-                    
-                    {/* Delta/Growth Progress */}
+                    {/* Delta Progress */}
                     <div className="flex items-center gap-2">
                       <span className={`text-xs w-14 ${progress.unlockProgress.deltaMet ? 'text-green-400' : 'text-gray-400'}`}>
                         {progress.unlockProgress.deltaMet ? '✓' : ''} Growth
