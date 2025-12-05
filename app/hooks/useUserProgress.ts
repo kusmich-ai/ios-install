@@ -36,11 +36,10 @@ export interface UserProgress {
   dataDate: string;
   // Micro-Action Identity fields
   currentIdentity: string | null;
-  microAction: string | null;        
-  identitySprint?: {                 
-    day: number;
-    total: number;
-  };
+  microAction: string | null;
+  identitySprintNumber: number | null;
+  identitySprintStart: string | null;
+  identitySprintDay: number | null;
   // Flow Block fields
   hasFlowBlockConfig: boolean;
   flowBlockSprintNumber: number | null;
