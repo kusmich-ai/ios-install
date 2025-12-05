@@ -1155,7 +1155,7 @@ Ready to set up your Flow Block system? This involves identifying your highest-l
             devLog('[MicroAction]', 'Sprint saved:', sprintResult);
             
             // Also update user_progress for backward compatibility
-            await updateUserProgressIdentity(extracted.identity_statement, extracted.micro_action);
+           await updateUserProgressIdentity(extracted.identityStatement, extracted.microAction);
             
             // Update state to complete
             setMicroActionState(prev => ({
