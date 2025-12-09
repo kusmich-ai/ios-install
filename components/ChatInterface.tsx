@@ -1421,22 +1421,11 @@ extractedAction: extracted.microAction,
     
     devLog('[Decentering]', 'Starting practice');
     
-    // Check if first time
-    const isFirstTime = await isFirstTimeUsingTool(user.id, 'decentering');
-    
-    // Check for patterns to surface from past sessions
-    let patternMessage = '';
-    if (!isFirstTime) {
-      const pattern = await checkForPatternToSurface(user.id, []);
-      if (pattern) {
-        patternMessage = `\n\n*${pattern}*\n\n`;
-      }
-    }
-    
-    // Set state
+    // Set state FIRST to ensure we capture the conversation immediately
+    // This prevents race conditions if database calls are slow or fail
     setDecenteringState({
       isActive: true,
-      isFirstTime,
+      isFirstTime: true, // Default to true, update if we can check
       sessionMode: 'standard',
       conversationHistory: [],
       identityExplored: null,
@@ -1444,6 +1433,30 @@ extractedAction: extracted.microAction,
       integrationAnchor: null,
       sessionStartTime: new Date()
     });
+    
+    // Try to check if first time and get patterns (non-blocking)
+    let isFirstTime = true;
+    let patternMessage = '';
+    
+    try {
+      isFirstTime = await isFirstTimeUsingTool(user.id, 'decentering');
+      
+      if (!isFirstTime) {
+        const pattern = await checkForPatternToSurface(user.id, []);
+        if (pattern) {
+          patternMessage = `\n\n*${pattern}*\n\n`;
+        }
+      }
+      
+      // Update state with actual first-time status
+      setDecenteringState(prev => ({
+        ...prev,
+        isFirstTime
+      }));
+    } catch (error) {
+      console.error('[Decentering] Error checking database (table may not exist yet):', error);
+      // Continue with defaults - state is already set
+    }
     
     // Show appropriate opening message
     const openingMessage = isFirstTime 
