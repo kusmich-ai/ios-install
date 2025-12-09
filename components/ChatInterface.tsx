@@ -2684,8 +2684,8 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
           unlockEligible={progress?.unlockEligible}
           adherencePercentage={progress?.adherencePercentage || 0}
           consecutiveDays={progress?.consecutiveDays || 0}
-          currentIdentity={progress?.currentIdentity}
-          microAction={(progress as any)?.microAction}
+          currentIdentity={progress?.currentIdentity ?? undefined}
+          microAction={(progress as any)?.microAction ?? undefined}
           identitySprintDay={progress?.identitySprintDay}
         />
       )}
