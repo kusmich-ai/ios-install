@@ -327,9 +327,9 @@ function MetaReflectionModalComponent({ isOpen, onClose, userId, isWeeklyPrompt 
         
         if (pastSessions) {
           kernels = pastSessions
-            .filter(s => s.session_data?.kernel)
-            .map(s => ({
-              kernel: s.session_data.kernel,
+            .filter((s: { session_data?: { kernel?: string }; recurring_themes?: string[]; created_at: string }) => s.session_data?.kernel)
+            .map((s: { session_data?: { kernel?: string }; recurring_themes?: string[]; created_at: string }) => ({
+              kernel: s.session_data!.kernel!,
               themes: s.recurring_themes || [],
               created_at: s.created_at
             }));
