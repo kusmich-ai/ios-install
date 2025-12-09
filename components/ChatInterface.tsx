@@ -2284,27 +2284,48 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
               </p>
             </div>
 
-            {/* REwired Index */}
+            {/* REwired Index - Current with Delta */}
             <div className="bg-gray-900 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-400">REwired Index</span>
-                <span className={`text-2xl font-bold ${getStatusColor(baselineData.rewiredIndex)}`}>
-                  {baselineData.rewiredIndex}
-                </span>
-              </div>
-              <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
-                <div 
-                  className={`h-2 rounded-full transition-all ${
-                    baselineData.rewiredIndex <= 20 ? 'bg-red-500' :
-                    baselineData.rewiredIndex <= 40 ? 'bg-yellow-500' :
-                    baselineData.rewiredIndex <= 60 ? 'bg-blue-500' :
-                    baselineData.rewiredIndex <= 80 ? 'bg-green-500' :
-                    'bg-purple-500'
-                  }`}
-                  style={{ width: `${baselineData.rewiredIndex}%` }}
-                />
-              </div>
-              <p className="text-xs text-gray-500 mt-1">{getStatusTier(baselineData.rewiredIndex)}</p>
+              {(() => {
+                // Calculate current REwired Index from current domain scores
+                const currentReg = progress?.domainScores?.regulation ?? baselineData.domainScores.regulation;
+                const currentAware = progress?.domainScores?.awareness ?? baselineData.domainScores.awareness;
+                const currentOut = progress?.domainScores?.outlook ?? baselineData.domainScores.outlook;
+                const currentAtt = progress?.domainScores?.attention ?? baselineData.domainScores.attention;
+                const currentRewired = Math.round((currentReg + currentAware + currentOut + currentAtt) / 4 * 20);
+                const rewiredDelta = currentRewired - baselineData.rewiredIndex;
+                
+                return (
+                  <>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-gray-400">REwired Index</span>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-2xl font-bold ${getStatusColor(currentRewired)}`}>
+                          {currentRewired}
+                        </span>
+                        {rewiredDelta !== 0 && (
+                          <span className={`text-sm font-medium ${rewiredDelta > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                            {rewiredDelta > 0 ? '+' : ''}{rewiredDelta}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
+                      <div 
+                        className={`h-2 rounded-full transition-all ${
+                          currentRewired <= 20 ? 'bg-red-500' :
+                          currentRewired <= 40 ? 'bg-yellow-500' :
+                          currentRewired <= 60 ? 'bg-blue-500' :
+                          currentRewired <= 80 ? 'bg-green-500' :
+                          'bg-purple-500'
+                        }`}
+                        style={{ width: `${currentRewired}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">{getStatusTier(currentRewired)}</p>
+                  </>
+                );
+              })()}
             </div>
 
             {/* Domain Scores */}
@@ -2404,36 +2425,6 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
               </div>
             </div>
 
-            {/* Streak & Adherence */}
-            <div className="bg-gray-900 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-2xl font-bold text-[#ff9e19]">{progress?.consecutiveDays || 0}</div>
-                  <div className="text-xs text-gray-400">Day Streak</div>
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-white">{progress?.adherencePercentage || 0}%</div>
-                  <div className="text-xs text-gray-400">Adherence</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Current Identity (if set) */}
-            {progress?.currentIdentity && (
-              <div className="bg-gray-900 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-gray-300 mb-2">Current Identity</h3>
-                <p className="text-sm text-[#ff9e19] font-medium">{progress.currentIdentity}</p>
-                {(progress as any)?.microAction && (
-  <p className="text-xs text-gray-400 mt-1">Daily proof: {(progress as any).microAction}</p>
-)}
-                {progress?.identitySprintDay && (
-  <p className="text-xs text-gray-500 mt-2">
-    Day {progress.identitySprintDay} of 21
-  </p>
-)}
-              </div>
-            )}
-
             {/* Unlock Progress */}
             {progress?.unlockProgress && !progress.unlockEligible && (
               <div className="bg-gray-900 rounded-lg p-4">
@@ -2511,6 +2502,22 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
                       </span>
                     </div>
                   </div>
+                )}
+              </div>
+            )}
+
+            {/* Current Identity (if set) - Now after Unlock Progress */}
+            {progress?.currentIdentity && (
+              <div className="bg-gray-900 rounded-lg p-4">
+                <h3 className="text-sm font-medium text-gray-300 mb-2">Current Identity</h3>
+                <p className="text-sm text-[#ff9e19] font-medium">{progress.currentIdentity}</p>
+                {(progress as any)?.microAction && (
+                  <p className="text-xs text-gray-400 mt-1">Daily proof: {(progress as any).microAction}</p>
+                )}
+                {progress?.identitySprintDay && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    Day {progress.identitySprintDay} of 21
+                  </p>
                 )}
               </div>
             )}
@@ -2669,8 +2676,17 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
         <MobileDashboard
           userName={getUserName()}
           currentStage={progress?.currentStage || 1}
-          rewiredIndex={baselineData.rewiredIndex}
-          domainScores={baselineData.domainScores}
+          baselineRewiredIndex={baselineData.rewiredIndex}
+          baselineDomainScores={baselineData.domainScores}
+          currentDomainScores={progress?.domainScores}
+          domainDeltas={progress?.domainDeltas}
+          unlockProgress={progress?.unlockProgress}
+          unlockEligible={progress?.unlockEligible}
+          adherencePercentage={progress?.adherencePercentage || 0}
+          consecutiveDays={progress?.consecutiveDays || 0}
+          currentIdentity={progress?.currentIdentity}
+          microAction={(progress as any)?.microAction}
+          identitySprintDay={progress?.identitySprintDay}
         />
       )}
 
