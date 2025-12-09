@@ -76,6 +76,7 @@ import {
 // ON-DEMAND TOOL MODALS
 // ============================================
 import { useDecentering } from '@/components/DecenteringModal';
+import { useMetaReflection, isWeeklyReflectionDue, isSunday } from '@/components/MetaReflectionModal';
 
 
 
@@ -641,6 +642,10 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   // ON-DEMAND TOOL MODALS
   // ============================================
   const { open: openDecentering, Modal: DecenteringModal } = useDecentering();
+  const { open: openMetaReflection, Modal: MetaReflectionModal } = useMetaReflection();
+  
+  // Track if we've prompted for Sunday reflection
+  const hasCheckedSundayReflection = useRef<boolean>(false);
 
   // Get user's name
   const getUserName = () => user?.user_metadata?.first_name || '';
@@ -1747,6 +1752,46 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
   }, [user, baselineData, progressLoading, progress]);
 
   // ============================================
+  // SUNDAY META-REFLECTION PROMPT
+  // ============================================
+  useEffect(() => {
+    const checkSundayReflection = async () => {
+      // Only check once, after initialization, on Sundays, for Stage 2+ users
+      if (
+        hasCheckedSundayReflection.current ||
+        isInitializing ||
+        !user?.id ||
+        !progress ||
+        progress.currentStage < 2 ||
+        !isSunday() ||
+        weeklyCheckInActive // Don't interrupt weekly check-in
+      ) {
+        return;
+      }
+      
+      hasCheckedSundayReflection.current = true;
+      
+      try {
+        const isDue = await isWeeklyReflectionDue(user.id);
+        
+        if (isDue) {
+          // Add a prompt after a short delay so it doesn't conflict with opening message
+          setTimeout(() => {
+            setMessages(prev => [...prev, {
+              role: 'assistant',
+              content: `🪞 **Sunday Reflection**\n\nIt's your weekly Meta-Reflection day. This is your time to observe how awareness moved through your week — not to judge, but to learn.\n\nWould you like to begin your reflection now?`
+            }]);
+          }, 2000);
+        }
+      } catch (error) {
+        console.error('[MetaReflection] Error checking Sunday reflection:', error);
+      }
+    };
+    
+    checkSundayReflection();
+  }, [user?.id, progress, isInitializing, weeklyCheckInActive]);
+
+  // ============================================
   // MESSAGE HANDLERS
   // ============================================
   
@@ -1858,6 +1903,10 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
       case 'decentering':
         openDecentering(user?.id);
         break;
+
+      case 'meta_reflection':
+        openMetaReflection(user?.id, false); // false = on-demand, not weekly prompt
+        break;
         
       default:
         setMessages(prev => [...prev, { 
@@ -1865,7 +1914,7 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
           content: `Tool "${toolId}" is not yet implemented. Coming soon!` 
         }]);
     }
-  }, [microActionState, flowBlockState, startMicroActionSetup, startFlowBlockSetup, openDecentering, user?.id]);
+  }, [microActionState, flowBlockState, startMicroActionSetup, startFlowBlockSetup, openDecentering, openMetaReflection, user?.id]);
 
   // ============================================
   // PROGRESS UPDATE HANDLER (from toolbar)
@@ -2124,6 +2173,21 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
     if (lowerMessage.includes('set up') && lowerMessage.includes('flow')) {
       setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
       startFlowBlockSetup();
+      return;
+    }
+
+    // Check for meta-reflection trigger (explicit request or "yes" response to Sunday prompt)
+    const lastAssistantMessage = messages.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
+    const isSundayPromptResponse = lastAssistantMessage.includes('Sunday Reflection') && 
+      ['yes', 'yeah', 'yep', 'sure', 'ok', 'okay', 'ready', 'let\'s go', 'lets go', 'begin', 'start'].some(
+        word => lowerMessage.includes(word)
+      );
+    
+    if (lowerMessage.includes('meta-reflection') || lowerMessage.includes('meta reflection') || 
+        lowerMessage.includes('reflect') && lowerMessage.includes('week') ||
+        isSundayPromptResponse) {
+      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+      openMetaReflection(user?.id, isSundayPromptResponse); // true if responding to Sunday prompt
       return;
     }
     
@@ -2596,6 +2660,7 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
 
       {/* On-Demand Tool Modals */}
       <DecenteringModal />
+      <MetaReflectionModal />
     </div>
   );
 }
