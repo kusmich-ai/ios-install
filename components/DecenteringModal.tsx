@@ -194,6 +194,13 @@ function DecenteringModalComponent({ isOpen, onClose, userId }: DecenteringModal
     }
   }, [isOpen]);
 
+  // Refocus input after loading completes (message sent)
+  useEffect(() => {
+    if (!loading && isOpen) {
+      inputRef.current?.focus();
+    }
+  }, [loading, isOpen]);
+
   // Initialize session when modal opens
   useEffect(() => {
     if (isOpen && messages.length === 0) {
@@ -343,36 +350,47 @@ function DecenteringModalComponent({ isOpen, onClose, userId }: DecenteringModal
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop with blur */}
       <div 
-        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/70 backdrop-blur-md"
         onClick={handleClose}
       />
       
       {/* Modal */}
-      <div className="relative w-full max-w-2xl h-[80vh] mx-4 bg-[#0a0a0a] rounded-2xl border border-gray-800 flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
-          <div>
-            <h2 className="text-lg font-semibold text-white">Decentering Practice</h2>
-            <p className="text-sm text-gray-400">2-5 minute awareness inquiry</p>
-          </div>
-          <div className="flex items-center gap-3">
-            {session.isActive && session.conversationHistory.length > 1 && (
+      <div className="relative w-full max-w-2xl h-[85vh] bg-gradient-to-b from-gray-900 to-[#0a0a0a] rounded-2xl border border-gray-700/50 flex flex-col overflow-hidden shadow-2xl shadow-black/50">
+        
+        {/* Header with accent */}
+        <div className="relative px-6 py-5 border-b border-gray-700/50">
+          {/* Accent glow */}
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#ff9e19]/50 to-transparent" />
+          
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#ff9e19]/20 flex items-center justify-center">
+                <span className="text-xl">🔮</span>
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-white">Decentering Practice</h2>
+                <p className="text-sm text-gray-400">2-5 minute awareness inquiry</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {session.isActive && session.conversationHistory.length > 1 && (
+                <button
+                  onClick={handleEndSession}
+                  className="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors border border-gray-600"
+                >
+                  End Session
+                </button>
+              )}
               <button
-                onClick={handleEndSession}
-                className="px-4 py-2 text-sm font-medium text-white bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+                onClick={handleClose}
+                className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
               >
-                End Session
+                <X className="w-5 h-5" />
               </button>
-            )}
-            <button
-              onClick={handleClose}
-              className="p-2 text-gray-400 hover:text-white transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            </div>
           </div>
         </div>
         
@@ -387,7 +405,7 @@ function DecenteringModalComponent({ isOpen, onClose, userId }: DecenteringModal
                 className={`max-w-[85%] rounded-2xl px-5 py-3 ${
                   msg.role === 'user'
                     ? 'bg-[#ff9e19] text-white'
-                    : 'bg-gray-800 text-gray-100 border border-gray-700'
+                    : 'bg-gray-800/80 text-gray-100 border border-gray-700/50'
                 }`}
               >
                 {msg.role === 'user' ? (
@@ -404,11 +422,11 @@ function DecenteringModalComponent({ isOpen, onClose, userId }: DecenteringModal
           
           {loading && (
             <div className="flex justify-start">
-              <div className="bg-gray-800 border border-gray-700 rounded-2xl px-5 py-3">
-                <div className="flex gap-2">
-                  <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" />
-                  <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              <div className="bg-gray-800/80 border border-gray-700/50 rounded-2xl px-5 py-3">
+                <div className="flex gap-1.5">
+                  <div className="w-2 h-2 bg-[#ff9e19]/60 rounded-full animate-bounce" />
+                  <div className="w-2 h-2 bg-[#ff9e19]/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-2 h-2 bg-[#ff9e19]/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
               </div>
             </div>
@@ -417,8 +435,8 @@ function DecenteringModalComponent({ isOpen, onClose, userId }: DecenteringModal
           <div ref={messagesEndRef} />
         </div>
         
-        {/* Input */}
-        <div className="border-t border-gray-800 p-4">
+        {/* Input area with accent border */}
+        <div className="border-t border-gray-700/50 p-4 bg-gray-900/50">
           <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex gap-3">
             <textarea
               ref={inputRef}
@@ -433,16 +451,19 @@ function DecenteringModalComponent({ isOpen, onClose, userId }: DecenteringModal
               placeholder="Type your response..."
               disabled={loading}
               rows={1}
-              className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#ff9e19] disabled:opacity-50 resize-none min-h-[48px] max-h-[120px]"
+              className="flex-1 bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#ff9e19]/50 focus:border-[#ff9e19]/50 disabled:opacity-50 resize-none min-h-[48px] max-h-[120px] transition-all"
             />
             <button
               type="submit"
               disabled={!input.trim() || loading}
-              className="px-5 py-3 bg-[#ff9e19] text-white rounded-xl font-medium hover:bg-orange-600 disabled:opacity-50 transition-colors"
+              className="px-5 py-3 bg-[#ff9e19] text-white rounded-xl font-medium hover:bg-orange-500 disabled:opacity-50 disabled:hover:bg-[#ff9e19] transition-colors shadow-lg shadow-[#ff9e19]/20"
             >
               Send
             </button>
           </form>
+          <p className="text-xs text-gray-500 mt-2 text-center">
+            Press Enter to send • Click "End Session" when complete
+          </p>
         </div>
       </div>
     </div>
