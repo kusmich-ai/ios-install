@@ -73,6 +73,28 @@ import {
 } from '@/lib/flowBlockAPI';
 
 // ============================================
+// DECENTERING PRACTICE IMPORTS (NEW)
+// ============================================
+import {
+  DecenteringState,
+  initialDecenteringState,
+  decenteringFirstTimeMessage,
+  decenteringReturningMessage,
+  decenteringIdentityAuditMessage,
+  buildDecenteringMessages,
+  isIdentityAuditRequest,
+  isSessionEnding,
+  extractSessionData
+} from '@/lib/decenteringAPI';
+
+import {
+  saveToolSession,
+  isFirstTimeUsingTool,
+  getRecentToolSessions,
+  checkForPatternToSurface
+} from '@/lib/toolSessionsDatabase';
+
+// ============================================
 // DEV LOGGING UTILITY
 // ============================================
 const isDev = process.env.NODE_ENV === 'development';
@@ -604,6 +626,11 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   const [awaitingFlowBlockStart, setAwaitingFlowBlockStart] = useState(false);
   
   // ============================================
+  // DECENTERING PRACTICE STATE (NEW)
+  // ============================================
+  const [decenteringState, setDecenteringState] = useState<DecenteringState>(initialDecenteringState);
+  
+  // ============================================
   // WEEKLY CHECK-IN STATE
   // ============================================
   const [weeklyCheckInActive, setWeeklyCheckInActive] = useState(false);
@@ -926,27 +953,21 @@ Ready for full integration?
     if (hasCheckedWeeklyMilestone.current || !progress || progressLoading) return;
     
     const extendedProgress = progress as any;
-    const daysInStage = extendedProgress?.consecutiveDays || 0;
+    const consecutiveDays = extendedProgress?.consecutiveDays || 0;
     
-    // Show milestone message at 7 days and 14 days
-    if (daysInStage === 7 || daysInStage === 14) {
+    // Check for 7-day milestone (only show once)
+    if (consecutiveDays === 7 && !extendedProgress?.shownWeekMilestone) {
       hasCheckedWeeklyMilestone.current = true;
       
-      const milestoneMessage = daysInStage === 7 
-        ? `**Week 1 Complete!** 🎉
-
-You've maintained consistency for 7 days. Your nervous system is starting to recognize these patterns.
-
-Keep going - the real rewiring happens in weeks 2-3.`
-        : `**Week 2 Complete!** 🎉
-
-14 consecutive days. You're in the groove now. 
-
-If you've hit the other criteria, you may be approaching an unlock. Check your progress sidebar.`;
-
-      // Add milestone message after a short delay
       setTimeout(() => {
-        setMessages(prev => [...prev, { role: 'assistant', content: milestoneMessage }]);
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: `**7-Day Milestone!** 🎯
+
+You've completed a full week of consistent practice. Your nervous system is starting to recognize the new pattern.
+
+Keep going - the real rewiring happens in weeks 2-4.`
+        }]);
       }, 2000);
     }
   }, [progress, progressLoading]);
@@ -956,13 +977,12 @@ If you've hit the other criteria, you may be approaching an unlock. Check your p
   // ============================================
   
   const handleUnlockConfirmation = async (confirmed: boolean) => {
-    if (!pendingUnlockStage) return;
-    
-    if (confirmed) {
-      // Perform the unlock
+    if (confirmed && pendingUnlockStage) {
       try {
         const supabase = createClient();
-        await supabase
+        
+        // Update user's stage
+        const { error } = await supabase
           .from('user_progress')
           .update({ 
             current_stage: pendingUnlockStage,
@@ -970,7 +990,9 @@ If you've hit the other criteria, you may be approaching an unlock. Check your p
           })
           .eq('user_id', user.id);
         
-        // Refresh progress to get updated stage
+        if (error) throw error;
+        
+        // Refresh progress
         if (refetchProgress) {
           await refetchProgress();
         }
@@ -1391,6 +1413,156 @@ extractedAction: extracted.microAction,
   }, [flowBlockState, user?.id]);
 
   // ============================================
+  // DECENTERING PRACTICE HANDLERS (NEW)
+  // ============================================
+
+  const startDecenteringPractice = useCallback(async () => {
+    if (!user?.id) return;
+    
+    devLog('[Decentering]', 'Starting practice');
+    
+    // Check if first time
+    const isFirstTime = await isFirstTimeUsingTool(user.id, 'decentering');
+    
+    // Check for patterns to surface from past sessions
+    let patternMessage = '';
+    if (!isFirstTime) {
+      const pattern = await checkForPatternToSurface(user.id, []);
+      if (pattern) {
+        patternMessage = `\n\n*${pattern}*\n\n`;
+      }
+    }
+    
+    // Set state
+    setDecenteringState({
+      isActive: true,
+      isFirstTime,
+      sessionMode: 'standard',
+      conversationHistory: [],
+      identityExplored: null,
+      identityType: null,
+      integrationAnchor: null,
+      sessionStartTime: new Date()
+    });
+    
+    // Show appropriate opening message
+    const openingMessage = isFirstTime 
+      ? decenteringFirstTimeMessage 
+      : patternMessage + decenteringReturningMessage;
+    
+    setMessages(prev => [...prev, { role: 'assistant', content: openingMessage }]);
+  }, [user?.id]);
+
+  const processDecenteringResponse = useCallback(async (userMessage: string) => {
+    if (!decenteringState.isActive) return;
+    
+    devLog('[Decentering]', 'Processing response:', userMessage);
+    
+    // Add user message to chat
+    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    setLoading(true);
+    
+    // Check for Identity Audit request
+    const isAuditRequest = isIdentityAuditRequest(userMessage);
+    if (isAuditRequest && decenteringState.sessionMode !== 'identity_audit') {
+      setDecenteringState(prev => ({ ...prev, sessionMode: 'identity_audit' }));
+      setMessages(prev => [...prev, { role: 'assistant', content: decenteringIdentityAuditMessage }]);
+      setLoading(false);
+      return;
+    }
+    
+    // Build conversation history
+    const updatedHistory = [
+      ...decenteringState.conversationHistory,
+      { role: 'user' as const, content: userMessage }
+    ];
+    
+    try {
+      // Call API with decentering context
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: buildDecenteringMessages(decenteringState.conversationHistory, userMessage),
+          context: 'decentering_practice'
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('API request failed');
+      }
+      
+      const data = await response.json();
+      const assistantResponse = data.response || data.content || '';
+      
+      devLog('[Decentering]', 'API response:', assistantResponse);
+      
+      // Display response
+      setMessages(prev => [...prev, { role: 'assistant', content: assistantResponse }]);
+      
+      // Update conversation history
+      const fullHistory = [...updatedHistory, { role: 'assistant' as const, content: assistantResponse }];
+      
+      setDecenteringState(prev => ({
+        ...prev,
+        conversationHistory: fullHistory
+      }));
+      
+      // Check if session is naturally ending (grounding complete)
+      if (isSessionEnding(assistantResponse)) {
+        devLog('[Decentering]', 'Session appears to be ending naturally');
+        // Don't auto-end - let user click "End Session" or continue
+      }
+      
+    } catch (error) {
+      console.error('[Decentering] API call failed:', error);
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: "I had trouble processing that. Take a breath. What's most present right now?" 
+      }]);
+    }
+    
+    setLoading(false);
+  }, [decenteringState]);
+
+  const endDecenteringSession = useCallback(async () => {
+    if (!decenteringState.isActive || !user?.id) return;
+    
+    devLog('[Decentering]', 'Ending session');
+    
+    // Calculate duration
+    const durationSeconds = decenteringState.sessionStartTime 
+      ? Math.floor((Date.now() - decenteringState.sessionStartTime.getTime()) / 1000)
+      : 0;
+    
+    // Extract session data for storage
+    const sessionData = extractSessionData(decenteringState.conversationHistory);
+    
+    // Save to database
+    await saveToolSession(user.id, 'decentering', {
+      sessionMode: decenteringState.sessionMode,
+      durationSeconds,
+      data: {
+        identity_explored: sessionData.identityExplored,
+        identity_type: sessionData.identityType,
+        integration_anchor: sessionData.integrationAnchor,
+        themes: sessionData.themes
+      },
+      themes: sessionData.themes
+    });
+    
+    // Reset state
+    setDecenteringState(initialDecenteringState);
+    
+    // Show completion message
+    setMessages(prev => [...prev, { 
+      role: 'assistant', 
+      content: "Session complete. That recognition is here whenever you need it. 🙏" 
+    }]);
+    
+  }, [decenteringState, user?.id]);
+
+  // ============================================
   // WEEKLY CHECK-IN HANDLERS
   // ============================================
   
@@ -1415,22 +1587,23 @@ extractedAction: extracted.microAction,
         setWeeklyCheckInActive(false);
         setMessages(prev => [...prev, {
           role: 'assistant',
-          content: "No problem. Let me know when you're ready for your weekly check-in."
+          content: "No problem. We can do the check-in later. Just say 'weekly check-in' when you're ready."
         }]);
       }
       return;
     }
     
-    // Validate numeric responses
-    if (isNaN(rating) || rating < 0 || rating > 5) {
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: "Please enter a number between 0 and 5."
-      }]);
-      return;
+    // Validate rating is a number between 0-5
+    if (weeklyCheckInStep >= 1 && weeklyCheckInStep <= 5) {
+      if (isNaN(rating) || rating < 0 || rating > 5) {
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: "Please enter a number between 0 and 5."
+        }]);
+        return;
+      }
     }
     
-    // Process based on current step
     switch (weeklyCheckInStep) {
       case 1: // Regulation
         setWeeklyCheckInScores(prev => ({ ...prev, regulation: rating }));
@@ -1462,23 +1635,14 @@ extractedAction: extracted.microAction,
       case 4: // Attention
         setWeeklyCheckInScores(prev => ({ ...prev, attention: rating }));
         setWeeklyCheckInStep(5);
-        const qualQuestion = stageQualitativeQuestions[currentStage] || stageQualitativeQuestions[1];
         setMessages(prev => [...prev, {
           role: 'assistant',
-          content: `**Stage ${currentStage} Competence Check:**
-
-${qualQuestion} (0-5)`
+          content: `**Stage-specific question:**\n\n${stageQualitativeQuestions[currentStage]} (0-5)`
         }]);
         break;
         
-      case 5: // Qualitative - final step
-        const finalScores = {
-          ...weeklyCheckInScores,
-          qualitative: rating
-        };
-        setWeeklyCheckInScores(finalScores);
-        
-        // Save to database and show results
+      case 5: // Qualitative
+        const finalScores = { ...weeklyCheckInScores, qualitative: rating };
         await saveWeeklyCheckIn(finalScores);
         break;
 
@@ -1854,6 +2018,11 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
           startFlowBlockSetup();
         }
         break;
+
+      // NEW: Decentering Practice handler
+      case 'decentering':
+        startDecenteringPractice();
+        break;
         
       default:
         setMessages(prev => [...prev, { 
@@ -1861,7 +2030,7 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
           content: `Tool "${toolId}" is not yet implemented. Coming soon!` 
         }]);
     }
-  }, [microActionState, flowBlockState, startMicroActionSetup, startFlowBlockSetup]);
+  }, [microActionState, flowBlockState, startMicroActionSetup, startFlowBlockSetup, startDecenteringPractice]);
 
   // ============================================
   // PROGRESS UPDATE HANDLER (from toolbar)
@@ -1938,8 +2107,14 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
       await processFlowBlockResponse(userMessage);
       return;
     }
+
+    // 4. Decentering Practice Flow (NEW)
+    if (decenteringState.isActive) {
+      await processDecenteringResponse(userMessage);
+      return;
+    }
     
-    // 4. Awaiting Micro-Action Start confirmation
+    // 5. Awaiting Micro-Action Start confirmation
     if (awaitingMicroActionStart) {
       const isAffirmative = ['yes', 'yeah', 'yep', 'sure', 'ok', 'okay', 'ready', 'let\'s go', 'lets go', 'y'].some(
         word => userMessage.toLowerCase().includes(word)
@@ -1960,7 +2135,7 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
       return;
     }
     
-    // 5. Awaiting Flow Block Start confirmation
+    // 6. Awaiting Flow Block Start confirmation
     if (awaitingFlowBlockStart) {
       const isAffirmative = ['yes', 'yeah', 'yep', 'sure', 'ok', 'okay', 'ready', 'let\'s go', 'lets go', 'y'].some(
         word => userMessage.toLowerCase().includes(word)
@@ -1981,7 +2156,7 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
       return;
     }
     
-    // 6. Awaiting Sprint Renewal confirmation
+    // 7. Awaiting Sprint Renewal confirmation
     if (awaitingSprintRenewal) {
       const isAffirmative = ['yes', 'yeah', 'yep', 'sure', 'ok', 'okay', 'new', 'different', 'change'].some(
         word => userMessage.toLowerCase().includes(word)
@@ -2120,6 +2295,14 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
     if (lowerMessage.includes('set up') && lowerMessage.includes('flow')) {
       setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
       startFlowBlockSetup();
+      return;
+    }
+
+    // Check for decentering practice trigger (NEW)
+    if (lowerMessage.includes('decentering') || lowerMessage.includes('decenter') || 
+        (lowerMessage.includes('i am') && (lowerMessage.includes('anxious') || lowerMessage.includes('stuck') || lowerMessage.includes('trapped')))) {
+      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+      startDecenteringPractice();
       return;
     }
     
@@ -2502,6 +2685,18 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
                 </button>
               </div>
             )}
+
+            {/* End Decentering Session Button (NEW) */}
+            {decenteringState.isActive && !loading && (
+              <div className="flex justify-center">
+                <button
+                  onClick={endDecenteringSession}
+                  className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-xl transition-colors shadow-lg border border-gray-600"
+                >
+                  End Decentering Session
+                </button>
+              </div>
+            )}
             
             <div ref={messagesEndRef} />
           </div>
@@ -2525,9 +2720,11 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
                     ? "Type your response..."
                     : flowBlockState.isActive
                       ? "Type your response..."
-                      : currentQuickReply 
-                        ? "Or type a question..." 
-                        : "Type your message..."
+                      : decenteringState.isActive
+                        ? "Type your response..."
+                        : currentQuickReply 
+                          ? "Or type a question..." 
+                          : "Type your message..."
                 }
                 disabled={loading}
                 rows={1}
@@ -2546,9 +2743,11 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
                 ? "Setting up your identity - type your responses"
                 : flowBlockState.isActive
                   ? "Setting up your Flow Blocks - type your responses"
-                  : currentQuickReply 
-                    ? "Click the button above or type your own response" 
-                    : "Press Enter to send, Shift+Enter for new line"}
+                  : decenteringState.isActive
+                    ? "Decentering Practice - type your responses or click End Session when complete"
+                    : currentQuickReply 
+                      ? "Click the button above or type your own response" 
+                      : "Press Enter to send, Shift+Enter for new line"}
             </p>
           </div>
         </div>
