@@ -1470,7 +1470,10 @@ extractedAction: extracted.microAction,
   }, [user?.id]);
 
   const processDecenteringResponse = useCallback(async (userMessage: string) => {
-    if (!decenteringState.isActive) return;
+    // NOTE: We removed the isActive check here because it causes stale closure issues
+    // The check in sendMessage already verified decenteringState.isActive is true
+    
+    console.log('[Decentering] processDecenteringResponse called with:', userMessage);
     
     devLog('[Decentering]', 'Processing response:', userMessage);
     
@@ -1480,16 +1483,23 @@ extractedAction: extracted.microAction,
     
     // Check for Identity Audit request
     const isAuditRequest = isIdentityAuditRequest(userMessage);
-    if (isAuditRequest && decenteringState.sessionMode !== 'identity_audit') {
+    if (isAuditRequest) {
       setDecenteringState(prev => ({ ...prev, sessionMode: 'identity_audit' }));
       setMessages(prev => [...prev, { role: 'assistant', content: decenteringIdentityAuditMessage }]);
       setLoading(false);
       return;
     }
     
+    // Use functional update to get current state for conversation history
+    let currentHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+    setDecenteringState(prev => {
+      currentHistory = prev.conversationHistory;
+      return prev; // Don't actually change state, just read it
+    });
+    
     // Build conversation history
     const updatedHistory = [
-      ...decenteringState.conversationHistory,
+      ...currentHistory,
       { role: 'user' as const, content: userMessage }
     ];
     
@@ -1499,7 +1509,7 @@ extractedAction: extracted.microAction,
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: buildDecenteringMessages(decenteringState.conversationHistory, userMessage),
+          messages: buildDecenteringMessages(currentHistory, userMessage),
           context: 'decentering_practice'
         })
       });
@@ -1512,6 +1522,7 @@ extractedAction: extracted.microAction,
       const assistantResponse = data.response || data.content || '';
       
       devLog('[Decentering]', 'API response:', assistantResponse);
+      console.log('[Decentering] Got API response:', assistantResponse.substring(0, 100) + '...');
       
       // Display response
       setMessages(prev => [...prev, { role: 'assistant', content: assistantResponse }]);
@@ -1539,33 +1550,49 @@ extractedAction: extracted.microAction,
     }
     
     setLoading(false);
-  }, [decenteringState]);
+  }, []); // Empty dependency array - we use functional updates to avoid stale closures
 
   const endDecenteringSession = useCallback(async () => {
-    if (!decenteringState.isActive || !user?.id) return;
+    if (!user?.id) return;
     
     devLog('[Decentering]', 'Ending session');
     
+    // Use functional update to get current state
+    let sessionStartTime: Date | null = null;
+    let sessionMode: string = 'standard';
+    let conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+    
+    setDecenteringState(prev => {
+      sessionStartTime = prev.sessionStartTime;
+      sessionMode = prev.sessionMode;
+      conversationHistory = prev.conversationHistory;
+      return prev; // Don't change state yet, just read it
+    });
+    
     // Calculate duration
-    const durationSeconds = decenteringState.sessionStartTime 
-      ? Math.floor((Date.now() - decenteringState.sessionStartTime.getTime()) / 1000)
+    const durationSeconds = sessionStartTime 
+      ? Math.floor((Date.now() - sessionStartTime.getTime()) / 1000)
       : 0;
     
     // Extract session data for storage
-    const sessionData = extractSessionData(decenteringState.conversationHistory);
+    const sessionData = extractSessionData(conversationHistory);
     
     // Save to database
-    await saveToolSession(user.id, 'decentering', {
-      sessionMode: decenteringState.sessionMode,
-      durationSeconds,
-      data: {
-        identity_explored: sessionData.identityExplored,
-        identity_type: sessionData.identityType,
-        integration_anchor: sessionData.integrationAnchor,
+    try {
+      await saveToolSession(user.id, 'decentering', {
+        sessionMode,
+        durationSeconds,
+        data: {
+          identity_explored: sessionData.identityExplored,
+          identity_type: sessionData.identityType,
+          integration_anchor: sessionData.integrationAnchor,
+          themes: sessionData.themes
+        },
         themes: sessionData.themes
-      },
-      themes: sessionData.themes
-    });
+      });
+    } catch (error) {
+      console.error('[Decentering] Failed to save session:', error);
+    }
     
     // Reset state
     setDecenteringState(initialDecenteringState);
@@ -1576,7 +1603,7 @@ extractedAction: extracted.microAction,
       content: "Session complete. That recognition is here whenever you need it. 🙏" 
     }]);
     
-  }, [decenteringState, user?.id]);
+  }, [user?.id]);
 
   // ============================================
   // WEEKLY CHECK-IN HANDLERS
