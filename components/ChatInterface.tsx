@@ -2686,7 +2686,7 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
           consecutiveDays={progress?.consecutiveDays || 0}
           currentIdentity={progress?.currentIdentity ?? undefined}
           microAction={(progress as any)?.microAction ?? undefined}
-          identitySprintDay={progress?.identitySprintDay}
+          identitySprintDay={progress?.identitySprintDay ?? undefined}
         />
       )}
 
