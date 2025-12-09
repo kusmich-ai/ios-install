@@ -77,6 +77,7 @@ import {
 // ============================================
 import { useDecentering } from '@/components/DecenteringModal';
 import { useMetaReflection, isWeeklyReflectionDue, isSunday } from '@/components/MetaReflectionModal';
+import { useReframe } from '@/components/ReframeModal';
 
 
 
@@ -643,6 +644,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   // ============================================
   const { open: openDecentering, Modal: DecenteringModal } = useDecentering();
   const { open: openMetaReflection, Modal: MetaReflectionModal } = useMetaReflection();
+  const { open: openReframe, Modal: ReframeModal } = useReframe();
   
   // Track if we've prompted for Sunday reflection
   const hasCheckedSundayReflection = useRef<boolean>(false);
@@ -1907,6 +1909,10 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
       case 'meta_reflection':
         openMetaReflection(user?.id, false); // false = on-demand, not weekly prompt
         break;
+
+      case 'reframe':
+        openReframe(user?.id, false); // false = on-demand, not triggered by pattern detection
+        break;
         
       default:
         setMessages(prev => [...prev, { 
@@ -1914,7 +1920,7 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
           content: `Tool "${toolId}" is not yet implemented. Coming soon!` 
         }]);
     }
-  }, [microActionState, flowBlockState, startMicroActionSetup, startFlowBlockSetup, openDecentering, openMetaReflection, user?.id]);
+  }, [microActionState, flowBlockState, startMicroActionSetup, startFlowBlockSetup, openDecentering, openMetaReflection, openReframe, user?.id]);
 
   // ============================================
   // PROGRESS UPDATE HANDLER (from toolbar)
@@ -2188,6 +2194,14 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
         isSundayPromptResponse) {
       setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
       openMetaReflection(user?.id, isSundayPromptResponse); // true if responding to Sunday prompt
+      return;
+    }
+
+    // Check for reframe trigger (explicit request)
+    if (lowerMessage.includes('reframe') || lowerMessage.includes('interpretation audit') ||
+        (lowerMessage.includes('run') && lowerMessage.includes('audit'))) {
+      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+      openReframe(user?.id, false);
       return;
     }
     
@@ -2661,6 +2675,7 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
       {/* On-Demand Tool Modals */}
       <DecenteringModal />
       <MetaReflectionModal />
+      <ReframeModal />
     </div>
   );
 }
