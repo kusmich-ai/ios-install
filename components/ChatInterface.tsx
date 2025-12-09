@@ -1420,6 +1420,7 @@ extractedAction: extracted.microAction,
     if (!user?.id) return;
     
     devLog('[Decentering]', 'Starting practice');
+    console.log('[Decentering] Starting practice - setting isActive to true');
     
     // Set state FIRST to ensure we capture the conversation immediately
     // This prevents race conditions if database calls are slow or fail
@@ -1433,6 +1434,8 @@ extractedAction: extracted.microAction,
       integrationAnchor: null,
       sessionStartTime: new Date()
     });
+    
+    console.log('[Decentering] State set, isActive should now be true');
     
     // Try to check if first time and get patterns (non-blocking)
     let isFirstTime = true;
@@ -2095,6 +2098,21 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
     
     const userMessage = input.trim();
     setInput('');
+    
+    // ============================================
+    // DEBUG LOGGING - Remove after fixing
+    // ============================================
+    console.log('[SendMessage] Active states:', {
+      weeklyCheckInActive,
+      microActionActive: microActionState.isActive,
+      flowBlockActive: flowBlockState.isActive,
+      decenteringActive: decenteringState.isActive,
+      awaitingMicroActionStart,
+      awaitingFlowBlockStart,
+      awaitingSprintRenewal,
+      openingType,
+      introStep
+    });
     
     // ============================================
     // SPECIAL FLOW HANDLERS (priority order)
