@@ -73,26 +73,11 @@ import {
 } from '@/lib/flowBlockAPI';
 
 // ============================================
-// DECENTERING PRACTICE IMPORTS (NEW)
+// ON-DEMAND TOOL MODALS
 // ============================================
-import {
-  DecenteringState,
-  initialDecenteringState,
-  decenteringFirstTimeMessage,
-  decenteringReturningMessage,
-  decenteringIdentityAuditMessage,
-  buildDecenteringMessages,
-  isIdentityAuditRequest,
-  isSessionEnding,
-  extractSessionData
-} from '@/lib/decenteringAPI';
+import { useDecentering } from '@/components/DecenteringModal';
 
-import {
-  saveToolSession,
-  isFirstTimeUsingTool,
-  getRecentToolSessions,
-  checkForPatternToSurface
-} from '@/lib/toolSessionsDatabase';
+
 
 // ============================================
 // DEV LOGGING UTILITY
@@ -626,11 +611,6 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   const [awaitingFlowBlockStart, setAwaitingFlowBlockStart] = useState(false);
   
   // ============================================
-  // DECENTERING PRACTICE STATE (NEW)
-  // ============================================
-  const [decenteringState, setDecenteringState] = useState<DecenteringState>(initialDecenteringState);
-  
-  // ============================================
   // WEEKLY CHECK-IN STATE
   // ============================================
   const [weeklyCheckInActive, setWeeklyCheckInActive] = useState(false);
@@ -656,6 +636,11 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
 
   const isMobile = useIsMobile();
   const { progress, loading: progressLoading, error: progressError, refetchProgress, isRefreshing } = useUserProgress();
+
+  // ============================================
+  // ON-DEMAND TOOL MODALS
+  // ============================================
+  const { open: openDecentering, Modal: DecenteringModal } = useDecentering();
 
   // Get user's name
   const getUserName = () => user?.user_metadata?.first_name || '';
@@ -1413,199 +1398,6 @@ extractedAction: extracted.microAction,
   }, [flowBlockState, user?.id]);
 
   // ============================================
-  // DECENTERING PRACTICE HANDLERS (NEW)
-  // ============================================
-
-  const startDecenteringPractice = useCallback(async () => {
-    if (!user?.id) return;
-    
-    devLog('[Decentering]', 'Starting practice');
-    console.log('[Decentering] Starting practice - setting isActive to true');
-    
-    // Set state FIRST to ensure we capture the conversation immediately
-    // This prevents race conditions if database calls are slow or fail
-    setDecenteringState({
-      isActive: true,
-      isFirstTime: true, // Default to true, update if we can check
-      sessionMode: 'standard',
-      conversationHistory: [],
-      identityExplored: null,
-      identityType: null,
-      integrationAnchor: null,
-      sessionStartTime: new Date()
-    });
-    
-    console.log('[Decentering] State set, isActive should now be true');
-    
-    // Try to check if first time and get patterns (non-blocking)
-    let isFirstTime = true;
-    let patternMessage = '';
-    
-    try {
-      isFirstTime = await isFirstTimeUsingTool(user.id, 'decentering');
-      
-      if (!isFirstTime) {
-        const pattern = await checkForPatternToSurface(user.id, []);
-        if (pattern) {
-          patternMessage = `\n\n*${pattern}*\n\n`;
-        }
-      }
-      
-      // Update state with actual first-time status
-      setDecenteringState(prev => ({
-        ...prev,
-        isFirstTime
-      }));
-    } catch (error) {
-      console.error('[Decentering] Error checking database (table may not exist yet):', error);
-      // Continue with defaults - state is already set
-    }
-    
-    // Show appropriate opening message
-    const openingMessage = isFirstTime 
-      ? decenteringFirstTimeMessage 
-      : patternMessage + decenteringReturningMessage;
-    
-    setMessages(prev => [...prev, { role: 'assistant', content: openingMessage }]);
-  }, [user?.id]);
-
-  const processDecenteringResponse = useCallback(async (userMessage: string) => {
-    // NOTE: We removed the isActive check here because it causes stale closure issues
-    // The check in sendMessage already verified decenteringState.isActive is true
-    
-    console.log('[Decentering] processDecenteringResponse called with:', userMessage);
-    
-    devLog('[Decentering]', 'Processing response:', userMessage);
-    
-    // Add user message to chat
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
-    setLoading(true);
-    
-    // Check for Identity Audit request
-    const isAuditRequest = isIdentityAuditRequest(userMessage);
-    if (isAuditRequest) {
-      setDecenteringState(prev => ({ ...prev, sessionMode: 'identity_audit' }));
-      setMessages(prev => [...prev, { role: 'assistant', content: decenteringIdentityAuditMessage }]);
-      setLoading(false);
-      return;
-    }
-    
-    // Use functional update to get current state for conversation history
-    let currentHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
-    setDecenteringState(prev => {
-      currentHistory = prev.conversationHistory;
-      return prev; // Don't actually change state, just read it
-    });
-    
-    // Build conversation history
-    const updatedHistory = [
-      ...currentHistory,
-      { role: 'user' as const, content: userMessage }
-    ];
-    
-    try {
-      // Call API with decentering context
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: buildDecenteringMessages(currentHistory, userMessage),
-          context: 'decentering_practice'
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error('API request failed');
-      }
-      
-      const data = await response.json();
-      const assistantResponse = data.response || data.content || '';
-      
-      devLog('[Decentering]', 'API response:', assistantResponse);
-      console.log('[Decentering] Got API response:', assistantResponse.substring(0, 100) + '...');
-      
-      // Display response
-      setMessages(prev => [...prev, { role: 'assistant', content: assistantResponse }]);
-      
-      // Update conversation history
-      const fullHistory = [...updatedHistory, { role: 'assistant' as const, content: assistantResponse }];
-      
-      setDecenteringState(prev => ({
-        ...prev,
-        conversationHistory: fullHistory
-      }));
-      
-      // Check if session is naturally ending (grounding complete)
-      if (isSessionEnding(assistantResponse)) {
-        devLog('[Decentering]', 'Session appears to be ending naturally');
-        // Don't auto-end - let user click "End Session" or continue
-      }
-      
-    } catch (error) {
-      console.error('[Decentering] API call failed:', error);
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: "I had trouble processing that. Take a breath. What's most present right now?" 
-      }]);
-    }
-    
-    setLoading(false);
-  }, []); // Empty dependency array - we use functional updates to avoid stale closures
-
-  const endDecenteringSession = useCallback(async () => {
-    if (!user?.id) return;
-    
-    devLog('[Decentering]', 'Ending session');
-    
-    // Use functional update to get current state
-    let sessionStartTime: Date | null = null;
-    let sessionMode: string = 'standard';
-    let conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
-    
-    setDecenteringState(prev => {
-      sessionStartTime = prev.sessionStartTime;
-      sessionMode = prev.sessionMode;
-      conversationHistory = prev.conversationHistory;
-      return prev; // Don't change state yet, just read it
-    });
-    
-    // Calculate duration
-    const durationSeconds = sessionStartTime 
-      ? Math.floor((Date.now() - sessionStartTime.getTime()) / 1000)
-      : 0;
-    
-    // Extract session data for storage
-    const sessionData = extractSessionData(conversationHistory);
-    
-    // Save to database
-    try {
-      await saveToolSession(user.id, 'decentering', {
-        sessionMode,
-        durationSeconds,
-        data: {
-          identity_explored: sessionData.identityExplored,
-          identity_type: sessionData.identityType,
-          integration_anchor: sessionData.integrationAnchor,
-          themes: sessionData.themes
-        },
-        themes: sessionData.themes
-      });
-    } catch (error) {
-      console.error('[Decentering] Failed to save session:', error);
-    }
-    
-    // Reset state
-    setDecenteringState(initialDecenteringState);
-    
-    // Show completion message
-    setMessages(prev => [...prev, { 
-      role: 'assistant', 
-      content: "Session complete. That recognition is here whenever you need it. 🙏" 
-    }]);
-    
-  }, [user?.id]);
-
-  // ============================================
   // WEEKLY CHECK-IN HANDLERS
   // ============================================
   
@@ -2062,9 +1854,9 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
         }
         break;
 
-      // NEW: Decentering Practice handler
+      // ON-DEMAND TOOLS (open as modals)
       case 'decentering':
-        startDecenteringPractice();
+        openDecentering(user?.id);
         break;
         
       default:
@@ -2073,7 +1865,7 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
           content: `Tool "${toolId}" is not yet implemented. Coming soon!` 
         }]);
     }
-  }, [microActionState, flowBlockState, startMicroActionSetup, startFlowBlockSetup, startDecenteringPractice]);
+  }, [microActionState, flowBlockState, startMicroActionSetup, startFlowBlockSetup, openDecentering, user?.id]);
 
   // ============================================
   // PROGRESS UPDATE HANDLER (from toolbar)
@@ -2127,21 +1919,6 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
     setInput('');
     
     // ============================================
-    // DEBUG LOGGING - Remove after fixing
-    // ============================================
-    console.log('[SendMessage] Active states:', {
-      weeklyCheckInActive,
-      microActionActive: microActionState.isActive,
-      flowBlockActive: flowBlockState.isActive,
-      decenteringActive: decenteringState.isActive,
-      awaitingMicroActionStart,
-      awaitingFlowBlockStart,
-      awaitingSprintRenewal,
-      openingType,
-      introStep
-    });
-    
-    // ============================================
     // SPECIAL FLOW HANDLERS (priority order)
     // ============================================
     
@@ -2165,14 +1942,8 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
       await processFlowBlockResponse(userMessage);
       return;
     }
-
-    // 4. Decentering Practice Flow (NEW)
-    if (decenteringState.isActive) {
-      await processDecenteringResponse(userMessage);
-      return;
-    }
     
-    // 5. Awaiting Micro-Action Start confirmation
+    // 4. Awaiting Micro-Action Start confirmation
     if (awaitingMicroActionStart) {
       const isAffirmative = ['yes', 'yeah', 'yep', 'sure', 'ok', 'okay', 'ready', 'let\'s go', 'lets go', 'y'].some(
         word => userMessage.toLowerCase().includes(word)
@@ -2193,7 +1964,7 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
       return;
     }
     
-    // 6. Awaiting Flow Block Start confirmation
+    // 5. Awaiting Flow Block Start confirmation
     if (awaitingFlowBlockStart) {
       const isAffirmative = ['yes', 'yeah', 'yep', 'sure', 'ok', 'okay', 'ready', 'let\'s go', 'lets go', 'y'].some(
         word => userMessage.toLowerCase().includes(word)
@@ -2214,7 +1985,7 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
       return;
     }
     
-    // 7. Awaiting Sprint Renewal confirmation
+    // 6. Awaiting Sprint Renewal confirmation
     if (awaitingSprintRenewal) {
       const isAffirmative = ['yes', 'yeah', 'yep', 'sure', 'ok', 'okay', 'new', 'different', 'change'].some(
         word => userMessage.toLowerCase().includes(word)
@@ -2353,14 +2124,6 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
     if (lowerMessage.includes('set up') && lowerMessage.includes('flow')) {
       setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
       startFlowBlockSetup();
-      return;
-    }
-
-    // Check for decentering practice trigger (NEW)
-    if (lowerMessage.includes('decentering') || lowerMessage.includes('decenter') || 
-        (lowerMessage.includes('i am') && (lowerMessage.includes('anxious') || lowerMessage.includes('stuck') || lowerMessage.includes('trapped')))) {
-      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
-      startDecenteringPractice();
       return;
     }
     
@@ -2743,18 +2506,6 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
                 </button>
               </div>
             )}
-
-            {/* End Decentering Session Button (NEW) */}
-            {decenteringState.isActive && !loading && (
-              <div className="flex justify-center">
-                <button
-                  onClick={endDecenteringSession}
-                  className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-xl transition-colors shadow-lg border border-gray-600"
-                >
-                  End Decentering Session
-                </button>
-              </div>
-            )}
             
             <div ref={messagesEndRef} />
           </div>
@@ -2778,11 +2529,9 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
                     ? "Type your response..."
                     : flowBlockState.isActive
                       ? "Type your response..."
-                      : decenteringState.isActive
-                        ? "Type your response..."
-                        : currentQuickReply 
-                          ? "Or type a question..." 
-                          : "Type your message..."
+                      : currentQuickReply 
+                        ? "Or type a question..." 
+                        : "Type your message..."
                 }
                 disabled={loading}
                 rows={1}
@@ -2801,11 +2550,9 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
                 ? "Setting up your identity - type your responses"
                 : flowBlockState.isActive
                   ? "Setting up your Flow Blocks - type your responses"
-                  : decenteringState.isActive
-                    ? "Decentering Practice - type your responses or click End Session when complete"
-                    : currentQuickReply 
-                      ? "Click the button above or type your own response" 
-                      : "Press Enter to send, Shift+Enter for new line"}
+                  : currentQuickReply 
+                    ? "Click the button above or type your own response" 
+                    : "Press Enter to send, Shift+Enter for new line"}
             </p>
           </div>
         </div>
@@ -2846,6 +2593,9 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
           isRefreshing={isRefreshing}
         />
       )}
+
+      {/* On-Demand Tool Modals */}
+      <DecenteringModal />
     </div>
   );
 }
