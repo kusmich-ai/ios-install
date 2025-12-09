@@ -4,16 +4,50 @@
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
 
+interface UnlockProgress {
+  adherenceMet: boolean;
+  daysMet: boolean;
+  deltaMet: boolean;
+  qualitativeMet: boolean;
+  requiredAdherence: number;
+  requiredDays: number;
+  requiredDelta: number;
+}
+
 interface MobileDashboardProps {
   userName: string;
   currentStage: number;
-  rewiredIndex: number;
-  domainScores: {
+  // Baseline data
+  baselineRewiredIndex: number;
+  baselineDomainScores: {
     regulation: number;
     awareness: number;
     outlook: number;
     attention: number;
   };
+  // Current data (from progress)
+  currentDomainScores?: {
+    regulation: number;
+    awareness: number;
+    outlook: number;
+    attention: number;
+  };
+  domainDeltas?: {
+    regulation: number;
+    awareness: number;
+    outlook: number;
+    attention: number;
+    average: number;
+  };
+  // Unlock progress
+  unlockProgress?: UnlockProgress;
+  unlockEligible?: boolean;
+  adherencePercentage?: number;
+  consecutiveDays?: number;
+  // Identity
+  currentIdentity?: string;
+  microAction?: string;
+  identitySprintDay?: number;
 }
 
 // Get stage name from number
@@ -51,12 +85,30 @@ function getStatusColor(index: number): string {
 export default function MobileDashboard({
   userName,
   currentStage,
-  rewiredIndex,
-  domainScores
+  baselineRewiredIndex,
+  baselineDomainScores,
+  currentDomainScores,
+  domainDeltas,
+  unlockProgress,
+  unlockEligible,
+  adherencePercentage = 0,
+  consecutiveDays = 0,
+  currentIdentity,
+  microAction,
+  identitySprintDay
 }: MobileDashboardProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const stageProgress = ((currentStage - 1) / 6) * 100;
+
+  // Use current scores if available, otherwise baseline
+  const displayScores = currentDomainScores || baselineDomainScores;
+  
+  // Calculate current REwired Index
+  const currentRewiredIndex = Math.round(
+    (displayScores.regulation + displayScores.awareness + displayScores.outlook + displayScores.attention) / 4 * 20
+  );
+  const rewiredDelta = currentRewiredIndex - baselineRewiredIndex;
 
   return (
     <>
@@ -92,63 +144,71 @@ export default function MobileDashboard({
           <X className="w-5 h-5" />
         </button>
 
-        {/* Dashboard Content - Same as desktop sidebar */}
-        <div className="p-4 pt-6 overflow-y-auto h-full">
-          <div className="mb-6">
+        {/* Dashboard Content */}
+        <div className="p-4 pt-6 overflow-y-auto h-full space-y-4">
+          {/* Header */}
+          <div className="mb-2">
             <h1 className="text-xl font-bold text-white mb-1">IOS System Installer</h1>
             <p className="text-xs text-gray-400 mb-2">Neural & Mental Operating System</p>
-            <p className="text-sm font-medium text-white">{userName}</p>
+            <p className="text-sm font-medium text-white">{userName ? `Hey, ${userName}` : 'Welcome'}</p>
+            <p className="text-xs text-gray-400 mt-1">
+              Stage {currentStage}: {getStageName(currentStage)}
+            </p>
           </div>
 
-          {/* Stage Progress */}
-          <div className="mb-6 p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-sm text-[#ff9e19] font-semibold">
-                Stage {currentStage} of 7
-              </span>
+          {/* REwired Index - Current with Delta */}
+          <div className="bg-gray-900 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-400">REwired Index</span>
+              <div className="flex items-center gap-2">
+                <span className={`text-2xl font-bold ${getStatusColor(currentRewiredIndex)}`}>
+                  {currentRewiredIndex}
+                </span>
+                {rewiredDelta !== 0 && (
+                  <span className={`text-sm font-medium ${rewiredDelta > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {rewiredDelta > 0 ? '+' : ''}{rewiredDelta}
+                  </span>
+                )}
+              </div>
             </div>
-            <div className="text-xs text-gray-300 mb-2">
-              {getStageName(currentStage)}
-            </div>
-            <div className="w-full rounded-full h-1.5 bg-[#1a1a1a]">
-              <div
-                className="h-1.5 rounded-full transition-all bg-[#ff9e19]"
-                style={{ width: `${stageProgress}%` }}
+            <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
+              <div 
+                className={`h-2 rounded-full transition-all ${
+                  currentRewiredIndex <= 20 ? 'bg-red-500' :
+                  currentRewiredIndex <= 40 ? 'bg-yellow-500' :
+                  currentRewiredIndex <= 60 ? 'bg-blue-500' :
+                  currentRewiredIndex <= 80 ? 'bg-green-500' :
+                  'bg-purple-500'
+                }`}
+                style={{ width: `${currentRewiredIndex}%` }}
               />
             </div>
+            <p className="text-xs text-gray-500 mt-1">{getStatusTier(currentRewiredIndex)}</p>
           </div>
 
-          {/* REwired Index */}
-          <div className="mb-6 p-4 rounded-lg text-center border-2 bg-[#0a0a0a] border-[#ff9e19]">
-            <div className="text-xs text-gray-400 mb-1 uppercase tracking-wide">REwired Index</div>
-            <div className="text-4xl font-bold mb-1 text-[#ff9e19]">
-              {rewiredIndex}
-            </div>
-            <div className={`text-xs font-medium mb-2 ${getStatusColor(rewiredIndex)}`}>
-              {getStatusTier(rewiredIndex)}
-            </div>
-            <div className="w-full rounded-full h-1.5 bg-[#1a1a1a]">
-              <div
-                className="h-1.5 rounded-full transition-all bg-[#ff9e19]"
-                style={{ width: `${rewiredIndex}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Domain Scores */}
-          <div className="space-y-3">
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Domain Scores</h3>
+          {/* Domain Scores with Deltas */}
+          <div className="bg-gray-900 rounded-lg p-4 space-y-3">
+            <h3 className="text-sm font-medium text-gray-300 mb-2">Domain Scores</h3>
 
             {/* Regulation */}
             <div>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-sm text-gray-300">Regulation</span>
-                <span className="text-sm font-semibold text-[#3b82f6]">{domainScores.regulation.toFixed(1)}/5</span>
+                <span className="text-xs text-gray-400">Regulation</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-[#22c55e]">
+                    {displayScores.regulation.toFixed(1)}/5
+                  </span>
+                  {domainDeltas?.regulation !== undefined && domainDeltas.regulation !== 0 && (
+                    <span className={`text-xs font-medium ${domainDeltas.regulation > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {domainDeltas.regulation > 0 ? '↑' : '↓'}{Math.abs(domainDeltas.regulation).toFixed(1)}
+                    </span>
+                  )}
+                </div>
               </div>
-              <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
+              <div className="w-full rounded-full h-1.5 bg-[#1a1a1a]">
                 <div
-                  className="h-2 rounded-full transition-all bg-[#3b82f6]"
-                  style={{ width: `${(domainScores.regulation / 5) * 100}%` }}
+                  className="h-1.5 rounded-full transition-all bg-[#22c55e]"
+                  style={{ width: `${(displayScores.regulation / 5) * 100}%` }}
                 />
               </div>
             </div>
@@ -156,13 +216,22 @@ export default function MobileDashboard({
             {/* Awareness */}
             <div>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-sm text-gray-300">Awareness</span>
-                <span className="text-sm font-semibold text-[#10b981]">{domainScores.awareness.toFixed(1)}/5</span>
+                <span className="text-xs text-gray-400">Awareness</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-[#3b82f6]">
+                    {displayScores.awareness.toFixed(1)}/5
+                  </span>
+                  {domainDeltas?.awareness !== undefined && domainDeltas.awareness !== 0 && (
+                    <span className={`text-xs font-medium ${domainDeltas.awareness > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {domainDeltas.awareness > 0 ? '↑' : '↓'}{Math.abs(domainDeltas.awareness).toFixed(1)}
+                    </span>
+                  )}
+                </div>
               </div>
-              <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
+              <div className="w-full rounded-full h-1.5 bg-[#1a1a1a]">
                 <div
-                  className="h-2 rounded-full transition-all bg-[#10b981]"
-                  style={{ width: `${(domainScores.awareness / 5) * 100}%` }}
+                  className="h-1.5 rounded-full transition-all bg-[#3b82f6]"
+                  style={{ width: `${(displayScores.awareness / 5) * 100}%` }}
                 />
               </div>
             </div>
@@ -170,13 +239,22 @@ export default function MobileDashboard({
             {/* Outlook */}
             <div>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-sm text-gray-300">Outlook</span>
-                <span className="text-sm font-semibold text-[#f59e0b]">{domainScores.outlook.toFixed(1)}/5</span>
+                <span className="text-xs text-gray-400">Outlook</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-[#f59e0b]">
+                    {displayScores.outlook.toFixed(1)}/5
+                  </span>
+                  {domainDeltas?.outlook !== undefined && domainDeltas.outlook !== 0 && (
+                    <span className={`text-xs font-medium ${domainDeltas.outlook > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {domainDeltas.outlook > 0 ? '↑' : '↓'}{Math.abs(domainDeltas.outlook).toFixed(1)}
+                    </span>
+                  )}
+                </div>
               </div>
-              <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
+              <div className="w-full rounded-full h-1.5 bg-[#1a1a1a]">
                 <div
-                  className="h-2 rounded-full transition-all bg-[#f59e0b]"
-                  style={{ width: `${(domainScores.outlook / 5) * 100}%` }}
+                  className="h-1.5 rounded-full transition-all bg-[#f59e0b]"
+                  style={{ width: `${(displayScores.outlook / 5) * 100}%` }}
                 />
               </div>
             </div>
@@ -184,17 +262,117 @@ export default function MobileDashboard({
             {/* Attention */}
             <div>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-sm text-gray-300">Attention</span>
-                <span className="text-sm font-semibold text-[#8b5cf6]">{domainScores.attention.toFixed(1)}/5</span>
+                <span className="text-xs text-gray-400">Attention</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-[#a855f7]">
+                    {displayScores.attention.toFixed(1)}/5
+                  </span>
+                  {domainDeltas?.attention !== undefined && domainDeltas.attention !== 0 && (
+                    <span className={`text-xs font-medium ${domainDeltas.attention > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {domainDeltas.attention > 0 ? '↑' : '↓'}{Math.abs(domainDeltas.attention).toFixed(1)}
+                    </span>
+                  )}
+                </div>
               </div>
-              <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
+              <div className="w-full rounded-full h-1.5 bg-[#1a1a1a]">
                 <div
-                  className="h-2 rounded-full transition-all bg-[#8b5cf6]"
-                  style={{ width: `${(domainScores.attention / 5) * 100}%` }}
+                  className="h-1.5 rounded-full transition-all bg-[#a855f7]"
+                  style={{ width: `${(displayScores.attention / 5) * 100}%` }}
                 />
               </div>
             </div>
           </div>
+
+          {/* Unlock Progress */}
+          {unlockProgress && !unlockEligible && (
+            <div className="bg-gray-900 rounded-lg p-4">
+              <h3 className="text-sm font-medium text-gray-300 mb-3">
+                Stage {currentStage + 1} Unlock Progress
+              </h3>
+              
+              <div className="space-y-2">
+                {/* Adherence Progress */}
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs w-14 ${unlockProgress.adherenceMet ? 'text-green-400' : 'text-gray-400'}`}>
+                    {unlockProgress.adherenceMet ? '✓' : ''} Adherence
+                  </span>
+                  <div className="flex-1 h-1.5 bg-[#1a1a1a] rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full transition-all ${unlockProgress.adherenceMet ? 'bg-green-500' : 'bg-[#ff9e19]'}`}
+                      style={{ width: unlockProgress.adherenceMet ? '100%' : `${Math.min(100, adherencePercentage / unlockProgress.requiredAdherence * 100)}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-gray-500 w-10 text-right">
+                    {unlockProgress.adherenceMet ? '✓' : `${adherencePercentage}%`}
+                  </span>
+                </div>
+                
+                {/* Days Progress */}
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs w-14 ${unlockProgress.daysMet ? 'text-green-400' : 'text-gray-400'}`}>
+                    {unlockProgress.daysMet ? '✓' : ''} Days
+                  </span>
+                  <div className="flex-1 h-1.5 bg-[#1a1a1a] rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full transition-all ${unlockProgress.daysMet ? 'bg-green-500' : 'bg-[#ff9e19]'}`}
+                      style={{ width: unlockProgress.daysMet ? '100%' : `${Math.min(100, consecutiveDays / unlockProgress.requiredDays * 100)}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-gray-500 w-10 text-right">
+                    {unlockProgress.daysMet ? '✓' : `${consecutiveDays}/${unlockProgress.requiredDays}`}
+                  </span>
+                </div>
+                
+                {/* Delta Progress */}
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs w-14 ${unlockProgress.deltaMet ? 'text-green-400' : 'text-gray-400'}`}>
+                    {unlockProgress.deltaMet ? '✓' : ''} Growth
+                  </span>
+                  <div className="flex-1 h-1.5 bg-[#1a1a1a] rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full transition-all ${unlockProgress.deltaMet ? 'bg-green-500' : 'bg-[#ff9e19]'}`}
+                      style={{ width: unlockProgress.deltaMet ? '100%' : `${Math.min(100, Math.max(0, ((domainDeltas?.average || 0) / unlockProgress.requiredDelta) * 100))}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-gray-500 w-10 text-right">
+                    {unlockProgress.deltaMet ? '✓' : `+${(domainDeltas?.average || 0).toFixed(1)}`}
+                  </span>
+                </div>
+                
+                {/* Weekly Check-in */}
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs w-14 ${unlockProgress.qualitativeMet ? 'text-green-400' : 'text-gray-400'}`}>
+                    {unlockProgress.qualitativeMet ? '✓' : ''} Check-in
+                  </span>
+                  <div className="flex-1 h-1.5 bg-[#1a1a1a] rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full transition-all ${unlockProgress.qualitativeMet ? 'bg-green-500' : 'bg-gray-600'}`}
+                      style={{ width: unlockProgress.qualitativeMet ? '100%' : '0%' }}
+                    />
+                  </div>
+                  <span className="text-xs text-gray-500 w-10 text-right">
+                    {unlockProgress.qualitativeMet ? '✓' : '—'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Current Identity */}
+          {currentIdentity && (
+            <div className="bg-gray-900 rounded-lg p-4">
+              <h3 className="text-sm font-medium text-gray-300 mb-2">Current Identity</h3>
+              <p className="text-sm text-[#ff9e19] font-medium">{currentIdentity}</p>
+              {microAction && (
+                <p className="text-xs text-gray-400 mt-1">Daily proof: {microAction}</p>
+              )}
+              {identitySprintDay && (
+                <p className="text-xs text-gray-500 mt-2">
+                  Day {identitySprintDay} of 21
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </>
