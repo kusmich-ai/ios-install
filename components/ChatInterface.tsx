@@ -78,6 +78,7 @@ import {
 import { useDecentering } from '@/components/DecenteringModal';
 import { useMetaReflection, isWeeklyReflectionDue, isSunday } from '@/components/MetaReflectionModal';
 import { useReframe } from '@/components/ReframeModal';
+import { useThoughtHygiene } from '@/components/ThoughtHygieneModal';
 
 
 
@@ -645,6 +646,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   const { open: openDecentering, Modal: DecenteringModal } = useDecentering();
   const { open: openMetaReflection, Modal: MetaReflectionModal } = useMetaReflection();
   const { open: openReframe, Modal: ReframeModal } = useReframe();
+  const { open: openThoughtHygiene, Modal: ThoughtHygieneModal } = useThoughtHygiene();
   
   // Track if we've prompted for Sunday reflection
   const hasCheckedSundayReflection = useRef<boolean>(false);
@@ -1913,6 +1915,10 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
       case 'reframe':
         openReframe(user?.id, false); // false = on-demand, not triggered by pattern detection
         break;
+
+      case 'thought_hygiene':
+        openThoughtHygiene(user?.id);
+        break;
         
       default:
         setMessages(prev => [...prev, { 
@@ -1920,7 +1926,7 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
           content: `Tool "${toolId}" is not yet implemented. Coming soon!` 
         }]);
     }
-  }, [microActionState, flowBlockState, startMicroActionSetup, startFlowBlockSetup, openDecentering, openMetaReflection, openReframe, user?.id]);
+  }, [microActionState, flowBlockState, startMicroActionSetup, startFlowBlockSetup, openDecentering, openMetaReflection, openReframe, openThoughtHygiene, user?.id]);
 
   // ============================================
   // PROGRESS UPDATE HANDLER (from toolbar)
@@ -2202,6 +2208,15 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
         (lowerMessage.includes('run') && lowerMessage.includes('audit'))) {
       setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
       openReframe(user?.id, false);
+      return;
+    }
+
+    // Check for thought hygiene trigger (explicit request)
+    if (lowerMessage.includes('thought hygiene') || lowerMessage.includes('clear my head') ||
+        lowerMessage.includes('mental reset') || lowerMessage.includes('clear my mind') ||
+        lowerMessage.includes('mental cache') || lowerMessage.includes('brain dump')) {
+      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+      openThoughtHygiene(user?.id);
       return;
     }
     
@@ -2676,6 +2691,7 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
       <DecenteringModal />
       <MetaReflectionModal />
       <ReframeModal />
+      <ThoughtHygieneModal />
     </div>
   );
 }
