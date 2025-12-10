@@ -26,12 +26,10 @@ interface CoRegulationPracticeProps {
 
 function CoRegulationPractice({ onComplete }: CoRegulationPracticeProps) {
   const [phase, setPhase] = useState<'intro' | 'practice' | 'reflection' | 'complete'>('intro');
-  const [timeRemaining, setTimeRemaining] = useState(180); // 3 minutes default
-  const [selectedDuration, setSelectedDuration] = useState(180);
   const [reflection, setReflection] = useState('');
   const [breathPhase, setBreathPhase] = useState<'inhale' | 'exhale'>('inhale');
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
   const breathRef = useRef<NodeJS.Timeout | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const todaysTarget = getTodaysTarget();
 
@@ -50,39 +48,16 @@ function CoRegulationPractice({ onComplete }: CoRegulationPracticeProps) {
     }
   }, [phase]);
 
-  // Timer countdown
-  useEffect(() => {
-    if (phase === 'practice' && timeRemaining > 0) {
-      timerRef.current = setInterval(() => {
-        setTimeRemaining(prev => {
-          if (prev <= 1) {
-            if (timerRef.current) clearInterval(timerRef.current);
-            setPhase('reflection');
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      return () => {
-        if (timerRef.current) clearInterval(timerRef.current);
-      };
-    }
-  }, [phase, timeRemaining]);
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const startPractice = (duration: number) => {
-    setSelectedDuration(duration);
-    setTimeRemaining(duration);
+  const startPractice = () => {
     setPhase('practice');
   };
 
   const skipToReflection = () => {
-    if (timerRef.current) clearInterval(timerRef.current);
+    if (breathRef.current) clearInterval(breathRef.current);
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
     setPhase('reflection');
   };
 
@@ -182,9 +157,9 @@ function CoRegulationPractice({ onComplete }: CoRegulationPracticeProps) {
             flexWrap: 'wrap'
           }}>
             <button
-              onClick={() => startPractice(180)}
+              onClick={() => startPractice()}
               style={{
-                padding: '0.875rem 1.75rem',
+                padding: '0.875rem 2rem',
                 fontSize: '0.9rem',
                 fontWeight: 500,
                 backgroundColor: '#ff9e19',
@@ -195,23 +170,7 @@ function CoRegulationPractice({ onComplete }: CoRegulationPracticeProps) {
                 transition: 'all 0.2s ease',
               }}
             >
-              3 Minutes
-            </button>
-            <button
-              onClick={() => startPractice(300)}
-              style={{
-                padding: '0.875rem 1.75rem',
-                fontSize: '0.9rem',
-                fontWeight: 500,
-                backgroundColor: 'transparent',
-                border: '1px solid rgba(245, 242, 236, 0.3)',
-                borderRadius: '8px',
-                color: '#F5F2EC',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              5 Minutes
+              Start Practice
             </button>
           </div>
         </div>
@@ -220,25 +179,26 @@ function CoRegulationPractice({ onComplete }: CoRegulationPracticeProps) {
       {/* PRACTICE PHASE */}
       {phase === 'practice' && (
         <div style={{ textAlign: 'center', maxWidth: '400px' }}>
-          {/* Timer */}
-          <div style={{
-            fontSize: '4rem',
-            fontWeight: 300,
-            fontFamily: "'SF Mono', 'Fira Code', monospace",
-            marginBottom: '2rem',
-            color: '#ff9e19',
-          }}>
-            {formatTime(timeRemaining)}
-          </div>
+          {/* Audio Player */}
+          <audio
+            ref={audioRef}
+            autoPlay
+            src="/audio/Relational.mp3"
+            style={{ display: 'none' }}
+            onEnded={() => {
+              if (breathRef.current) clearInterval(breathRef.current);
+              setPhase('reflection');
+            }}
+          />
 
           {/* Breath Guide */}
           <div style={{
             marginBottom: '3rem',
           }}>
             <div style={{
-              width: '120px',
-              height: '120px',
-              margin: '0 auto 1.5rem',
+              width: '150px',
+              height: '150px',
+              margin: '0 auto 2rem',
               borderRadius: '50%',
               backgroundColor: breathPhase === 'inhale' 
                 ? 'rgba(255, 158, 25, 0.2)' 
@@ -250,39 +210,39 @@ function CoRegulationPractice({ onComplete }: CoRegulationPracticeProps) {
               transition: 'all 0.5s ease',
               transform: breathPhase === 'inhale' ? 'scale(1.1)' : 'scale(1)',
             }}>
-              <span style={{ fontSize: '2rem' }}>💞</span>
+              <span style={{ fontSize: '3rem' }}>💞</span>
             </div>
+            
+            {/* Breath Instructions */}
             <div style={{
-              fontSize: '1.25rem',
-              fontWeight: 500,
-              color: '#ff9e19',
-              marginBottom: '0.5rem',
+              fontSize: '1.1rem',
+              color: 'rgba(245, 242, 236, 0.9)',
+              lineHeight: 1.8,
+              marginBottom: '2rem',
             }}>
-              {breathPhase === 'inhale' ? 'Inhale...' : 'Exhale...'}
-            </div>
-            <div style={{
-              fontSize: '1rem',
-              color: 'rgba(245, 242, 236, 0.8)',
-              fontStyle: 'italic',
-            }}>
-              {breathPhase === 'inhale' ? '"Be blessed"' : '"I wish you peace and love"'}
+              <div style={{ marginBottom: '0.5rem' }}>
+                <span style={{ color: '#ff9e19', fontWeight: 500 }}>Inhale</span> — "Be Blessed"
+              </div>
+              <div>
+                <span style={{ color: '#ff9e19', fontWeight: 500 }}>Exhale</span> — "I wish you peace and love"
+              </div>
             </div>
           </div>
 
           {/* Target Reminder */}
           <div style={{
-            fontSize: '0.85rem',
-            color: 'rgba(245, 242, 236, 0.5)',
+            fontSize: '0.9rem',
+            color: 'rgba(245, 242, 236, 0.6)',
             marginBottom: '2rem',
           }}>
-            Focus: {todaysTarget.target}
+            <span style={{ color: 'rgba(245, 242, 236, 0.4)' }}>Focus:</span> {todaysTarget.target}
           </div>
 
-          {/* Skip Button */}
+          {/* End Early Button */}
           <button
             onClick={skipToReflection}
             style={{
-              padding: '0.5rem 1rem',
+              padding: '0.5rem 1.25rem',
               fontSize: '0.8rem',
               backgroundColor: 'transparent',
               border: '1px solid rgba(245, 242, 236, 0.2)',
