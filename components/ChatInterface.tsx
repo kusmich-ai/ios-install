@@ -28,8 +28,32 @@ import {
   startNewFlowBlockSprint,
   getCurrentMicroActionSprint,
   getCurrentFlowBlockSprint,
-  loadActiveSprintsForUser
+  loadActiveSprintsForUser,
+  // Sprint renewal functions
+  continueMicroActionSprint,
+  continueFlowBlockSprint,
+  completeMicroActionSprint,
+  completeFlowBlockSprint
 } from '@/lib/sprintDatabase';
+
+// Sprint Renewal utilities
+import {
+  SprintRenewalState,
+  initialSprintRenewalState,
+  isIdentitySprintComplete,
+  isFlowBlockSprintComplete,
+  getIdentitySprintCompleteMessage,
+  getFlowBlockSprintCompleteMessage,
+  parseRenewalResponse,
+  getIdentityContinueMessage,
+  getFlowBlockContinueMessage,
+  getIdentityEvolvePrompt,
+  getFlowBlockEvolvePrompt,
+  getIdentityPivotMessage,
+  getFlowBlockPivotMessage,
+  identityRenewalQuickReplies,
+  flowBlockRenewalQuickReplies
+} from '@/lib/sprintRenewal';
 
 // ============================================
 // MICRO-ACTION SETUP IMPORTS (100% API version)
@@ -604,7 +628,10 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   // ============================================
   const [microActionState, setMicroActionState] = useState<MicroActionState>(initialMicroActionState);
   const [awaitingMicroActionStart, setAwaitingMicroActionStart] = useState(false);
-  const [awaitingSprintRenewal, setAwaitingSprintRenewal] = useState(false);
+  
+  // Sprint Renewal State (Continue/Evolve/Pivot flow)
+  const [sprintRenewalState, setSprintRenewalState] = useState<SprintRenewalState>(initialSprintRenewalState);
+  const hasCheckedSprintCompletion = useRef<boolean>(false);
   
   // ============================================
   // FLOW BLOCK SETUP STATE (100% API version)
@@ -858,6 +885,94 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
     
     loadMicroActionStatus();
   }, [user?.id]);
+
+  // ============================================
+  // CHECK FOR COMPLETED SPRINTS (Day 22+)
+  // ============================================
+
+  useEffect(() => {
+    // Only check once per session
+    if (hasCheckedSprintCompletion.current || !user?.id || !progress || progressLoading) return;
+    
+    const extendedProgress = progress as any;
+    
+    // Check if identity sprint is complete (Day 22+)
+    const identitySprintDay = extendedProgress?.identitySprintDay;
+    const currentIdentity = extendedProgress?.currentIdentity;
+    const currentMicroAction = extendedProgress?.microAction;
+    
+    if (isIdentitySprintComplete(identitySprintDay) && currentIdentity) {
+      hasCheckedSprintCompletion.current = true;
+      
+      devLog('[SprintRenewal]', 'Identity sprint complete, Day:', identitySprintDay);
+      
+      // Trigger identity sprint renewal flow
+      setSprintRenewalState({
+        isActive: true,
+        renewalType: 'identity',
+        selectedOption: null,
+        completedSprintInfo: {
+          type: 'identity',
+          sprintNumber: extendedProgress?.identitySprintNumber || 1,
+          identity: currentIdentity,
+          microAction: currentMicroAction
+        },
+        awaitingEvolutionInput: false
+      });
+      
+      // Show renewal message after a short delay
+      setTimeout(() => {
+        const message = getIdentitySprintCompleteMessage(
+          currentIdentity,
+          currentMicroAction || 'your daily proof',
+          extendedProgress?.identitySprintNumber || 1
+        );
+        setMessages(prev => [...prev, { role: 'assistant', content: message }]);
+      }, 1500);
+      
+      return; // Don't check flow block if identity needs renewal first
+    }
+    
+    // Check if flow block sprint is complete (Day 22+)
+    const flowBlockSprintDay = extendedProgress?.flowBlockSprintDay;
+    const hasFlowBlockConfig = extendedProgress?.hasFlowBlockConfig;
+    
+    if (isFlowBlockSprintComplete(flowBlockSprintDay) && hasFlowBlockConfig) {
+      hasCheckedSprintCompletion.current = true;
+      
+      devLog('[SprintRenewal]', 'Flow Block sprint complete, Day:', flowBlockSprintDay);
+      
+      // Load flow block sprint details for the message
+      const loadFlowBlockDetails = async () => {
+        const sprint = await getCurrentFlowBlockSprint(user.id);
+        
+        setSprintRenewalState({
+          isActive: true,
+          renewalType: 'flow_block',
+          selectedOption: null,
+          completedSprintInfo: {
+            type: 'flow_block',
+            sprintNumber: sprint?.sprint_number || 1,
+            weeklyMap: sprint?.weekly_map,
+            domains: sprint?.domains || [],
+            focusType: sprint?.focus_type
+          },
+          awaitingEvolutionInput: false
+        });
+        
+        // Show renewal message
+        setTimeout(() => {
+          const message = getFlowBlockSprintCompleteMessage(
+            sprint?.domains || [],
+            sprint?.sprint_number || 1
+          );
+          setMessages(prev => [...prev, { role: 'assistant', content: message }]);
+        }, 1500);
+      };
+      
+      loadFlowBlockDetails();
+    }
+  }, [user?.id, progress, progressLoading]);
 
   // ============================================
   // CHECK FOR UNLOCK ELIGIBILITY
@@ -1247,6 +1362,252 @@ extractedAction: extracted.microAction,
     devLog('[MicroAction]', 'Setup cancelled');
     setMicroActionState(initialMicroActionState);
   }, []);
+
+  // ============================================
+  // SPRINT RENEWAL HANDLERS (Continue/Evolve/Pivot)
+  // ============================================
+  
+  const handleIdentityRenewalOption = async (option: 'continue' | 'evolve' | 'pivot') => {
+    const info = sprintRenewalState.completedSprintInfo;
+    
+    if (option === 'continue') {
+      // Continue with same identity - just reset the sprint
+      const result = await continueMicroActionSprint(user.id);
+      
+      if (result.success) {
+        const message = getIdentityContinueMessage(
+          info?.identity || 'your identity',
+          info?.microAction || 'your micro-action'
+        );
+        
+        setTimeout(() => {
+          setMessages(prev => [...prev, { role: 'assistant', content: message }]);
+        }, 300);
+        
+        // Reset renewal state
+        setSprintRenewalState(initialSprintRenewalState);
+        
+        // Refresh progress
+        if (refetchProgress) await refetchProgress();
+      } else {
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: "There was an error continuing your sprint. Let's try again."
+        }]);
+      }
+      
+    } else if (option === 'evolve') {
+      // Ask for evolution input
+      const message = getIdentityEvolvePrompt(info?.identity || 'your previous identity');
+      
+      setTimeout(() => {
+        setMessages(prev => [...prev, { role: 'assistant', content: message }]);
+      }, 300);
+      
+      setSprintRenewalState(prev => ({
+        ...prev,
+        selectedOption: 'evolve',
+        awaitingEvolutionInput: true
+      }));
+      
+    } else if (option === 'pivot') {
+      // Start fresh micro-action setup
+      const message = getIdentityPivotMessage();
+      
+      setTimeout(() => {
+        setMessages(prev => [...prev, { role: 'assistant', content: message }]);
+      }, 300);
+      
+      // Mark current sprint as complete
+      await completeMicroActionSprint(user.id);
+      
+      // Reset renewal state and start micro-action setup
+      setSprintRenewalState(initialSprintRenewalState);
+      
+      // Start the micro-action setup flow
+      setMicroActionState(prev => ({
+        ...prev,
+        isActive: true,
+        conversationHistory: []
+      }));
+    }
+  };
+
+  const handleFlowBlockRenewalOption = async (option: 'continue' | 'evolve' | 'pivot') => {
+    
+    if (option === 'continue') {
+      // Continue with same configuration
+      const result = await continueFlowBlockSprint(user.id);
+      
+      if (result.success) {
+        const message = getFlowBlockContinueMessage();
+        
+        setTimeout(() => {
+          setMessages(prev => [...prev, { role: 'assistant', content: message }]);
+        }, 300);
+        
+        setSprintRenewalState(initialSprintRenewalState);
+        
+        if (refetchProgress) await refetchProgress();
+      } else {
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: "There was an error continuing your sprint. Let's try again."
+        }]);
+      }
+      
+    } else if (option === 'evolve') {
+      // Ask for evolution input
+      const message = getFlowBlockEvolvePrompt();
+      
+      setTimeout(() => {
+        setMessages(prev => [...prev, { role: 'assistant', content: message }]);
+      }, 300);
+      
+      setSprintRenewalState(prev => ({
+        ...prev,
+        selectedOption: 'evolve',
+        awaitingEvolutionInput: true
+      }));
+      
+    } else if (option === 'pivot') {
+      // Start fresh flow block setup
+      const message = getFlowBlockPivotMessage();
+      
+      setTimeout(() => {
+        setMessages(prev => [...prev, { role: 'assistant', content: message }]);
+      }, 300);
+      
+      // Mark current sprint as complete
+      await completeFlowBlockSprint(user.id);
+      
+      // Reset renewal state and start flow block setup
+      setSprintRenewalState(initialSprintRenewalState);
+      
+      // Start the flow block setup flow
+      setFlowBlockState(prev => ({
+        ...prev,
+        isActive: true,
+        conversationHistory: []
+      }));
+    }
+  };
+
+  const handleEvolutionInput = async (userInput: string) => {
+    if (sprintRenewalState.renewalType === 'identity') {
+      // For identity evolution, we need to run through a mini-setup
+      // to get the evolved identity and new micro-action
+      
+      const previousIdentity = sprintRenewalState.completedSprintInfo?.identity || 'previous identity';
+      
+      // Mark current sprint as complete
+      await completeMicroActionSprint(user.id);
+      
+      // Reset renewal state and start micro-action setup with evolution context
+      setSprintRenewalState(initialSprintRenewalState);
+      
+      // Build evolution context for the API
+      const evolutionContext = `The user is evolving their identity from "${previousIdentity}". They want to evolve it to: "${userInput}". Help them refine the evolved identity statement and design a new micro-action that proves this evolved identity. Use the 4-C filter naturally (Concrete, Coherent, Challenging, Chunked) but don't announce it. Then help them design the ACE micro-action (Atomic, Congruent, Emotionally Clean).`;
+      
+      // Start micro-action setup with context
+      setMicroActionState(prev => ({
+        ...prev,
+        isActive: true,
+        conversationHistory: [
+          { role: 'user', content: evolutionContext }
+        ]
+      }));
+      
+      // Call the API to continue the evolution conversation
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: buildAPIMessages([], evolutionContext),
+            context: 'micro_action_setup'
+          })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          const assistantResponse = cleanResponseForDisplay(data.response || data.content || '');
+          
+          setMicroActionState(prev => ({
+            ...prev,
+            conversationHistory: [
+              ...prev.conversationHistory,
+              { role: 'assistant', content: assistantResponse }
+            ]
+          }));
+          
+          setTimeout(() => {
+            setMessages(prev => [...prev, { role: 'assistant', content: assistantResponse }]);
+          }, 300);
+        }
+      } catch (error) {
+        console.error('[SprintRenewal] Evolution API error:', error);
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: "Let's continue refining your evolved identity. What would the new identity statement be? Try phrasing it as 'I am someone who...'"
+        }]);
+      }
+      
+    } else if (sprintRenewalState.renewalType === 'flow_block') {
+      // For flow block evolution, process the modification request
+      
+      // Mark current sprint as complete
+      await completeFlowBlockSprint(user.id);
+      
+      // Reset renewal state and start flow block setup with evolution context
+      setSprintRenewalState(initialSprintRenewalState);
+      
+      const evolutionContext = `The user is evolving their Flow Block system. They want to make these changes: "${userInput}". Help them refine their Flow Menu and Weekly Map based on this feedback. Skip the full discovery phase and focus on the specific changes they want to make. Ask clarifying questions if needed, then help them finalize the updated configuration.`;
+      
+      // Start flow block setup with context
+      setFlowBlockState(prev => ({
+        ...prev,
+        isActive: true,
+        conversationHistory: [
+          { role: 'user', content: evolutionContext }
+        ]
+      }));
+      
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: buildFlowBlockAPIMessages([], evolutionContext),
+            context: 'flow_block_setup'
+          })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          const assistantResponse = cleanFlowBlockResponseForDisplay(data.response || data.content || '');
+          
+          setFlowBlockState(prev => ({
+            ...prev,
+            conversationHistory: [
+              ...prev.conversationHistory,
+              { role: 'assistant', content: assistantResponse }
+            ]
+          }));
+          
+          setTimeout(() => {
+            setMessages(prev => [...prev, { role: 'assistant', content: assistantResponse }]);
+          }, 300);
+        }
+      } catch (error) {
+        console.error('[SprintRenewal] Flow block evolution error:', error);
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: "Let's work on those changes. Which specific aspect of your Flow Block setup would you like to modify first — domains, tasks, schedule, or duration?"
+        }]);
+      }
+    }
+  };
 
   // ============================================
   // FLOW BLOCK SETUP HANDLERS
@@ -2046,29 +2407,49 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
       return;
     }
     
-    // 6. Awaiting Sprint Renewal confirmation
-    if (awaitingSprintRenewal) {
-      const isAffirmative = ['yes', 'yeah', 'yep', 'sure', 'ok', 'okay', 'new', 'different', 'change'].some(
-        word => userMessage.toLowerCase().includes(word)
-      );
-      
+    // 6. Sprint Renewal Flow (Continue/Evolve/Pivot)
+    if (sprintRenewalState.isActive) {
       setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+      setLoading(true);
       
-      if (isAffirmative) {
-        setAwaitingSprintRenewal(false);
-        // Reset micro-action state for new sprint
-        setMicroActionState(prev => ({
-          ...prev,
-          isComplete: false,
-          sprintNumber: prev.sprintNumber + 1
-        }));
-        startMicroActionSetup();
-      } else {
-        setAwaitingSprintRenewal(false);
-        setMessages(prev => [...prev, { 
-          role: 'assistant', 
-          content: "Got it. Continue with your current identity. Remember: consistency is what rewires the nervous system." 
+      try {
+        // If awaiting evolution input, process it
+        if (sprintRenewalState.awaitingEvolutionInput) {
+          await handleEvolutionInput(userMessage);
+          setLoading(false);
+          return;
+        }
+        
+        // Parse which option they chose
+        const selectedOption = parseRenewalResponse(userMessage);
+        
+        if (!selectedOption) {
+          // Didn't understand - ask again
+          setTimeout(() => {
+            setMessages(prev => [...prev, {
+              role: 'assistant',
+              content: "I didn't catch that. Would you like to **Continue** (same identity), **Evolve** (stretch it forward), or **Pivot** (new direction)?"
+            }]);
+            setLoading(false);
+          }, 300);
+          return;
+        }
+        
+        // Handle the selected option
+        if (sprintRenewalState.renewalType === 'identity') {
+          await handleIdentityRenewalOption(selectedOption);
+        } else if (sprintRenewalState.renewalType === 'flow_block') {
+          await handleFlowBlockRenewalOption(selectedOption);
+        }
+        
+        setLoading(false);
+      } catch (error) {
+        console.error('[SprintRenewal] Error:', error);
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: "Something went wrong. Let's try again — Continue, Evolve, or Pivot?"
         }]);
+        setLoading(false);
       }
       return;
     }
@@ -2574,6 +2955,38 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
                 >
                   {currentQuickReply.buttonLabel}
                 </button>
+              </div>
+            )}
+            
+            {/* Sprint Renewal Quick Replies (Continue/Evolve/Pivot) */}
+            {sprintRenewalState.isActive && !sprintRenewalState.awaitingEvolutionInput && !loading && (
+              <div className="flex justify-center gap-3 flex-wrap">
+                {(sprintRenewalState.renewalType === 'identity' 
+                  ? identityRenewalQuickReplies 
+                  : flowBlockRenewalQuickReplies
+                ).map((reply) => (
+                  <button
+                    key={reply.id}
+                    onClick={() => {
+                      // Directly trigger the option
+                      const fakeMessage = reply.text.toLowerCase();
+                      setMessages(prev => [...prev, { role: 'user', content: reply.text }]);
+                      setLoading(true);
+                      
+                      if (sprintRenewalState.renewalType === 'identity') {
+                        handleIdentityRenewalOption(reply.id as 'continue' | 'evolve' | 'pivot')
+                          .finally(() => setLoading(false));
+                      } else {
+                        handleFlowBlockRenewalOption(reply.id as 'continue' | 'evolve' | 'pivot')
+                          .finally(() => setLoading(false));
+                      }
+                    }}
+                    className="px-5 py-2.5 bg-[#1a1a1a] border border-[#333] hover:border-[#ff9e19] hover:bg-[#252525] text-white font-medium rounded-xl transition-all"
+                    title={reply.label}
+                  >
+                    {reply.text}
+                  </button>
+                ))}
               </div>
             )}
             
