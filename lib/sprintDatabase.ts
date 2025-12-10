@@ -1,7 +1,7 @@
 // ============================================
 // lib/sprintDatabase.ts
 // Sprint tracking for Identity and Flow Block 21-day cycles
-// Version 2.0 - Uses correct column names for Supabase tables
+// Version 2.1 - Added continue sprint functions for renewal flow
 // ============================================
 
 import { createClient } from '@/lib/supabase-client';
@@ -39,6 +39,8 @@ export interface ActiveSprints {
     dayOfSprint: number;
     weeklyMap: any | null;
     preferences: any | null;
+    domains: string[] | null;
+    focusType: string | null;
     startDate: string | null;
   } | null;
 }
@@ -103,10 +105,10 @@ export async function startNewMicroActionSprint(
       .insert({
         user_id: userId,
         sprint_number: nextSprintNumber,
-        identity_statement: identityStatement,  // CORRECT column name
+        identity_statement: identityStatement,
         micro_action: microAction,
-        start_date: today,                      // CORRECT column name
-        completion_status: 'active'             // CORRECT column name
+        start_date: today,
+        completion_status: 'active'
       })
       .select()
       .single();
@@ -130,6 +132,80 @@ export async function startNewMicroActionSprint(
     
   } catch (error) {
     console.error('[SprintDB] startNewMicroActionSprint failed:', error);
+    return {
+      success: false,
+      sprintNumber: 0,
+      startDate: '',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}
+
+/**
+ * Continue an existing Micro-Action sprint with the SAME identity
+ * Used for "Continue" option in sprint renewal
+ * - Marks current sprint as completed
+ * - Creates new sprint with same identity/action, reset start date
+ */
+export async function continueMicroActionSprint(
+  userId: string
+): Promise<MicroActionSprintResult> {
+  const supabase = createClient();
+  const today = new Date().toISOString().split('T')[0];
+  
+  try {
+    // 1. Get current active sprint
+    const { data: currentSprint, error: fetchError } = await supabase
+      .from('identity_sprints')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('completion_status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+    
+    if (fetchError || !currentSprint) {
+      throw new Error('No active sprint found to continue');
+    }
+    
+    // 2. Mark current sprint as completed
+    await supabase
+      .from('identity_sprints')
+      .update({ 
+        completion_status: 'completed',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', currentSprint.id);
+    
+    // 3. Create new sprint with same identity
+    const nextSprintNumber = currentSprint.sprint_number + 1;
+    
+    const { error: insertError } = await supabase
+      .from('identity_sprints')
+      .insert({
+        user_id: userId,
+        sprint_number: nextSprintNumber,
+        identity_statement: currentSprint.identity_statement,
+        micro_action: currentSprint.micro_action,
+        start_date: today,
+        completion_status: 'active'
+      });
+    
+    if (insertError) throw insertError;
+    
+    console.log('[SprintDB] Micro-action sprint continued:', {
+      sprintNumber: nextSprintNumber,
+      identity: currentSprint.identity_statement
+    });
+    
+    return {
+      success: true,
+      sprintNumber: nextSprintNumber,
+      startDate: today
+    };
+    
+  } catch (error) {
+    console.error('[SprintDB] continueMicroActionSprint failed:', error);
     return {
       success: false,
       sprintNumber: 0,
@@ -289,6 +365,82 @@ export async function startNewFlowBlockSprint(
 }
 
 /**
+ * Continue an existing Flow Block sprint with the SAME configuration
+ * Used for "Continue" option in sprint renewal
+ * - Marks current sprint as completed
+ * - Creates new sprint with same weekly_map/preferences, reset start date
+ */
+export async function continueFlowBlockSprint(
+  userId: string
+): Promise<FlowBlockSprintResult> {
+  const supabase = createClient();
+  const today = new Date().toISOString().split('T')[0];
+  
+  try {
+    // 1. Get current active sprint
+    const { data: currentSprint, error: fetchError } = await supabase
+      .from('flow_block_sprints')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('completion_status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+    
+    if (fetchError || !currentSprint) {
+      throw new Error('No active sprint found to continue');
+    }
+    
+    // 2. Mark current sprint as completed
+    await supabase
+      .from('flow_block_sprints')
+      .update({ 
+        completion_status: 'completed',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', currentSprint.id);
+    
+    // 3. Create new sprint with same configuration
+    const nextSprintNumber = currentSprint.sprint_number + 1;
+    
+    const { error: insertError } = await supabase
+      .from('flow_block_sprints')
+      .insert({
+        user_id: userId,
+        sprint_number: nextSprintNumber,
+        weekly_map: currentSprint.weekly_map,
+        preferences: currentSprint.preferences,
+        domains: currentSprint.domains,
+        focus_type: currentSprint.focus_type,
+        start_date: today,
+        completion_status: 'active'
+      });
+    
+    if (insertError) throw insertError;
+    
+    console.log('[SprintDB] Flow block sprint continued:', {
+      sprintNumber: nextSprintNumber,
+      domains: currentSprint.domains
+    });
+    
+    return {
+      success: true,
+      sprintNumber: nextSprintNumber,
+      startDate: today
+    };
+    
+  } catch (error) {
+    console.error('[SprintDB] continueFlowBlockSprint failed:', error);
+    return {
+      success: false,
+      sprintNumber: 0,
+      startDate: '',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}
+
+/**
  * Get the current active Flow Block sprint for a user
  */
 export async function getCurrentFlowBlockSprint(userId: string) {
@@ -394,6 +546,8 @@ export async function loadActiveSprintsForUser(userId: string): Promise<ActiveSp
       dayOfSprint: flowBlockDayOfSprint,
       weeklyMap: flowBlockSprint.weekly_map,
       preferences: flowBlockSprint.preferences,
+      domains: flowBlockSprint.domains,
+      focusType: flowBlockSprint.focus_type,
       startDate: flowBlockSprint.start_date
     } : null
   };
