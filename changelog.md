@@ -4,6 +4,79 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 
 ---
 
+## [0.20.0] - 2025-12-10
+
+### Added - Phase 1: Sprint Renewal System
+- **21-Day Sprint Renewal Flow**
+  - Automatic detection when users reach Day 22+ of Identity or Flow Block sprints
+  - Three renewal options: Continue (same focus), Evolve (deepen), Pivot (new direction)
+  - Sprint completion tracking in database (`completion_status: 'completed'`)
+  - New sprint creation with incremented `sprint_number`
+  - Seamless conversation flow for renewal decisions
+
+- **New Files Created**
+  - `/lib/sprintRenewal.ts` - Sprint detection and renewal logic
+  - `/lib/sprintDatabase.ts` - Database operations for sprint management
+
+- **Database Updates**
+  - `identity_sprints.completion_status` transitions: 'active' → 'completed'
+  - `flow_block_sprints.completion_status` transitions: 'active' → 'completed'
+  - Sprint history preserved for future analytics
+
+### Added - Phase 2: Auto-Unlock Notification
+- **Unlock Eligibility Detection**
+  - Automatic notification when user meets stage unlock criteria
+  - Uses `progress.unlockEligible` from existing unlock checker
+  - Dynamic stage intro messages for Stages 2-6
+  - "Yes, unlock Stage X" button triggers stage advancement
+
+- **Stage Introduction Messages**
+  - Stage 2: Embodied Awareness intro (Somatic Flow)
+  - Stage 3: Identity Mode intro (Morning Micro-Action)
+  - Stage 4: Flow Mode intro (Flow Block)
+  - Stage 5: Relational Coherence intro (Co-Regulation)
+  - Stage 6: Integration intro (Nightly Debrief)
+
+### Added - Phase 3: Stage 5-6 Practice Modals
+- **Co-Regulation Practice Modal** (`/components/CoRegulationModal.tsx`)
+  - Full-screen modal matching existing ritual pattern
+  - 5-day rotation system (Friend → Neutral → Self → Difficult → All beings)
+  - Day calculated from day-of-year for universal consistency
+  - Audio-driven practice (`/audio/Relational.mp3`)
+  - Visual breath guide with inhale/exhale animation
+  - Static instructions: "Inhale — Be Blessed" / "Exhale — I wish you peace and love"
+  - Focus target display, End Early button
+  - Optional reflection phase, auto-logging on completion
+  - `useCoRegulation()` hook for easy integration
+
+- **Nightly Debrief Modal** (`/components/NightlyDebriefModal.tsx`)
+  - Full-screen modal for evening integration practice
+  - 4 phases: intro → breathe (3 cycles) → reflect → complete
+  - Core question: "What did reality teach me today?"
+  - Lesson capture with styled quote display
+  - Auto-logging with lesson text stored in notes
+  - Evening reminder logic (after 6pm, Stage 6+ only)
+  - `useNightlyDebrief()` hook for easy integration
+
+- **Updated Components**
+  - `ToolsSidebar.tsx` - Routes Co-Reg and Nightly Debrief to modals
+  - `FloatingActionButton.tsx` - Mobile modal integration
+  - `ChatInterface.tsx` - Removed chat-based handlers, kept evening reminder
+
+### Changed
+- **Practice Flow Architecture**
+  - Stage 5-6 practices now use modal pattern (consistent with Stage 1-2 rituals)
+  - Removed chat-based practice flows for Co-Regulation and Nightly Debrief
+  - Sidebar shows "Start Practice" when incomplete, "Run Again" + ✓ when complete
+  - Added timing hints: "3 min • Evening" and "2 min • Before sleep"
+
+### Fixed
+- **Unlock Detection**
+  - Fixed property reference: `progress.unlockProgress.isEligible` → `progress.unlockEligible`
+  - Ensures unlock notifications trigger correctly
+
+---
+
 ## [0.19.1] - 2025-12-04
 
 ### Fixed
@@ -456,9 +529,9 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 
 ### Technical Details
 - **Database table references corrected:**
-  - `screening_responses` - verified exists ✅
-  - `legal_acceptances` - verified exists ✅
-  - `baseline_assessments` - corrected from `baseline_scores` ✅
+  - `screening_responses` - verified exists ✓
+  - `legal_acceptances` - verified exists ✓
+  - `baseline_assessments` - corrected from `baseline_scores` ✓
 
 - **Middleware config:**
   - Matcher pattern excludes static files and images
@@ -1065,10 +1138,13 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 ### Current Development Stage
 - Assessment orchestrator: Complete and styled
 - Stage 1: Fully implemented with practice tracking
-- Stage 2: Architecture complete, ready for testing
+- Stage 2: Fully implemented with Somatic Flow
 - Stage 3: Fully implemented with Identity Installation + Two-Stage Extraction
 - Stage 4: Fully implemented with Flow Block + Two-Stage Extraction
-- Stage 5-7: Pending implementation
+- Stage 5: Fully implemented with Co-Regulation modal + 5-day rotation
+- Stage 6: Fully implemented with Nightly Debrief modal + evening reminder
+- Stage 7: Pending implementation (manual unlock/application system)
+- Sprint Renewal: Complete for Identity and Flow Block sprints
 - Chat interface: Integrated with baseline data + hybrid template system
 - Supabase storage: Configured and functional
 - Mobile responsive: Complete with drawer navigation
@@ -1079,6 +1155,7 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 - [x] Provide Resonance Breathing video link (www.unbecoming.app/breathe)
 - [ ] Provide Awareness Rep audio link (3 mins) - placeholder exists
 - [ ] Provide Somatic Flow video link
+- [x] Co-Regulation audio (`/audio/Relational.mp3`) - integrated
 
 ### Pending Development Tasks
 
@@ -1093,7 +1170,7 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 - [ ] Stage unlock notification templates
 - [ ] Progress summary templates
 
-#### Option B: Data Tracking/Storage System
+#### Data Tracking/Storage System
 - [x] Define storage schema for all user data
 - [x] Build adherence calculation logic
 - [x] Create delta tracking system
@@ -1101,16 +1178,17 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 - [x] Weekly delta check-in automation
 - [x] Two-stage extraction for identity sprints
 - [x] Two-stage extraction for flow block sprints
+- [x] Sprint renewal system (Continue/Evolve/Pivot)
 - [ ] Design unlock eligibility checker (auto-evaluation)
 
-#### Option C: Edge Cases & Troubleshooting
+#### Edge Cases & Troubleshooting
 - [ ] What happens when users miss days?
 - [ ] How to handle resistance patterns?
 - [ ] Build regression/reset protocols
 - [ ] Manual override logic
 - [ ] System recovery from breaks (30+ days)
 
-#### Option D: Coach Personality System & Templates
+#### Coach Personality System & Templates
 - [ ] Expand voice examples for different scenarios
 - [ ] Build response templates for common situations
 - [ ] Design intervention scripts for resistance
@@ -1120,8 +1198,8 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 - [ ] **Integration of coach with identity progression tracking**
 
 #### Stage 5-7 Implementation
-- [ ] Intrapersonal Co-Regulation flow (Stage 5)
-- [ ] Nightly Debrief system (Stage 6)
+- [x] Co-Regulation Practice modal (Stage 5) - COMPLETE v0.20.0
+- [x] Nightly Debrief modal (Stage 6) - COMPLETE v0.20.0
 - [ ] Stage 7 application/qualification system
 
 #### Monetization & Access Control
@@ -1170,12 +1248,12 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 ### Database Schema (Key Tables)
 - `user_progress` - Stage, adherence, streaks, ritual_intro_completed, current_identity
 - `baseline_assessments` - Initial 4-domain scores, REwired Index
-- `practice_logs` - Daily ritual completion records
+- `practice_logs` - Daily ritual completion records (now includes nightly_debrief notes)
 - `weekly_deltas` - Weekly check-in scores
 - `screening_responses` - Medical/psychiatric screening
 - `legal_acceptances` - Terms and consent records
-- `identity_sprints` - 21-day Micro-Action sprint tracking (NEW)
-- `flow_block_sprints` - Flow Block sprint tracking (NEW)
+- `identity_sprints` - 21-day Micro-Action sprint tracking
+- `flow_block_sprints` - Flow Block sprint tracking
 
 ---
 
