@@ -7,6 +7,8 @@ import { getStagePractices, getUnlockedOnDemandTools } from '@/app/config/stages
 import type { UserProgress } from '@/app/hooks/useUserProgress';
 import { useResonanceBreathing } from '@/components/ResonanceModal';
 import { useAwarenessRep } from '@/components/AwarenessRepModal';
+import { useCoRegulation } from '@/components/CoRegulationModal';
+import { useNightlyDebrief } from '@/components/NightlyDebriefModal';
 
 interface FloatingActionButtonProps {
   progress: UserProgress;
@@ -45,6 +47,8 @@ export default function FloatingActionButton({
   // Initialize modal hooks
   const { open: openResonance, Modal: ResonanceModal } = useResonanceBreathing();
   const { open: openAwarenessRep, Modal: AwarenessRepModal } = useAwarenessRep();
+  const { open: openCoRegulation, Modal: CoRegulationModal } = useCoRegulation();
+  const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebrief();
 
   const currentStagePractices = getStagePractices(progress.currentStage);
   const unlockedTools = getUnlockedOnDemandTools(progress.currentStage);
@@ -67,6 +71,16 @@ export default function FloatingActionButton({
       setIsOpen(false);
     } else if (practiceId === 'awareness_rep') {
       openAwarenessRep();
+      setIsOpen(false);
+    } else if (practiceId === 'co_regulation') {
+      openCoRegulation();
+      setIsOpen(false);
+    } else if (practiceId === 'nightly_debrief') {
+      openNightlyDebrief();
+      setIsOpen(false);
+    } else if (practiceId === 'micro_action' || practiceId === 'flow_block') {
+      // Special practices route to tool click handler for guided flows
+      onToolClick(practiceId);
       setIsOpen(false);
     } else {
       // Other practices go to chat for guidance
@@ -158,6 +172,12 @@ export default function FloatingActionButton({
       <AwarenessRepModal 
         onComplete={() => handleModalComplete('awareness_rep', 'Awareness Rep')} 
       />
+      <CoRegulationModal 
+        onComplete={() => handleModalComplete('co_regulation', 'Co-Regulation Practice')} 
+      />
+      <NightlyDebriefModal 
+        onComplete={() => handleModalComplete('nightly_debrief', 'Nightly Debrief')} 
+      />
 
       {/* Overlay */}
       {isOpen && (
@@ -173,21 +193,19 @@ export default function FloatingActionButton({
           <div className="p-4">
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold text-white">Tools</h3>
-                {isRefreshing && (
-                  <RefreshCw className="w-3 h-3 text-[#ff9e19] animate-spin" />
-                )}
+              <div>
+                <h3 className="text-lg font-bold text-white">Tools</h3>
+                <p className="text-xs text-gray-400">Stage {progress.currentStage}</p>
               </div>
               <button
                 onClick={() => setIsOpen(false)}
-                className="text-gray-400 hover:text-white"
+                className="p-1 text-gray-400 hover:text-white"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Today's Progress */}
+            {/* Progress Summary */}
             <div className={`mb-4 p-3 rounded-lg border ${
               allComplete 
                 ? 'bg-green-500/10 border-green-500/30' 
@@ -205,23 +223,6 @@ export default function FloatingActionButton({
                   style={{ width: `${(completedCount / totalCount) * 100}%` }}
                 />
               </div>
-              {allComplete && (
-                <p className="text-xs text-green-400 mt-2 text-center">All rituals complete! 🎉</p>
-              )}
-            </div>
-
-            {/* Adherence Stats */}
-            <div className="mb-4 p-3 rounded-lg bg-[#0a0a0a] border border-gray-700">
-              <div className="grid grid-cols-2 gap-3 text-center">
-                <div>
-                  <div className="text-lg font-bold text-[#ff9e19]">{progress.adherencePercentage}%</div>
-                  <div className="text-xs text-gray-500">14-Day Adherence</div>
-                </div>
-                <div>
-                  <div className="text-lg font-bold text-[#ff9e19]">{progress.consecutiveDays}</div>
-                  <div className="text-xs text-gray-500">Day Streak</div>
-                </div>
-              </div>
             </div>
 
             {/* Error Display */}
@@ -231,7 +232,7 @@ export default function FloatingActionButton({
               </div>
             )}
 
-            {/* DAILY RITUALS */}
+            {/* Daily Rituals */}
             <div className="mb-4">
               <div className="text-xs font-semibold text-gray-400 mb-2">
                 DAILY RITUALS
@@ -242,16 +243,17 @@ export default function FloatingActionButton({
                   const isCompleted = status === 'completed';
                   const isCompleting = completing === practice.id;
                   
-// Special handling for Micro-Action
-const isMicroAction = practice.id === 'micro_action';
-const hasIdentity = isMicroAction && !!(progress.currentIdentity);
-const currentIdentity = progress.currentIdentity || '';
-const identityDay = progress.identitySprintDay;
+                  // Special handling for Micro-Action
+                  const isMicroAction = practice.id === 'micro_action';
+                  const hasIdentity = isMicroAction && !!(progress.currentIdentity);
                   
                   // Special handling for Flow Block
                   const isFlowBlock = practice.id === 'flow_block';
                   const hasFlowBlockConfig = isFlowBlock && !!(progress.hasFlowBlockConfig);
-                  const flowBlockDay = progress.flowBlockSprintDay;
+                  
+                  // Special handling for Co-Regulation and Nightly Debrief
+                  const isCoRegulation = practice.id === 'co_regulation';
+                  const isNightlyDebrief = practice.id === 'nightly_debrief';
                   
                   return (
                     <div
@@ -262,51 +264,31 @@ const identityDay = progress.identitySprintDay;
                           : 'bg-[#0a0a0a] border border-gray-700'
                       }`}
                     >
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex items-center gap-2 mb-2">
                         <span className="text-lg">{practice.icon}</span>
-                        <div className="flex items-center gap-2 flex-1">
-                          <span className="text-xs">{getStatusIcon(status)}</span>
-                          <span className={`text-sm font-medium ${
-                            isCompleted ? 'text-green-400' : 'text-white'
-                          }`}>
-                            {practice.name}
-                          </span>
-                        </div>
+                        <span className="text-xs">{getStatusIcon(status)}</span>
+                        <span className={`text-sm font-medium flex-1 ${
+                          isCompleted ? 'text-green-400' : 'text-white'
+                        }`}>
+                          {practice.shortName}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {isCoRegulation ? 'Evening' : isNightlyDebrief ? 'Night' : `${practice.duration}m`}
+                        </span>
                       </div>
                       
-                      {/* Show identity for Micro-Action if set */}
-                      {isMicroAction && hasIdentity && (
-                        <div className="text-xs text-[#ff9e19]/70 ml-8 mb-1 truncate" title={currentIdentity}>
-                          {currentIdentity}
-                        </div>
-                      )}
-                      
-                      <div className="text-xs text-gray-400 ml-8 mb-2">
-                        {isMicroAction 
-  ? (hasIdentity 
-      ? `Day ${identityDay} of 21 • 2-5 min` 
-      : 'Setup required')
-                          : isFlowBlock
-                            ? (hasFlowBlockConfig 
-                                ? `Day ${flowBlockDay} of 21 • 60-90 min` 
-                                : 'Setup required')
-                            : `${practice.duration} min`
-                        }
-                      </div>
-                      
-                      {/* Action Buttons */}
-                      <div className="flex gap-2 ml-8">
+                      <div className="flex gap-2">
                         {isMicroAction ? (
                           // MICRO-ACTION SPECIAL BUTTONS
                           hasIdentity ? (
-  // Has identity - show Mark Complete button
-  <>
-    {!isCompleted && (
-      <button
-        onClick={(e) => {
-          handleMarkComplete(practice.id, practice.name, e);
-          setIsOpen(false);
-        }}
+                            // Has identity - show Mark Complete button
+                            <>
+                              {!isCompleted && (
+                                <button
+                                  onClick={(e) => {
+                                    handleMarkComplete(practice.id, practice.name, e);
+                                    setIsOpen(false);
+                                  }}
                                   disabled={isCompleting}
                                   className={`flex-1 px-2 py-1.5 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1 ${
                                     isCompleting
@@ -386,6 +368,32 @@ const identityDay = progress.identitySprintDay;
                               Set Up Flow Block
                             </button>
                           )
+                        ) : isCoRegulation || isNightlyDebrief ? (
+                          // CO-REGULATION AND NIGHTLY DEBRIEF BUTTONS
+                          <>
+                            {!isCompleted && (
+                              <button
+                                onClick={() => handleStartPractice(practice.id)}
+                                className="flex-1 px-2 py-1.5 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30"
+                              >
+                                Start Practice
+                              </button>
+                            )}
+                            {isCompleted && (
+                              <>
+                                <button
+                                  onClick={() => handleStartPractice(practice.id)}
+                                  className="flex-1 px-2 py-1.5 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1 bg-gray-600/30 text-gray-400 hover:bg-gray-600/50 hover:text-gray-300"
+                                >
+                                  <RotateCcw className="w-3 h-3" />
+                                  Run Again
+                                </button>
+                                <span className="px-2 py-1.5 text-xs text-green-400 flex items-center gap-1">
+                                  <Check className="w-3 h-3" />
+                                </span>
+                              </>
+                            )}
+                          </>
                         ) : (
                           // NORMAL PRACTICE BUTTONS
                           <>
