@@ -7,6 +7,8 @@ import { getStagePractices, getUnlockedOnDemandTools } from '@/app/config/stages
 import type { UserProgress } from '@/app/hooks/useUserProgress';
 import { useResonanceBreathing } from '@/components/ResonanceModal';
 import { useAwarenessRep } from '@/components/AwarenessRepModal';
+import { useCoRegulation } from '@/components/CoRegulationModal';
+import { useNightlyDebrief } from '@/components/NightlyDebriefModal';
 
 interface ToolsSidebarProps {
   progress: UserProgress;
@@ -49,6 +51,8 @@ export default function ToolsSidebar({
   // Initialize modal hooks
   const { open: openResonance, Modal: ResonanceModal } = useResonanceBreathing();
   const { open: openAwarenessRep, Modal: AwarenessRepModal } = useAwarenessRep();
+  const { open: openCoRegulation, Modal: CoRegulationModal } = useCoRegulation();
+  const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebrief();
 
   const currentStagePractices = getStagePractices(progress.currentStage);
   const unlockedTools = getUnlockedOnDemandTools(progress.currentStage);
@@ -79,8 +83,12 @@ export default function ToolsSidebar({
       openResonance();
     } else if (practiceId === 'awareness_rep') {
       openAwarenessRep();
+    } else if (practiceId === 'co_regulation') {
+      openCoRegulation();
+    } else if (practiceId === 'nightly_debrief') {
+      openNightlyDebrief();
     } else if (practiceId === 'micro_action' || practiceId === 'flow_block') {
-      // Special tools route to tool click handler
+      // Special practices route to tool click handler for guided flows
       onToolClick(practiceId);
     } else {
       // Other practices go to chat for guidance
@@ -171,6 +179,12 @@ export default function ToolsSidebar({
       <AwarenessRepModal 
         onComplete={() => handleModalComplete('awareness_rep', 'Awareness Rep')} 
       />
+      <CoRegulationModal 
+        onComplete={() => handleModalComplete('co_regulation', 'Co-Regulation Practice')} 
+      />
+      <NightlyDebriefModal 
+        onComplete={() => handleModalComplete('nightly_debrief', 'Nightly Debrief')} 
+      />
 
       <aside className="w-80 border-l border-gray-800 bg-[#111111] overflow-y-auto flex-shrink-0">
         <div className="p-4">
@@ -256,17 +270,22 @@ export default function ToolsSidebar({
                   const isCompleted = status === 'completed';
                   const isCompleting = completing === practice.id;
                   
-               // Special handling for Micro-Action
-const isMicroAction = practice.id === 'micro_action';
-const hasIdentity = isMicroAction && !!(progress.currentIdentity);
-const currentIdentity = progress.currentIdentity || '';
-const identityDay = progress.identitySprintDay;
+                  // Special handling for Micro-Action
+                  const isMicroAction = practice.id === 'micro_action';
+                  const hasIdentity = isMicroAction && !!(progress.currentIdentity);
+                  const currentIdentity = progress.currentIdentity || '';
+                  const identityDay = progress.identitySprintDay;
                   
                   // Special handling for Flow Block
                   const isFlowBlock = practice.id === 'flow_block';
                   const hasFlowBlockConfig = isFlowBlock && !!(progress.hasFlowBlockConfig);
                   const flowBlockDay = progress.flowBlockSprintDay;
-                  const flowBlockSprintNum = progress.flowBlockSprintNumber;
+                  
+                  // Special handling for Co-Regulation
+                  const isCoRegulation = practice.id === 'co_regulation';
+                  
+                  // Special handling for Nightly Debrief
+                  const isNightlyDebrief = practice.id === 'nightly_debrief';
                   
                   return (
                     <div
@@ -297,28 +316,32 @@ const identityDay = progress.identitySprintDay;
                           )}
                           
                           <div className="text-xs text-gray-400 ml-8 mb-2">
-  {isMicroAction 
-    ? (hasIdentity 
-        ? `Day ${identityDay} of 21 • 2-5 min` 
-        : 'Setup required')
-    : isFlowBlock
-      ? (hasFlowBlockConfig 
-          ? `Day ${flowBlockDay} of 21 • 60-90 min` 
-          : 'Setup required')
-      : `${practice.duration} min`
-  }
-</div>
+                            {isMicroAction 
+                              ? (hasIdentity 
+                                  ? `Day ${identityDay} of 21 • 2-5 min` 
+                                  : 'Setup required')
+                              : isFlowBlock
+                                ? (hasFlowBlockConfig 
+                                    ? `Day ${flowBlockDay} of 21 • 60-90 min` 
+                                    : 'Setup required')
+                                : isCoRegulation
+                                  ? `${practice.duration} min • Evening`
+                                  : isNightlyDebrief
+                                    ? `${practice.duration} min • Before sleep`
+                                    : `${practice.duration} min`
+                            }
+                          </div>
                           
                           {/* Action Buttons */}
                           <div className="flex gap-2">
                             {isMicroAction ? (
                               // MICRO-ACTION SPECIAL BUTTONS
                               hasIdentity ? (
-  // Has identity - show Complete button
-  <>
-    {!isCompleted && (
-      <button
-        onClick={(e) => handleMarkComplete(practice.id, practice.name, e)}
+                                // Has identity - show Complete button
+                                <>
+                                  {!isCompleted && (
+                                    <button
+                                      onClick={(e) => handleMarkComplete(practice.id, practice.name, e)}
                                       disabled={isCompleting}
                                       className={`flex-1 px-2 py-1.5 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1 ${
                                         isCompleting
@@ -389,6 +412,32 @@ const identityDay = progress.identitySprintDay;
                                   Set Up Flow Block
                                 </button>
                               )
+                            ) : isCoRegulation || isNightlyDebrief ? (
+                              // CO-REGULATION AND NIGHTLY DEBRIEF BUTTONS
+                              <>
+                                {!isCompleted && (
+                                  <button
+                                    onClick={() => handleStartPractice(practice.id)}
+                                    className="flex-1 px-2 py-1.5 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30"
+                                  >
+                                    Start Practice
+                                  </button>
+                                )}
+                                {isCompleted && (
+                                  <>
+                                    <button
+                                      onClick={() => handleStartPractice(practice.id)}
+                                      className="flex-1 px-2 py-1.5 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1 bg-gray-600/30 text-gray-400 hover:bg-gray-600/50 hover:text-gray-300"
+                                    >
+                                      <RotateCcw className="w-3 h-3" />
+                                      Run Again
+                                    </button>
+                                    <span className="px-2 py-1.5 text-xs text-green-400 flex items-center gap-1">
+                                      <Check className="w-3 h-3" />
+                                    </span>
+                                  </>
+                                )}
+                              </>
                             ) : (
                               // NORMAL PRACTICE BUTTONS
                               <>
