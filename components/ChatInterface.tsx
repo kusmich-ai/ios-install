@@ -660,6 +660,9 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   });
   const hasCheckedWeeklyDue = useRef<boolean>(false);
   
+  // Evening debrief reminder check
+  const hasCheckedEveningDebrief = useRef<boolean>(false);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const hasInitialized = useRef<boolean>(false);
@@ -1099,6 +1102,41 @@ Keep going - the real rewiring happens in weeks 2-4.`
       }, 2000);
     }
   }, [progress, progressLoading]);
+
+  // ============================================
+  // CHECK FOR EVENING NIGHTLY DEBRIEF (Stage 6+)
+  // ============================================
+  
+  useEffect(() => {
+    // Only check once per session, for Stage 6+ users, after 6pm
+    if (hasCheckedEveningDebrief.current || !progress || progressLoading) return;
+    if (progress.currentStage < 6) return;
+    
+    // Check if it's evening (after 6pm)
+    const currentHour = new Date().getHours();
+    if (currentHour < 18) return; // Before 6pm, don't prompt
+    
+    // Check if Nightly Debrief is already completed today
+    const debriefStatus = progress.dailyPractices['nightly_debrief'];
+    if (debriefStatus?.completed) return;
+    
+    // Don't interrupt other flows
+    if (sprintRenewalState.isActive || weeklyCheckInActive || unlockFlowState !== 'none') return;
+    
+    hasCheckedEveningDebrief.current = true;
+    
+    // Show evening reminder after a short delay
+    setTimeout(() => {
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: `**Evening check-in** 🌙
+
+It's getting late and you haven't done your Nightly Debrief yet. 
+
+This 2-minute practice helps encode today's learning before sleep. Want to run it now?`
+      }]);
+    }, 2500);
+  }, [progress, progressLoading, sprintRenewalState.isActive, weeklyCheckInActive, unlockFlowState]);
 
   // ============================================
   // HANDLE UNLOCK CONFIRMATION
