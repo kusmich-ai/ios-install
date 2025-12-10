@@ -24,12 +24,13 @@ export default function SomaticFlowAnimation({ onComplete }) {
   const BREATH_CYCLE = 10; // 4s inhale + 6s exhale
   const AUDIO_FILE = "/audio/SomaticS.mp3";
 
+  // Actual audio timestamps (in seconds)
   const PHASES = {
-    intro: { start: 0, end: 28 },
-    catcow: { start: 28, end: 88 },
-    transition: { start: 88, end: 95 },
-    squat: { start: 95, end: 155 },
-    closing: { start: 155, end: 290 }
+    intro: { start: 0, end: 51 },        // Setup before breathing
+    catcow: { start: 51, end: 167 },     // 0:51 - 2:47
+    transition: { start: 167, end: 197 }, // 2:47 - 3:17 "slowly come to standing"
+    squat: { start: 197, end: 270 },     // 3:17 - 4:30
+    closing: { start: 270, end: 999 }    // 4:30+ "close with shake"
   };
 
   // Create and preload audio - matching ResonanceBreathing pattern
@@ -81,7 +82,7 @@ export default function SomaticFlowAnimation({ onComplete }) {
     const time = audioRef.current.currentTime;
     setCurrentTime(time);
 
-    // Update phase
+    // Update phase with correct timestamps
     if (time < PHASES.catcow.start) setPhase('intro');
     else if (time < PHASES.transition.start) setPhase('catcow');
     else if (time < PHASES.squat.start) setPhase('transition');
@@ -135,7 +136,7 @@ export default function SomaticFlowAnimation({ onComplete }) {
       audioRef.current.currentTime = time;
       setCurrentTime(time);
       
-      // Update phase immediately
+      // Update phase immediately with correct timestamps
       if (time < PHASES.catcow.start) setPhase('intro');
       else if (time < PHASES.transition.start) setPhase('catcow');
       else if (time < PHASES.squat.start) setPhase('transition');
@@ -150,9 +151,11 @@ export default function SomaticFlowAnimation({ onComplete }) {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Animation position calculations - SYNCED to audio time
+  // Animation position calculations - SYNCED to phase start times
   const getCatCowPosition = () => {
-    const timeInCycle = currentTime % BREATH_CYCLE;
+    // Breath cycles start at phase start (0:51)
+    const timeInPhase = currentTime - PHASES.catcow.start;
+    const timeInCycle = timeInPhase % BREATH_CYCLE;
     
     if (timeInCycle < 4) {
       // INHALE: Cat → Cow
@@ -168,7 +171,9 @@ export default function SomaticFlowAnimation({ onComplete }) {
   };
 
   const getSquatPosition = () => {
-    const timeInCycle = currentTime % BREATH_CYCLE;
+    // Breath cycles start at phase start (3:17)
+    const timeInPhase = currentTime - PHASES.squat.start;
+    const timeInCycle = timeInPhase % BREATH_CYCLE;
     
     if (timeInCycle < 4) {
       // INHALE: up → down
@@ -184,12 +189,26 @@ export default function SomaticFlowAnimation({ onComplete }) {
   };
 
   const getBreathPhase = () => {
-    const timeInCycle = currentTime % BREATH_CYCLE;
+    // Only show breath indicator during active phases
+    if (phase === 'intro' || phase === 'transition' || phase === 'closing') {
+      return 'idle';
+    }
+    
+    const phaseStart = phase === 'catcow' ? PHASES.catcow.start : PHASES.squat.start;
+    const timeInPhase = currentTime - phaseStart;
+    const timeInCycle = timeInPhase % BREATH_CYCLE;
     return timeInCycle < 4 ? 'inhale' : 'exhale';
   };
 
   const getBreathProgress = () => {
-    const timeInCycle = currentTime % BREATH_CYCLE;
+    // Only show progress during active phases
+    if (phase === 'intro' || phase === 'transition' || phase === 'closing') {
+      return 0;
+    }
+    
+    const phaseStart = phase === 'catcow' ? PHASES.catcow.start : PHASES.squat.start;
+    const timeInPhase = currentTime - phaseStart;
+    const timeInCycle = timeInPhase % BREATH_CYCLE;
     if (timeInCycle < 4) return timeInCycle / 4;
     return (timeInCycle - 4) / 6;
   };
@@ -199,18 +218,18 @@ export default function SomaticFlowAnimation({ onComplete }) {
 
   const getPhaseLabel = () => {
     switch(phase) {
-      case 'intro': return 'SETUP';
+      case 'intro': return 'GET READY';
       case 'catcow': return 'CAT-COW';
       case 'transition': return 'STAND UP';
       case 'squat': return 'SQUAT-REACH';
-      case 'closing': return 'STILLNESS';
+      case 'closing': return 'SHAKE & CLOSE';
       default: return '';
     }
   };
 
   const getInstruction = () => {
     switch(phase) {
-      case 'intro': return 'Hands & knees · Find your breath';
+      case 'intro': return 'Get into tabletop position · Hands & knees';
       case 'catcow': 
         return breathPhase === 'inhale' 
           ? 'INHALE · Spine dips down, head lifts' 
@@ -218,9 +237,9 @@ export default function SomaticFlowAnimation({ onComplete }) {
       case 'transition': return 'Slowly rise to standing...';
       case 'squat': 
         return breathPhase === 'inhale'
-          ? 'INHALE · Sink into squat'
-          : 'EXHALE · Rise and expand';
-      case 'closing': return 'Rest · Awareness settles';
+          ? 'INHALE · Sink into squat, arms forward'
+          : 'EXHALE · Rise tall, arms overhead';
+      case 'closing': return 'Shake it out · Let go';
       default: return '';
     }
   };
@@ -267,7 +286,7 @@ export default function SomaticFlowAnimation({ onComplete }) {
               <SquatContinuous position={getSquatPosition()} />
             )}
             {phase === 'closing' && (
-              <StandingStill time={currentTime} />
+              <ShakingFigure time={currentTime} />
             )}
           </g>
         </svg>
@@ -292,6 +311,13 @@ export default function SomaticFlowAnimation({ onComplete }) {
           <span style={{ color: breathPhase === 'exhale' ? '#ff9e19' : '#444' }}>OUT · 6</span>
         </div>
       </div>
+
+      {/* Hide breath bar during non-breathing phases */}
+      {(phase === 'intro' || phase === 'transition' || phase === 'closing') && (
+        <p style={{ fontSize: '12px', color: '#666', marginTop: '-10px' }}>
+          {phase === 'intro' ? 'Get into position...' : phase === 'transition' ? 'Transitioning...' : 'Winding down...'}
+        </p>
+      )}
 
       <div style={styles.controls}>
         <button onClick={togglePlay} style={styles.playButton}>
@@ -473,19 +499,21 @@ function TransitionFigure({ progress }) {
   );
 }
 
-function StandingStill({ time }) {
-  const b = (Math.sin(time * 0.5) + 1) / 2 * 0.03;
+function ShakingFigure({ time }) {
+  // Quick shake animation
+  const shake = Math.sin(time * 15) * 3;
+  const armShake = Math.sin(time * 12) * 8;
 
   return (
     <g>
-      <line x1="145" y1="160" x2="147" y2="105" stroke="#ff9e19" strokeWidth="6" strokeLinecap="round" />
-      <line x1="155" y1="160" x2="153" y2="105" stroke="#ff9e19" strokeWidth="6" strokeLinecap="round" />
-      <ellipse cx="145" cy="162" rx="8" ry="4" fill="#ff9e19" />
-      <ellipse cx="155" cy="162" rx="8" ry="4" fill="#ff9e19" />
-      <line x1="150" y1="105" x2="150" y2={58 - b * 100} stroke="#ff9e19" strokeWidth={10 + b * 30} strokeLinecap="round" />
-      <line x1="147" y1="65" x2="130" y2="100" stroke="#ff9e19" strokeWidth="6" strokeLinecap="round" />
-      <line x1="153" y1="65" x2="170" y2="100" stroke="#ff9e19" strokeWidth="6" strokeLinecap="round" />
-      <circle cx="150" cy={45 - b * 50} r="14" fill="#ff9e19" />
+      <line x1={145 + shake} y1="160" x2={147 + shake} y2="105" stroke="#ff9e19" strokeWidth="6" strokeLinecap="round" />
+      <line x1={155 + shake} y1="160" x2={153 + shake} y2="105" stroke="#ff9e19" strokeWidth="6" strokeLinecap="round" />
+      <ellipse cx={145 + shake} cy="162" rx="8" ry="4" fill="#ff9e19" />
+      <ellipse cx={155 + shake} cy="162" rx="8" ry="4" fill="#ff9e19" />
+      <line x1={150 + shake} y1="105" x2={150 + shake} y2="58" stroke="#ff9e19" strokeWidth="10" strokeLinecap="round" />
+      <line x1={147 + shake} y1="65" x2={130 + armShake} y2={95 + Math.sin(time * 10) * 5} stroke="#ff9e19" strokeWidth="6" strokeLinecap="round" />
+      <line x1={153 + shake} y1="65" x2={170 - armShake} y2={95 - Math.sin(time * 10) * 5} stroke="#ff9e19" strokeWidth="6" strokeLinecap="round" />
+      <circle cx={150 + shake} cy="45" r="14" fill="#ff9e19" />
     </g>
   );
 }
@@ -533,7 +561,7 @@ const styles = {
   },
   breathContainer: { width: '100%', maxWidth: '260px' },
   breathTrack: { height: '5px', background: '#1a1a1a', borderRadius: '3px', overflow: 'hidden' },
-  breathFill: { height: '100%', borderRadius: '3px', transition: 'width 0.15s ease-out' },
+  breathFill: { height: '100%', borderRadius: '3px' },
   breathLabels: { display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '10px', fontWeight: '600', letterSpacing: '0.1em' },
   controls: { display: 'flex', alignItems: 'center', gap: '20px', marginTop: '28px' },
   playButton: {
