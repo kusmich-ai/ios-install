@@ -2234,11 +2234,26 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
       case 'micro_action':
         // Trigger Micro-Action setup or renewal
         if (microActionState.isComplete) {
-          setMessages(prev => [...prev, { 
-            role: 'assistant', 
-            content: `Your current identity is **${microActionState.extractedIdentity}**.\n\nYour daily micro-action: **${microActionState.extractedAction}**\n\nWould you like to start a new 21-day sprint with a different identity?`
-          }]);
-          setAwaitingSprintRenewal(true);
+          // Trigger the sprint renewal flow
+          setSprintRenewalState({
+            isActive: true,
+            renewalType: 'identity',
+            selectedOption: null,
+            completedSprintInfo: {
+              type: 'identity',
+              sprintNumber: microActionState.sprintNumber || 1,
+              identity: microActionState.extractedIdentity || '',
+              microAction: microActionState.extractedAction || ''
+            },
+            awaitingEvolutionInput: false
+          });
+          
+          const message = getIdentitySprintCompleteMessage(
+            microActionState.extractedIdentity || 'your identity',
+            microActionState.extractedAction || 'your micro-action',
+            microActionState.sprintNumber || 1
+          );
+          setMessages(prev => [...prev, { role: 'assistant', content: message }]);
         } else {
           startMicroActionSetup();
         }
