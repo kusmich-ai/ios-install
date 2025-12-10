@@ -1,23 +1,28 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 /**
- * SomaticFlowAnimation v4
+ * SomaticFlowAnimation - Production Component
  * 
- * Fixes from v3:
- * - Cat-Cow head now moves correctly (up on inhale/Cow, down on exhale/Cat)
- * - Cat-Cow is now a seamless continuous loop (like squat)
- * - Breath mapping verified: Inhale = Cow (spine down), Exhale = Cat (spine up)
+ * Place in: components/SomaticFlowAnimation.jsx
+ * Audio at: public/audio/SomaticS.mp3
+ * 
+ * Usage:
+ *   import SomaticFlowAnimation from '@/components/SomaticFlowAnimation';
+ *   <SomaticFlowAnimation onComplete={() => console.log('done')} />
  */
 
-export default function SomaticFlowV4() {
+export default function SomaticFlowAnimation({ onComplete }) {
+  const audioRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(290);
   const [phase, setPhase] = useState('intro');
-  const animationRef = useRef(null);
-  const lastTimeRef = useRef(Date.now());
+  const [audioReady, setAudioReady] = useState(false);
+  const [audioError, setAudioError] = useState(null);
+  const animationFrameRef = useRef(null);
 
-  const DURATION = 290;
   const BREATH_CYCLE = 10; // 4s inhale + 6s exhale
+  const AUDIO_FILE = "/audio/SomaticS.mp3";
 
   const PHASES = {
     intro: { start: 0, end: 28 },
@@ -27,53 +32,116 @@ export default function SomaticFlowV4() {
     closing: { start: 155, end: 290 }
   };
 
-  // Animation loop
+  // Create and preload audio - matching ResonanceBreathing pattern
   useEffect(() => {
-    if (!isPlaying) return;
+    audioRef.current = new Audio(AUDIO_FILE);
+    audioRef.current.volume = 0.7;
+    audioRef.current.preload = "auto";
 
-    const animate = () => {
-      const now = Date.now();
-      const delta = (now - lastTimeRef.current) / 1000;
-      lastTimeRef.current = now;
+    audioRef.current.addEventListener("canplaythrough", () => {
+      console.log('[SomaticFlow] Audio ready to play');
+      setAudioReady(true);
+    });
 
-      setCurrentTime(prev => {
-        const newTime = prev + delta;
-        if (newTime >= DURATION) {
-          setIsPlaying(false);
-          return 0;
-        }
-        return newTime;
-      });
+    audioRef.current.addEventListener("loadedmetadata", () => {
+      console.log('[SomaticFlow] Audio metadata loaded, duration:', audioRef.current.duration);
+      setDuration(audioRef.current.duration);
+    });
 
-      animationRef.current = requestAnimationFrame(animate);
-    };
+    audioRef.current.addEventListener("ended", () => {
+      console.log('[SomaticFlow] Audio ended');
+      setIsPlaying(false);
+      setCurrentTime(0);
+      if (onComplete) onComplete();
+    });
 
-    lastTimeRef.current = Date.now();
-    animationRef.current = requestAnimationFrame(animate);
+    audioRef.current.addEventListener("error", (e) => {
+      console.error('[SomaticFlow] Audio error:', e);
+      setAudioError('Failed to load audio file');
+    });
+
+    // Trigger load
+    audioRef.current.load();
 
     return () => {
-      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
     };
-  }, [isPlaying]);
+  }, [onComplete]);
 
-  // Update phase
-  useEffect(() => {
-    const time = currentTime;
+  // Animation loop - sync visuals to audio currentTime
+  const animate = useCallback(() => {
+    if (!audioRef.current || !isPlaying) return;
+
+    const time = audioRef.current.currentTime;
+    setCurrentTime(time);
+
+    // Update phase
     if (time < PHASES.catcow.start) setPhase('intro');
     else if (time < PHASES.transition.start) setPhase('catcow');
     else if (time < PHASES.squat.start) setPhase('transition');
     else if (time < PHASES.closing.start) setPhase('squat');
     else setPhase('closing');
-  }, [currentTime]);
+
+    animationFrameRef.current = requestAnimationFrame(animate);
+  }, [isPlaying]);
+
+  // Start/stop animation loop
+  useEffect(() => {
+    if (isPlaying) {
+      animationFrameRef.current = requestAnimationFrame(animate);
+    }
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [isPlaying, animate]);
 
   const togglePlay = () => {
-    if (!isPlaying && currentTime >= DURATION) setCurrentTime(0);
-    setIsPlaying(!isPlaying);
+    if (!audioRef.current) {
+      console.error('[SomaticFlow] Audio ref not found');
+      return;
+    }
+    
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      // Reset to beginning if needed
+      if (audioRef.current.currentTime >= audioRef.current.duration - 1) {
+        audioRef.current.currentTime = 0;
+      }
+      
+      audioRef.current.play()
+        .then(() => {
+          console.log('[SomaticFlow] Audio playing');
+          setIsPlaying(true);
+        })
+        .catch(err => {
+          console.error('[SomaticFlow] Play failed:', err);
+          setAudioError('Playback failed: ' + err.message);
+        });
+    }
   };
 
-  const jumpToPhase = (phaseName) => {
-    const phaseData = PHASES[phaseName];
-    if (phaseData) setCurrentTime(phaseData.start + 0.5);
+  const seekTo = (time) => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = time;
+      setCurrentTime(time);
+      
+      // Update phase immediately
+      if (time < PHASES.catcow.start) setPhase('intro');
+      else if (time < PHASES.transition.start) setPhase('catcow');
+      else if (time < PHASES.squat.start) setPhase('transition');
+      else if (time < PHASES.closing.start) setPhase('squat');
+      else setPhase('closing');
+    }
   };
 
   const formatTime = (seconds) => {
@@ -82,46 +150,39 @@ export default function SomaticFlowV4() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // CONTINUOUS POSITION CALCULATIONS
-  // Both return -1 to 1 using smooth sine wave
-
+  // Animation position calculations - SYNCED to audio time
   const getCatCowPosition = () => {
-    // Returns: -1 = Cow (spine down, head UP), +1 = Cat (spine up, head DOWN)
-    // SYNCED to breath timer: Inhale (0-4s) = Cow, Exhale (4-10s) = Cat
     const timeInCycle = currentTime % BREATH_CYCLE;
     
     if (timeInCycle < 4) {
-      // INHALE: transition from Cat (+1) to Cow (-1)
+      // INHALE: Cat → Cow
       const progress = timeInCycle / 4;
       const eased = (1 - Math.cos(progress * Math.PI)) / 2;
-      return 1 - eased * 2; // +1 → -1
+      return 1 - eased * 2;
     } else {
-      // EXHALE: transition from Cow (-1) to Cat (+1)
+      // EXHALE: Cow → Cat
       const progress = (timeInCycle - 4) / 6;
       const eased = (1 - Math.cos(progress * Math.PI)) / 2;
-      return -1 + eased * 2; // -1 → +1
+      return -1 + eased * 2;
     }
   };
 
   const getSquatPosition = () => {
-    // Returns: 0 = standing tall (arms up), 1 = deep squat (arms forward)
-    // SYNCED to breath timer: Inhale (0-4s) = sink down, Exhale (4-10s) = rise up
     const timeInCycle = currentTime % BREATH_CYCLE;
     
     if (timeInCycle < 4) {
-      // INHALE: rise up (0) → sink down (1)
+      // INHALE: up → down
       const progress = timeInCycle / 4;
       const eased = (1 - Math.cos(progress * Math.PI)) / 2;
-      return eased; // 0 → 1
+      return eased;
     } else {
-      // EXHALE: sink down (1) → rise up (0)
+      // EXHALE: down → up
       const progress = (timeInCycle - 4) / 6;
       const eased = (1 - Math.cos(progress * Math.PI)) / 2;
-      return 1 - eased; // 1 → 0
+      return 1 - eased;
     }
   };
 
-  // Determine which breath phase we're in (for UI display only)
   const getBreathPhase = () => {
     const timeInCycle = currentTime % BREATH_CYCLE;
     return timeInCycle < 4 ? 'inhale' : 'exhale';
@@ -166,26 +227,11 @@ export default function SomaticFlowV4() {
 
   return (
     <div style={styles.container}>
+      {/* Audio is created programmatically in useEffect */}
+
       <div style={styles.header}>
         <p style={styles.label}>SOMATIC FLOW</p>
         <h1 style={styles.phaseTitle}>{getPhaseLabel()}</h1>
-      </div>
-
-      <div style={styles.phaseNav}>
-        {['intro', 'catcow', 'squat', 'closing'].map((p) => (
-          <button
-            key={p}
-            onClick={() => jumpToPhase(p)}
-            style={{
-              ...styles.phaseButton,
-              borderColor: (phase === p || (p === 'catcow' && phase === 'transition')) ? '#ff9e19' : '#2a2a2a',
-              color: (phase === p || (p === 'catcow' && phase === 'transition')) ? '#ff9e19' : '#555',
-              background: phase === p ? 'rgba(255,158,25,0.1)' : 'transparent',
-            }}
-          >
-            {p === 'catcow' ? 'CAT-COW' : p === 'squat' ? 'SQUAT' : p.toUpperCase()}
-          </button>
-        ))}
       </div>
 
       <div style={styles.animationArea}>
@@ -208,8 +254,11 @@ export default function SomaticFlowV4() {
           <line x1="30" y1="160" x2="270" y2="160" stroke="#1a1a1a" strokeWidth="2" />
 
           <g filter="url(#glow)">
-            {(phase === 'intro' || phase === 'catcow') && (
-              <CatCowContinuous position={getCatCowPosition()} isIntro={phase === 'intro'} />
+            {phase === 'intro' && (
+              <TabletopStatic />
+            )}
+            {phase === 'catcow' && (
+              <CatCowContinuous position={getCatCowPosition()} />
             )}
             {phase === 'transition' && (
               <TransitionFigure progress={(currentTime - PHASES.transition.start) / 7} />
@@ -249,7 +298,7 @@ export default function SomaticFlowV4() {
           {isPlaying ? <PauseIcon /> : <PlayIcon />}
         </button>
         <span style={styles.time}>
-          {formatTime(currentTime)} <span style={{color: '#444'}}>/ {formatTime(DURATION)}</span>
+          {formatTime(currentTime)} <span style={{color: '#444'}}>/ {formatTime(duration)}</span>
         </span>
       </div>
 
@@ -258,115 +307,59 @@ export default function SomaticFlowV4() {
         onClick={(e) => {
           const rect = e.currentTarget.getBoundingClientRect();
           const pct = (e.clientX - rect.left) / rect.width;
-          setCurrentTime(pct * DURATION);
+          seekTo(pct * duration);
         }}
       >
-        <div style={{ ...styles.progressFill, width: `${(currentTime / DURATION) * 100}%` }} />
-        {Object.values(PHASES).map((p, i) => (
-          <div key={i} style={{ ...styles.marker, left: `${(p.start / DURATION) * 100}%` }} />
-        ))}
+        <div style={{ ...styles.progressFill, width: `${(currentTime / duration) * 100}%` }} />
       </div>
 
-      <p style={styles.note}>Preview mode · Production syncs to audio</p>
+      {/* Audio status indicator - remove after debugging */}
+      {audioError && (
+        <p style={{ color: '#ff4444', fontSize: '12px', marginTop: '16px' }}>
+          ⚠️ {audioError} - Check that /audio/SomaticS.mp3 exists
+        </p>
+      )}
+      {!audioReady && !audioError && (
+        <p style={{ color: '#666', fontSize: '12px', marginTop: '16px' }}>
+          Loading audio...
+        </p>
+      )}
     </div>
   );
 }
 
-/**
- * CAT-COW - Continuous seamless loop
- * 
- * position: -1 to +1
- *   -1 = COW pose (Inhale): spine dips DOWN, head goes UP
- *   +1 = CAT pose (Exhale): spine rounds UP, head goes DOWN
- * 
- * The SPINE is the main visual element that moves.
- * Head follows naturally - UP when spine dips, DOWN when spine rounds.
- */
-function CatCowContinuous({ position, isIntro }) {
-  const intensity = isIntro ? 0.4 : 1;
-  const p = position * intensity;
-  
-  // Spine curve amount: negative p = dip down (Cow), positive p = round up (Cat)
-  // p of -1 should give us max dip, p of +1 should give max round
-  const spineArc = p * -25; // Flip sign: when p is -1 (Cow), spineArc is +25 (control point goes DOWN in SVG)
-                            // when p is +1 (Cat), spineArc is -25 (control point goes UP in SVG)
-  
-  // Wait, SVG Y increases downward. So:
-  // - Larger Y = lower on screen
-  // - For COW (spine dips): the middle of spine should have LARGER Y (lower)
-  // - For CAT (spine rounds): the middle of spine should have SMALLER Y (higher)
-  
-  // So: spineArc positive = spine dips (Cow), spineArc negative = spine rounds (Cat)
-  // p = -1 (Cow) should give positive spineArc
-  // p = +1 (Cat) should give negative spineArc
-  // Therefore: spineArc = -p * 25
-  
-  const spineControlY = 85 + (-p * 40); // Cow: p=-1 → 85+40=125 (lower, dipped)
-                                         // Cat: p=+1 → 85-40=45 (higher, rounded)
-  
-  // Head position: 
-  // COW (p=-1): head should go UP (smaller Y)
-  // CAT (p=+1): head should go DOWN (larger Y)
-  // So headY should increase as p increases
-  const headBaseY = 70;
-  const headY = headBaseY + (p * 25); // Cow: 70 + (-25) = 45 (up)
-                                       // Cat: 70 + 25 = 95 (down)
-  
-  // Shoulder and hip positions - they move slightly with the spine
-  const shoulderY = 82 + (p * 3);  // Slight movement
-  const hipY = 82 + (p * 3);
-  
+// ========== FIGURE COMPONENTS ==========
+
+// Static tabletop pose for intro - just getting into position
+function TabletopStatic() {
   const spineStartX = 85;
   const spineEndX = 215;
+  const shoulderY = 82;
+  const hipY = 82;
   const headX = spineStartX - 30;
+  const headY = 70;
 
   return (
     <g>
-      {/* Hands - planted on ground */}
       <circle cx={spineStartX - 15} cy="158" r="5" fill="#ff9e19" />
-      
-      {/* Front arm: hand → elbow → shoulder */}
-      <line 
-        x1={spineStartX - 15} y1="158" 
-        x2={spineStartX - 5} y2="125" 
-        stroke="#ff9e19" strokeWidth="6" strokeLinecap="round" 
-      />
-      <line 
-        x1={spineStartX - 5} y1="125" 
-        x2={spineStartX} y2={shoulderY} 
-        stroke="#ff9e19" strokeWidth="7" strokeLinecap="round" 
-      />
+      <line x1={spineStartX - 15} y1="158" x2={spineStartX - 5} y2="125" stroke="#ff9e19" strokeWidth="6" strokeLinecap="round" />
+      <line x1={spineStartX - 5} y1="125" x2={spineStartX} y2={shoulderY} stroke="#ff9e19" strokeWidth="7" strokeLinecap="round" />
 
-      {/* Knees - planted on ground */}
       <circle cx={spineEndX + 15} cy="158" r="5" fill="#ff9e19" />
-      
-      {/* Back leg: knee → hip */}
-      <line 
-        x1={spineEndX + 15} y1="158" 
-        x2={spineEndX + 5} y2="125" 
-        stroke="#ff9e19" strokeWidth="6" strokeLinecap="round" 
-      />
-      <line 
-        x1={spineEndX + 5} y1="125" 
-        x2={spineEndX} y2={hipY} 
-        stroke="#ff9e19" strokeWidth="7" strokeLinecap="round" 
-      />
+      <line x1={spineEndX + 15} y1="158" x2={spineEndX + 5} y2="125" stroke="#ff9e19" strokeWidth="6" strokeLinecap="round" />
+      <line x1={spineEndX + 5} y1="125" x2={spineEndX} y2={hipY} stroke="#ff9e19" strokeWidth="7" strokeLinecap="round" />
 
-      {/* THE SPINE - main animated element */}
+      {/* Flat spine - neutral position */}
       <path
-        d={`M ${spineStartX} ${shoulderY} 
-            Q 150 ${spineControlY} 
-            ${spineEndX} ${hipY}`}
+        d={`M ${spineStartX} ${shoulderY} Q 150 85 ${spineEndX} ${hipY}`}
         stroke="#ff9e19"
         strokeWidth="14"
         strokeLinecap="round"
         fill="none"
       />
 
-      {/* Pelvis */}
       <ellipse cx={spineEndX} cy={hipY} rx="10" ry="7" fill="#ff9e19" />
 
-      {/* Neck */}
       <line
         x1={spineStartX}
         y1={shoulderY}
@@ -377,22 +370,59 @@ function CatCowContinuous({ position, isIntro }) {
         strokeLinecap="round"
       />
 
-      {/* Head */}
-      <ellipse
-        cx={headX}
-        cy={headY}
-        rx="14"
-        ry="12"
-        fill="#ff9e19"
-      />
+      <ellipse cx={headX} cy={headY} rx="14" ry="12" fill="#ff9e19" />
     </g>
   );
 }
 
-/**
- * SQUAT - Continuous seamless loop
- * position: 0 = standing (arms up), 1 = squat (arms forward)
- */
+function CatCowContinuous({ position }) {
+  const p = position;
+  
+  const spineControlY = 85 + (-p * 40);
+  const headBaseY = 70;
+  const headY = headBaseY + (p * 25);
+  const shoulderY = 82 + (p * 3);
+  const hipY = 82 + (p * 3);
+  
+  const spineStartX = 85;
+  const spineEndX = 215;
+  const headX = spineStartX - 30;
+
+  return (
+    <g>
+      <circle cx={spineStartX - 15} cy="158" r="5" fill="#ff9e19" />
+      <line x1={spineStartX - 15} y1="158" x2={spineStartX - 5} y2="125" stroke="#ff9e19" strokeWidth="6" strokeLinecap="round" />
+      <line x1={spineStartX - 5} y1="125" x2={spineStartX} y2={shoulderY} stroke="#ff9e19" strokeWidth="7" strokeLinecap="round" />
+
+      <circle cx={spineEndX + 15} cy="158" r="5" fill="#ff9e19" />
+      <line x1={spineEndX + 15} y1="158" x2={spineEndX + 5} y2="125" stroke="#ff9e19" strokeWidth="6" strokeLinecap="round" />
+      <line x1={spineEndX + 5} y1="125" x2={spineEndX} y2={hipY} stroke="#ff9e19" strokeWidth="7" strokeLinecap="round" />
+
+      <path
+        d={`M ${spineStartX} ${shoulderY} Q 150 ${spineControlY} ${spineEndX} ${hipY}`}
+        stroke="#ff9e19"
+        strokeWidth="14"
+        strokeLinecap="round"
+        fill="none"
+      />
+
+      <ellipse cx={spineEndX} cy={hipY} rx="10" ry="7" fill="#ff9e19" />
+
+      <line
+        x1={spineStartX}
+        y1={shoulderY}
+        x2={headX + 15}
+        y2={headY + 8}
+        stroke="#ff9e19"
+        strokeWidth="7"
+        strokeLinecap="round"
+      />
+
+      <ellipse cx={headX} cy={headY} rx="14" ry="12" fill="#ff9e19" />
+    </g>
+  );
+}
+
 function SquatContinuous({ position }) {
   const p = position;
   
@@ -403,28 +433,22 @@ function SquatContinuous({ position }) {
 
   return (
     <g>
-      {/* Left leg */}
       <line x1={150 - 8 - kneeSpread * 0.3} y1={hipY} x2={150 - 20 - kneeSpread} y2={hipY + 25 + p * 10} stroke="#ff9e19" strokeWidth="8" strokeLinecap="round" />
       <line x1={150 - 20 - kneeSpread} y1={hipY + 25 + p * 10} x2={150 - 15 - kneeSpread * 0.4} y2="160" stroke="#ff9e19" strokeWidth="6" strokeLinecap="round" />
       <ellipse cx={150 - 15 - kneeSpread * 0.4} cy="162" rx="8" ry="4" fill="#ff9e19" />
 
-      {/* Right leg */}
       <line x1={150 + 8 + kneeSpread * 0.3} y1={hipY} x2={150 + 20 + kneeSpread} y2={hipY + 25 + p * 10} stroke="#ff9e19" strokeWidth="8" strokeLinecap="round" />
       <line x1={150 + 20 + kneeSpread} y1={hipY + 25 + p * 10} x2={150 + 15 + kneeSpread * 0.4} y2="160" stroke="#ff9e19" strokeWidth="6" strokeLinecap="round" />
       <ellipse cx={150 + 15 + kneeSpread * 0.4} cy="162" rx="8" ry="4" fill="#ff9e19" />
 
-      {/* Torso */}
       <line x1="150" y1={hipY} x2="150" y2={headY + 15} stroke="#ff9e19" strokeWidth="10" strokeLinecap="round" />
 
-      {/* Left arm */}
       <line x1="145" y1={headY + 18} x2={145 - 30 + p * 10} y2={armY} stroke="#ff9e19" strokeWidth="6" strokeLinecap="round" />
       <circle cx={145 - 30 + p * 10} cy={armY} r="5" fill="#ff9e19" />
 
-      {/* Right arm */}
       <line x1="155" y1={headY + 18} x2={155 + 30 - p * 10} y2={armY} stroke="#ff9e19" strokeWidth="6" strokeLinecap="round" />
       <circle cx={155 + 30 - p * 10} cy={armY} r="5" fill="#ff9e19" />
 
-      {/* Head */}
       <circle cx="150" cy={headY} r="14" fill="#ff9e19" />
     </g>
   );
@@ -496,18 +520,6 @@ const styles = {
   header: { textAlign: 'center', marginBottom: '20px' },
   label: { fontSize: '11px', fontWeight: '600', letterSpacing: '0.3em', color: '#ff9e19', margin: '0 0 6px 0' },
   phaseTitle: { fontSize: '28px', fontWeight: '300', letterSpacing: '0.1em', color: '#fff', margin: 0 },
-  phaseNav: { display: 'flex', gap: '6px', marginBottom: '24px', flexWrap: 'wrap', justifyContent: 'center' },
-  phaseButton: {
-    padding: '8px 14px',
-    fontSize: '9px',
-    fontWeight: '600',
-    letterSpacing: '0.08em',
-    border: '1px solid #2a2a2a',
-    borderRadius: '16px',
-    background: 'transparent',
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-  },
   animationArea: { width: '100%', maxWidth: '380px' },
   svg: { width: '100%', height: 'auto' },
   instruction: {
@@ -546,9 +558,7 @@ const styles = {
     borderRadius: '3px',
     marginTop: '24px',
     cursor: 'pointer',
-    overflow: 'visible',
+    overflow: 'hidden',
   },
   progressFill: { height: '100%', background: 'linear-gradient(90deg, #ff9e19, #ffb84d)', borderRadius: '3px', transition: 'width 0.1s linear' },
-  marker: { position: 'absolute', top: '-2px', width: '2px', height: '10px', background: '#333', borderRadius: '1px' },
-  note: { marginTop: '20px', fontSize: '10px', color: '#444', letterSpacing: '0.1em' },
 };
