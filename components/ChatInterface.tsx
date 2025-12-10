@@ -975,83 +975,102 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   }, [user?.id, progress, progressLoading]);
 
   // ============================================
-  // CHECK FOR UNLOCK ELIGIBILITY
+  // CHECK FOR UNLOCK ELIGIBILITY (Auto-Notification)
   // ============================================
   
   useEffect(() => {
     // Only check once, and only when we have progress data
     if (hasCheckedUnlock.current || !progress || progressLoading) return;
     
-    const extendedProgress = progress as any;
+    // Don't show unlock notification if other flows are active
+    if (sprintRenewalState.isActive || weeklyCheckInActive) return;
     
-    // Check if eligible for unlock
-    if (extendedProgress?.unlockProgress?.isEligible && !extendedProgress?.unlockProgress?.alreadyUnlocked) {
+    // Check if eligible for unlock using the correct property
+    if (progress.unlockEligible) {
       const nextStage = (progress.currentStage || 1) + 1;
       
-      // Mark as checked so we don't show again
+      // Don't auto-notify for Stage 7 (requires manual application)
+      if (nextStage > 6) return;
+      
+      // Mark as checked so we don't show again this session
       hasCheckedUnlock.current = true;
       
       // Set up unlock flow state
       setPendingUnlockStage(nextStage);
       setUnlockFlowState('eligible_shown');
       
-      // Show unlock message
+      // Show unlock message with stage-specific content
       const unlockMessages: { [key: number]: string } = {
-        2: `**Neural Priming stabilized.** Heart-mind coherence online.
+        2: `🔓 **SYSTEM UPGRADE AVAILABLE**
+
+**Neural Priming stabilized.** Heart-mind coherence online.
 
 You've hit the unlock criteria:
-- ≥80% adherence over 14 consecutive days ✓
-- ≥+0.3 average delta improvement ✓
+- ≥80% adherence ✓
+- 14+ days in stage ✓
+- Positive growth delta ✓
 
 You're ready to bring awareness into motion.
 
 **Unlock Stage 2: Embodied Awareness?**`,
-        3: `**Embodiment achieved.** The body is now connected awareness.
+        3: `🔓 **SYSTEM UPGRADE AVAILABLE**
+
+**Embodiment achieved.** The body is now connected awareness.
 
 You've hit the unlock criteria:
-- ≥80% adherence over 14 consecutive days ✓
-- ≥+0.5 average delta improvement ✓
+- ≥80% adherence ✓
+- 14+ days in stage ✓
+- Positive growth delta ✓
 
 Time to act from coherence.
 
 **Unlock Stage 3: Identity Mode?**`,
-        4: `**Identity proof installed.** You now act from awareness, not toward it.
+        4: `🔓 **SYSTEM UPGRADE AVAILABLE**
+
+**Identity proof installed.** You now act from awareness, not toward it.
 
 You've hit the unlock criteria:
-- ≥80% adherence over 14 consecutive days ✓
-- ≥+0.5 average delta improvement ✓
+- ≥80% adherence ✓
+- 14+ days in stage ✓
+- Positive growth delta ✓
 
 Ready to integrate high-level performance?
 
 **Unlock Stage 4: Flow Mode?**`,
-        5: `**Flow performance stabilized.** The mind is no longer the operator - it's the tool.
+        5: `🔓 **SYSTEM UPGRADE AVAILABLE**
+
+**Flow performance stabilized.** The mind is no longer the operator — it's the tool.
 
 You've hit the unlock criteria:
-- ≥80% adherence over 14 consecutive days ✓
-- ≥+0.6 average delta improvement ✓
+- ≥80% adherence ✓
+- 14+ days in stage ✓
+- Positive growth delta ✓
 
 Ready to train relational coherence?
 
 **Unlock Stage 5: Relational Coherence?**`,
-        6: `**Relational coherence stabilized.** You are now connected.
+        6: `🔓 **SYSTEM UPGRADE AVAILABLE**
+
+**Relational coherence stabilized.** You are now connected.
 
 You've hit the unlock criteria:
-- ≥85% adherence over 14 consecutive days ✓
-- ≥+0.7 average delta improvement ✓
+- ≥80% adherence ✓
+- 14+ days in stage ✓
+- Positive growth delta ✓
 
 Ready for full integration?
 
 **Unlock Stage 6: Integration?**`
       };
       
-      const message = unlockMessages[nextStage] || `Congratulations! You're eligible to unlock Stage ${nextStage}.`;
+      const message = unlockMessages[nextStage] || `🔓 **Congratulations!** You're eligible to unlock Stage ${nextStage}.`;
       
       // Add unlock message after a short delay to not interrupt other flows
       setTimeout(() => {
         setMessages(prev => [...prev, { role: 'assistant', content: message }]);
-      }, 1000);
+      }, 1500);
     }
-  }, [progress, progressLoading]);
+  }, [progress, progressLoading, sprintRenewalState.isActive, weeklyCheckInActive]);
 
   // ============================================
   // CHECK FOR WEEKLY MILESTONE
@@ -1167,6 +1186,60 @@ Your new practices are now available.`
         content: `The new practice for Stage 4 is the **Flow Block** — a 60-90 minute deep work session that trains sustained attention.
 
 Ready to set up your Flow Block system? This involves identifying your highest-leverage work and building a weekly schedule.`
+      }]);
+    } else if (pendingUnlockStage === 5) {
+      // Stage 5: Introduce Co-Regulation Practice
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: `**NEW PRACTICE: CO-REGULATION — 3-5 mins**
+
+This practice trains your social nervous system to stay open and regulated in connection.
+
+**When:** Late afternoon/early evening, as you transition from work to personal time.
+
+**The practice:**
+1. Pick a person (we rotate through 5 types over 5 days)
+2. Bring them to mind — visualize their face
+3. Place hand on chest
+4. Inhale: "Be blessed"
+5. Exhale: "I wish you peace and love"
+6. Notice any warmth or softness (don't force it)
+7. 3-5 minutes
+
+**5-Day rotation:**
+- Day 1: Friend
+- Day 2: Neutral person  
+- Day 3: Yourself
+- Day 4: Difficult person
+- Day 5: All beings
+
+You can access this practice anytime from your tools panel. Starting today, add it to your evening routine.`
+      }]);
+    } else if (pendingUnlockStage === 6) {
+      // Stage 6: Introduce Nightly Debrief
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: `**NEW PRACTICE: NIGHTLY DEBRIEF — 2 mins**
+
+This is your final integration checkpoint — encoding today's learning into insight before rest.
+
+**When:** Every evening, before sleep.
+
+**The practice:**
+One question: **"What did reality teach me today?"**
+
+1. Dim lights, sit or lie down
+2. Inhale for 4, exhale for 6
+3. Glance back through the day (thumbnails, not replay)
+4. Notice moments with emotional charge
+5. Name the lesson in one sentence
+6. "Lesson received — day integrated — rest well."
+
+That's it. 2 minutes. Every night. Your nervous system will consolidate the learning during sleep.
+
+**You now have the full IOS runtime installed.**
+
+All 7 daily practices + 4 on-demand tools. This is the complete system.`
       }]);
     }
     
@@ -3030,7 +3103,11 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
                   onClick={handleStartNewStageIntro}
                   className="px-6 py-3 bg-[#ff9e19] hover:bg-orange-600 text-white font-semibold rounded-xl transition-colors shadow-lg"
                 >
-                  Start Identity Installation
+                  {pendingUnlockStage === 3 ? 'Start Identity Installation' :
+                   pendingUnlockStage === 4 ? 'Set Up Flow Blocks' :
+                   pendingUnlockStage === 5 ? 'Learn Co-Regulation Practice' :
+                   pendingUnlockStage === 6 ? 'Learn Nightly Debrief' :
+                   `Start Stage ${pendingUnlockStage}`}
                 </button>
               </div>
             )}
