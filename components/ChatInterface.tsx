@@ -761,7 +761,6 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   
   // Evening debrief reminder check
   const hasCheckedEveningDebrief = useRef<boolean>(false);
-  const hasCheckedStage7Eligibility = useRef<boolean>(false);
 
 // ============================================
   // STAGE 7 FLOW STATE
@@ -773,6 +772,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const hasInitialized = useRef<boolean>(false);
+   const hasCheckedStage7Eligibility = useRef<boolean>(false);
 
   const isMobile = useIsMobile();
   const { progress, loading: progressLoading, error: progressError, refetchProgress, isRefreshing } = useUserProgress();
