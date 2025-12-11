@@ -55,6 +55,18 @@ import {
   flowBlockRenewalQuickReplies
 } from '@/lib/sprintRenewal';
 
+// Resistance Pattern Tracking
+import {
+  logExcuse,
+  logMissedDays,
+  logToolDecline,
+  logDailySkips,
+  categorizeExcuse,
+  shouldSurfacePattern,
+  checkPracticeResistance,
+  type ResistancePattern
+} from '@/lib/resistanceTracking';
+
 // ============================================
 // MICRO-ACTION SETUP IMPORTS (100% API version)
 // ============================================
@@ -793,6 +805,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   const hasCheckedEveningDebrief = useRef<boolean>(false);
   const hasCheckedSundayReflection = useRef<boolean>(false);
   const hasCheckedStage7Eligibility = useRef<boolean>(false);
+  const hasCheckedResistance = useRef<boolean>(false);
 
   // ============================================
   // HOOKS
@@ -1543,6 +1556,104 @@ All 7 daily practices + 4 on-demand tools. This is the complete system.`
   const handleMissedDaysResponse = async (userMessage: string): Promise<string> => {
     const lowerMessage = userMessage.toLowerCase();
     
+    // Check if they're providing an excuse/reason (after "talk about it")
+    const excuseKeywords = {
+      time: ['time', 'busy', 'schedule', 'work', 'meeting', 'deadline'],
+      energy: ['tired', 'exhaust', 'energy', 'sleep', 'drained', 'burnt'],
+      motivation: ['motivation', 'feel like', 'want to', 'why bother', 'point'],
+      life_event: ['happen', 'family', 'emergency', 'sick', 'illness', 'crisis', 'travel'],
+      forgot: ['forgot', 'remember', 'slipped', 'mind']
+    };
+    
+    // Detect if this is an excuse response
+    let detectedExcuse: string | null = null;
+    for (const [category, keywords] of Object.entries(excuseKeywords)) {
+      if (keywords.some(kw => lowerMessage.includes(kw))) {
+        detectedExcuse = category;
+        break;
+      }
+    }
+    
+    // If they provided an excuse, log it and respond with intervention
+    if (detectedExcuse && missedDaysIntervention?.daysMissed) {
+      // Log the excuse
+      await logExcuse(
+        user.id,
+        userMessage,
+        categorizeExcuse(userMessage),
+        'general',
+        progress?.currentStage || 1
+      );
+      
+      // Check if this excuse has been used before
+      const excuseLabels: { [key: string]: string } = {
+        time: 'no time',
+        energy: 'too tired',
+        motivation: 'not motivated',
+        life_event: 'life happened',
+        forgot: 'forgot'
+      };
+      
+      setMissedDaysIntervention(null);
+      
+      const rituals = stageRituals[progress?.currentStage || 1];
+      
+      // Tailored responses based on excuse type
+      const excuseResponses: { [key: string]: string } = {
+        time: `Time. The universal excuse.
+
+Here's the truth: these practices take 7-15 minutes. Less time than scrolling. The issue isn't time — it's priority.
+
+What would have to shift for this to become non-negotiable?
+
+When you're ready, your rituals are here:
+${rituals?.list || '1. Resonance Breathing - 5 mins\n2. Awareness Rep - 2 mins'}`,
+
+        energy: `Energy. I get it — you're depleted.
+
+But here's what's counterintuitive: these practices *give* energy when done consistently. You're stuck in a depletion loop where you're too tired to do the thing that would give you energy.
+
+What's one thing draining you that you could cut this week?
+
+Your rituals are waiting when you're ready:
+${rituals?.list || '1. Resonance Breathing - 5 mins\n2. Awareness Rep - 2 mins'}`,
+
+        motivation: `Motivation. The fickle friend.
+
+Here's the thing: motivation is unreliable. It comes and goes based on mood, weather, what you ate. Systems don't need motivation — they run on structure.
+
+What would it look like to show up even when you don't feel like it? That's where the real rewiring happens.
+
+Your rituals:
+${rituals?.list || '1. Resonance Breathing - 5 mins\n2. Awareness Rep - 2 mins'}`,
+
+        life_event: `Life happened. That's real.
+
+Sometimes the world throws curveballs. The question isn't whether disruptions will come — they always will. The question is: can you build a practice that survives them?
+
+No shame in the gap. Just get back on today.
+
+Your rituals:
+${rituals?.list || '1. Resonance Breathing - 5 mins\n2. Awareness Rep - 2 mins'}`,
+
+        forgot: `Forgot. Interesting.
+
+Your brain deprioritizes what it doesn't value. That's not a judgment — it's just how neuroscience works. The fact that you "forgot" means the practice hasn't become automatic yet.
+
+What would make it impossible to forget? Tie it to something you already do every morning.
+
+Your rituals:
+${rituals?.list || '1. Resonance Breathing - 5 mins\n2. Awareness Rep - 2 mins'}`
+      };
+      
+      return excuseResponses[detectedExcuse] || `Got it. That's real.
+
+The obstacle is noted. Now the question is: what do you do with today?
+
+Your rituals are waiting:
+${rituals?.list || '1. Resonance Breathing - 5 mins\n2. Awareness Rep - 2 mins'}`;
+    }
+    
     // Check if they want to talk about what happened
     const wantsToTalk = ['talk', 'what happened', 'explain', 'got in the way', 'obstacle', 'why', 'because'].some(
       word => lowerMessage.includes(word)
@@ -1559,6 +1670,16 @@ All 7 daily practices + 4 on-demand tools. This is the complete system.`
     );
     
     if (wantsReset) {
+      // Log the missed days event before reset
+      if (missedDaysIntervention?.daysMissed) {
+        await logMissedDays(
+          user.id,
+          missedDaysIntervention.daysMissed,
+          'reset_requested',
+          progress?.currentStage || 1
+        );
+      }
+      
       // Reset stage start date
       try {
         const supabase = createClient();
@@ -1586,7 +1707,7 @@ Your rituals are waiting. Ready to begin?`;
     }
     
     if (wantsToTalk) {
-      setMissedDaysIntervention(null);
+      // Keep intervention active so we can detect the excuse in next message
       return `Alright. Let's dig in.
 
 What got in the way? Was it:
@@ -1600,6 +1721,16 @@ No wrong answers. Understanding the obstacle is half the work.`;
     }
     
     if (wantsToContinue) {
+      // Log the missed days event
+      if (missedDaysIntervention?.daysMissed) {
+        await logMissedDays(
+          user.id,
+          missedDaysIntervention.daysMissed,
+          'continued_without_explanation',
+          progress?.currentStage || 1
+        );
+      }
+      
       setMissedDaysIntervention(null);
       
       const rituals = stageRituals[progress?.currentStage || 1];
@@ -2552,6 +2683,58 @@ Give me your four numbers (e.g., "4 3 4 5").`;
     
     checkSundayReflection();
   }, [user?.id, progress, isInitializing, weeklyCheckInActive]);
+
+  // ============================================
+  // EFFECT - Check Resistance Patterns
+  // ============================================
+  
+  useEffect(() => {
+    const checkResistancePatterns = async () => {
+      // Skip if already checked, initializing, or other flows active
+      if (
+        hasCheckedResistance.current ||
+        isInitializing ||
+        !user?.id ||
+        !progress ||
+        openingType === 'first_time' ||
+        weeklyCheckInActive ||
+        missedDaysIntervention?.isActive ||
+        sprintRenewalState.isActive ||
+        microActionState.isActive ||
+        flowBlockState.isActive
+      ) {
+        return;
+      }
+      
+      hasCheckedResistance.current = true;
+      
+      try {
+        const { should, pattern } = await shouldSurfacePattern(user.id);
+        
+        if (should && pattern) {
+          devLog('[ResistanceTracking]', 'Surfacing pattern:', pattern);
+          
+          // Delay the pattern message so it doesn't override the opening
+          setTimeout(() => {
+            setMessages(prev => [...prev, {
+              role: 'assistant',
+              content: `---
+
+**A pattern I've noticed:**
+
+${pattern.intervention}
+
+This isn't judgment — it's data. The resistance is telling you something. Want to explore it?`
+            }]);
+          }, 3000);
+        }
+      } catch (error) {
+        console.error('[ResistanceTracking] Error checking patterns:', error);
+      }
+    };
+    
+    checkResistancePatterns();
+  }, [user?.id, progress, isInitializing, openingType, weeklyCheckInActive, missedDaysIntervention?.isActive, sprintRenewalState.isActive, microActionState.isActive, flowBlockState.isActive]);
 
   // ============================================
   // MESSAGE HANDLERS
