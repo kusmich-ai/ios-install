@@ -2227,6 +2227,17 @@ ${avgDelta >= 0.3 ? '📈 Great progress! Keep the consistency going.' : avgDelt
         }
         
         devLog('[ChatInterface]', 'Opening type:', type, 'hasCompletedOnboarding:', hasCompletedOnboarding);
+        devLog('[ChatInterface]', 'Days since last practice:', daysSinceLastPractice);
+devLog('[ChatInterface]', 'hasCompletedOnboarding:', hasCompletedOnboarding);
+devLog('[ChatInterface]', 'type:', type);
+devLog('[ChatInterface]', 'Should trigger missed days?:', daysSinceLastPractice >= 2 && hasCompletedOnboarding && type === 'new_day');
+```
+
+Then check the browser console (F12 → Console tab) after refreshing.
+
+**Quick check - can you search your deployed ChatInterface.tsx for this text:**
+```
+getMissedDaysMessage
         
         const userName = getUserName();
         const currentStage = progress?.currentStage || progressData?.current_stage || 1;
