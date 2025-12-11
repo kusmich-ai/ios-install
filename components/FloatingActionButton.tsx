@@ -307,7 +307,7 @@ export default function FloatingActionButton({
                               {isCompleted && (
                                 <span className="flex-1 px-2 py-1.5 text-xs text-green-400 flex items-center justify-center gap-1">
                                   <Check className="w-3 h-3" />
-                                  Done for today
+                                  Done Today's Micro-Action
                                 </span>
                               )}
                             </>
@@ -352,7 +352,7 @@ export default function FloatingActionButton({
                               {isCompleted && (
                                 <span className="flex-1 px-2 py-1.5 text-xs text-green-400 flex items-center justify-center gap-1">
                                   <Check className="w-3 h-3" />
-                                  Done for today
+                                  Done Today's Flow Block
                                 </span>
                               )}
                             </>
