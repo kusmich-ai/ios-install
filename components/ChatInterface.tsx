@@ -600,6 +600,61 @@ Ready to start? Use the toolbar or let me know what you need.`;
 }
 
 // ============================================
+// MISSED DAYS INTERVENTION MESSAGE
+// ============================================
+
+function getMissedDaysMessage(
+  daysMissed: number,
+  adherence: number,
+  userName: string,
+  currentStage: number
+): string {
+  // Different tone based on how long they've been away
+  if (daysMissed >= 7) {
+    return `Hey${userName ? `, ${userName}` : ''}.
+
+It's been **${daysMissed} days** since your last practice. Your adherence is at **${adherence.toFixed(0)}%**.
+
+I'm not going to sugarcoat it: a week away means your nervous system has started to forget the patterns we were building. That's just how neuroplasticity works — use it or lose it.
+
+But here's what matters: you're back. That's the hardest part.
+
+**Two options:**
+
+1. **Pick up where you left off** — Your Stage ${currentStage} rituals are waiting. Same practices, fresh start.
+2. **Reset your stage** — If life has fundamentally changed, we can restart Stage ${currentStage} from Day 1.
+
+What sounds right?`;
+  }
+  
+  if (daysMissed >= 4) {
+    return `Hey${userName ? `, ${userName}` : ''}.
+
+You've been away for **${daysMissed} days**. Adherence dropped to **${adherence.toFixed(0)}%**.
+
+Here's the deal: the system doesn't install without repetition. Your nervous system learns from consistency, not intensity.
+
+**Two options:**
+
+1. **Talk about it** — What got in the way? Sometimes the obstacle IS the practice.
+2. **Just restart** — No explanation needed. Your rituals are ready.
+
+What sounds better?`;
+  }
+  
+  // 2-3 days missed
+  return `Hey${userName ? `, ${userName}` : ''}.
+
+Missed a couple days — **${daysMissed} to be exact**. Adherence is at **${adherence.toFixed(0)}%**.
+
+No judgment. Life happens. The question is: what now?
+
+**Ready to pick back up?** Your Stage ${currentStage} rituals are waiting.
+
+Or if something's in the way, let's talk about it.`;
+}
+
+// ============================================
 // STAGE INTRO MESSAGE
 // ============================================
 
@@ -718,6 +773,12 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   // Stage 7 Flow State
   const [stage7FlowState, setStage7FlowState] = useState<'none' | 'intro_shown' | 'explanation_shown' | 'question1_shown' | 'question2_shown' | 'complete'>('none');
   const [stage7OpenToProtocol, setStage7OpenToProtocol] = useState<boolean | null>(null);
+
+  // Missed Days Intervention State
+  const [missedDaysIntervention, setMissedDaysIntervention] = useState<{
+    isActive: boolean;
+    daysMissed: number;
+  } | null>(null);
 
   // ============================================
   // ALL useRef DECLARATIONS (must be after useState, in consistent order)
@@ -1476,6 +1537,91 @@ All 7 daily practices + 4 on-demand tools. This is the complete system.`
   }, [processStage7Response]);
   
   // ============================================
+  // MISSED DAYS RESPONSE HANDLER
+  // ============================================
+
+  const handleMissedDaysResponse = async (userMessage: string): Promise<string> => {
+    const lowerMessage = userMessage.toLowerCase();
+    
+    // Check if they want to talk about what happened
+    const wantsToTalk = ['talk', 'what happened', 'explain', 'got in the way', 'obstacle', 'why', 'because'].some(
+      word => lowerMessage.includes(word)
+    );
+    
+    // Check if they want to reset their stage
+    const wantsReset = ['reset', 'start over', 'begin fresh', 'day 1', 'fresh start', 'restart stage'].some(
+      word => lowerMessage.includes(word)
+    );
+    
+    // Check if they just want to continue
+    const wantsToContinue = ['pick up', 'continue', 'ready', 'let\'s go', 'lets go', 'start', 'begin', 'yes', 'restart', 'just restart', 'no explanation'].some(
+      word => lowerMessage.includes(word)
+    );
+    
+    if (wantsReset) {
+      // Reset stage start date
+      try {
+        const supabase = createClient();
+        await supabase
+          .from('user_progress')
+          .update({ 
+            stage_start_date: new Date().toISOString(),
+            consecutive_days: 0
+          })
+          .eq('user_id', user.id);
+        
+        setMissedDaysIntervention(null);
+        
+        if (refetchProgress) await refetchProgress();
+        
+        return `**Stage reset.** Your Stage ${progress?.currentStage || 1} counter is back to Day 1.
+
+No baggage. Clean slate. Your nervous system doesn't care about the past — it only knows what you do today.
+
+Your rituals are waiting. Ready to begin?`;
+      } catch (error) {
+        console.error('Failed to reset stage:', error);
+        return "There was an error resetting your stage. Let's just continue from here.";
+      }
+    }
+    
+    if (wantsToTalk) {
+      setMissedDaysIntervention(null);
+      return `Alright. Let's dig in.
+
+What got in the way? Was it:
+- **Time** — Too busy, couldn't find the window
+- **Energy** — Exhausted, couldn't muster it
+- **Motivation** — Didn't feel like it, lost the "why"
+- **Life event** — Something happened that disrupted everything
+- **Something else**
+
+No wrong answers. Understanding the obstacle is half the work.`;
+    }
+    
+    if (wantsToContinue) {
+      setMissedDaysIntervention(null);
+      
+      const rituals = stageRituals[progress?.currentStage || 1];
+      return `Good. No need to explain — just execute.
+
+**Today's rituals:**
+${rituals?.list || '1. Resonance Breathing - 5 mins\n2. Awareness Rep - 2 mins'}
+
+Start when ready. I'll be here.`;
+    }
+    
+    // If unclear response, prompt for clarity
+    return `I want to make sure I understand. Would you like to:
+
+1. **Continue** — Pick up your rituals right now
+2. **Talk** — Explore what got in the way  
+3. **Reset** — Restart your stage from Day 1
+
+Which one?`;
+  };
+
+  // ============================================
   // MICRO-ACTION SETUP HANDLERS
   // ============================================
   
@@ -2227,17 +2373,6 @@ ${avgDelta >= 0.3 ? '📈 Great progress! Keep the consistency going.' : avgDelt
         }
         
         devLog('[ChatInterface]', 'Opening type:', type, 'hasCompletedOnboarding:', hasCompletedOnboarding);
-        devLog('[ChatInterface]', 'Days since last practice:', daysSinceLastPractice);
-devLog('[ChatInterface]', 'hasCompletedOnboarding:', hasCompletedOnboarding);
-devLog('[ChatInterface]', 'type:', type);
-devLog('[ChatInterface]', 'Should trigger missed days?:', daysSinceLastPractice >= 2 && hasCompletedOnboarding && type === 'new_day');
-```
-
-Then check the browser console (F12 → Console tab) after refreshing.
-
-**Quick check - can you search your deployed ChatInterface.tsx for this text:**
-```
-getMissedDaysMessage
         
         const userName = getUserName();
         const currentStage = progress?.currentStage || progressData?.current_stage || 1;
@@ -2262,6 +2397,32 @@ getMissedDaysMessage
           const now = new Date();
           daysInStage = Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
         }
+
+        // ============================================
+        // CHECK FOR MULTI-DAY GAPS (Missed Days)
+        // ============================================
+        let daysSinceLastPractice = 0;
+        if (hasCompletedOnboarding) {
+          const { data: lastPractice } = await supabase
+            .from('practice_logs')
+            .select('completed_at')
+            .eq('user_id', user.id)
+            .order('completed_at', { ascending: false })
+            .limit(1);
+          
+          if (lastPractice && lastPractice.length > 0) {
+            const lastPracticeDate = new Date(lastPractice[0].completed_at);
+            const now = new Date();
+            // Reset time to midnight for accurate day calculation
+            lastPracticeDate.setHours(0, 0, 0, 0);
+            now.setHours(0, 0, 0, 0);
+            daysSinceLastPractice = Math.floor(
+              (now.getTime() - lastPracticeDate.getTime()) / (1000 * 60 * 60 * 24)
+            );
+          }
+        }
+        
+        devLog('[ChatInterface]', 'Days since last practice:', daysSinceLastPractice);
 
         const isWeeklyCheckInDue = (() => {
           if (type === 'first_time') return false;
@@ -2291,7 +2452,25 @@ getMissedDaysMessage
           return false;
         })();
 
-        if (isWeeklyCheckInDue) {
+        // ============================================
+        // DETERMINE OPENING MESSAGE
+        // Priority: Missed Days > Weekly Check-in > Normal
+        // ============================================
+        
+        // Check for multi-day gap first (2+ days, takes priority)
+        if (daysSinceLastPractice >= 2 && hasCompletedOnboarding && type === 'new_day') {
+          openingMessage = getMissedDaysMessage(
+            daysSinceLastPractice,
+            progressData?.adherence_percentage || 0,
+            userName,
+            currentStage
+          );
+          setMissedDaysIntervention({
+            isActive: true,
+            daysMissed: daysSinceLastPractice
+          });
+          
+        } else if (isWeeklyCheckInDue) {
           openingMessage = `Hey${userName ? `, ${userName}` : ''}. It's time for your weekly check-in.
 
 Rate each domain **0-5** based on this past week:
@@ -2564,6 +2743,20 @@ Give me your four numbers (e.g., "4 3 4 5").`;
       const handled = processStage7Response(userMessage);
       setLoading(false);
       if (handled) return;
+    }
+    
+    // 0.5 Missed Days Intervention Flow
+    if (missedDaysIntervention?.isActive) {
+      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+      setLoading(true);
+      
+      const response = await handleMissedDaysResponse(userMessage);
+      
+      setTimeout(() => {
+        setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+        setLoading(false);
+      }, 500);
+      return;
     }
     
     // 1. Weekly Check-In Flow
@@ -3172,6 +3365,45 @@ Give me your four numbers (e.g., "4 3 4 5").`;
                   className="px-6 py-3 bg-[#ff9e19] hover:bg-orange-600 text-white font-semibold rounded-xl transition-colors shadow-lg"
                 >
                   {currentQuickReply.buttonLabel}
+                </button>
+              </div>
+            )}
+            
+            {/* Missed Days Quick Replies */}
+            {missedDaysIntervention?.isActive && !loading && (
+              <div className="flex justify-center gap-3 flex-wrap">
+                <button
+                  onClick={() => {
+                    setMessages(prev => [...prev, { role: 'user', content: "Let's pick up where I left off" }]);
+                    handleMissedDaysResponse("let's pick up").then(response => {
+                      setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+                    });
+                  }}
+                  className="px-5 py-2.5 bg-[#ff9e19] hover:bg-orange-600 text-white font-medium rounded-xl transition-all"
+                >
+                  Continue
+                </button>
+                <button
+                  onClick={() => {
+                    setMessages(prev => [...prev, { role: 'user', content: "Let's talk about what happened" }]);
+                    handleMissedDaysResponse("talk about it").then(response => {
+                      setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+                    });
+                  }}
+                  className="px-5 py-2.5 bg-[#1a1a1a] border border-[#333] hover:border-[#ff9e19] text-white font-medium rounded-xl transition-all"
+                >
+                  Talk About It
+                </button>
+                <button
+                  onClick={() => {
+                    setMessages(prev => [...prev, { role: 'user', content: "Reset my stage" }]);
+                    handleMissedDaysResponse("reset stage").then(response => {
+                      setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+                    });
+                  }}
+                  className="px-5 py-2.5 bg-[#1a1a1a] border border-[#333] hover:border-[#ff9e19] text-white font-medium rounded-xl transition-all"
+                >
+                  Reset Stage
                 </button>
               </div>
             )}
