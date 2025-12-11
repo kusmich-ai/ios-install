@@ -71,16 +71,14 @@ function getLocalDateString(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
 
-// Unlock thresholds per stage (Stage 5 changed from 85% to 80%)
+// Unlock thresholds per stage
 const UNLOCK_THRESHOLDS: { [key: number]: { adherence: number; days: number; delta: number; qualitative: number } } = {
   1: { adherence: 80, days: 14, delta: 0.3, qualitative: 3 },
   2: { adherence: 80, days: 14, delta: 0.5, qualitative: 3 },
   3: { adherence: 80, days: 14, delta: 0.5, qualitative: 3 },
   4: { adherence: 80, days: 14, delta: 0.6, qualitative: 3 },
-  5: { adherence: 80, days: 14, delta: 0.7, qualitative: 3 }  
+  5: { adherence: 80, days: 14, delta: 0.7, qualitative: 3 },
   6: { adherence: 80, days: 14, delta: 0.7, qualitative: 3 }
-  // Stage 7 is the final stage - no automatic unlock beyond it
-if (stage >= 7) return false;
 };
 
 export function useUserProgress() {
@@ -488,8 +486,8 @@ function checkBasicUnlockEligibility(
   qualitativeRating: number | null,
   currentAvgScore: number
 ): boolean {
-  // Stage 7 is manual unlock only
-  if (stage >= 6) return false;
+  // Stage 7 is the final stage - no automatic unlock beyond it
+  if (stage >= 7) return false;
 
   const threshold = UNLOCK_THRESHOLDS[stage];
   if (!threshold) return false;
