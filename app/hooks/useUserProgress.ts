@@ -77,8 +77,10 @@ const UNLOCK_THRESHOLDS: { [key: number]: { adherence: number; days: number; del
   2: { adherence: 80, days: 14, delta: 0.5, qualitative: 3 },
   3: { adherence: 80, days: 14, delta: 0.5, qualitative: 3 },
   4: { adherence: 80, days: 14, delta: 0.6, qualitative: 3 },
-  5: { adherence: 80, days: 14, delta: 0.7, qualitative: 3 }  // Changed from 85% to 80%
-  // Stage 6→7 is manual review only - not in this table
+  5: { adherence: 80, days: 14, delta: 0.7, qualitative: 3 }  
+  6: { adherence: 80, days: 14, delta: 0.7, qualitative: 3 }
+  // Stage 7 is the final stage - no automatic unlock beyond it
+if (stage >= 7) return false;
 };
 
 export function useUserProgress() {
