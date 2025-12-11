@@ -761,6 +761,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   
   // Evening debrief reminder check
   const hasCheckedEveningDebrief = useRef<boolean>(false);
+  const hasCheckedStage7Eligibility = useRef<boolean>(false);
 
 // ============================================
   // STAGE 7 FLOW STATE
@@ -1217,6 +1218,46 @@ Keep going - the real rewiring happens in weeks 2-4.`
     // Only check once per session, for Stage 6+ users, after 6pm
     if (hasCheckedEveningDebrief.current || !progress || progressLoading) return;
     if (progress.currentStage < 6) return;
+
+// ============================================
+  // CHECK FOR STAGE 7 ELIGIBILITY (Auto-Notification)
+  // ============================================
+  const hasCheckedStage7Eligibility = useRef<boolean>(false);
+  
+  useEffect(() => {
+    // Only check once per session
+    if (hasCheckedStage7Eligibility.current || !progress || progressLoading) return;
+    
+    // Only for Stage 6 users who are eligible
+    if (progress.currentStage !== 6 || !progress.unlockEligible) return;
+    
+    // Don't interrupt other active flows
+    if (
+      sprintRenewalState.isActive || 
+      weeklyCheckInActive || 
+      unlockFlowState !== 'none' ||
+      microActionState.isActive ||
+      flowBlockState.isActive ||
+      stage7FlowState !== 'none'
+    ) return;
+    
+    hasCheckedStage7Eligibility.current = true;
+    
+    // Show Stage 7 eligibility message after a delay (let other init messages appear first)
+    setTimeout(() => {
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: `🔓 **Stage 7 Available**
+
+You've been practicing Stage 6 consistently for over 14 days. The system is fully installed.
+
+There's one more stage — **Stage 7: Accelerated Expansion** — but it's fundamentally different from everything before it.
+
+When you're ready to learn more, click the "Unlock Stage 7?" button in your dashboard, or just ask me about it.`
+      }]);
+    }, 2500);
+    
+  }, [progress, progressLoading, sprintRenewalState.isActive, weeklyCheckInActive, unlockFlowState, microActionState.isActive, flowBlockState.isActive, stage7FlowState]);
     
     // Check if it's evening (after 6pm)
     const currentHour = new Date().getHours();
@@ -3543,6 +3584,7 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
           currentIdentity={progress?.currentIdentity ?? undefined}
           microAction={(progress as any)?.microAction ?? undefined}
           identitySprintDay={progress?.identitySprintDay ?? undefined}
+          onStage7Unlock={startStage7Introduction}
         />
       )}
 
