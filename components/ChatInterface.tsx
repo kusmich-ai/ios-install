@@ -1385,11 +1385,6 @@ That's it. 2 minutes. Every night. Your nervous system will consolidate the lear
 
 All 7 daily practices + 4 on-demand tools. This is the complete system.`
       }]);
-      
-      // After explaining Nightly Debrief, introduce Stage 7 option
-      setTimeout(() => {
-        startStage7Introduction();
-      }, 3000);
     }
     
     // Clear pending state
@@ -3267,6 +3262,22 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
               </div>
             )}
 
+            {/* Stage 7 Unlock Button - Shows when eligible */}
+            {progress?.currentStage === 6 && progress?.unlockEligible && (
+              <div className="bg-gradient-to-r from-purple-900/50 to-orange-900/50 border border-purple-500/30 rounded-lg p-4">
+                <h3 className="text-sm font-medium text-purple-300 mb-2">🔓 Final Stage Available</h3>
+                <p className="text-xs text-gray-400 mb-3">
+                  You've demonstrated mastery at Stage 6. Ready to explore what's beyond?
+                </p>
+                <button
+                  onClick={() => startStage7Introduction()}
+                  className="w-full px-4 py-2.5 bg-[#ff9e19] hover:bg-orange-600 text-white font-semibold rounded-xl transition-colors"
+                >
+                  Unlock Stage 7?
+                </button>
+              </div>
+            )}
+            
             {/* Current Identity (if set) - Now after Unlock Progress */}
             {progress?.currentIdentity && (
               <div className="bg-gray-900 rounded-lg p-4">
