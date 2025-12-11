@@ -711,6 +711,46 @@ What sounds right?`;
 }
 
 // ============================================
+// SYSTEM RECOVERY MESSAGE (30+ Days Away)
+// ============================================
+
+function getSystemRecoveryMessage(
+  daysAway: number,
+  previousStage: number,
+  userName: string
+): string {
+  const previousStageName = getStageName(previousStage);
+  
+  // Calculate weeks for readability
+  const weeks = Math.floor(daysAway / 7);
+  const timeAwayText = weeks >= 4 
+    ? `${Math.floor(weeks / 4)} month${Math.floor(weeks / 4) > 1 ? 's' : ''}` 
+    : `${weeks} week${weeks > 1 ? 's' : ''}`;
+
+  return `Hey${userName ? `, ${userName}` : ''}.
+
+It's been **${daysAway} days** — about ${timeAwayText} — since your last practice.
+
+I'll be direct: at this point, much of the neural rewiring has likely faded. That's just how neuroplasticity works — use it or lose it. The pathways we built have weakened.
+
+But here's the good news: **reinstallation is faster the second time.** Your nervous system remembers the patterns, even if they've gone dormant. We're not starting from scratch — we're reactivating.
+
+You were at **Stage ${previousStage}: ${previousStageName}** before.
+
+**Three options:**
+
+1. **Full Reset** — Back to Stage 1, new baseline assessment, clean slate. Recommended if life has changed significantly.
+
+2. **Soft Reset** — Stay at Stage ${previousStage}, reset your streak, quick 2-minute check-in. Good if you want to pick up where you left off.
+
+3. **Continue As-Is** — Jump right back in with today's rituals. Only choose this if you've been practicing on your own.
+
+No judgment on the gap. What matters is you're back.
+
+What sounds right?`;
+}
+
+// ============================================
 // STAGE INTRO MESSAGE
 // ============================================
 
@@ -843,6 +883,13 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
     adherence: number;
     avgDelta: number;
     reason: 'low_adherence' | 'negative_delta' | 'both';
+  } | null>(null);
+
+  // System Recovery State (30+ days away)
+  const [systemRecoveryIntervention, setSystemRecoveryIntervention] = useState<{
+    isActive: boolean;
+    daysAway: number;
+    previousStage: number;
   } | null>(null);
 
   // ============================================
@@ -1886,6 +1933,154 @@ Which one?`;
   };
 
   // ============================================
+  // SYSTEM RECOVERY RESPONSE HANDLER (30+ Days)
+  // ============================================
+
+  const handleSystemRecoveryResponse = async (userMessage: string): Promise<string> => {
+    const lowerMessage = userMessage.toLowerCase();
+    
+    // Check if they want full reset
+    const wantsFullReset = ['full reset', 'stage 1', 'clean slate', 'start over', 'from scratch', 'option 1', 'full'].some(
+      word => lowerMessage.includes(word)
+    );
+    
+    // Check if they want soft reset
+    const wantsSoftReset = ['soft reset', 'soft', 'stay at', 'keep stage', 'reset streak', 'option 2', 'pick up'].some(
+      word => lowerMessage.includes(word)
+    );
+    
+    // Check if they want to continue as-is
+    const wantsContinue = ['continue', 'as-is', 'as is', 'jump back', 'option 3', 'practicing on my own', 'right back'].some(
+      word => lowerMessage.includes(word)
+    );
+    
+    if (wantsFullReset) {
+      try {
+        const supabase = createClient();
+        
+        // Reset to Stage 1, clear all progress
+        await supabase
+          .from('user_progress')
+          .update({ 
+            current_stage: 1,
+            stage_start_date: new Date().toISOString(),
+            consecutive_days: 0,
+            adherence_percentage: 0,
+            baseline_completed: false,
+            ritual_intro_completed: false,
+            last_visit: new Date().toISOString()
+          })
+          .eq('user_id', user.id);
+        
+        // Clear baseline data to trigger re-assessment
+        await supabase
+          .from('baseline_assessments')
+          .delete()
+          .eq('user_id', user.id);
+        
+        setSystemRecoveryIntervention(null);
+        
+        if (refetchProgress) await refetchProgress();
+        
+        return `**Full Reset initiated.**
+
+We're starting fresh — Stage 1, new baseline, clean slate.
+
+The IOS will reinstall faster this time. Your nervous system has the blueprint; we're just reactivating it.
+
+**First step:** Let's run your baseline diagnostic again. This takes ~8 minutes and measures where you're starting now.
+
+Ready to begin the assessment?`;
+      } catch (error) {
+        console.error('Failed to perform full reset:', error);
+        return "There was an error resetting your progress. Let's try a soft reset instead.";
+      }
+    }
+    
+    if (wantsSoftReset) {
+      const previousStage = systemRecoveryIntervention?.previousStage || 1;
+      const rituals = stageRituals[previousStage];
+      
+      try {
+        const supabase = createClient();
+        
+        // Keep stage, reset streak and adherence
+        await supabase
+          .from('user_progress')
+          .update({ 
+            stage_start_date: new Date().toISOString(),
+            consecutive_days: 0,
+            adherence_percentage: 0,
+            last_visit: new Date().toISOString()
+          })
+          .eq('user_id', user.id);
+        
+        setSystemRecoveryIntervention(null);
+        
+        if (refetchProgress) await refetchProgress();
+        
+        return `**Soft Reset complete.**
+
+You're staying at **Stage ${previousStage}: ${getStageName(previousStage)}**. Streak and adherence reset to zero.
+
+Quick check-in: On a scale of 0-5, how would you rate each domain RIGHT NOW?
+
+1. **Regulation** — How calm do you feel? (0 = very stressed, 5 = deeply calm)
+2. **Awareness** — How present are you? (0 = scattered, 5 = fully here)
+3. **Outlook** — How positive do you feel? (0 = negative, 5 = optimistic)
+4. **Attention** — How focused is your mind? (0 = racing, 5 = clear)
+
+Give me your four numbers to recalibrate, then we'll get you back on track.`;
+      } catch (error) {
+        console.error('Failed to perform soft reset:', error);
+        return "There was an error. Let's just continue from here.";
+      }
+    }
+    
+    if (wantsContinue) {
+      const previousStage = systemRecoveryIntervention?.previousStage || 1;
+      const rituals = stageRituals[previousStage];
+      
+      try {
+        const supabase = createClient();
+        
+        // Just update last_visit
+        await supabase
+          .from('user_progress')
+          .update({ 
+            last_visit: new Date().toISOString()
+          })
+          .eq('user_id', user.id);
+        
+        setSystemRecoveryIntervention(null);
+        
+        return `Alright. Jumping right back in.
+
+**Stage ${previousStage}: ${getStageName(previousStage)}**
+
+Today's rituals:
+${rituals?.list || '1. Resonance Breathing - 5 mins\n2. Awareness Rep - 2 mins'}
+
+I trust you know where you are. Let's see if the pathways are still active.
+
+Start when ready.`;
+      } catch (error) {
+        console.error('Failed to continue:', error);
+        return "There was an error. Let's just continue.";
+      }
+    }
+    
+    // If unclear response, prompt for clarity
+    return `I want to make sure I understand. Which option works for you?
+
+1. **Full Reset** — Back to Stage 1, new baseline assessment
+2. **Soft Reset** — Keep your stage, reset streak, quick check-in
+3. **Continue As-Is** — Jump right back into today's rituals
+
+Which one?`;
+  };
+
+  // ============================================
   // MICRO-ACTION SETUP HANDLERS
   // ============================================
   
@@ -2763,11 +2958,24 @@ ${avgDelta >= 0.3 ? '📈 Great progress! Keep the consistency going.' : avgDelt
 
         // ============================================
         // DETERMINE OPENING MESSAGE
-        // Priority: Missed Days > Weekly Check-in > Normal
+        // Priority: System Recovery (30+) > Missed Days (2-29) > Weekly Check-in > Normal
         // ============================================
         
-        // Check for multi-day gap first (2+ days, takes priority)
-        if (daysSinceLastPractice >= 2 && hasCompletedOnboarding && type === 'new_day') {
+        // Check for system recovery first (30+ days away - needs re-onboarding)
+        if (daysSinceLastPractice >= 30 && hasCompletedOnboarding && type === 'new_day') {
+          openingMessage = getSystemRecoveryMessage(
+            daysSinceLastPractice,
+            currentStage,
+            userName
+          );
+          setSystemRecoveryIntervention({
+            isActive: true,
+            daysAway: daysSinceLastPractice,
+            previousStage: currentStage
+          });
+          
+        // Check for multi-day gap (2-29 days)
+        } else if (daysSinceLastPractice >= 2 && hasCompletedOnboarding && type === 'new_day') {
           openingMessage = getMissedDaysMessage(
             daysSinceLastPractice,
             progressData?.adherence_percentage || 0,
@@ -3106,7 +3314,21 @@ This isn't judgment — it's data. The resistance is telling you something. Want
       if (handled) return;
     }
     
-    // 0.5 Missed Days Intervention Flow
+    // 0.4 System Recovery Flow (30+ days away)
+    if (systemRecoveryIntervention?.isActive) {
+      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+      setLoading(true);
+      
+      const response = await handleSystemRecoveryResponse(userMessage);
+      
+      setTimeout(() => {
+        setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+        setLoading(false);
+      }, 500);
+      return;
+    }
+    
+    // 0.5 Missed Days Intervention Flow (2-29 days)
     if (missedDaysIntervention?.isActive) {
       setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
       setLoading(true);
@@ -3779,6 +4001,45 @@ This isn't judgment — it's data. The resistance is telling you something. Want
                   className="px-5 py-2.5 bg-[#1a1a1a] border border-[#333] hover:border-[#ff9e19] text-white font-medium rounded-xl transition-all"
                 >
                   Reset Stage
+                </button>
+              </div>
+            )}
+            
+            {/* System Recovery Quick Replies (30+ days) */}
+            {systemRecoveryIntervention?.isActive && !loading && (
+              <div className="flex justify-center gap-3 flex-wrap">
+                <button
+                  onClick={() => {
+                    setMessages(prev => [...prev, { role: 'user', content: "Full Reset - back to Stage 1" }]);
+                    handleSystemRecoveryResponse("full reset").then(response => {
+                      setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+                    });
+                  }}
+                  className="px-5 py-2.5 bg-[#1a1a1a] border border-[#333] hover:border-[#ff9e19] text-white font-medium rounded-xl transition-all"
+                >
+                  Full Reset
+                </button>
+                <button
+                  onClick={() => {
+                    setMessages(prev => [...prev, { role: 'user', content: "Soft Reset - keep my stage" }]);
+                    handleSystemRecoveryResponse("soft reset").then(response => {
+                      setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+                    });
+                  }}
+                  className="px-5 py-2.5 bg-[#ff9e19] hover:bg-orange-600 text-white font-medium rounded-xl transition-all"
+                >
+                  Soft Reset
+                </button>
+                <button
+                  onClick={() => {
+                    setMessages(prev => [...prev, { role: 'user', content: "Continue as-is" }]);
+                    handleSystemRecoveryResponse("continue as-is").then(response => {
+                      setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+                    });
+                  }}
+                  className="px-5 py-2.5 bg-[#1a1a1a] border border-[#333] hover:border-[#ff9e19] text-white font-medium rounded-xl transition-all"
+                >
+                  Continue As-Is
                 </button>
               </div>
             )}
