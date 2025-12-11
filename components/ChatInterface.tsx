@@ -2963,6 +2963,15 @@ ${avgDelta >= 0.3 ? '📈 Great progress! Keep the consistency going.' : avgDelt
         
         // Check for system recovery first (30+ days away - needs re-onboarding)
         if (daysSinceLastPractice >= 30 && hasCompletedOnboarding && type === 'new_day') {
+          // Immediately reset adherence and streak to reflect reality
+          await supabase
+            .from('user_progress')
+            .update({ 
+              adherence_percentage: 0,
+              consecutive_days: 0
+            })
+            .eq('user_id', user.id);
+          
           openingMessage = getSystemRecoveryMessage(
             daysSinceLastPractice,
             currentStage,
@@ -2974,11 +2983,28 @@ ${avgDelta >= 0.3 ? '📈 Great progress! Keep the consistency going.' : avgDelt
             previousStage: currentStage
           });
           
+          // Refetch to update UI with reset values
+          if (refetchProgress) refetchProgress();
+          
         // Check for multi-day gap (2-29 days)
         } else if (daysSinceLastPractice >= 2 && hasCompletedOnboarding && type === 'new_day') {
+          // Reset streak (it's broken)
+          // Also reset adherence if 7+ days (14-day window is mostly/entirely empty)
+          const updateData: { consecutive_days: number; adherence_percentage?: number } = { 
+            consecutive_days: 0 
+          };
+          if (daysSinceLastPractice >= 7) {
+            updateData.adherence_percentage = 0;
+          }
+          
+          await supabase
+            .from('user_progress')
+            .update(updateData)
+            .eq('user_id', user.id);
+          
           openingMessage = getMissedDaysMessage(
             daysSinceLastPractice,
-            progressData?.adherence_percentage || 0,
+            daysSinceLastPractice >= 7 ? 0 : (progressData?.adherence_percentage || 0),
             userName,
             currentStage
           );
@@ -2986,6 +3012,9 @@ ${avgDelta >= 0.3 ? '📈 Great progress! Keep the consistency going.' : avgDelt
             isActive: true,
             daysMissed: daysSinceLastPractice
           });
+          
+          // Refetch to update UI
+          if (refetchProgress) refetchProgress();
           
         } else if (isWeeklyCheckInDue) {
           openingMessage = `Hey${userName ? `, ${userName}` : ''}. It's time for your weekly check-in.
