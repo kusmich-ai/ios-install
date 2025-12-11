@@ -48,6 +48,7 @@ interface MobileDashboardProps {
   currentIdentity?: string;
   microAction?: string;
   identitySprintDay?: number;
+  onStage7Unlock?: () => void;
 }
 
 // Get stage name from number
@@ -95,7 +96,8 @@ export default function MobileDashboard({
   consecutiveDays = 0,
   currentIdentity,
   microAction,
-  identitySprintDay
+  identitySprintDay,
+  onStage7Unlock 
 }: MobileDashboardProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -283,6 +285,27 @@ export default function MobileDashboard({
             </div>
           </div>
 
+{/* Stage 7 Unlock Button - Shows when eligible at Stage 6 */}
+          {currentStage === 6 && unlockEligible && onStage7Unlock && (
+            <div className="bg-gradient-to-r from-purple-900/50 to-orange-900/50 border border-purple-500/30 rounded-lg p-4">
+              <h3 className="text-sm font-medium text-purple-300 mb-2">🔓 Final Stage Available</h3>
+              <p className="text-xs text-gray-400 mb-3">
+                You've demonstrated mastery at Stage 6. Ready to explore what's beyond?
+              </p>
+              <button
+                onClick={() => {
+                  onStage7Unlock();
+                  setIsOpen(false); // Close drawer after clicking
+                }}
+                className="w-full px-4 py-2.5 bg-[#ff9e19] hover:bg-orange-600 text-white font-semibold rounded-xl transition-colors"
+              >
+                Unlock Stage 7?
+              </button>
+            </div>
+          )}
+
+          {/* Unlock Progress */}
+          
           {/* Unlock Progress */}
           {unlockProgress && !unlockEligible && (
             <div className="bg-gray-900 rounded-lg p-4">
