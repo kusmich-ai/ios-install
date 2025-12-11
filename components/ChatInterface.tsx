@@ -3381,24 +3381,4 @@ Give me your four numbers (e.g., "4 3 4 5").`;
       <ThoughtHygieneModal />
     </div>
   );
-} */}
-      {isMobile && progress && (
-        <FloatingActionButton
-          progress={progress}
-          userId={user?.id}
-          onPracticeClick={handlePracticeClick}
-          onToolClick={handleToolClick}
-          onProgressUpdate={handleProgressUpdate}
-          onPracticeCompleted={handlePracticeCompleted}
-          isRefreshing={isRefreshing}
-        />
-      )}
-
-      {/* On-Demand Tool Modals */}
-      <DecenteringModal />
-      <MetaReflectionModal />
-      <ReframeModal />
-      <ThoughtHygieneModal />
-    </div>
-  );
 }
