@@ -372,6 +372,105 @@ Your toolbar will let you know if you have completed them for the day and your p
 See you then. Your nervous system is about to start learning.`
 };
 
+const stage7Templates = {
+  intro: `**System Integration Complete.** 🎯
+
+You've done something rare. Stage 6 isn't just a milestone — it's proof that awareness has become your operating system. Most people never get here.
+
+There's one more stage. **Stage 7: Accelerated Expansion.**
+
+But I need to be direct with you: Stage 7 is fundamentally different from everything before it. It's not a daily practice. It's not something you do alone. It's an intensive, in-person protocol.
+
+Would you like to learn more about Stage 7, or would you prefer to continue deepening Stage 6 as your daily practice?`,
+
+  explanation: `**Stage 7: The Beyond Protocol**
+
+*The end of seeking starts here.*
+
+Everything you've done in Stages 1-6 has been preparation — building the neural foundation, stabilizing awareness, proving identity through action. Stage 7 is where that foundation meets something more powerful.
+
+**Beyond is a 6-month protocol for complete neural, emotional, and existential reprogramming.**
+
+It includes:
+• **Supervised psychedelic experience** — working with 5-MeO in a held, supported container
+• **Neurotech** — brain entrainment and neurofeedback to normalize beneficial brain-wave states
+• **Molecule protocols** — strategic use of nootropics and supplements
+• **Continued daily practice** — the IOS remains your foundation
+• **Weekly 1:1 support** — you'll never walk alone
+
+This isn't a retreat. It's not coaching. It's not a one-off ceremony.
+
+It's designed to dissolve what you're not — so who you truly are can finally lead.
+
+**This path is not for everyone.** And that's okay. Stage 6 is a complete system. Many people practice it for life.
+
+But if something in you is ready to go beyond the stories, the strategies, and the seeking... I have two questions for you.`,
+
+  question1: `**Question 1:**
+
+Stage 7 includes the use of supervised psychedelics, neuro-tech, nootropics, and supplements.
+
+Are you open to this?`,
+
+  question2: `**Question 2:**
+
+Why is now the right time to consider this in your life?
+
+(Take a moment — there's no right answer, just your honest reflection.)`,
+
+  applicationRoute: `Thank you for sharing that.
+
+Based on what you've described, it sounds like you may be ready for this next step.
+
+**The Beyond Protocol** is by application only. Only a limited number of participants are accepted. After you apply, you'll be contacted for a discovery call if you're a fit.
+
+The application takes about 10 minutes.`,
+
+  stage6Continuation: `That's completely valid.
+
+Stage 6 is a complete operating system. The daily practices you've built — the breathing, the awareness, the identity work, the flow states, the relational coherence, the nightly integration — this is a way of life.
+
+Many people stay here permanently. Not because they're "stuck," but because it's enough.
+
+You can always revisit Stage 7 later. Just ask.
+
+For now, continue showing up. The system is installed. You are the operator.`,
+
+  notOpenRoute: `I appreciate your honesty.
+
+Stage 7 isn't the right fit for everyone, and that's completely okay. The protocols involved require full openness to the modalities — without that, it wouldn't serve you.
+
+Stage 6 is a complete system. The practices you've built are powerful on their own. Many people stay at this level permanently — not because they're stuck, but because it's enough.
+
+Continue showing up. The IOS is installed. You are the operator.
+
+If anything changes in the future, you can always revisit this conversation.`,
+
+  applicationUrl: 'https://nicholaskusmich.typeform.com/beyond'
+};
+
+// Stage 7 trigger patterns for detection
+const stage7TriggerPatterns = [
+  'stage 7',
+  'stage seven',
+  'accelerated expansion',
+  'beyond protocol',
+  'what comes after stage 6',
+  "what's after stage 6",
+  'whats after stage 6',
+  'what is stage 7',
+  'tell me about stage 7',
+  'next level after stage 6',
+  'final stage',
+  'apply for stage 7'
+];
+
+// Helper function to detect Stage 7 questions
+function isAskingAboutStage7(message: string): boolean {
+  const lowerMessage = message.toLowerCase();
+  return stage7TriggerPatterns.some(pattern => lowerMessage.includes(pattern));
+}
+
 // Quick reply button configurations for each intro step
 const introQuickReplies: { [key: number]: { text: string; buttonLabel: string } | null } = {
   0: { text: "Yes, let's learn the rituals", buttonLabel: "Yes, let's go" },
@@ -662,6 +761,13 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   
   // Evening debrief reminder check
   const hasCheckedEveningDebrief = useRef<boolean>(false);
+
+// ============================================
+  // STAGE 7 FLOW STATE
+  // ============================================
+  type Stage7FlowState = 'none' | 'intro_shown' | 'explanation_shown' | 'question1_shown' | 'question2_shown' | 'complete';
+  const [stage7FlowState, setStage7FlowState] = useState<'none' | 'intro_shown' | 'explanation_shown' | 'question1_shown' | 'question2_shown' | 'complete'>('none');
+  const [stage7OpenToProtocol, setStage7OpenToProtocol] = useState<boolean | null>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -1253,7 +1359,7 @@ This practice trains your social nervous system to stay open and regulated in co
 
 You can access this practice anytime from your tools panel. Starting today, add it to your evening routine.`
       }]);
-    } else if (pendingUnlockStage === 6) {
+   } else if (pendingUnlockStage === 6) {
       // Stage 6: Introduce Nightly Debrief
       setMessages(prev => [...prev, { 
         role: 'assistant', 
@@ -1279,12 +1385,145 @@ That's it. 2 minutes. Every night. Your nervous system will consolidate the lear
 
 All 7 daily practices + 4 on-demand tools. This is the complete system.`
       }]);
+      
+      // After explaining Nightly Debrief, introduce Stage 7 option
+      setTimeout(() => {
+        startStage7Introduction();
+      }, 3000);
     }
     
     // Clear pending state
     setPendingUnlockStage(null);
   };
 
+// ============================================
+  // STAGE 7 FLOW HANDLERS
+  // ============================================
+  
+  const startStage7Introduction = useCallback(() => {
+    setStage7FlowState('intro_shown');
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      content: stage7Templates.intro
+    }]);
+  }, []);
+
+  const processStage7Response = useCallback((userMessage: string): boolean => {
+    const lowerMessage = userMessage.toLowerCase();
+    
+    switch (stage7FlowState) {
+      case 'intro_shown': {
+        // User responded to "learn more or continue Stage 6?"
+        const wantsToLearn = ['yes', 'learn', 'tell me', 'more', 'stage 7', 'interested', 'about'].some(
+          word => lowerMessage.includes(word)
+        );
+        const wantsToContinue = ['no', 'continue', 'stage 6', 'stay', 'not now', 'later', 'deepen'].some(
+          word => lowerMessage.includes(word)
+        );
+        
+        if (wantsToLearn) {
+          setStage7FlowState('explanation_shown');
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: stage7Templates.explanation
+          }]);
+          // After a brief pause, show question 1
+          setTimeout(() => {
+            setStage7FlowState('question1_shown');
+            setMessages(prev => [...prev, {
+              role: 'assistant',
+              content: stage7Templates.question1
+            }]);
+          }, 1500);
+          return true;
+        } else if (wantsToContinue) {
+          setStage7FlowState('complete');
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: stage7Templates.stage6Continuation
+          }]);
+          return true;
+        }
+        return false; // Let it fall through to API
+      }
+      
+      case 'question1_shown': {
+        // User responded to "are you open to this?"
+        const isOpen = ['yes', 'open', 'interested', 'ready', 'absolutely', 'definitely', 'yeah', 'yep', 'sure'].some(
+          word => lowerMessage.includes(word)
+        );
+        const notOpen = ['no', 'not', 'pass', 'skip'].some(
+          word => lowerMessage.includes(word)
+        );
+        
+        if (isOpen) {
+          setStage7OpenToProtocol(true);
+          setStage7FlowState('question2_shown');
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: stage7Templates.question2
+          }]);
+          return true;
+        } else if (notOpen) {
+          setStage7OpenToProtocol(false);
+          setStage7FlowState('complete');
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: stage7Templates.notOpenRoute
+          }]);
+          return true;
+        }
+        return false;
+      }
+      
+      case 'question2_shown': {
+        // User shared why now is the right time - show application route
+        if (userMessage.trim().length > 10) { // Minimum meaningful response
+          setStage7FlowState('complete');
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: stage7Templates.applicationRoute
+          }]);
+          return true;
+        } else {
+          // Encourage more reflection
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: "Take a moment to reflect. Why does this feel like the right time in your life?"
+          }]);
+          return true;
+        }
+      }
+      
+      default:
+        return false;
+    }
+  }, [stage7FlowState]);
+
+  const handleStage7QuickReply = useCallback((action: string) => {
+    switch (action) {
+      case 'learn_more':
+        setMessages(prev => [...prev, { role: 'user', content: 'Tell me about Stage 7' }]);
+        processStage7Response('tell me more about stage 7');
+        break;
+      case 'continue_stage6':
+        setMessages(prev => [...prev, { role: 'user', content: "I'll continue with Stage 6" }]);
+        processStage7Response('continue stage 6');
+        break;
+      case 'yes_open':
+        setMessages(prev => [...prev, { role: 'user', content: "Yes, I'm open to this" }]);
+        processStage7Response('yes open');
+        break;
+      case 'no_not_open':
+        setMessages(prev => [...prev, { role: 'user', content: 'No, not for me right now' }]);
+        processStage7Response('no');
+        break;
+      case 'apply':
+        window.open(stage7Templates.applicationUrl, '_blank');
+        break;
+    }
+  }, [processStage7Response]);
+  
   // ============================================
   // MICRO-ACTION SETUP HANDLERS
   // ============================================
@@ -2469,6 +2708,14 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
     // ============================================
     // SPECIAL FLOW HANDLERS (priority order)
     // ============================================
+// 0. Stage 7 Flow (highest priority when active)
+    if (stage7FlowState !== 'none' && stage7FlowState !== 'complete') {
+      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+      setLoading(true);
+      const handled = processStage7Response(userMessage);
+      setLoading(false);
+      if (handled) return;
+    }
     
     // 1. Weekly Check-In Flow
     if (weeklyCheckInActive) {
@@ -2724,6 +2971,13 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
         lowerMessage.includes('mental cache') || lowerMessage.includes('brain dump')) {
       setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
       openThoughtHygiene(user?.id);
+      return;
+    }
+
+    // Check for Stage 7 question (only available at Stage 6)
+    if (progress?.currentStage === 6 && isAskingAboutStage7(lowerMessage)) {
+      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+      startStage7Introduction();
       return;
     }
     
@@ -3113,6 +3367,54 @@ setMessages([{ role: 'assistant', content: openingMessage }]);
                     {reply.text}
                   </button>
                 ))}
+              </div>
+            )}
+
+            {/* Stage 7 Quick Reply Buttons */}
+            {stage7FlowState === 'intro_shown' && !loading && (
+              <div className="flex justify-center gap-3 flex-wrap">
+                <button
+                  onClick={() => handleStage7QuickReply('learn_more')}
+                  className="px-5 py-2.5 bg-[#ff9e19] hover:bg-orange-600 text-white font-medium rounded-xl transition-all"
+                >
+                  Tell me about Stage 7
+                </button>
+                <button
+                  onClick={() => handleStage7QuickReply('continue_stage6')}
+                  className="px-5 py-2.5 bg-[#1a1a1a] border border-[#333] hover:border-[#ff9e19] text-white font-medium rounded-xl transition-all"
+                >
+                  Continue with Stage 6
+                </button>
+              </div>
+            )}
+            
+            {stage7FlowState === 'question1_shown' && !loading && (
+              <div className="flex justify-center gap-3 flex-wrap">
+                <button
+                  onClick={() => handleStage7QuickReply('yes_open')}
+                  className="px-5 py-2.5 bg-[#ff9e19] hover:bg-orange-600 text-white font-medium rounded-xl transition-all"
+                >
+                  Yes, I'm open
+                </button>
+                <button
+                  onClick={() => handleStage7QuickReply('no_not_open')}
+                  className="px-5 py-2.5 bg-[#1a1a1a] border border-[#333] hover:border-[#ff9e19] text-white font-medium rounded-xl transition-all"
+                >
+                  No, not for me
+                </button>
+              </div>
+            )}
+            
+            {stage7FlowState === 'complete' && stage7OpenToProtocol && !loading && (
+              <div className="flex justify-center">
+                <a
+                  href="https://nicholaskusmich.typeform.com/beyond"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-6 py-3 bg-[#ff9e19] hover:bg-orange-600 text-white font-semibold rounded-xl transition-colors shadow-lg inline-flex items-center gap-2"
+                >
+                  Apply for Stage 7 →
+                </a>
               </div>
             )}
             
