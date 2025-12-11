@@ -4,6 +4,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { createClient } from '@/lib/supabase-client';
+import { getPatternSummary } from '@/lib/resistanceTracking';
 
 // ============================================
 // TYPES
@@ -350,7 +351,19 @@ function MetaReflectionModalComponent({ isOpen, onClose, userId, isWeeklyPrompt 
       openingMessage = onDemandMessage;
     }
     
-    // Add pattern context if we have past kernels
+    // Check for resistance patterns (weekly prompt only)
+    if (isWeeklyPrompt && userId) {
+      try {
+        const patternSummary = await getPatternSummary(userId);
+        if (patternSummary) {
+          openingMessage += `\n\n---\n\n**Before we begin, I noticed some patterns this week:**\n\n${patternSummary.replace('**Resistance Patterns Detected:**\n', '')}\n\nThis isn't judgment — it's data for your awareness. These patterns might be worth exploring during your reflection.\n\n---`;
+        }
+      } catch (error) {
+        console.error('[MetaReflection] Error fetching resistance patterns:', error);
+      }
+    }
+    
+    // Add past kernel theme context if we have past kernels
     if (kernels.length > 0) {
       const themeCounts: { [key: string]: number } = {};
       kernels.forEach(k => {
