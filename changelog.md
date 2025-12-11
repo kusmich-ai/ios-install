@@ -238,6 +238,13 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
   - `/lib/templates/processTemplate.ts` - Variable interpolation
   - Zustand store for shared state management
 
+- **Unlock Eligibility Auto-Checker** (`useUserProgress.ts`)
+  - `UNLOCK_THRESHOLDS` configuration for stages 1-6
+  - `checkBasicUnlockEligibility()` function with hybrid approach
+  - Checks: adherence ≥ threshold, days in stage ≥ threshold, delta OR competence met, qualitative rating met
+  - `unlockProgress` object for UI visualization of individual criteria
+  - Competence threshold (4.0) allows advanced users to progress without large deltas
+
 ### Changed
 - **Architecture Decision: Template vs Claude Split (80/20 rule)**
   - Templates handle: daily prompts, stage unlocks, progress summaries, scripted intros
@@ -1138,12 +1145,14 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 ### Current Development Stage
 - Assessment orchestrator: Complete and styled
 - Stage 1: Fully implemented with practice tracking
-- Stage 2: Fully implemented with Somatic Flow
-- Stage 3: Fully implemented with Identity Installation + Two-Stage Extraction
-- Stage 4: Fully implemented with Flow Block + Two-Stage Extraction
-- Stage 5: Fully implemented with Co-Regulation modal + 5-day rotation
-- Stage 6: Fully implemented with Nightly Debrief modal + evening reminder
-- Stage 7: Pending implementation (manual unlock/application system)
+- Stage 2: Fully implemented with Somatic Flow modal + intro templates
+- Stage 3: Fully implemented with Identity Installation + Two-Stage Extraction + intro templates
+- Stage 4: Fully implemented with Flow Block + Two-Stage Extraction + intro templates
+- Stage 5: Fully implemented with Co-Regulation modal + 5-day rotation + intro templates
+- Stage 6: Fully implemented with Nightly Debrief modal + evening reminder + intro templates
+- Stage 7: Templates complete, pending manual unlock/application system implementation
+- Template Library: **COMPLETE** - All stages 1-7 fully templated
+- Unlock Eligibility Auto-Checker: **COMPLETE** - Hybrid approach with competence threshold
 - Sprint Renewal: Complete for Identity and Flow Block sprints
 - Chat interface: Integrated with baseline data + hybrid template system
 - Supabase storage: Configured and functional
@@ -1154,21 +1163,22 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 ### Active Reminder Checklist
 - [x] Provide Resonance Breathing video link (www.unbecoming.app/breathe)
 - [ ] Provide Awareness Rep audio link (3 mins) - placeholder exists
-- [ ] Provide Somatic Flow video link
+- [ ] Provide Somatic Flow video link - placeholder exists
 - [x] Co-Regulation audio (`/audio/Relational.mp3`) - integrated
 
-### Pending Development Tasks
+### Completed Development Tasks ✓
 
-#### HIGH PRIORITY: Template Library Development
+#### Template Library Development
 - [x] Stage 1 ritual introduction templates (COMPLETE - v0.14.0)
 - [x] Template engine implementation (COMPLETE - v0.16.0)
-- [ ] Stage 2 ritual introduction templates (Somatic Flow)
-- [ ] Stage 3 ritual introduction templates (Morning Micro-Action)
-- [ ] Stage 4-6 introduction templates
-- [ ] Daily check-in templates (all stages)
-- [ ] Weekly delta check-in templates
-- [ ] Stage unlock notification templates
-- [ ] Progress summary templates
+- [x] Stage 2 ritual introduction templates (Somatic Flow) - COMPLETE
+- [x] Stage 3 ritual introduction templates (Morning Micro-Action) - COMPLETE
+- [x] Stage 4-6 introduction templates - COMPLETE
+- [x] Stage 7 introduction templates - COMPLETE
+- [x] Daily check-in templates (all stages) - COMPLETE
+- [x] Weekly delta check-in templates - COMPLETE
+- [x] Stage unlock notification templates - COMPLETE
+- [x] Progress summary templates - COMPLETE
 
 #### Data Tracking/Storage System
 - [x] Define storage schema for all user data
@@ -1179,13 +1189,25 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 - [x] Two-stage extraction for identity sprints
 - [x] Two-stage extraction for flow block sprints
 - [x] Sprint renewal system (Continue/Evolve/Pivot)
-- [ ] Design unlock eligibility checker (auto-evaluation)
+- [x] Unlock eligibility auto-checker (COMPLETE - v0.16.0)
+
+#### Stage 5-7 Implementation
+- [x] Co-Regulation Practice modal (Stage 5) - COMPLETE v0.20.0
+- [x] Nightly Debrief modal (Stage 6) - COMPLETE v0.20.0
+- [x] Stage 5-6 intro templates - COMPLETE
+- [x] Stage 7 templates - COMPLETE (manual unlock gate)
+
+### Pending Development Tasks
+
+#### Stage 7 Completion
+- [ ] Stage 7 application form UI
+- [ ] Stage 7 qualification review system
 
 #### Edge Cases & Troubleshooting
-- [ ] What happens when users miss days?
+- [ ] What happens when users miss days? (grace period exists, need full flow)
 - [ ] How to handle resistance patterns?
 - [ ] Build regression/reset protocols
-- [ ] Manual override logic
+- [ ] Manual override logic for stage changes
 - [ ] System recovery from breaks (30+ days)
 
 #### Coach Personality System & Templates
@@ -1194,23 +1216,18 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 - [ ] Design intervention scripts for resistance
 - [ ] Create unlock celebration messages
 - [ ] Behavioral consistency guidelines
-- [ ] **Develop and enable "coach" functionality after micro identity selection**
-- [ ] **Integration of coach with identity progression tracking**
-
-#### Stage 5-7 Implementation
-- [x] Co-Regulation Practice modal (Stage 5) - COMPLETE v0.20.0
-- [x] Nightly Debrief modal (Stage 6) - COMPLETE v0.20.0
-- [ ] Stage 7 application/qualification system
+- [ ] Develop and enable "coach" functionality after micro identity selection
+- [ ] Integration of coach with identity progression tracking
 
 #### Monetization & Access Control
-- [ ] **Implement paywall after certain stage (define which stage)**
+- [ ] Implement paywall after certain stage (define which stage)
 - [ ] Payment integration (Stripe/payment processor)
 - [ ] Subscription management system
 - [ ] Free trial tracking (7-day system currently toggled)
 - [ ] Upgrade prompts and conversion flows
 
 #### Security Implementation
-- [ ] **Security audit on all levels**
+- [ ] Security audit on all levels
 - [ ] Row Level Security (RLS) policies in Supabase (currently basic implementation)
 - [ ] API route protection and authentication
 - [ ] Input validation and sanitization
@@ -1224,7 +1241,7 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 ### Documentation Tasks
 - [ ] Create supplemental instructions doc after Stage 2 testing
 - [ ] Update main project instructions with baseline assessment flow
-- [ ] Document complete Stage 1-3 flows in detail
+- [ ] Document complete Stage 1-6 flows in detail
 - [ ] Add coaching behavioral guidelines
 - [ ] Create media links placeholder system documentation
 
@@ -1248,7 +1265,7 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 ### Database Schema (Key Tables)
 - `user_progress` - Stage, adherence, streaks, ritual_intro_completed, current_identity
 - `baseline_assessments` - Initial 4-domain scores, REwired Index
-- `practice_logs` - Daily ritual completion records (now includes nightly_debrief notes)
+- `practice_logs` - Daily ritual completion records (includes nightly_debrief notes)
 - `weekly_deltas` - Weekly check-in scores
 - `screening_responses` - Medical/psychiatric screening
 - `legal_acceptances` - Terms and consent records
