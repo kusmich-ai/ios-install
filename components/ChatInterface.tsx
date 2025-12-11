@@ -667,6 +667,50 @@ Or if something's in the way, let's talk about it.`;
 }
 
 // ============================================
+// REGRESSION INTERVENTION MESSAGE
+// ============================================
+
+function getRegressionMessage(
+  currentStage: number,
+  adherence: number,
+  avgDelta: number,
+  reason: 'low_adherence' | 'negative_delta' | 'both',
+  userName: string
+): string {
+  const stageName = getStageName(currentStage);
+  const previousStageName = getStageName(currentStage - 1);
+  
+  let problemStatement = '';
+  if (reason === 'both') {
+    problemStatement = `Your adherence dropped to **${adherence.toFixed(0)}%** and your delta scores are **${avgDelta >= 0 ? '+' : ''}${avgDelta.toFixed(2)}** (declining).`;
+  } else if (reason === 'low_adherence') {
+    problemStatement = `Your adherence dropped to **${adherence.toFixed(0)}%** since unlocking Stage ${currentStage}.`;
+  } else {
+    problemStatement = `Your delta scores are **${avgDelta >= 0 ? '+' : ''}${avgDelta.toFixed(2)}** — you're not seeing the improvements we'd expect at this stage.`;
+  }
+
+  return `Hey${userName ? `, ${userName}` : ''}.
+
+${problemStatement}
+
+That's feedback. The system is telling us something.
+
+**Two possibilities:**
+
+1. **New stage overwhelm** — Stage ${currentStage} (${stageName}) added too much too fast
+2. **Something else** — Life circumstances, schedule changes, or something blocking you
+
+**Two options:**
+
+1. **Regress to Stage ${currentStage - 1}** — Return to ${previousStageName} rituals, restabilize, then try again
+2. **Troubleshoot** — Stay at Stage ${currentStage} and figure out what's breaking down
+
+No shame in regressing. It's not failure — it's recalibration. The nervous system learns at its own pace.
+
+What sounds right?`;
+}
+
+// ============================================
 // STAGE INTRO MESSAGE
 // ============================================
 
@@ -792,6 +836,15 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
     daysMissed: number;
   } | null>(null);
 
+  // Regression Intervention State
+  const [regressionIntervention, setRegressionIntervention] = useState<{
+    isActive: boolean;
+    currentStage: number;
+    adherence: number;
+    avgDelta: number;
+    reason: 'low_adherence' | 'negative_delta' | 'both';
+  } | null>(null);
+
   // ============================================
   // ALL useRef DECLARATIONS (must be after useState, in consistent order)
   // ============================================
@@ -806,6 +859,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   const hasCheckedSundayReflection = useRef<boolean>(false);
   const hasCheckedStage7Eligibility = useRef<boolean>(false);
   const hasCheckedResistance = useRef<boolean>(false);
+  const hasCheckedRegression = useRef<boolean>(false);
 
   // ============================================
   // HOOKS
@@ -1753,6 +1807,85 @@ Which one?`;
   };
 
   // ============================================
+  // REGRESSION RESPONSE HANDLER
+  // ============================================
+
+  const handleRegressionResponse = async (userMessage: string): Promise<string> => {
+    const lowerMessage = userMessage.toLowerCase();
+    
+    // Check if they want to regress
+    const wantsRegress = ['regress', 'go back', 'previous stage', 'stage ' + ((regressionIntervention?.currentStage || 2) - 1), 'option 1', '1'].some(
+      word => lowerMessage.includes(word)
+    );
+    
+    // Check if they want to troubleshoot
+    const wantsTroubleshoot = ['troubleshoot', 'stay', 'figure out', 'option 2', '2', 'what\'s breaking', 'keep going'].some(
+      word => lowerMessage.includes(word)
+    );
+    
+    if (wantsRegress && regressionIntervention) {
+      const previousStage = regressionIntervention.currentStage - 1;
+      const previousStageName = getStageName(previousStage);
+      const previousRituals = stageRituals[previousStage];
+      
+      try {
+        const supabase = createClient();
+        await supabase
+          .from('user_progress')
+          .update({ 
+            current_stage: previousStage,
+            stage_start_date: new Date().toISOString(),
+            consecutive_days: 0
+          })
+          .eq('user_id', user.id);
+        
+        setRegressionIntervention(null);
+        
+        if (refetchProgress) await refetchProgress();
+        
+        return `**Regressed to Stage ${previousStage}: ${previousStageName}.**
+
+No shame in this — you're recalibrating, not failing. The nervous system learns at its own pace.
+
+Your rituals are now:
+${previousRituals?.list || '1. Resonance Breathing - 5 mins\n2. Awareness Rep - 2 mins'}
+
+We'll restabilize here, then try Stage ${regressionIntervention.currentStage} again when you're ready.
+
+Take a breath. Start fresh today.`;
+      } catch (error) {
+        console.error('Failed to regress stage:', error);
+        return "There was an error updating your stage. Let's troubleshoot what's going on instead.";
+      }
+    }
+    
+    if (wantsTroubleshoot && regressionIntervention) {
+      setRegressionIntervention(null);
+      
+      return `Alright. Let's troubleshoot.
+
+A few common patterns when a stage stalls:
+
+1. **Time pressure** — The new practices don't fit your schedule
+2. **Complexity overwhelm** — Too many moving parts to track
+3. **Motivation fade** — Initial enthusiasm wore off
+4. **Life interference** — Something external disrupted your rhythm
+5. **Practice resistance** — One specific practice feels like a chore
+
+Which of these resonates? Or is it something else entirely?`;
+    }
+    
+    // If unclear response, prompt for clarity
+    const currentStage = regressionIntervention?.currentStage || 2;
+    return `I want to make sure I understand. Would you like to:
+
+1. **Regress** — Go back to Stage ${currentStage - 1} and restabilize
+2. **Troubleshoot** — Stay at Stage ${currentStage} and figure out what's not working
+
+Which one?`;
+  };
+
+  // ============================================
   // MICRO-ACTION SETUP HANDLERS
   // ============================================
   
@@ -2454,6 +2587,51 @@ ${avgDelta >= 0.3 ? '📈 Great progress! Keep the consistency going.' : avgDelt
       if (refetchProgress) {
         await refetchProgress();
       }
+      
+      // Check for regression after weekly check-in completes
+      const currentStage = progress?.currentStage || 1;
+      const adherence = progress?.adherencePercentage || 0;
+      
+      // Only check if Stage 2+ and been in stage for 7+ days
+      if (currentStage >= 2 && progress?.stageStartDate) {
+        const stageStartDate = new Date(progress.stageStartDate);
+        const daysSinceStageStart = Math.floor(
+          (new Date().getTime() - stageStartDate.getTime()) / (1000 * 60 * 60 * 24)
+        );
+        
+        // Check conditions: 7+ days in stage, adherence < 60% OR negative delta
+        if (daysSinceStageStart >= 7) {
+          const lowAdherence = adherence < 60;
+          const negativeDelta = avgDelta < 0;
+          
+          if (lowAdherence || negativeDelta) {
+            let reason: 'low_adherence' | 'negative_delta' | 'both' = 'low_adherence';
+            if (lowAdherence && negativeDelta) reason = 'both';
+            else if (negativeDelta) reason = 'negative_delta';
+            
+            // Delay the regression message so user can see their weekly results first
+            setTimeout(() => {
+              const regressionMsg = getRegressionMessage(
+                currentStage,
+                adherence,
+                avgDelta,
+                reason,
+                getUserName()
+              );
+              
+              setMessages(prev => [...prev, { role: 'assistant', content: regressionMsg }]);
+              
+              setRegressionIntervention({
+                isActive: true,
+                currentStage,
+                adherence,
+                avgDelta,
+                reason
+              });
+            }, 2000);
+          }
+        }
+      }
     } catch (error) {
       console.error('Failed to save weekly check-in:', error);
       setMessages(prev => [...prev, {
@@ -2934,6 +3112,20 @@ This isn't judgment — it's data. The resistance is telling you something. Want
       setLoading(true);
       
       const response = await handleMissedDaysResponse(userMessage);
+      
+      setTimeout(() => {
+        setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+        setLoading(false);
+      }, 500);
+      return;
+    }
+    
+    // 0.6 Regression Intervention Flow
+    if (regressionIntervention?.isActive) {
+      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+      setLoading(true);
+      
+      const response = await handleRegressionResponse(userMessage);
       
       setTimeout(() => {
         setMessages(prev => [...prev, { role: 'assistant', content: response }]);
@@ -3587,6 +3779,34 @@ This isn't judgment — it's data. The resistance is telling you something. Want
                   className="px-5 py-2.5 bg-[#1a1a1a] border border-[#333] hover:border-[#ff9e19] text-white font-medium rounded-xl transition-all"
                 >
                   Reset Stage
+                </button>
+              </div>
+            )}
+            
+            {/* Regression Quick Replies */}
+            {regressionIntervention?.isActive && !loading && (
+              <div className="flex justify-center gap-3 flex-wrap">
+                <button
+                  onClick={() => {
+                    setMessages(prev => [...prev, { role: 'user', content: `Regress to Stage ${(regressionIntervention?.currentStage || 2) - 1}` }]);
+                    handleRegressionResponse("regress").then(response => {
+                      setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+                    });
+                  }}
+                  className="px-5 py-2.5 bg-[#1a1a1a] border border-[#333] hover:border-[#ff9e19] text-white font-medium rounded-xl transition-all"
+                >
+                  Regress to Stage {(regressionIntervention?.currentStage || 2) - 1}
+                </button>
+                <button
+                  onClick={() => {
+                    setMessages(prev => [...prev, { role: 'user', content: "Let's troubleshoot" }]);
+                    handleRegressionResponse("troubleshoot").then(response => {
+                      setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+                    });
+                  }}
+                  className="px-5 py-2.5 bg-[#ff9e19] hover:bg-orange-600 text-white font-medium rounded-xl transition-all"
+                >
+                  Troubleshoot
                 </button>
               </div>
             )}
