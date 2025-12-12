@@ -1,10 +1,5 @@
 // lib/security/inputSanitization.ts
-// Drop this file into your /lib/security/ directory
-
-/**
- * Input Sanitization & Prompt Injection Protection
- * Protects against attempts to extract system prompts or manipulate AI behavior
- */
+// Input Sanitization & Prompt Injection Protection
 
 // Patterns that indicate prompt injection attempts
 const INJECTION_PATTERNS: RegExp[] = [
@@ -37,9 +32,9 @@ const INJECTION_PATTERNS: RegExp[] = [
   /switch\s*(to|into)\s*(a\s*different|another)\s*(mode|persona|character)/i,
   
   // Jailbreak attempts
-  /dan\s*mode/i,
+  /\bdan\s*mode\b/i,
   /developer\s*mode\s*(enabled|activated|on)/i,
-  /jailbreak/i,
+  /\bjailbreak\b/i,
   /bypass\s*(your|the|all)\s*(restrictions|filters|rules)/i,
   /disable\s*(your|the|all)\s*(restrictions|filters|rules|safety)/i,
   /turn\s*off\s*(your|the|all)\s*(restrictions|filters|rules|safety)/i,
@@ -52,26 +47,16 @@ const INJECTION_PATTERNS: RegExp[] = [
   
   // Encoding tricks
   /base64\s*(decode|encoded)/i,
-  /decode\s*this/i,
   /\[system\]/i,
   /\[instructions\]/i,
-  /\<\/?system\>/i,
+  /<\/?system>/i,
   
   // Debug/testing pretexts
-  /debug\s*mode/i,
-  /testing\s*mode/i,
-  /admin\s*mode/i,
+  /\bdebug\s*mode\b/i,
+  /\btesting\s*mode\b/i,
+  /\badmin\s*mode\b/i,
   /maintenance\s*mode/i,
   /reveal\s*(hidden|secret)/i,
-];
-
-// Suspicious but not always malicious - flag for logging
-const SUSPICIOUS_PATTERNS: RegExp[] = [
-  /how\s*do\s*you\s*work/i,
-  /what\s*(makes|is)\s*you\s*(tick|different)/i,
-  /what\s*are\s*you\s*capable\s*of/i,
-  /can\s*you\s*access/i,
-  /do\s*you\s*have\s*access\s*to/i,
 ];
 
 export interface SanitizationResult {
@@ -106,28 +91,11 @@ export function sanitizeInput(message: string): SanitizationResult {
     };
   }
 
-  // Check for suspicious patterns (log but allow)
-  const suspiciousMatches: string[] = [];
-  for (const pattern of SUSPICIOUS_PATTERNS) {
-    if (pattern.test(message)) {
-      suspiciousMatches.push(pattern.source);
-    }
-  }
-
-  if (suspiciousMatches.length > 0) {
-    return {
-      safe: true,
-      flagged: true,
-      patterns: suspiciousMatches,
-    };
-  }
-
   return { safe: true };
 }
 
 /**
  * Sanitize message content - remove potentially dangerous characters
- * while preserving legitimate content
  */
 export function cleanMessageContent(message: string): string {
   if (!message || typeof message !== 'string') {
@@ -151,7 +119,8 @@ export function cleanMessageContent(message: string): string {
 }
 
 /**
- * Validate message array structure
+ * Validate message array structure ONLY (no injection check here)
+ * Injection check happens separately with better error handling
  */
 export function validateMessages(
   messages: unknown
@@ -183,20 +152,12 @@ export function validateMessages(
       return { valid: false, error: `Invalid role at index ${i}` };
     }
 
-    if (!msg.content || typeof msg.content !== 'string') {
+    if (typeof msg.content !== 'string') {
       return { valid: false, error: `Invalid content at index ${i}` };
     }
 
-    // Check each user message for injection
-    if (msg.role === 'user') {
-      const sanitizationResult = sanitizeInput(msg.content);
-      if (!sanitizationResult.safe) {
-        return { 
-          valid: false, 
-          error: sanitizationResult.reason || 'Message contains blocked content'
-        };
-      }
-    }
+    // NOTE: We do NOT check for injection here anymore
+    // Injection check happens in the route handler with proper response handling
   }
 
   return { valid: true };
