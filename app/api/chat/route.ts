@@ -1,4 +1,4 @@
-// app/api/chat/route.ts - SECURED VERSION
+// app/api/chat/route.ts - SECURED VERSION (TypeScript Fixed)
 import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
 import { microActionSystemPrompt } from '@/lib/microActionAPI';
@@ -21,6 +21,14 @@ import { checkRateLimit } from '@/lib/security/rateLimit';
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
+
+// Type for message roles
+type MessageRole = 'user' | 'assistant';
+
+interface Message {
+  role: string;
+  content: string;
+}
 
 // ============================================
 // ANTI-EXTRACTION SECURITY INSTRUCTIONS
@@ -276,7 +284,7 @@ export async function POST(req: Request) {
     }
 
     // STEP 4: SANITIZE INPUT
-    const userMessages = messages.filter((m: { role: string }) => m.role === 'user');
+    const userMessages = messages.filter((m: Message) => m.role === 'user');
     const latestUserMessage = userMessages[userMessages.length - 1];
     
     if (latestUserMessage) {
@@ -300,41 +308,34 @@ export async function POST(req: Request) {
 
     // STEP 5: PREPARE API CALL
     let maxTokens = 2048;
-    let temperature = 0.7;
     let systemPrompt = mainSystemPrompt;
 
     switch (context) {
       case 'micro_action_setup':
         systemPrompt = SECURITY_INSTRUCTIONS + '\n\n' + microActionSystemPrompt;
         maxTokens = 2048;
-        temperature = 0.7;
         break;
 
       case 'micro_action_extraction':
         maxTokens = 500;
-        temperature = 0.3;
         break;
 
       case 'flow_block_setup':
         systemPrompt = SECURITY_INSTRUCTIONS + '\n\n' + flowBlockSystemPrompt;
         maxTokens = 2048;
-        temperature = 0.7;
         break;
 
       case 'flow_block_extraction':
         maxTokens = 500;
-        temperature = 0.3;
         break;
 
       case 'weekly_check_in':
         maxTokens = 1024;
-        temperature = 0.5;
         break;
 
       case 'decentering_practice':
         systemPrompt = decenteringSystemPrompt;
         maxTokens = 1024;
-        temperature = 0.7;
         break;
 
       case 'meta_reflection':
@@ -343,7 +344,6 @@ export async function POST(req: Request) {
           systemPrompt += '\n\n' + additionalContext;
         }
         maxTokens = 1024;
-        temperature = 0.7;
         break;
 
       case 'reframe':
@@ -352,38 +352,29 @@ export async function POST(req: Request) {
           systemPrompt += '\n\n' + additionalContext;
         }
         maxTokens = 1024;
-        temperature = 0.7;
         break;
 
       default:
         break;
     }
 
-    const hasSystemPrompt = messages.some((msg: { role: string }) => msg.role === 'system');
-    const conversationMessages = messages
-      .filter((msg: { role: string }) => msg.role !== 'system')
-      .map((msg: { role: string; content: string }) => ({
-        role: msg.role,
+    const hasSystemPrompt = messages.some((msg: Message) => msg.role === 'system');
+    
+    // Build properly typed messages array
+    const conversationMessages: Array<{ role: MessageRole; content: string }> = messages
+      .filter((msg: Message) => msg.role !== 'system')
+      .map((msg: Message) => ({
+        role: (msg.role === 'assistant' ? 'assistant' : 'user') as MessageRole,
         content: cleanMessageContent(msg.content),
       }));
 
-    const apiConfig: {
-      model: string;
-      max_tokens: number;
-      messages: Array<{ role: string; content: string }>;
-      system?: string;
-    } = {
+    // STEP 6: MAKE API CALL
+    const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: maxTokens,
+      system: hasSystemPrompt ? undefined : systemPrompt,
       messages: conversationMessages,
-    };
-
-    if (!hasSystemPrompt) {
-      apiConfig.system = systemPrompt;
-    }
-
-    // STEP 6: MAKE API CALL
-    const response = await anthropic.messages.create(apiConfig);
+    });
 
     const responseText = response.content[0].type === 'text' 
       ? response.content[0].text 
