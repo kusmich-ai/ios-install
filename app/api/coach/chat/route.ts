@@ -1,4 +1,4 @@
-// app/api/coach/chat/route.ts - WITH COMPREHENSIVE SAFETY + SLACK NOTIFICATIONS
+// app/api/coach/chat/route.ts - FINAL VERSION WITH MEMORY INJECTION
 import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
 import { getCoachSystemPrompt, CoachId } from '@/lib/coachPrompts';
@@ -22,6 +22,7 @@ import {
   BoundaryCategory,
 } from '@/lib/crisisDetection';
 import { sendSafetyNotification } from '@/lib/notifications';
+import { getMemoryContext } from '@/lib/memoryService';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -37,7 +38,6 @@ interface Message {
 interface RequestBody {
   messages: Message[];
   coachId: CoachId;
-  memories?: string[];
   conversationId?: string;
 }
 
@@ -89,7 +89,7 @@ export async function POST(req: Request) {
 
     // STEP 3: PARSE AND VALIDATE REQUEST
     const body: RequestBody = await req.json();
-    const { messages, coachId, memories, conversationId } = body;
+    const { messages, coachId, conversationId } = body;
 
     // Validate coachId
     if (!coachId || !['nic', 'fehren'].includes(coachId)) {
@@ -152,7 +152,6 @@ export async function POST(req: Request) {
       });
 
       // Send Slack notification for critical/high-priority events
-      // This runs async and doesn't block the response
       sendSafetyNotification(actionType, {
         coachId,
         userId,
@@ -175,15 +174,27 @@ export async function POST(req: Request) {
       }
     }
 
-    // STEP 7: BUILD SYSTEM PROMPT WITH SAFETY
+    // STEP 7: FETCH USER MEMORIES
+    let memoryContext = '';
+    try {
+      memoryContext = await getMemoryContext(userId, coachId);
+      if (memoryContext) {
+        console.log(`[API/Coach/Chat] Loaded memory context for user ${userId.slice(0, 8)}...`);
+      }
+    } catch (memoryError) {
+      // Don't fail the request if memory loading fails
+      console.error('[API/Coach/Chat] Error loading memories (non-blocking):', memoryError);
+    }
+
+    // STEP 8: BUILD SYSTEM PROMPT
     let systemPrompt = getCoachSystemPrompt(coachId);
     
-    // Add safety protocols to prompt
+    // Add safety protocols
     systemPrompt = addSafetyToPrompt(systemPrompt);
 
-    // Inject memories if available
-    if (memories && memories.length > 0) {
-      systemPrompt += `\n\n## WHAT YOU REMEMBER ABOUT THIS USER\n${memories.join('\n')}`;
+    // Add memory context if available
+    if (memoryContext) {
+      systemPrompt += `\n\n${memoryContext}`;
     }
 
     // If concern was detected but not blocked, add context for AI
@@ -191,7 +202,7 @@ export async function POST(req: Request) {
       systemPrompt += `\n\n## CURRENT CONTEXT - HANDLE WITH CARE\nThe user's message contains language suggesting possible distress (detected: ${safetyCheck.matchedPhrases.join(', ')}). Check in on their wellbeing before proceeding with coaching. Ask directly if they're having thoughts of hurting themselves. Prioritize their safety over coaching content.`;
     }
 
-    // STEP 8: PREPARE MESSAGES
+    // STEP 9: PREPARE MESSAGES
     const conversationMessages: Array<{ role: MessageRole; content: string }> = messages
       .filter((msg: Message) => msg.role !== 'system')
       .map((msg: Message) => ({
@@ -199,7 +210,7 @@ export async function POST(req: Request) {
         content: cleanMessageContent(msg.content),
       }));
 
-    // STEP 9: MAKE API CALL
+    // STEP 10: MAKE API CALL
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 2048,
