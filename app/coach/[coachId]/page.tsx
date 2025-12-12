@@ -771,12 +771,95 @@ export default function CoachChatPage() {
               <div className="text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" style={{ color: accentColor }} /><p className="text-gray-500 text-sm">Loading conversation...</p></div>
             </div>
           ) : !activeConversationId ? (
-            <div className="h-full flex items-center justify-center">
-              <div className="text-center">
-                <div className="text-4xl mb-4">{coach.icon}</div>
-                <h2 className="text-xl font-medium text-white mb-2">{coach.name}</h2>
-                <p className="text-gray-400 mb-6 max-w-md">{coach.description}</p>
-                <LoadingButton onClick={startNewConversation} loading={creatingConversation} loadingText="Starting..." className={`px-6 py-2 rounded-lg ${accentBg} ${accentHover} text-white transition-colors`}>Start a conversation</LoadingButton>
+            <div className="h-full flex items-center justify-center p-4">
+              <div className="w-full max-w-lg">
+                {/* Intro Card */}
+                <div className="bg-[#111] border border-gray-800 rounded-2xl p-6 sm:p-8">
+                  {/* Header */}
+                  <div className="text-center mb-6">
+                    <div className="text-5xl mb-3">{coach.icon}</div>
+                    <h2 className="text-2xl font-medium text-white mb-1">{coach.name}</h2>
+                    <p className="text-sm" style={{ color: accentColor }}>{coach.tagline}</p>
+                  </div>
+
+                  {/* Description */}
+                  <p className="text-gray-300 text-center mb-6 leading-relaxed">
+                    {coachId === 'nic' 
+                      ? "Direct, practical, and neuroscience-grounded. I help you see what's actually running you so you can move without fighting yourself."
+                      : "Warm, spacious, and feeling-first. I help you stop forcing and start allowing — because alignment creates motion more than effort ever could."
+                    }
+                  </p>
+
+                  {/* Good For section */}
+                  <div className="bg-[#0a0a0a] rounded-xl p-4 mb-6">
+                    <p className="text-xs uppercase tracking-wider text-gray-500 mb-3">Good for</p>
+                    <div className="space-y-2">
+                      {(coachId === 'nic' ? [
+                        'Breaking patterns and loops',
+                        'Understanding why you\'re stuck', 
+                        'Performance and focus',
+                        'Nervous system regulation',
+                      ] : [
+                        'Emotional processing and release',
+                        'Relationship dynamics',
+                        'Parenting and family',
+                        'Parts work and inner healing',
+                      ]).map((item, i) => (
+                        <div key={i} className="flex items-center gap-2 text-sm text-gray-300">
+                          <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: accentColor }} />
+                          {item}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Example prompts */}
+                  <div className="mb-6">
+                    <p className="text-xs uppercase tracking-wider text-gray-500 mb-3">Try asking</p>
+                    <div className="space-y-2">
+                      {(coachId === 'nic' ? [
+                        "I know what to do but can't make myself do it",
+                        "Why do I keep self-sabotaging?",
+                      ] : [
+                        "I'm feeling overwhelmed and don't know why",
+                        "I keep giving too much to others",
+                      ]).map((prompt, i) => (
+                        <button
+                          key={i}
+                          onClick={() => {
+                            startNewConversation();
+                            // Note: We can't pre-fill input easily here, but clicking starts the convo
+                          }}
+                          className="w-full text-left text-sm text-gray-400 hover:text-white bg-[#0a0a0a] hover:bg-[#1a1a1a] rounded-lg px-3 py-2.5 transition-colors border border-transparent hover:border-gray-700"
+                        >
+                          "{prompt}"
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Start button */}
+                  <LoadingButton 
+                    onClick={startNewConversation} 
+                    loading={creatingConversation} 
+                    loadingText="Starting..." 
+                    className={`w-full py-3 rounded-xl ${accentBg} ${accentHover} text-white font-medium transition-colors`}
+                  >
+                    Start a conversation
+                  </LoadingButton>
+
+                  {/* Switch coach hint */}
+                  <p className="text-center text-xs text-gray-600 mt-4">
+                    Looking for {coachId === 'nic' ? 'emotional processing' : 'pattern breaking'}?{' '}
+                    <button 
+                      onClick={() => router.push(`/coach/${coachId === 'nic' ? 'fehren' : 'nic'}`)}
+                      className="hover:underline"
+                      style={{ color: coachId === 'nic' ? '#7c9eb2' : '#ff9e19' }}
+                    >
+                      Try {coachId === 'nic' ? 'Fehren' : 'Nic'}
+                    </button>
+                  </p>
+                </div>
               </div>
             </div>
           ) : (
