@@ -775,9 +775,40 @@ export default function CoachChatPage() {
               <div className="w-full max-w-lg">
                 {/* Intro Card */}
                 <div className="bg-[#111] border border-gray-800 rounded-2xl p-6 sm:p-8">
-                  {/* Header */}
+                  {/* Header with Photo */}
                   <div className="text-center mb-6">
-                    <div className="text-5xl mb-3">{coach.icon}</div>
+                    <div className="relative inline-block mb-4">
+                      <picture>
+                        <source srcSet={coachId === 'nic' ? '/coaches/nic.avif' : '/coaches/fehren.avif'} type="image/avif" />
+                        <source srcSet={coachId === 'nic' ? '/coaches/nic.webp' : '/coaches/fehren.webp'} type="image/webp" />
+                        <img 
+                          src={coachId === 'nic' ? '/coaches/nic.jpg' : '/coaches/fehren.jpg'}
+                          alt={coach.name}
+                          className="w-24 h-24 rounded-full object-cover"
+                          style={{ borderColor: accentColor, borderWidth: '3px', borderStyle: 'solid' }}
+                          onError={(e) => {
+                            // If all image formats fail, hide img and show emoji fallback
+                            const target = e.currentTarget;
+                            target.style.display = 'none';
+                            const fallback = target.parentElement?.querySelector('.emoji-fallback');
+                            if (fallback) (fallback as HTMLElement).style.display = 'flex';
+                          }}
+                        />
+                      </picture>
+                      {/* Emoji fallback (hidden by default) */}
+                      <div 
+                        className="emoji-fallback w-24 h-24 rounded-full items-center justify-center text-5xl bg-[#1a1a1a] hidden"
+                        style={{ borderColor: accentColor, borderWidth: '3px', borderStyle: 'solid' }}
+                      >
+                        {coach.icon}
+                      </div>
+                      <div 
+                        className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full flex items-center justify-center text-lg bg-[#111] border-2"
+                        style={{ borderColor: accentColor }}
+                      >
+                        {coach.icon}
+                      </div>
+                    </div>
                     <h2 className="text-2xl font-medium text-white mb-1">{coach.name}</h2>
                     <p className="text-sm" style={{ color: accentColor }}>{coach.tagline}</p>
                   </div>
