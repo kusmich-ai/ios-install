@@ -71,7 +71,7 @@ export async function GET(req: Request) {
     const userId = authResult.userId;
 
     // STEP 2: CHECK RATE LIMIT (more lenient for reads)
-    const rateLimitResult = checkRateLimit(userId, 'api');
+    const rateLimitResult = checkRateLimit(userId, 'default');
     
     if (!rateLimitResult.allowed) {
       console.log('[Coach/Conversations] Rate limited:', userId);
@@ -157,7 +157,7 @@ export async function POST(req: Request) {
     const userId = authResult.userId;
 
     // STEP 2: CHECK RATE LIMIT
-    const rateLimitResult = checkRateLimit(userId, 'api');
+    const rateLimitResult = checkRateLimit(userId, 'default');
     
     if (!rateLimitResult.allowed) {
       console.log('[Coach/Conversations] Rate limited:', userId);
@@ -291,7 +291,7 @@ export async function DELETE(req: Request) {
     const userId = authResult.userId;
 
     // STEP 2: CHECK RATE LIMIT
-    const rateLimitResult = checkRateLimit(userId, 'api');
+    const rateLimitResult = checkRateLimit(userId, 'default');
     
     if (!rateLimitResult.allowed) {
       return rateLimitedResponse(rateLimitResult.blockRemaining || rateLimitResult.resetIn);
