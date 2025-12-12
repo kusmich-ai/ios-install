@@ -17,8 +17,7 @@
     "@supabase/supabase-js": "^2.39.0",
     "@tailwindcss/postcss": "^4.0.0",
     "@supabase/ssr": "latest",
-    "@supabase/supabase-js": "^2.38.4",
-    "@sentry/nextjs": "^8.40.0"
+    "@supabase/supabase-js": "^2.38.4"
   },
   "devDependencies": {
     "@types/node": "^20",
