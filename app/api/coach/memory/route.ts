@@ -1,5 +1,5 @@
 // app/api/coach/memory/route.ts
-// API routes for coach memory operations
+// API routes for coach memory operations - UPDATED with management features
 
 import { NextResponse } from 'next/server';
 import {
@@ -12,41 +12,19 @@ import {
 import { checkRateLimit } from '@/lib/security/rateLimit';
 import {
   getMemories,
+  getAllUserMemories,
+  getMemoryCount,
   deleteMemory,
+  deleteMemoryById,
   deleteAllMemories,
   getMemoryContext,
-  Memory,
 } from '@/lib/memoryService';
 import {
   extractMemoriesFromConversation,
 } from '@/lib/memoryExtraction';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
-
-// Helper to create Supabase server client
-async function createSupabaseServer() {
-  const cookieStore = await cookies();
-  
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options);
-          });
-        },
-      },
-    }
-  );
-}
 
 // ============================================
-// GET - Fetch memories for a user/coach
+// GET - Fetch memories for a user
 // ============================================
 export async function GET(req: Request) {
   try {
@@ -68,20 +46,39 @@ export async function GET(req: Request) {
     // Get params
     const { searchParams } = new URL(req.url);
     const coachId = searchParams.get('coachId');
-    const format = searchParams.get('format'); // 'raw' or 'prompt'
+    const format = searchParams.get('format'); // 'raw', 'prompt', or 'all'
+    const includeShared = searchParams.get('shared') !== 'false'; // Default true
 
+    // Format: 'all' - get ALL memories across all coaches (for management UI)
+    if (format === 'all') {
+      const memories = await getAllUserMemories(userId);
+      const count = memories.length;
+      
+      return NextResponse.json({ 
+        memories,
+        count,
+      });
+    }
+
+    // Otherwise need coachId
     if (!coachId || !['nic', 'fehren'].includes(coachId)) {
       return badRequestResponse('Invalid coach ID');
     }
 
+    // Format: 'prompt' - return formatted for prompt injection
     if (format === 'prompt') {
-      // Return formatted for prompt injection
-      const context = await getMemoryContext(userId, coachId);
+      const context = await getMemoryContext(userId, coachId, includeShared);
       return NextResponse.json({ context });
     }
 
-    // Return raw memories
-    const memories = await getMemories(userId, coachId);
+    // Format: 'count' - just return count
+    if (format === 'count') {
+      const count = await getMemoryCount(userId, coachId);
+      return NextResponse.json({ count });
+    }
+
+    // Default: return raw memories
+    const memories = await getMemories(userId, coachId, undefined, includeShared);
     
     return NextResponse.json({ 
       memories,
@@ -196,14 +193,31 @@ export async function DELETE(req: Request) {
     const { searchParams } = new URL(req.url);
     const coachId = searchParams.get('coachId');
     const memoryKey = searchParams.get('key');
+    const memoryId = searchParams.get('id');
     const deleteAll = searchParams.get('all') === 'true';
+    const deleteEverything = searchParams.get('everything') === 'true';
 
-    if (!coachId || !['nic', 'fehren'].includes(coachId)) {
-      return badRequestResponse('Invalid coach ID');
+    // Delete EVERYTHING across all coaches
+    if (deleteEverything) {
+      const success = await deleteAllMemories(userId); // No coachId = all coaches
+      
+      if (success) {
+        await logAuditEvent({
+          userId,
+          action: 'MEMORY_DELETE_EVERYTHING',
+          details: { scope: 'all_coaches' },
+        });
+      }
+      
+      return NextResponse.json({ success, deleted: 'everything' });
     }
 
+    // Delete all for specific coach
     if (deleteAll) {
-      // Delete all memories for this coach
+      if (!coachId || !['nic', 'fehren'].includes(coachId)) {
+        return badRequestResponse('Invalid coach ID');
+      }
+      
       const success = await deleteAllMemories(userId, coachId);
       
       if (success) {
@@ -214,25 +228,44 @@ export async function DELETE(req: Request) {
         });
       }
       
-      return NextResponse.json({ success, deleted: 'all' });
+      return NextResponse.json({ success, deleted: 'all', coachId });
     }
 
-    if (!memoryKey) {
-      return badRequestResponse('Memory key required (or use all=true)');
+    // Delete by ID (preferred for UI)
+    if (memoryId) {
+      const success = await deleteMemoryById(userId, memoryId);
+      
+      if (success) {
+        await logAuditEvent({
+          userId,
+          action: 'MEMORY_DELETE',
+          details: { memoryId },
+        });
+      }
+      
+      return NextResponse.json({ success, deleted: memoryId });
     }
 
-    // Delete specific memory
-    const success = await deleteMemory(userId, coachId, memoryKey);
-    
-    if (success) {
-      await logAuditEvent({
-        userId,
-        action: 'MEMORY_DELETE',
-        details: { coachId, key: memoryKey },
-      });
+    // Delete by key (legacy)
+    if (memoryKey && coachId) {
+      if (!['nic', 'fehren'].includes(coachId)) {
+        return badRequestResponse('Invalid coach ID');
+      }
+      
+      const success = await deleteMemory(userId, coachId, memoryKey);
+      
+      if (success) {
+        await logAuditEvent({
+          userId,
+          action: 'MEMORY_DELETE',
+          details: { coachId, key: memoryKey },
+        });
+      }
+
+      return NextResponse.json({ success, deleted: memoryKey });
     }
 
-    return NextResponse.json({ success, deleted: memoryKey });
+    return badRequestResponse('Provide id, key+coachId, all+coachId, or everything=true');
 
   } catch (error) {
     console.error('[API/Coach/Memory] DELETE Error:', error);
