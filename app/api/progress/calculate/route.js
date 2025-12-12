@@ -1,4 +1,4 @@
-// app/api/progress/calculate/route.js
+// app/api/progress/calculate/route.js - SECURED VERSION
 import { createClient } from '@supabase/supabase-js';
 import { 
   calculateAdherence, 
@@ -9,21 +9,44 @@ import {
   checkUnlockEligibility,
   getStagePractices
 } from '@/lib/progress-utils';
+import {
+  verifyAuth,
+  unauthorizedResponse,
+  rateLimitedResponse,
+  badRequestResponse,
+  logAuditEvent,
+} from '@/lib/security/auth';
+import { checkRateLimit } from '@/lib/security/rateLimit';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+const VALID_ACTIONS = new Set(['recalculate', 'check_unlock', 'unlock_stage', 'weekly_delta']);
+
 export async function POST(req) {
   try {
-    const { userId, action } = await req.json();
+    // SECURITY: Get userId from session only
+    const authResult = await verifyAuth();
+    
+    if (!authResult.authenticated || !authResult.userId) {
+      return unauthorizedResponse('Please sign in to view progress.');
+    }
 
-    if (!userId) {
-      return Response.json(
-        { error: 'Missing userId' },
-        { status: 400 }
-      );
+    const userId = authResult.userId;
+
+    // Rate limiting
+    const rateLimitResult = checkRateLimit(userId, 'progress');
+    if (!rateLimitResult.allowed) {
+      return rateLimitedResponse(rateLimitResult.blockRemaining || rateLimitResult.resetIn);
+    }
+
+    const body = await req.json();
+    const { action } = body;
+
+    if (action && !VALID_ACTIONS.has(action)) {
+      return badRequestResponse('Invalid action');
     }
 
     switch (action) {
@@ -34,45 +57,46 @@ export async function POST(req) {
       case 'unlock_stage':
         return await unlockNextStage(userId);
       case 'weekly_delta':
-        return await recordWeeklyDelta(userId, await req.json());
+        const { scores } = body;
+        if (!scores || typeof scores !== 'object') {
+          return badRequestResponse('Missing or invalid scores');
+        }
+        const { regulation, awareness, outlook, attention } = scores;
+        if (
+          typeof regulation !== 'number' || regulation < 0 || regulation > 5 ||
+          typeof awareness !== 'number' || awareness < 0 || awareness > 5 ||
+          typeof outlook !== 'number' || outlook < 0 || outlook > 5 ||
+          typeof attention !== 'number' || attention < 0 || attention > 5
+        ) {
+          return badRequestResponse('Invalid score values. Must be 0-5.');
+        }
+        return await recordWeeklyDelta(userId, scores);
       default:
         return await getFullProgress(userId);
     }
 
   } catch (error) {
-    console.error('Progress calculation error:', error);
-    return Response.json(
-      { error: error.message },
-      { status: 500 }
-    );
+    console.error('[Progress] Error:', error);
+    return Response.json({ error: 'Failed to process request.' }, { status: 500 });
   }
 }
 
 async function getFullProgress(userId) {
-  // Get user progress
   const { data: progressData, error: progressError } = await supabase
     .from('user_progress')
     .select('*')
     .eq('user_id', userId)
     .single();
 
-  if (progressError) {
-    throw new Error('Failed to fetch user progress');
-  }
+  if (progressError) throw new Error('Failed to fetch user progress');
 
-  // Get baseline data
-  const { data: baselineData, error: baselineError } = await supabase
+  const { data: baselineData } = await supabase
     .from('baseline_assessments')
     .select('*')
     .eq('user_id', userId)
     .single();
 
-  if (baselineError) {
-    console.error('Baseline error:', baselineError);
-  }
-
-  // Get latest weekly delta
-  const { data: latestDelta, error: deltaError } = await supabase
+  const { data: latestDelta } = await supabase
     .from('weekly_deltas')
     .select('*')
     .eq('user_id', userId)
@@ -80,7 +104,6 @@ async function getFullProgress(userId) {
     .limit(1)
     .single();
 
-  // Calculate REwired Index from baseline or latest delta
   const domainScores = latestDelta ? {
     regulation: latestDelta.regulation_score,
     awareness: latestDelta.awareness_score,
@@ -96,7 +119,6 @@ async function getFullProgress(userId) {
   const rewiredIndex = calculateRewiredIndex(domainScores);
   const tier = getTier(rewiredIndex);
 
-  // Calculate deltas from baseline
   const baselineScores = {
     regulation: baselineData?.calm_core_score || 0,
     awareness: baselineData?.observer_index_score || 0,
@@ -106,7 +128,6 @@ async function getFullProgress(userId) {
 
   const deltas = calculateDeltas(baselineScores, domainScores);
 
-  // Check unlock eligibility
   const unlockStatus = checkUnlockEligibility({
     currentStage: progressData.current_stage,
     adherencePercentage: progressData.adherence_percentage,
@@ -136,7 +157,6 @@ async function getFullProgress(userId) {
 }
 
 async function recalculateProgress(userId) {
-  // Get current stage
   const { data: progressData } = await supabase
     .from('user_progress')
     .select('current_stage')
@@ -145,7 +165,6 @@ async function recalculateProgress(userId) {
 
   const currentStage = progressData?.current_stage || 1;
 
-  // Get practice logs for last 14 days
   const fourteenDaysAgo = new Date();
   fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
   const startDate = fourteenDaysAgo.toISOString().split('T')[0];
@@ -160,8 +179,7 @@ async function recalculateProgress(userId) {
   const adherencePercentage = calculateAdherence(recentLogs || [], currentStage, 14);
   const consecutiveDays = calculateConsecutiveDays(recentLogs || [], currentStage);
 
-  // Update user_progress
-  const { error: updateError } = await supabase
+  await supabase
     .from('user_progress')
     .update({
       adherence_percentage: adherencePercentage,
@@ -169,17 +187,10 @@ async function recalculateProgress(userId) {
     })
     .eq('user_id', userId);
 
-  if (updateError) throw updateError;
-
-  return Response.json({
-    success: true,
-    adherencePercentage,
-    consecutiveDays
-  });
+  return Response.json({ success: true, adherencePercentage, consecutiveDays });
 }
 
 async function checkUnlock(userId) {
-  // Get all necessary data
   const { data: progressData } = await supabase
     .from('user_progress')
     .select('*')
@@ -229,7 +240,6 @@ async function checkUnlock(userId) {
 }
 
 async function unlockNextStage(userId) {
-  // First check if eligible
   const unlockCheck = await checkUnlock(userId);
   const unlockData = await unlockCheck.json();
 
@@ -241,7 +251,6 @@ async function unlockNextStage(userId) {
     });
   }
 
-  // Get current stage
   const { data: progressData } = await supabase
     .from('user_progress')
     .select('current_stage')
@@ -251,33 +260,44 @@ async function unlockNextStage(userId) {
   const newStage = progressData.current_stage + 1;
 
   if (newStage > 7) {
+    return Response.json({ success: false, reason: 'Already at maximum stage' });
+  }
+
+  if (newStage === 7) {
+    await logAuditEvent({
+      userId,
+      action: 'STAGE_7_UNLOCK_REQUEST',
+      details: { currentStage: progressData.current_stage },
+    });
     return Response.json({
       success: false,
-      reason: 'Already at maximum stage'
+      reason: 'Stage 7 requires application and manual approval.',
+      requiresApproval: true
     });
   }
 
-  // Update to new stage
-  const { error: updateError } = await supabase
+  await supabase
     .from('user_progress')
     .update({
       current_stage: newStage,
       stage_start_date: new Date().toISOString(),
-      // Reset consecutive days for new stage
       consecutive_days: 0
     })
     .eq('user_id', userId);
 
-  if (updateError) throw updateError;
+  await logAuditEvent({
+    userId,
+    action: 'STAGE_UNLOCK',
+    details: { previousStage: progressData.current_stage, newStage },
+  });
 
-  // Get stage unlock message
   const unlockMessages = {
-    2: 'Neural Priming stabilized. Heart-mind coherence online. You\'re ready to bring awareness into motion. Embodied Mode unlocked!',
-    3: 'Embodiment achieved. The body is now connected awareness. Time to act from coherence. Identity Mode unlocked!',
-    4: 'Identity proof installed. You now act from awareness, not toward it. Flow Mode unlocked!',
-    5: 'Flow performance stabilized. The mind is no longer the operator - it\'s the tool. Relational Coherence unlocked!',
-    6: 'Relational coherence stabilized. You are now connected. Integration Mode unlocked!',
-    7: 'System Integration Complete. Welcome, Conductor. The IOS is now self-evolving.'
+    2: 'Neural Priming stabilized. Heart-mind coherence online. Embodied Mode unlocked!',
+    3: 'Embodiment achieved. Identity Mode unlocked!',
+    4: 'Identity proof installed. Flow Mode unlocked!',
+    5: 'Flow performance stabilized. Relational Coherence unlocked!',
+    6: 'Relational coherence stabilized. Integration Mode unlocked!',
+    7: 'System Integration Complete. Welcome, Conductor.'
   };
 
   return Response.json({
@@ -288,16 +308,15 @@ async function unlockNextStage(userId) {
   });
 }
 
-async function recordWeeklyDelta(userId, data) {
-  const { regulation, awareness, outlook, attention } = data.scores || {};
+async function recordWeeklyDelta(userId, scores) {
+  const { regulation, awareness, outlook, attention } = scores;
 
   const weekStart = new Date();
-  weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // Start of week (Sunday)
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
   const weekStartDate = weekStart.toISOString().split('T')[0];
 
   const averageScore = (regulation + awareness + outlook + attention) / 4;
 
-  // Upsert weekly delta
   const { data: deltaData, error } = await supabase
     .from('weekly_deltas')
     .upsert({
@@ -308,15 +327,12 @@ async function recordWeeklyDelta(userId, data) {
       outlook_score: outlook,
       attention_score: attention,
       average_score: averageScore
-    }, {
-      onConflict: 'user_id,week_start_date'
-    })
+    }, { onConflict: 'user_id,week_start_date' })
     .select()
     .single();
 
   if (error) throw error;
 
-  // Update user_progress with latest deltas
   const { data: baselineData } = await supabase
     .from('baseline_assessments')
     .select('*')
@@ -351,26 +367,18 @@ async function recordWeeklyDelta(userId, data) {
   });
 }
 
-// GET endpoint for quick progress check
 export async function GET(req) {
   try {
-    const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId');
-
-    if (!userId) {
-      return Response.json(
-        { error: 'Missing userId' },
-        { status: 400 }
-      );
+    const authResult = await verifyAuth();
+    
+    if (!authResult.authenticated || !authResult.userId) {
+      return unauthorizedResponse('Please sign in to view progress.');
     }
 
-    return await getFullProgress(userId);
+    return await getFullProgress(authResult.userId);
 
   } catch (error) {
-    console.error('GET progress error:', error);
-    return Response.json(
-      { error: error.message },
-      { status: 500 }
-    );
+    console.error('[Progress GET] Error:', error);
+    return Response.json({ error: 'Failed to fetch progress.' }, { status: 500 });
   }
 }
