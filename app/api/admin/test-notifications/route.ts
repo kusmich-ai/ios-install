@@ -7,7 +7,7 @@ import { testSlackConnection, sendSafetyNotification } from '@/lib/notifications
 
 // List of admin user IDs who can access this endpoint
 // Add your user ID here after deployment
-const ADMIN_USER_IDS = [
+const ADMIN_USER_IDS: string[] = [
   // 'your-user-id-here',
 ];
 
