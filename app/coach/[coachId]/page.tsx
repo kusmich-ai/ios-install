@@ -748,7 +748,21 @@ export default function CoachChatPage() {
               <span className="text-gray-500 text-sm hidden sm:inline">• {coach.tagline}</span>
             </div>
           </div>
-          <SaveStatus status={saveStatus} accentColor={accentColor} />
+          <div className="flex items-center gap-3">
+            <SaveStatus status={saveStatus} accentColor={accentColor} />
+            {/* Quick-switch to other coach */}
+            <button
+              onClick={() => {
+                if (activeConversationId && messages.length >= 6) extractMemories(activeConversationId, messages, false);
+                router.push(`/coach/${coachId === 'nic' ? 'fehren' : 'nic'}`);
+              }}
+              className="flex items-center gap-1.5 px-2 py-1 text-xs text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+              title={`Switch to ${coachId === 'nic' ? 'Fehren' : 'Nic'}`}
+            >
+              <span>{coachId === 'nic' ? '💙' : '⚡'}</span>
+              <span className="hidden sm:inline">{coachId === 'nic' ? 'Fehren' : 'Nic'}</span>
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-6">
