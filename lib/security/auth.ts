@@ -1,12 +1,8 @@
 // lib/security/auth.ts
-// Drop this file into your /lib/security/ directory
-
-/**
- * Authentication & Authorization Helpers for API Routes
- * Ensures all API routes properly authenticate users
- */
+// Authentication & Authorization Helpers for API Routes
 
 import { createServerClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
@@ -146,15 +142,7 @@ export function verifyUserOwnership(
 }
 
 /**
- * SECURITY CRITICAL: Never accept userId from request body
- * Always use the authenticated user's ID from the session
- * 
- * BAD:  const { userId } = await req.json();
- * GOOD: const { userId } = await verifyAuth();
- */
-
-/**
- * Audit log helper - call for sensitive operations
+ * Audit log helper - persists to database
  */
 export interface AuditEntry {
   userId: string;
@@ -165,23 +153,28 @@ export interface AuditEntry {
 }
 
 export async function logAuditEvent(entry: AuditEntry): Promise<void> {
-  // For now, log to console
-  // Later, you can store in Supabase audit_logs table
+  // Always log to console for immediate visibility
   console.log('[AUDIT]', JSON.stringify({
     ...entry,
     timestamp: new Date().toISOString(),
   }));
-  
-  // TODO: When you want to persist audit logs, uncomment this:
-  // const supabase = createClient(
-  //   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  //   process.env.SUPABASE_SERVICE_ROLE_KEY!
-  // );
-  // await supabase.from('audit_logs').insert({
-  //   user_id: entry.userId,
-  //   action: entry.action,
-  //   details: entry.details,
-  //   ip_address: entry.ipAddress,
-  //   created_at: new Date().toISOString(),
-  // });
+
+  // Persist to database
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    await supabase.from('audit_logs').insert({
+      user_id: entry.userId,
+      action: entry.action,
+      details: entry.details || {},
+      ip_address: entry.ipAddress || null,
+      user_agent: entry.userAgent || null,
+    });
+  } catch (error) {
+    // Don't fail the request if audit logging fails
+    console.error('[AUDIT] Failed to persist audit log:', error);
+  }
 }
