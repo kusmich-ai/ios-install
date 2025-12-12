@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase-client';
 import { coaches, getCoachOpeningMessage, CoachId } from '@/lib/coachPrompts';
-import { ArrowLeft, Plus, Trash2, MessageSquare, Send, Menu, X, AlertCircle, WifiOff, Clock, XCircle } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, MessageSquare, Send, Menu, X, AlertCircle, WifiOff, XCircle, Loader2, Check, Cloud } from 'lucide-react';
 
 // ============================================
 // TYPES
@@ -99,7 +99,7 @@ function Toast({
       case 'info':
         return <AlertCircle className="w-5 h-5" style={{ color: accentColor }} />;
       case 'success':
-        return <AlertCircle className="w-5 h-5 text-green-400" />;
+        return <Check className="w-5 h-5 text-green-400" />;
       default:
         return <AlertCircle className="w-5 h-5 text-gray-400" />;
     }
@@ -111,8 +111,6 @@ function Toast({
         return 'border-red-500/50';
       case 'warning':
         return 'border-yellow-500/50';
-      case 'info':
-        return `border-[${accentColor}]/50`;
       case 'success':
         return 'border-green-500/50';
       default:
@@ -170,7 +168,140 @@ function ToastContainer({
 }
 
 // ============================================
-// INLINE ERROR COMPONENT (for message errors)
+// LOADING COMPONENTS
+// ============================================
+
+// Full page loading skeleton
+function LoadingSkeleton({ coachName, accentColor }: { coachName: string; accentColor: string }) {
+  return (
+    <div className="flex h-screen bg-[#0a0a0a]">
+      {/* Sidebar skeleton */}
+      <div className="hidden md:flex w-64 bg-[#0f0f0f] border-r border-gray-800 flex-col">
+        <div className="p-4 border-b border-gray-800">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded bg-gray-800 animate-pulse" />
+            <div className="w-20 h-5 rounded bg-gray-800 animate-pulse" />
+          </div>
+        </div>
+        <div className="p-3">
+          <div className="w-full h-10 rounded-lg bg-gray-800 animate-pulse" />
+        </div>
+        <div className="flex-1 p-2 space-y-2">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-10 rounded-lg bg-gray-800/50 animate-pulse" />
+          ))}
+        </div>
+      </div>
+      
+      {/* Main area skeleton */}
+      <div className="flex-1 flex flex-col">
+        <div className="h-14 border-b border-gray-800 flex items-center px-4">
+          <div className="w-32 h-5 rounded bg-gray-800 animate-pulse" />
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 
+              className="w-8 h-8 animate-spin mx-auto mb-3" 
+              style={{ color: accentColor }}
+            />
+            <p className="text-gray-400">Loading {coachName}...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Conversation list loading skeleton
+function ConversationListSkeleton() {
+  return (
+    <div className="p-2 space-y-2">
+      {[1, 2, 3, 4].map(i => (
+        <div 
+          key={i} 
+          className="flex items-center gap-2 px-3 py-2 rounded-lg"
+        >
+          <div className="w-4 h-4 rounded bg-gray-800 animate-pulse" />
+          <div 
+            className="flex-1 h-4 rounded bg-gray-800 animate-pulse"
+            style={{ width: `${60 + Math.random() * 30}%` }}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Save status indicator
+function SaveStatus({ 
+  status, 
+  accentColor 
+}: { 
+  status: 'idle' | 'saving' | 'saved' | 'error';
+  accentColor: string;
+}) {
+  if (status === 'idle') return null;
+
+  return (
+    <div className="flex items-center gap-1.5 text-xs text-gray-500">
+      {status === 'saving' && (
+        <>
+          <Loader2 className="w-3 h-3 animate-spin" />
+          <span>Saving...</span>
+        </>
+      )}
+      {status === 'saved' && (
+        <>
+          <Cloud className="w-3 h-3" style={{ color: accentColor }} />
+          <span style={{ color: accentColor }}>Saved</span>
+        </>
+      )}
+      {status === 'error' && (
+        <>
+          <AlertCircle className="w-3 h-3 text-red-400" />
+          <span className="text-red-400">Not saved</span>
+        </>
+      )}
+    </div>
+  );
+}
+
+// Button with loading state
+function LoadingButton({
+  onClick,
+  loading,
+  disabled,
+  children,
+  className,
+  loadingText,
+}: {
+  onClick: () => void;
+  loading: boolean;
+  disabled?: boolean;
+  children: React.ReactNode;
+  className?: string;
+  loadingText?: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={loading || disabled}
+      className={`${className} ${loading || disabled ? 'opacity-70 cursor-not-allowed' : ''}`}
+    >
+      {loading ? (
+        <span className="flex items-center gap-2">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          {loadingText || 'Loading...'}
+        </span>
+      ) : (
+        children
+      )}
+    </button>
+  );
+}
+
+// ============================================
+// INLINE ERROR COMPONENT
 // ============================================
 function InlineError({ 
   message, 
@@ -248,9 +379,16 @@ export default function CoachChatPage() {
   
   // Conversations state
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [conversationsLoading, setConversationsLoading] = useState(true);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  const [conversationLoading, setConversationLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
+  
+  // Loading states for specific actions
+  const [creatingConversation, setCreatingConversation] = useState(false);
+  const [deletingConversationId, setDeletingConversationId] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   
   // Error handling state
   const [notifications, setNotifications] = useState<ToastNotification[]>([]);
@@ -259,6 +397,7 @@ export default function CoachChatPage() {
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const saveStatusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // ============================================
   // TOAST HELPERS
@@ -321,6 +460,15 @@ export default function CoachChatPage() {
     }
   }, [sending, activeConversationId]);
 
+  // Cleanup save status timeout
+  useEffect(() => {
+    return () => {
+      if (saveStatusTimeoutRef.current) {
+        clearTimeout(saveStatusTimeoutRef.current);
+      }
+    };
+  }, []);
+
   async function initializeCoach() {
     try {
       const supabase = createClient();
@@ -352,6 +500,7 @@ export default function CoachChatPage() {
   // CONVERSATION MANAGEMENT
   // ============================================
   async function loadConversations() {
+    setConversationsLoading(true);
     try {
       const response = await fetch(`/api/coach/conversations?coachId=${coachId}`);
       
@@ -366,10 +515,13 @@ export default function CoachChatPage() {
     } catch (error) {
       console.error('Error loading conversations:', error);
       showError('conversationLoad');
+    } finally {
+      setConversationsLoading(false);
     }
   }
 
   async function loadConversation(conversationId: string) {
+    setConversationLoading(true);
     try {
       const response = await fetch(
         `/api/coach/conversations?coachId=${coachId}&conversationId=${conversationId}`
@@ -386,14 +538,18 @@ export default function CoachChatPage() {
         setActiveConversationId(conversationId);
         setMessageError(null);
         setLastFailedMessage(null);
+        setSaveStatus('idle');
       }
     } catch (error) {
       console.error('Error loading conversation:', error);
       showError('generic', 'Couldn\'t load this conversation.');
+    } finally {
+      setConversationLoading(false);
     }
   }
 
   async function startNewConversation() {
+    setCreatingConversation(true);
     try {
       const response = await fetch('/api/coach/conversations', {
         method: 'POST',
@@ -421,6 +577,7 @@ export default function CoachChatPage() {
         setMessages([{ role: 'assistant', content: openingMessage }]);
         setMessageError(null);
         setLastFailedMessage(null);
+        setSaveStatus('idle');
         
         // Save opening message
         await saveConversation([{ role: 'assistant', content: openingMessage }], data.conversation.id);
@@ -431,12 +588,15 @@ export default function CoachChatPage() {
     } catch (error) {
       console.error('Error creating conversation:', error);
       showError('generic', 'Couldn\'t start a new conversation.');
+    } finally {
+      setCreatingConversation(false);
     }
   }
 
   async function deleteConversation(conversationId: string) {
     if (!confirm('Delete this conversation? This cannot be undone.')) return;
     
+    setDeletingConversationId(conversationId);
     try {
       const response = await fetch(
         `/api/coach/conversations?conversationId=${conversationId}`,
@@ -461,6 +621,8 @@ export default function CoachChatPage() {
     } catch (error) {
       console.error('Error deleting conversation:', error);
       showError('conversationDelete');
+    } finally {
+      setDeletingConversationId(null);
     }
   }
 
@@ -552,6 +714,14 @@ export default function CoachChatPage() {
     const convId = conversationId || activeConversationId;
     if (!convId) return;
     
+    // Show saving status
+    setSaveStatus('saving');
+    
+    // Clear any existing timeout
+    if (saveStatusTimeoutRef.current) {
+      clearTimeout(saveStatusTimeoutRef.current);
+    }
+    
     // Generate title from first user message if still "New conversation"
     const activeConvo = conversations.find(c => c.id === convId);
     let title = activeConvo?.title || 'New conversation';
@@ -576,10 +746,18 @@ export default function CoachChatPage() {
       });
       
       if (!response.ok) {
-        // Don't show toast for save errors unless it's critical
         console.error('Error saving conversation:', response.status);
+        setSaveStatus('error');
         return;
       }
+      
+      // Show saved status
+      setSaveStatus('saved');
+      
+      // Clear saved status after 2 seconds
+      saveStatusTimeoutRef.current = setTimeout(() => {
+        setSaveStatus('idle');
+      }, 2000);
       
       // Update local state with new title
       setConversations(prev => 
@@ -591,8 +769,7 @@ export default function CoachChatPage() {
       );
     } catch (error) {
       console.error('Error saving conversation:', error);
-      // Only show toast if it's a significant issue
-      // showError('conversationSave');
+      setSaveStatus('error');
     }
   }
 
@@ -605,12 +782,10 @@ export default function CoachChatPage() {
   // ============================================
   // RENDER
   // ============================================
+  
+  // Show loading skeleton
   if (loading) {
-    return (
-      <div className="flex h-screen bg-[#0a0a0a] items-center justify-center">
-        <div className="text-gray-400">Loading {coach.name}...</div>
-      </div>
-    );
+    return <LoadingSkeleton coachName={coach.name} accentColor={coach.accentColor} />;
   }
 
   const accentColor = coach.accentColor;
@@ -661,18 +836,22 @@ export default function CoachChatPage() {
 
         {/* New Conversation Button */}
         <div className="p-3">
-          <button
+          <LoadingButton
             onClick={startNewConversation}
-            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg ${accentBg} ${accentHover} text-white transition-colors`}
+            loading={creatingConversation}
+            loadingText="Creating..."
+            className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg ${accentBg} ${accentHover} text-white transition-colors`}
           >
             <Plus className="w-4 h-4" />
             New conversation
-          </button>
+          </LoadingButton>
         </div>
 
         {/* Conversation List */}
         <div className="flex-1 overflow-y-auto">
-          {conversations.length === 0 ? (
+          {conversationsLoading ? (
+            <ConversationListSkeleton />
+          ) : conversations.length === 0 ? (
             <div className="p-4 text-gray-500 text-sm text-center">
               No conversations yet
             </div>
@@ -683,23 +862,28 @@ export default function CoachChatPage() {
                 className={`
                   group flex items-center gap-2 px-3 py-2 mx-2 my-1 rounded-lg cursor-pointer
                   ${activeConversationId === conv.id ? 'bg-gray-800' : 'hover:bg-gray-800/50'}
-                  transition-colors
+                  ${deletingConversationId === conv.id ? 'opacity-50' : ''}
+                  transition-all
                 `}
-                onClick={() => loadConversation(conv.id)}
+                onClick={() => !deletingConversationId && loadConversation(conv.id)}
               >
                 <MessageSquare className="w-4 h-4 text-gray-500 flex-shrink-0" />
                 <span className="flex-1 text-sm text-gray-300 truncate">
                   {conv.title}
                 </span>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteConversation(conv.id);
-                  }}
-                  className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition-opacity"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {deletingConversationId === conv.id ? (
+                  <Loader2 className="w-4 h-4 text-gray-500 animate-spin" />
+                ) : (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteConversation(conv.id);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition-opacity"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             ))
           )}
@@ -720,40 +904,58 @@ export default function CoachChatPage() {
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Chat Header */}
-        <div className="h-14 border-b border-gray-800 flex items-center px-4 gap-3">
-          <button
-            onClick={() => setMobileSidebarOpen(true)}
-            className="md:hidden text-gray-400 hover:text-white"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="hidden md:block text-gray-400 hover:text-white"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-          <div className="flex items-center gap-2">
-            <span style={{ color: accentColor }}>{coach.icon}</span>
-            <span className="font-medium text-white">{coach.name}</span>
-            <span className="text-gray-500 text-sm hidden sm:inline">• {coach.tagline}</span>
+        <div className="h-14 border-b border-gray-800 flex items-center justify-between px-4">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setMobileSidebarOpen(true)}
+              className="md:hidden text-gray-400 hover:text-white"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="hidden md:block text-gray-400 hover:text-white"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <div className="flex items-center gap-2">
+              <span style={{ color: accentColor }}>{coach.icon}</span>
+              <span className="font-medium text-white">{coach.name}</span>
+              <span className="text-gray-500 text-sm hidden sm:inline">• {coach.tagline}</span>
+            </div>
           </div>
+          
+          {/* Save Status Indicator */}
+          <SaveStatus status={saveStatus} accentColor={accentColor} />
         </div>
 
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto px-4 py-6">
-          {!activeConversationId ? (
+          {conversationLoading ? (
+            // Loading specific conversation
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center">
+                <Loader2 
+                  className="w-6 h-6 animate-spin mx-auto mb-2" 
+                  style={{ color: accentColor }}
+                />
+                <p className="text-gray-500 text-sm">Loading conversation...</p>
+              </div>
+            </div>
+          ) : !activeConversationId ? (
             <div className="h-full flex items-center justify-center">
               <div className="text-center">
                 <div className="text-4xl mb-4">{coach.icon}</div>
                 <h2 className="text-xl font-medium text-white mb-2">{coach.name}</h2>
                 <p className="text-gray-400 mb-6 max-w-md">{coach.description}</p>
-                <button
+                <LoadingButton
                   onClick={startNewConversation}
+                  loading={creatingConversation}
+                  loadingText="Starting..."
                   className={`px-6 py-2 rounded-lg ${accentBg} ${accentHover} text-white transition-colors`}
                 >
                   Start a conversation
-                </button>
+                </LoadingButton>
               </div>
             </div>
           ) : (
@@ -852,7 +1054,11 @@ export default function CoachChatPage() {
                     }
                   `}
                 >
-                  <Send className="w-5 h-5" />
+                  {sending ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Send className="w-5 h-5" />
+                  )}
                 </button>
               </div>
             </div>
