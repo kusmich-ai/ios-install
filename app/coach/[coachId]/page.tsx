@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase-client';
 import { coaches, getCoachOpeningMessage, CoachId } from '@/lib/coachPrompts';
-import { ArrowLeft, Plus, Trash2, MessageSquare, Send, Menu, X, AlertCircle, WifiOff, XCircle, Loader2, Check, Cloud, Brain, User, Heart, AlertTriangle, Target, Zap, Lightbulb, Settings, Clock, Shield, Sparkles, Search } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, MessageSquare, Send, Menu, X, AlertCircle, WifiOff, XCircle, Loader2, Check, Cloud, Brain, User, Heart, AlertTriangle, Target, Zap, Lightbulb, Settings, Clock, Shield, Sparkles, Search, Download } from 'lucide-react';
 
 // ============================================
 // TYPES
@@ -751,6 +751,20 @@ export default function CoachChatPage() {
     router.push('/chat');
   }
 
+  // Export functions
+  function exportConversation(conversationId: string) {
+    window.open(`/api/coach/conversations/export?coachId=${coachId}&conversationId=${conversationId}`, '_blank');
+  }
+
+  function exportAllConversations() {
+    if (conversations.length === 0) {
+      showToast('warning', 'Nothing to Export', 'You don\'t have any conversations yet.', 3000);
+      return;
+    }
+    window.open(`/api/coach/conversations/export?coachId=${coachId}`, '_blank');
+    showToast('success', 'Exporting', `Downloading ${conversations.length} conversation${conversations.length !== 1 ? 's' : ''}...`, 3000);
+  }
+
   if (loading) return <LoadingSkeleton coachName={coach.name} accentColor={coach.accentColor} />;
 
   const accentColor = coach.accentColor;
@@ -863,6 +877,9 @@ export default function CoachChatPage() {
           <button onClick={() => setMemoryModalOpen(true)} className="w-full flex items-center gap-2 px-3 py-2 text-gray-400 hover:text-white rounded-lg hover:bg-gray-800 transition-colors">
             <Brain className="w-4 h-4" />What I Remember
           </button>
+          <button onClick={exportAllConversations} className="w-full flex items-center gap-2 px-3 py-2 text-gray-400 hover:text-white rounded-lg hover:bg-gray-800 transition-colors">
+            <Download className="w-4 h-4" />Export Conversations
+          </button>
           <button onClick={handleBackToIOS} className="w-full flex items-center gap-2 px-3 py-2 text-gray-400 hover:text-white rounded-lg hover:bg-gray-800 transition-colors">
             <ArrowLeft className="w-4 h-4" />Back to IOS
           </button>
@@ -883,6 +900,16 @@ export default function CoachChatPage() {
           </div>
           <div className="flex items-center gap-3">
             <SaveStatus status={saveStatus} accentColor={accentColor} />
+            {/* Download current conversation */}
+            {activeConversationId && messages.length > 0 && (
+              <button
+                onClick={() => exportConversation(activeConversationId)}
+                className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+                title="Download conversation"
+              >
+                <Download className="w-4 h-4" />
+              </button>
+            )}
             {/* Quick-switch to other coach */}
             <button
               onClick={() => {
