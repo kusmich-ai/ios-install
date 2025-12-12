@@ -1,11 +1,11 @@
-// app/coach/[coachId]/page.tsx
+// app/coach/[coachId]/page.tsx - FINAL WITH MEMORY EXTRACTION
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase-client';
 import { coaches, getCoachOpeningMessage, CoachId } from '@/lib/coachPrompts';
-import { ArrowLeft, Plus, Trash2, MessageSquare, Send, Menu, X, AlertCircle, WifiOff, XCircle, Loader2, Check, Cloud } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, MessageSquare, Send, Menu, X, AlertCircle, WifiOff, XCircle, Loader2, Check, Cloud, Brain } from 'lucide-react';
 
 // ============================================
 // TYPES
@@ -97,7 +97,7 @@ function Toast({
       case 'warning':
         return <AlertCircle className="w-5 h-5 text-yellow-400" />;
       case 'info':
-        return <AlertCircle className="w-5 h-5" style={{ color: accentColor }} />;
+        return <Brain className="w-5 h-5" style={{ color: accentColor }} />;
       case 'success':
         return <Check className="w-5 h-5 text-green-400" />;
       default:
@@ -141,7 +141,6 @@ function Toast({
   );
 }
 
-// Toast Container
 function ToastContainer({ 
   notifications, 
   onDismiss,
@@ -171,11 +170,9 @@ function ToastContainer({
 // LOADING COMPONENTS
 // ============================================
 
-// Full page loading skeleton
 function LoadingSkeleton({ coachName, accentColor }: { coachName: string; accentColor: string }) {
   return (
     <div className="flex h-screen bg-[#0a0a0a]">
-      {/* Sidebar skeleton */}
       <div className="hidden md:flex w-64 bg-[#0f0f0f] border-r border-gray-800 flex-col">
         <div className="p-4 border-b border-gray-800">
           <div className="flex items-center gap-2">
@@ -193,7 +190,6 @@ function LoadingSkeleton({ coachName, accentColor }: { coachName: string; accent
         </div>
       </div>
       
-      {/* Main area skeleton */}
       <div className="flex-1 flex flex-col">
         <div className="h-14 border-b border-gray-800 flex items-center px-4">
           <div className="w-32 h-5 rounded bg-gray-800 animate-pulse" />
@@ -212,15 +208,11 @@ function LoadingSkeleton({ coachName, accentColor }: { coachName: string; accent
   );
 }
 
-// Conversation list loading skeleton
 function ConversationListSkeleton() {
   return (
     <div className="p-2 space-y-2">
       {[1, 2, 3, 4].map(i => (
-        <div 
-          key={i} 
-          className="flex items-center gap-2 px-3 py-2 rounded-lg"
-        >
+        <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg">
           <div className="w-4 h-4 rounded bg-gray-800 animate-pulse" />
           <div 
             className="flex-1 h-4 rounded bg-gray-800 animate-pulse"
@@ -232,12 +224,11 @@ function ConversationListSkeleton() {
   );
 }
 
-// Save status indicator
 function SaveStatus({ 
   status, 
   accentColor 
 }: { 
-  status: 'idle' | 'saving' | 'saved' | 'error';
+  status: 'idle' | 'saving' | 'saved' | 'error' | 'learning';
   accentColor: string;
 }) {
   if (status === 'idle') return null;
@@ -256,6 +247,12 @@ function SaveStatus({
           <span style={{ color: accentColor }}>Saved</span>
         </>
       )}
+      {status === 'learning' && (
+        <>
+          <Brain className="w-3 h-3 animate-pulse" style={{ color: accentColor }} />
+          <span style={{ color: accentColor }}>Learning...</span>
+        </>
+      )}
       {status === 'error' && (
         <>
           <AlertCircle className="w-3 h-3 text-red-400" />
@@ -266,7 +263,6 @@ function SaveStatus({
   );
 }
 
-// Button with loading state
 function LoadingButton({
   onClick,
   loading,
@@ -300,9 +296,6 @@ function LoadingButton({
   );
 }
 
-// ============================================
-// INLINE ERROR COMPONENT
-// ============================================
 function InlineError({ 
   message, 
   onRetry,
@@ -342,6 +335,61 @@ function renderMarkdown(text: string, accentColor: string): string {
 }
 
 // ============================================
+// MEMORY EXTRACTION HOOK
+// ============================================
+function useMemoryExtraction(coachId: string, showToast: (type: ToastNotification['type'], title: string, message: string, duration?: number) => void) {
+  const extractionInProgressRef = useRef<string | null>(null);
+  const messageCountRef = useRef<Record<string, number>>({});
+
+  const extractMemories = useCallback(async (
+    conversationId: string,
+    messages: Message[],
+    showNotification = false
+  ) => {
+    // Skip if already extracting this conversation
+    if (extractionInProgressRef.current === conversationId) return;
+    
+    // Skip if too few messages
+    if (messages.length < 6) return;
+    
+    // Skip if we've extracted recently for this conversation
+    const lastCount = messageCountRef.current[conversationId] || 0;
+    if (messages.length - lastCount < 6) return; // Only extract every 6 new messages
+    
+    extractionInProgressRef.current = conversationId;
+    
+    try {
+      const response = await fetch('/api/coach/memory', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          coachId,
+          conversationId,
+          messages,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        messageCountRef.current[conversationId] = messages.length;
+        
+        if (data.memoriesExtracted > 0 && showNotification) {
+          showToast('info', 'Learning', `Noted ${data.memoriesExtracted} thing${data.memoriesExtracted > 1 ? 's' : ''} about you.`, 3000);
+        }
+        
+        console.log(`[Memory] Extracted ${data.memoriesExtracted} memories from conversation`);
+      }
+    } catch (error) {
+      console.error('[Memory] Extraction error:', error);
+    } finally {
+      extractionInProgressRef.current = null;
+    }
+  }, [coachId, showToast]);
+
+  return { extractMemories };
+}
+
+// ============================================
 // MAIN COMPONENT
 // ============================================
 export default function CoachChatPage() {
@@ -349,7 +397,6 @@ export default function CoachChatPage() {
   const router = useRouter();
   const coachId = params.coachId as CoachId;
   
-  // Validate coach ID
   const coach = coaches[coachId];
   if (!coach) {
     return (
@@ -377,7 +424,6 @@ export default function CoachChatPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   
-  // Conversations state
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [conversationsLoading, setConversationsLoading] = useState(true);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
@@ -385,12 +431,10 @@ export default function CoachChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   
-  // Loading states for specific actions
   const [creatingConversation, setCreatingConversation] = useState(false);
   const [deletingConversationId, setDeletingConversationId] = useState<string | null>(null);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error' | 'learning'>('idle');
   
-  // Error handling state
   const [notifications, setNotifications] = useState<ToastNotification[]>([]);
   const [messageError, setMessageError] = useState<string | null>(null);
   const [lastFailedMessage, setLastFailedMessage] = useState<string | null>(null);
@@ -398,6 +442,7 @@ export default function CoachChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const saveStatusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const previousConversationRef = useRef<{ id: string; messages: Message[] } | null>(null);
 
   // ============================================
   // TOAST HELPERS
@@ -420,6 +465,9 @@ export default function CoachChatPage() {
     const error = ERROR_MESSAGES[errorType];
     showToast('error', error.title, customMessage || error.message);
   }, [showToast]);
+
+  // Memory extraction hook
+  const { extractMemories } = useMemoryExtraction(coachId, showToast);
 
   // ============================================
   // ERROR HANDLER
@@ -444,6 +492,46 @@ export default function CoachChatPage() {
   }, [showError, router]);
 
   // ============================================
+  // MEMORY EXTRACTION TRIGGERS
+  // ============================================
+  
+  // Extract memories when switching conversations
+  useEffect(() => {
+    if (previousConversationRef.current && 
+        previousConversationRef.current.id !== activeConversationId &&
+        previousConversationRef.current.messages.length >= 6) {
+      // Extract from the previous conversation when switching away
+      extractMemories(
+        previousConversationRef.current.id,
+        previousConversationRef.current.messages,
+        false // Don't show notification when switching
+      );
+    }
+    
+    // Update reference
+    if (activeConversationId && messages.length > 0) {
+      previousConversationRef.current = { id: activeConversationId, messages };
+    }
+  }, [activeConversationId, extractMemories]);
+
+  // Extract memories when leaving the page
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (activeConversationId && messages.length >= 6) {
+        // Use sendBeacon for reliability when page is closing
+        navigator.sendBeacon('/api/coach/memory', JSON.stringify({
+          coachId,
+          conversationId: activeConversationId,
+          messages,
+        }));
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [activeConversationId, messages, coachId]);
+
+  // ============================================
   // INITIALIZATION
   // ============================================
   useEffect(() => {
@@ -460,7 +548,6 @@ export default function CoachChatPage() {
     }
   }, [sending, activeConversationId]);
 
-  // Cleanup save status timeout
   useEffect(() => {
     return () => {
       if (saveStatusTimeoutRef.current) {
@@ -480,12 +567,9 @@ export default function CoachChatPage() {
       }
       
       setUser(user);
-      
-      // Get user's name from metadata
       const name = user.user_metadata?.first_name || user.user_metadata?.name || '';
       setUserName(name);
       
-      // Load conversations
       await loadConversations();
       
     } catch (error) {
@@ -521,6 +605,11 @@ export default function CoachChatPage() {
   }
 
   async function loadConversation(conversationId: string) {
+    // Extract memories from current conversation before switching
+    if (activeConversationId && messages.length >= 6) {
+      extractMemories(activeConversationId, messages, false);
+    }
+    
     setConversationLoading(true);
     try {
       const response = await fetch(
@@ -549,6 +638,12 @@ export default function CoachChatPage() {
   }
 
   async function startNewConversation() {
+    // Extract memories from current conversation before starting new
+    if (activeConversationId && messages.length >= 6) {
+      setSaveStatus('learning');
+      await extractMemories(activeConversationId, messages, true);
+    }
+    
     setCreatingConversation(true);
     try {
       const response = await fetch('/api/coach/conversations', {
@@ -572,14 +667,12 @@ export default function CoachChatPage() {
         setConversations(prev => [data.conversation, ...prev]);
         setActiveConversationId(data.conversation.id);
         
-        // Set initial message from coach
         const openingMessage = getCoachOpeningMessage(coachId, userName);
         setMessages([{ role: 'assistant', content: openingMessage }]);
         setMessageError(null);
         setLastFailedMessage(null);
         setSaveStatus('idle');
         
-        // Save opening message
         await saveConversation([{ role: 'assistant', content: openingMessage }], data.conversation.id);
       }
       
@@ -640,12 +733,10 @@ export default function CoachChatPage() {
     setMessageError(null);
     setLastFailedMessage(null);
     
-    // Add user message to UI immediately
     const updatedMessages: Message[] = [...messages, { role: 'user', content: messageToSend }];
     setMessages(updatedMessages);
     
     try {
-      // Call coach chat API
       const response = await fetch('/api/coach/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -656,11 +747,8 @@ export default function CoachChatPage() {
         }),
       });
       
-      // Handle HTTP errors
       if (!response.ok) {
         const errorType = handleApiError(response, 'sendMessage');
-        
-        // Remove the user message we added
         setMessages(messages);
         
         if (errorType === 'rateLimit') {
@@ -681,20 +769,24 @@ export default function CoachChatPage() {
         throw new Error(data.error);
       }
       
-      // Add assistant response
       const finalMessages: Message[] = [
         ...updatedMessages,
         { role: 'assistant', content: data.response },
       ];
       setMessages(finalMessages);
       
-      // Save conversation
       await saveConversation(finalMessages);
+      
+      // Trigger memory extraction every 10 messages
+      if (finalMessages.length > 0 && finalMessages.length % 10 === 0) {
+        setTimeout(() => {
+          extractMemories(activeConversationId!, finalMessages, true);
+        }, 2000);
+      }
       
     } catch (error) {
       console.error('Error sending message:', error);
       
-      // Check if it's a network error
       if (error instanceof TypeError && error.message.includes('fetch')) {
         showError('network');
         setMessageError('Network error. Check your connection.');
@@ -702,9 +794,8 @@ export default function CoachChatPage() {
         setMessageError('Something went wrong. Try again.');
       }
       
-      // Keep the user message but show error
       setLastFailedMessage(messageToSend);
-      setMessages(messages); // Revert to previous messages
+      setMessages(messages);
     }
     
     setSending(false);
@@ -714,15 +805,12 @@ export default function CoachChatPage() {
     const convId = conversationId || activeConversationId;
     if (!convId) return;
     
-    // Show saving status
     setSaveStatus('saving');
     
-    // Clear any existing timeout
     if (saveStatusTimeoutRef.current) {
       clearTimeout(saveStatusTimeoutRef.current);
     }
     
-    // Generate title from first user message if still "New conversation"
     const activeConvo = conversations.find(c => c.id === convId);
     let title = activeConvo?.title || 'New conversation';
     
@@ -751,15 +839,12 @@ export default function CoachChatPage() {
         return;
       }
       
-      // Show saved status
       setSaveStatus('saved');
       
-      // Clear saved status after 2 seconds
       saveStatusTimeoutRef.current = setTimeout(() => {
         setSaveStatus('idle');
       }, 2000);
       
-      // Update local state with new title
       setConversations(prev => 
         prev.map(c => 
           c.id === convId 
@@ -779,11 +864,18 @@ export default function CoachChatPage() {
     }
   }
 
+  function handleBackToIOS() {
+    // Extract memories before leaving
+    if (activeConversationId && messages.length >= 6) {
+      extractMemories(activeConversationId, messages, false);
+    }
+    router.push('/chat');
+  }
+
   // ============================================
   // RENDER
   // ============================================
   
-  // Show loading skeleton
   if (loading) {
     return <LoadingSkeleton coachName={coach.name} accentColor={coach.accentColor} />;
   }
@@ -795,14 +887,12 @@ export default function CoachChatPage() {
 
   return (
     <div className="flex h-screen bg-[#0a0a0a]">
-      {/* Toast Notifications */}
       <ToastContainer 
         notifications={notifications} 
         onDismiss={dismissToast}
         accentColor={accentColor}
       />
 
-      {/* Mobile sidebar overlay */}
       {mobileSidebarOpen && (
         <div 
           className="fixed inset-0 bg-black/50 z-40 md:hidden"
@@ -820,7 +910,6 @@ export default function CoachChatPage() {
         transition-all duration-300 ease-in-out
         flex flex-col
       `}>
-        {/* Sidebar Header */}
         <div className="p-4 border-b border-gray-800 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span style={{ color: accentColor }}>{coach.icon}</span>
@@ -834,7 +923,6 @@ export default function CoachChatPage() {
           </button>
         </div>
 
-        {/* New Conversation Button */}
         <div className="p-3">
           <LoadingButton
             onClick={startNewConversation}
@@ -847,7 +935,6 @@ export default function CoachChatPage() {
           </LoadingButton>
         </div>
 
-        {/* Conversation List */}
         <div className="flex-1 overflow-y-auto">
           {conversationsLoading ? (
             <ConversationListSkeleton />
@@ -889,10 +976,9 @@ export default function CoachChatPage() {
           )}
         </div>
 
-        {/* Back to IOS */}
         <div className="p-3 border-t border-gray-800">
           <button
-            onClick={() => router.push('/chat')}
+            onClick={handleBackToIOS}
             className="w-full flex items-center gap-2 px-3 py-2 text-gray-400 hover:text-white rounded-lg hover:bg-gray-800 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -903,7 +989,6 @@ export default function CoachChatPage() {
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Chat Header */}
         <div className="h-14 border-b border-gray-800 flex items-center justify-between px-4">
           <div className="flex items-center gap-3">
             <button
@@ -925,14 +1010,11 @@ export default function CoachChatPage() {
             </div>
           </div>
           
-          {/* Save Status Indicator */}
           <SaveStatus status={saveStatus} accentColor={accentColor} />
         </div>
 
-        {/* Messages Area */}
         <div className="flex-1 overflow-y-auto px-4 py-6">
           {conversationLoading ? (
-            // Loading specific conversation
             <div className="h-full flex items-center justify-center">
               <div className="text-center">
                 <Loader2 
@@ -988,7 +1070,6 @@ export default function CoachChatPage() {
                 </div>
               ))}
               
-              {/* Inline error after messages */}
               {messageError && (
                 <InlineError 
                   message={messageError}
@@ -997,7 +1078,6 @@ export default function CoachChatPage() {
                 />
               )}
               
-              {/* Sending indicator */}
               {sending && (
                 <div className="flex justify-start">
                   <div className="bg-[#1a1a1a] rounded-2xl px-4 py-3">
@@ -1023,7 +1103,6 @@ export default function CoachChatPage() {
           )}
         </div>
 
-        {/* Input Area */}
         {activeConversationId && (
           <div className="border-t border-gray-800 p-4">
             <div className="max-w-3xl mx-auto">
@@ -1066,7 +1145,6 @@ export default function CoachChatPage() {
         )}
       </div>
 
-      {/* CSS for animations */}
       <style jsx global>{`
         @keyframes slide-in {
           from {
