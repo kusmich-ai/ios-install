@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase-client';
 import { coaches, getCoachOpeningMessage, CoachId } from '@/lib/coachPrompts';
-import { ArrowLeft, Plus, Trash2, MessageSquare, Send, Menu, X, AlertCircle, WifiOff, XCircle, Loader2, Check, Cloud, Brain, User, Heart, AlertTriangle, Target, Zap, Lightbulb, Settings, Clock, Shield, Sparkles } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, MessageSquare, Send, Menu, X, AlertCircle, WifiOff, XCircle, Loader2, Check, Cloud, Brain, User, Heart, AlertTriangle, Target, Zap, Lightbulb, Settings, Clock, Shield, Sparkles, Search } from 'lucide-react';
 
 // ============================================
 // TYPES
@@ -39,6 +39,14 @@ interface Memory {
   value: string;
   confidence: number;
   updated_at: string;
+}
+
+interface SearchResult {
+  id: string;
+  title: string;
+  snippet: string | null;
+  updated_at: string;
+  messageCount: number;
 }
 
 // ============================================
@@ -437,6 +445,13 @@ export default function CoachChatPage() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [memoryModalOpen, setMemoryModalOpen] = useState(false);
   
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [conversationsLoading, setConversationsLoading] = useState(true);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
@@ -479,6 +494,60 @@ export default function CoachChatPage() {
     return 'ok';
   }, [showError, router]);
 
+  // Search function with debounce
+  const searchConversations = useCallback(async (query: string) => {
+    if (query.length < 2) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    setIsSearching(true);
+    setShowSearchResults(true);
+    
+    try {
+      const response = await fetch(`/api/coach/conversations/search?q=${encodeURIComponent(query)}&coachId=${coachId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setSearchResults(data.results || []);
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+    } finally {
+      setIsSearching(false);
+    }
+  }, [coachId]);
+
+  // Debounced search handler
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchQuery(value);
+    
+    // Clear previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    // Debounce search
+    if (value.length >= 2) {
+      searchTimeoutRef.current = setTimeout(() => {
+        searchConversations(value);
+      }, 300);
+    } else {
+      setSearchResults([]);
+      setShowSearchResults(false);
+    }
+  }, [searchConversations]);
+
+  // Clear search
+  const clearSearch = useCallback(() => {
+    setSearchQuery('');
+    setSearchResults([]);
+    setShowSearchResults(false);
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+  }, []);
+
   // Memory extraction triggers
   useEffect(() => {
     if (previousConversationRef.current && previousConversationRef.current.id !== activeConversationId && previousConversationRef.current.messages.length >= 6) {
@@ -503,7 +572,10 @@ export default function CoachChatPage() {
   useEffect(() => { initializeCoach(); }, [coachId]);
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
   useEffect(() => { if (!sending) inputRef.current?.focus(); }, [sending, activeConversationId]);
-  useEffect(() => () => { if (saveStatusTimeoutRef.current) clearTimeout(saveStatusTimeoutRef.current); }, []);
+  useEffect(() => () => { 
+    if (saveStatusTimeoutRef.current) clearTimeout(saveStatusTimeoutRef.current); 
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+  }, []);
 
   async function initializeCoach() {
     try {
@@ -709,19 +781,80 @@ export default function CoachChatPage() {
           </LoadingButton>
         </div>
 
+        {/* Search */}
+        <div className="px-3 pb-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              placeholder="Search conversations..."
+              className="w-full bg-[#1a1a1a] border border-gray-800 rounded-lg pl-9 pr-8 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-gray-600 transition-colors"
+            />
+            {searchQuery && (
+              <button
+                onClick={clearSearch}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
         <div className="flex-1 overflow-y-auto">
-          {conversationsLoading ? <ConversationListSkeleton /> : conversations.length === 0 ? (
-            <div className="p-4 text-gray-500 text-sm text-center">No conversations yet</div>
+          {/* Search Results */}
+          {showSearchResults ? (
+            <div className="px-2">
+              {isSearching ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
+                </div>
+              ) : searchResults.length === 0 ? (
+                <div className="text-center py-8">
+                  <Search className="w-8 h-8 text-gray-700 mx-auto mb-2" />
+                  <p className="text-gray-500 text-sm">No results for "{searchQuery}"</p>
+                </div>
+              ) : (
+                <>
+                  <p className="text-xs text-gray-500 px-2 py-2">{searchResults.length} result{searchResults.length !== 1 ? 's' : ''}</p>
+                  {searchResults.map(result => (
+                    <div
+                      key={result.id}
+                      onClick={() => {
+                        loadConversation(result.id);
+                        clearSearch();
+                      }}
+                      className={`group flex flex-col gap-1 px-3 py-2 mx-1 my-1 rounded-lg cursor-pointer ${activeConversationId === result.id ? 'bg-gray-800' : 'hover:bg-gray-800/50'} transition-all`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <MessageSquare className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                        <span className="text-sm text-gray-300 truncate">{result.title}</span>
+                      </div>
+                      {result.snippet && (
+                        <p className="text-xs text-gray-500 pl-6 line-clamp-2">{result.snippet}</p>
+                      )}
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
           ) : (
-            conversations.map(conv => (
-              <div key={conv.id} className={`group flex items-center gap-2 px-3 py-2 mx-2 my-1 rounded-lg cursor-pointer ${activeConversationId === conv.id ? 'bg-gray-800' : 'hover:bg-gray-800/50'} ${deletingConversationId === conv.id ? 'opacity-50' : ''} transition-all`} onClick={() => !deletingConversationId && loadConversation(conv.id)}>
-                <MessageSquare className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                <span className="flex-1 text-sm text-gray-300 truncate">{conv.title}</span>
-                {deletingConversationId === conv.id ? <Loader2 className="w-4 h-4 text-gray-500 animate-spin" /> : (
-                  <button onClick={(e) => { e.stopPropagation(); deleteConversation(conv.id); }} className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition-opacity"><Trash2 className="w-4 h-4" /></button>
-                )}
-              </div>
-            ))
+            /* Normal conversation list */
+            conversationsLoading ? <ConversationListSkeleton /> : conversations.length === 0 ? (
+              <div className="p-4 text-gray-500 text-sm text-center">No conversations yet</div>
+            ) : (
+              conversations.map(conv => (
+                <div key={conv.id} className={`group flex items-center gap-2 px-3 py-2 mx-2 my-1 rounded-lg cursor-pointer ${activeConversationId === conv.id ? 'bg-gray-800' : 'hover:bg-gray-800/50'} ${deletingConversationId === conv.id ? 'opacity-50' : ''} transition-all`} onClick={() => !deletingConversationId && loadConversation(conv.id)}>
+                  <MessageSquare className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                  <span className="flex-1 text-sm text-gray-300 truncate">{conv.title}</span>
+                  {deletingConversationId === conv.id ? <Loader2 className="w-4 h-4 text-gray-500 animate-spin" /> : (
+                    <button onClick={(e) => { e.stopPropagation(); deleteConversation(conv.id); }} className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition-opacity"><Trash2 className="w-4 h-4" /></button>
+                  )}
+                </div>
+              ))
+            )
           )}
         </div>
 
