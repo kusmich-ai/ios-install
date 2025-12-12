@@ -1,5 +1,6 @@
 // lib/memoryService.ts
 // Service for managing coach memories - storage, retrieval, and management
+// UPDATED: Added cross-coach memory sharing
 
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
@@ -69,11 +70,13 @@ async function createSupabaseServer() {
 
 /**
  * Get all memories for a user and coach
+ * @param includeShared - If true, also include memories from other coaches
  */
 export async function getMemories(
   userId: string, 
   coachId: string,
-  categories?: MemoryCategory[]
+  categories?: MemoryCategory[],
+  includeShared: boolean = false
 ): Promise<Memory[]> {
   const supabase = await createSupabaseServer();
   
@@ -81,8 +84,12 @@ export async function getMemories(
     .from('coach_memory')
     .select('*')
     .eq('user_id', userId)
-    .eq('coach_id', coachId)
     .order('updated_at', { ascending: false });
+  
+  // Either get just this coach's memories, or all coaches
+  if (!includeShared) {
+    query = query.eq('coach_id', coachId);
+  }
   
   if (categories && categories.length > 0) {
     query = query.in('category', categories);
@@ -92,6 +99,26 @@ export async function getMemories(
   
   if (error) {
     console.error('[MemoryService] Error fetching memories:', error);
+    return [];
+  }
+  
+  return data || [];
+}
+
+/**
+ * Get ALL memories for a user across all coaches
+ */
+export async function getAllUserMemories(userId: string): Promise<Memory[]> {
+  const supabase = await createSupabaseServer();
+  
+  const { data, error } = await supabase
+    .from('coach_memory')
+    .select('*')
+    .eq('user_id', userId)
+    .order('updated_at', { ascending: false });
+  
+  if (error) {
+    console.error('[MemoryService] Error fetching all memories:', error);
     return [];
   }
   
@@ -196,7 +223,30 @@ export async function saveMemories(memories: Omit<Memory, 'id' | 'created_at' | 
 }
 
 /**
- * Delete a memory
+ * Delete a memory by ID
+ */
+export async function deleteMemoryById(
+  userId: string,
+  memoryId: string
+): Promise<boolean> {
+  const supabase = await createSupabaseServer();
+  
+  const { error } = await supabase
+    .from('coach_memory')
+    .delete()
+    .eq('user_id', userId)
+    .eq('id', memoryId);
+  
+  if (error) {
+    console.error('[MemoryService] Error deleting memory by ID:', error);
+    return false;
+  }
+  
+  return true;
+}
+
+/**
+ * Delete a memory by key
  */
 export async function deleteMemory(
   userId: string,
@@ -225,15 +275,20 @@ export async function deleteMemory(
  */
 export async function deleteAllMemories(
   userId: string,
-  coachId: string
+  coachId?: string // If not provided, delete ALL memories across all coaches
 ): Promise<boolean> {
   const supabase = await createSupabaseServer();
   
-  const { error } = await supabase
+  let query = supabase
     .from('coach_memory')
     .delete()
-    .eq('user_id', userId)
-    .eq('coach_id', coachId);
+    .eq('user_id', userId);
+  
+  if (coachId) {
+    query = query.eq('coach_id', coachId);
+  }
+  
+  const { error } = await query;
   
   if (error) {
     console.error('[MemoryService] Error deleting all memories:', error);
@@ -243,14 +298,43 @@ export async function deleteAllMemories(
   return true;
 }
 
+/**
+ * Get memory count for a user
+ */
+export async function getMemoryCount(
+  userId: string,
+  coachId?: string
+): Promise<number> {
+  const supabase = await createSupabaseServer();
+  
+  let query = supabase
+    .from('coach_memory')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId);
+  
+  if (coachId) {
+    query = query.eq('coach_id', coachId);
+  }
+  
+  const { count, error } = await query;
+  
+  if (error) {
+    console.error('[MemoryService] Error counting memories:', error);
+    return 0;
+  }
+  
+  return count || 0;
+}
+
 // ============================================
 // MEMORY FORMATTING FOR PROMPTS
 // ============================================
 
 /**
  * Format memories for injection into system prompt
+ * @param includeSource - If true, note which coach the memory came from
  */
-export function formatMemoriesForPrompt(memories: Memory[]): string {
+export function formatMemoriesForPrompt(memories: Memory[], currentCoachId?: string): string {
   if (!memories || memories.length === 0) {
     return '';
   }
@@ -268,63 +352,70 @@ export function formatMemoriesForPrompt(memories: Memory[]): string {
   // Build formatted string
   const sections: string[] = [];
   
+  // Helper to format memory with optional source
+  const formatMemory = (m: Memory) => {
+    const fromOther = currentCoachId && m.coach_id !== currentCoachId;
+    const source = fromOther ? ` (shared)` : '';
+    return `• ${m.value}${source}`;
+  };
+  
   // Facts first (most important context)
   if (grouped.fact?.length) {
-    const facts = grouped.fact.map(m => `• ${m.value}`).join('\n');
+    const facts = grouped.fact.map(formatMemory).join('\n');
     sections.push(`**About them:**\n${facts}`);
   }
   
   // Relationships
   if (grouped.relationship?.length) {
-    const relationships = grouped.relationship.map(m => `• ${m.value}`).join('\n');
+    const relationships = grouped.relationship.map(formatMemory).join('\n');
     sections.push(`**Important people:**\n${relationships}`);
   }
   
   // Current challenges
   if (grouped.challenge?.length) {
-    const challenges = grouped.challenge.map(m => `• ${m.value}`).join('\n');
+    const challenges = grouped.challenge.map(formatMemory).join('\n');
     sections.push(`**Current challenges:**\n${challenges}`);
   }
   
   // Goals
   if (grouped.goal?.length) {
-    const goals = grouped.goal.map(m => `• ${m.value}`).join('\n');
+    const goals = grouped.goal.map(formatMemory).join('\n');
     sections.push(`**Goals:**\n${goals}`);
   }
   
   // Patterns observed
   if (grouped.pattern?.length) {
-    const patterns = grouped.pattern.map(m => `• ${m.value}`).join('\n');
+    const patterns = grouped.pattern.map(formatMemory).join('\n');
     sections.push(`**Patterns you've noticed:**\n${patterns}`);
   }
   
   // Values
   if (grouped.value?.length) {
-    const values = grouped.value.map(m => `• ${m.value}`).join('\n');
+    const values = grouped.value.map(formatMemory).join('\n');
     sections.push(`**What matters to them:**\n${values}`);
   }
   
   // Strengths
   if (grouped.strength?.length) {
-    const strengths = grouped.strength.map(m => `• ${m.value}`).join('\n');
+    const strengths = grouped.strength.map(formatMemory).join('\n');
     sections.push(`**Strengths/resources:**\n${strengths}`);
   }
   
   // Insights/breakthroughs
   if (grouped.insight?.length) {
-    const insights = grouped.insight.map(m => `• ${m.value}`).join('\n');
+    const insights = grouped.insight.map(formatMemory).join('\n');
     sections.push(`**Key insights from previous conversations:**\n${insights}`);
   }
   
   // Preferences
   if (grouped.preference?.length) {
-    const prefs = grouped.preference.map(m => `• ${m.value}`).join('\n');
+    const prefs = grouped.preference.map(formatMemory).join('\n');
     sections.push(`**What works for them:**\n${prefs}`);
   }
   
   // Recent context last
   if (grouped.context?.length) {
-    const context = grouped.context.map(m => `• ${m.value}`).join('\n');
+    const context = grouped.context.map(formatMemory).join('\n');
     sections.push(`**Recent context:**\n${context}`);
   }
   
@@ -390,19 +481,21 @@ export async function getLastConversationSummary(
 
 /**
  * Get complete memory context for injection
+ * @param includeShared - If true, include memories from all coaches
  */
 export async function getMemoryContext(
   userId: string,
-  coachId: string
+  coachId: string,
+  includeShared: boolean = true // Default to sharing memories
 ): Promise<string> {
-  // Get all memories
-  const memories = await getMemories(userId, coachId);
+  // Get memories (optionally including other coaches)
+  const memories = await getMemories(userId, coachId, undefined, includeShared);
   
   // Get last conversation summary
   const lastConvo = await getLastConversationSummary(userId, coachId);
   
   // Format memories
-  const formattedMemories = formatMemoriesForPrompt(memories);
+  const formattedMemories = formatMemoriesForPrompt(memories, coachId);
   
   // Combine
   const parts: string[] = [];
