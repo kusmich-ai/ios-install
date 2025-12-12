@@ -1,3 +1,4 @@
+// middleware.ts - UPDATED with coach routes
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
@@ -111,6 +112,14 @@ export async function middleware(request: NextRequest) {
   if (!session) {
     // Not authenticated - redirect to signin
     return NextResponse.redirect(new URL('/auth/signin', request.url))
+  }
+
+  // ============================================
+  // COACH ROUTES - Just need auth, skip onboarding checks
+  // ============================================
+  if (path.startsWith('/coach/')) {
+    // User is authenticated, allow access to coach pages
+    return response
   }
 
   // User is authenticated - check if they're on the right step
