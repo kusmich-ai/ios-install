@@ -1,4 +1,4 @@
-// app/api/coach/chat/route.ts - WITH COMPREHENSIVE SAFETY
+// app/api/coach/chat/route.ts - WITH COMPREHENSIVE SAFETY + SLACK NOTIFICATIONS
 import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
 import { getCoachSystemPrompt, CoachId } from '@/lib/coachPrompts';
@@ -21,6 +21,7 @@ import {
   addSafetyToPrompt,
   BoundaryCategory,
 } from '@/lib/crisisDetection';
+import { sendSafetyNotification } from '@/lib/notifications';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -37,7 +38,27 @@ interface RequestBody {
   messages: Message[];
   coachId: CoachId;
   memories?: string[];
+  conversationId?: string;
 }
+
+// Map categories to audit action names
+const ACTION_MAP: Record<BoundaryCategory, string> = {
+  crisis: 'CRISIS_DETECTED',
+  concern: 'CONCERN_DETECTED',
+  child_safety: 'CHILD_SAFETY_DETECTED',
+  psychotic_symptoms: 'PSYCHOTIC_SYMPTOMS_DETECTED',
+  abuse_situation: 'ABUSE_SITUATION_DETECTED',
+  eating_disorder: 'EATING_DISORDER_DETECTED',
+  substance_abuse: 'SUBSTANCE_ABUSE_DETECTED',
+  deep_trauma: 'DEEP_TRAUMA_DETECTED',
+  diagnosis_seeking: 'DIAGNOSIS_SEEKING_DETECTED',
+  sexual_content: 'SEXUAL_CONTENT_BLOCKED',
+  illegal_activity: 'ILLEGAL_ACTIVITY_BLOCKED',
+  medication: 'MEDICAL_ADVICE_REDIRECTED',
+  legal: 'LEGAL_ADVICE_REDIRECTED',
+  financial: 'FINANCIAL_ADVICE_REDIRECTED',
+  none: 'NONE',
+};
 
 export async function POST(req: Request) {
   try {
@@ -68,7 +89,7 @@ export async function POST(req: Request) {
 
     // STEP 3: PARSE AND VALIDATE REQUEST
     const body: RequestBody = await req.json();
-    const { messages, coachId, memories } = body;
+    const { messages, coachId, memories, conversationId } = body;
 
     // Validate coachId
     if (!coachId || !['nic', 'fehren'].includes(coachId)) {
@@ -110,38 +131,37 @@ export async function POST(req: Request) {
     // STEP 6: COMPREHENSIVE SAFETY CHECK
     const safetyCheck = checkForSafetyIssues(latestUserMessage.content);
     
-    // Log all safety events for monitoring
+    // Log and notify for safety events
     if (safetyCheck.category !== 'none') {
-      const actionMap: Record<BoundaryCategory, string> = {
-        crisis: 'CRISIS_DETECTED',
-        concern: 'CONCERN_DETECTED',
-        child_safety: 'CHILD_SAFETY_DETECTED',
-        psychotic_symptoms: 'PSYCHOTIC_SYMPTOMS_DETECTED',
-        abuse_situation: 'ABUSE_SITUATION_DETECTED',
-        eating_disorder: 'EATING_DISORDER_DETECTED',
-        substance_abuse: 'SUBSTANCE_ABUSE_DETECTED',
-        deep_trauma: 'DEEP_TRAUMA_DETECTED',
-        diagnosis_seeking: 'DIAGNOSIS_SEEKING_DETECTED',
-        sexual_content: 'SEXUAL_CONTENT_BLOCKED',
-        illegal_activity: 'ILLEGAL_ACTIVITY_BLOCKED',
-        medication: 'MEDICAL_ADVICE_REDIRECTED',
-        legal: 'LEGAL_ADVICE_REDIRECTED',
-        financial: 'FINANCIAL_ADVICE_REDIRECTED',
-        none: 'NONE',
-      };
+      const actionType = ACTION_MAP[safetyCheck.category];
 
       console.log(`[API/Coach/Chat] Safety event: ${safetyCheck.category}`, userId, safetyCheck.matchedPhrases);
       
+      // Log to audit system
       await logAuditEvent({
         userId,
-        action: actionMap[safetyCheck.category],
+        action: actionType,
         details: { 
           coachId, 
           category: safetyCheck.category,
           level: safetyCheck.level,
           phrases: safetyCheck.matchedPhrases,
           blocked: safetyCheck.blockResponse,
+          conversationId,
         },
+      });
+
+      // Send Slack notification for critical/high-priority events
+      // This runs async and doesn't block the response
+      sendSafetyNotification(actionType, {
+        coachId,
+        userId,
+        matchedPhrases: safetyCheck.matchedPhrases,
+        category: safetyCheck.category,
+        level: safetyCheck.level,
+        conversationId,
+      }).catch(err => {
+        console.error('[API/Coach/Chat] Notification error (non-blocking):', err);
       });
 
       // If this category requires blocking, return the prepared response
