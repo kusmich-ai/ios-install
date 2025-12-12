@@ -1,4 +1,4 @@
-// app/api/coach/chat/route.ts - WITH CRISIS DETECTION
+// app/api/coach/chat/route.ts - WITH COMPREHENSIVE SAFETY
 import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
 import { getCoachSystemPrompt, CoachId } from '@/lib/coachPrompts';
@@ -17,11 +17,9 @@ import {
 } from '@/lib/security/inputSanitization';
 import { checkRateLimit } from '@/lib/security/rateLimit';
 import {
-  checkForCrisis,
-  checkExcludedTopics,
-  getExcludedTopicResponse,
+  checkForSafetyIssues,
   addSafetyToPrompt,
-  CrisisLevel,
+  BoundaryCategory,
 } from '@/lib/crisisDetection';
 
 const anthropic = new Anthropic({
@@ -109,63 +107,55 @@ export async function POST(req: Request) {
       });
     }
 
-    // STEP 6: CRISIS DETECTION
-    const crisisCheck = checkForCrisis(latestUserMessage.content);
+    // STEP 6: COMPREHENSIVE SAFETY CHECK
+    const safetyCheck = checkForSafetyIssues(latestUserMessage.content);
     
-    if (crisisCheck.level === 'crisis') {
-      console.log('[API/Coach/Chat] CRISIS DETECTED:', userId, crisisCheck.matchedPhrases);
-      
-      // Log crisis detection for review
-      await logAuditEvent({
-        userId,
-        action: 'CRISIS_DETECTED',
-        details: { 
-          coachId, 
-          level: crisisCheck.level,
-          phrases: crisisCheck.matchedPhrases,
-        },
-      });
+    // Log all safety events for monitoring
+    if (safetyCheck.category !== 'none') {
+      const actionMap: Record<BoundaryCategory, string> = {
+        crisis: 'CRISIS_DETECTED',
+        concern: 'CONCERN_DETECTED',
+        child_safety: 'CHILD_SAFETY_DETECTED',
+        psychotic_symptoms: 'PSYCHOTIC_SYMPTOMS_DETECTED',
+        abuse_situation: 'ABUSE_SITUATION_DETECTED',
+        eating_disorder: 'EATING_DISORDER_DETECTED',
+        substance_abuse: 'SUBSTANCE_ABUSE_DETECTED',
+        deep_trauma: 'DEEP_TRAUMA_DETECTED',
+        diagnosis_seeking: 'DIAGNOSIS_SEEKING_DETECTED',
+        sexual_content: 'SEXUAL_CONTENT_BLOCKED',
+        illegal_activity: 'ILLEGAL_ACTIVITY_BLOCKED',
+        medication: 'MEDICAL_ADVICE_REDIRECTED',
+        legal: 'LEGAL_ADVICE_REDIRECTED',
+        financial: 'FINANCIAL_ADVICE_REDIRECTED',
+        none: 'NONE',
+      };
 
-      // Return immediate crisis response
-      return NextResponse.json({
-        response: crisisCheck.suggestedResponse,
-        coachId,
-        crisisDetected: true,
-      });
-    }
-
-    // Log concern level for monitoring (but don't block)
-    if (crisisCheck.level === 'concern') {
-      console.log('[API/Coach/Chat] Concern detected:', userId, crisisCheck.matchedPhrases);
+      console.log(`[API/Coach/Chat] Safety event: ${safetyCheck.category}`, userId, safetyCheck.matchedPhrases);
       
       await logAuditEvent({
         userId,
-        action: 'CONCERN_DETECTED',
+        action: actionMap[safetyCheck.category],
         details: { 
           coachId, 
-          level: crisisCheck.level,
-          phrases: crisisCheck.matchedPhrases,
+          category: safetyCheck.category,
+          level: safetyCheck.level,
+          phrases: safetyCheck.matchedPhrases,
+          blocked: safetyCheck.blockResponse,
         },
       });
-      
-      // Don't block - let AI handle with safety prompt, but we've logged it
+
+      // If this category requires blocking, return the prepared response
+      if (safetyCheck.blockResponse && safetyCheck.suggestedResponse) {
+        return NextResponse.json({
+          response: safetyCheck.suggestedResponse,
+          coachId,
+          safetyCategory: safetyCheck.category,
+          safetyTriggered: true,
+        });
+      }
     }
 
-    // STEP 7: CHECK FOR EXCLUDED TOPICS
-    const excludedTopic = checkExcludedTopics(latestUserMessage.content);
-    
-    if (excludedTopic) {
-      console.log('[API/Coach/Chat] Excluded topic detected:', excludedTopic);
-      
-      // Return boundary response
-      return NextResponse.json({
-        response: getExcludedTopicResponse(excludedTopic),
-        coachId,
-        boundarySet: true,
-      });
-    }
-
-    // STEP 8: BUILD SYSTEM PROMPT WITH SAFETY
+    // STEP 7: BUILD SYSTEM PROMPT WITH SAFETY
     let systemPrompt = getCoachSystemPrompt(coachId);
     
     // Add safety protocols to prompt
@@ -176,12 +166,12 @@ export async function POST(req: Request) {
       systemPrompt += `\n\n## WHAT YOU REMEMBER ABOUT THIS USER\n${memories.join('\n')}`;
     }
 
-    // If concern was detected, add context for AI
-    if (crisisCheck.level === 'concern') {
-      systemPrompt += `\n\n## CURRENT CONTEXT\nThe user's message contains language suggesting possible distress (${crisisCheck.matchedPhrases.join(', ')}). Check in on their wellbeing before proceeding with coaching. Ask directly if they're having thoughts of hurting themselves.`;
+    // If concern was detected but not blocked, add context for AI
+    if (safetyCheck.level === 'concern' && !safetyCheck.blockResponse) {
+      systemPrompt += `\n\n## CURRENT CONTEXT - HANDLE WITH CARE\nThe user's message contains language suggesting possible distress (detected: ${safetyCheck.matchedPhrases.join(', ')}). Check in on their wellbeing before proceeding with coaching. Ask directly if they're having thoughts of hurting themselves. Prioritize their safety over coaching content.`;
     }
 
-    // STEP 9: PREPARE MESSAGES
+    // STEP 8: PREPARE MESSAGES
     const conversationMessages: Array<{ role: MessageRole; content: string }> = messages
       .filter((msg: Message) => msg.role !== 'system')
       .map((msg: Message) => ({
@@ -189,7 +179,7 @@ export async function POST(req: Request) {
         content: cleanMessageContent(msg.content),
       }));
 
-    // STEP 10: MAKE API CALL
+    // STEP 9: MAKE API CALL
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 2048,
