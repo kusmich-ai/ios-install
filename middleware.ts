@@ -1,4 +1,4 @@
-// middleware.ts - UPDATED with coach routes
+// middleware.ts - UPDATED with The Mirror integration
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
@@ -68,7 +68,7 @@ export async function middleware(request: NextRequest) {
           return NextResponse.redirect(new URL('/screening', request.url))
         }
 
-        // ✅ FIXED - Check legal from user_profiles
+        // Check legal from user_profiles
         const { data: profile } = await supabase
           .from('user_profiles')
           .select('has_accepted_terms, has_accepted_consent')
@@ -90,6 +90,18 @@ export async function middleware(request: NextRequest) {
         if (!baseline) {
           // No baseline - send to assessment
           return NextResponse.redirect(new URL('/assessment', request.url))
+        }
+
+        // Has baseline - check The Mirror
+        const { data: patternProfile } = await supabase
+          .from('pattern_profiles')
+          .select('id, skipped')
+          .eq('user_id', session.user.id)
+          .maybeSingle()
+
+        if (!patternProfile) {
+          // No pattern profile - send to mirror
+          return NextResponse.redirect(new URL('/mirror', request.url))
         }
 
         // Everything complete - send to chat
@@ -142,7 +154,7 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // ✅ FIXED - Check legal from user_profiles
+  // Check legal from user_profiles
   if (path === '/legal-agreements' || path === '/legal') {
     try {
       const { data: profile } = await supabase
@@ -170,11 +182,81 @@ export async function middleware(request: NextRequest) {
         .maybeSingle()
 
       if (baseline) {
-        // Already completed assessment - send to chat
-        return NextResponse.redirect(new URL('/chat', request.url))
+        // Already completed assessment - send to mirror (not chat)
+        return NextResponse.redirect(new URL('/mirror', request.url))
       }
     } catch (error) {
       console.error('Error checking baseline:', error)
+    }
+  }
+
+  // ============================================
+  // THE MIRROR - Check if completed or skipped
+  // ============================================
+  if (path === '/mirror') {
+    try {
+      // First verify user has completed baseline (required before mirror)
+      const { data: baseline } = await supabase
+        .from('baseline_assessments')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .maybeSingle()
+
+      if (!baseline) {
+        // No baseline yet - send to assessment first
+        return NextResponse.redirect(new URL('/assessment', request.url))
+      }
+
+      // Check if already completed or skipped The Mirror
+      const { data: patternProfile } = await supabase
+        .from('pattern_profiles')
+        .select('id, skipped')
+        .eq('user_id', session.user.id)
+        .maybeSingle()
+
+      if (patternProfile) {
+        // Already completed or skipped - send to chat
+        return NextResponse.redirect(new URL('/chat', request.url))
+      }
+
+      // No pattern profile - allow access to /mirror
+    } catch (error) {
+      console.error('Error checking mirror status:', error)
+    }
+  }
+
+  // ============================================
+  // CHAT - Ensure all onboarding steps completed
+  // ============================================
+  if (path === '/chat' || path.startsWith('/chat/')) {
+    try {
+      // Check baseline first
+      const { data: baseline } = await supabase
+        .from('baseline_assessments')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .maybeSingle()
+
+      if (!baseline) {
+        // No baseline - send to assessment
+        return NextResponse.redirect(new URL('/assessment', request.url))
+      }
+
+      // Check The Mirror (must be completed or skipped)
+      const { data: patternProfile } = await supabase
+        .from('pattern_profiles')
+        .select('id, skipped')
+        .eq('user_id', session.user.id)
+        .maybeSingle()
+
+      if (!patternProfile) {
+        // No pattern profile - send to mirror
+        return NextResponse.redirect(new URL('/mirror', request.url))
+      }
+
+      // All checks passed - allow access to chat
+    } catch (error) {
+      console.error('Error checking chat access:', error)
     }
   }
 
