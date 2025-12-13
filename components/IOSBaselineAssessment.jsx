@@ -684,7 +684,7 @@ setSaveError(null);
   const handleStartIOS = async () => {
     // If data was already marked as saved, just redirect
     if (dataSaved) {
-      window.location.href = '/chat';
+      window.location.href = '/mirror';
       return;
     }
 
@@ -704,8 +704,8 @@ setSaveError(null);
       }
       
       if (baseline && baseline.rewired_index) {
-        console.log('✅ Baseline verified! Redirecting to chat...');
-        window.location.href = '/chat';
+        console.log('✅ Baseline verified! Redirecting to The Mirror...');
+        window.location.href = '/mirror';
       } else {
         console.error('❌ Baseline data not found or incomplete');
         alert('Assessment data not saved properly. Please refresh the page and try again, or contact support.');
