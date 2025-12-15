@@ -1101,10 +1101,11 @@ export interface CoachMetadata {
   id: string;
   name: string;
   title: string;
+  tagline: string;  // ADDED: short tagline for UI header
   description: string;
   avatarUrl: string;
   accentColor: string;
-  icon: string;  // ADDED: emoji icon for UI
+  icon: string;
   specialties: string[];
   openingMessage: string;
 }
@@ -1116,6 +1117,7 @@ export const coaches: Record<CoachId, CoachMetadata> = {
     id: 'nic',
     name: 'Nic',
     title: 'Systems Architect',
+    tagline: 'Mind & Nervous System',  // ADDED
     description: 'Direct, witty, scientifically grounded coaching for transformation',
     avatarUrl: '/coaches/nic-avatar.png',
     accentColor: '#ff9e19',
@@ -1127,6 +1129,7 @@ export const coaches: Record<CoachId, CoachMetadata> = {
     id: 'fehren', 
     name: 'Fehren',
     title: 'Heart & Body Specialist',
+    tagline: 'Heart & Body',  // ADDED
     description: 'Spacious, empathetic holding for emotional processing',
     avatarUrl: '/coaches/fehren-avatar.png',
     accentColor: '#7c9eb2',
