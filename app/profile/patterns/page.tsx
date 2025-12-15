@@ -1,6 +1,6 @@
 // ============================================
 // app/profile/patterns/page.tsx
-// Pattern Profile Page - Revisit Mirror Results Anytime
+// Pattern Profile Page - UPDATED with Regenerate Roadmap
 // ============================================
 
 'use client';
@@ -9,7 +9,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase-client';
 import { IOS_STAGE_MAPPING } from '@/lib/mirrorMapping';
-import { ArrowLeft, RefreshCw } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Sparkles } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -70,7 +70,7 @@ interface PatternProfile {
   };
   core_pattern: CorePattern;
   ios_roadmap: any;
-  transformation_roadmap: TransformationRoadmap;
+  transformation_roadmap: TransformationRoadmap | null;
   processed_at: string;
 }
 
@@ -83,6 +83,8 @@ export default function PatternProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'roadmap' | 'patterns'>('roadmap');
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [regenerateError, setRegenerateError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchPatternProfile();
@@ -96,6 +98,10 @@ export default function PatternProfilePage() {
 
       if (data.exists && !data.skipped && data.data) {
         setProfile(data.data);
+        // If no transformation roadmap, default to patterns tab
+        if (!data.data.transformation_roadmap) {
+          setActiveTab('patterns');
+        }
       } else if (data.exists && data.skipped) {
         setError('skipped');
       } else {
@@ -107,6 +113,43 @@ export default function PatternProfilePage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const regenerateRoadmap = async () => {
+    setIsRegenerating(true);
+    setRegenerateError(null);
+    
+    try {
+      const response = await fetch('/api/mirror/regenerate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to generate roadmap');
+      }
+
+      // Update profile with new roadmap
+      if (result.transformation_roadmap && profile) {
+        setProfile({
+          ...profile,
+          transformation_roadmap: result.transformation_roadmap
+        });
+        setActiveTab('roadmap');
+      }
+    } catch (err) {
+      console.error('Failed to regenerate roadmap:', err);
+      setRegenerateError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
+
+  const handleRerunMirror = () => {
+    // Use query param to bypass middleware redirect
+    router.push('/mirror?rerun=true');
   };
 
   const getSeverityColor = (severity: number) => {
@@ -174,7 +217,7 @@ export default function PatternProfilePage() {
             You haven't completed The Mirror yet. Complete the pattern analysis to see your transformation roadmap.
           </p>
           <button
-            onClick={() => router.push('/mirror')}
+            onClick={() => router.push('/mirror?rerun=true')}
             className="px-6 py-3 bg-[#ff9e19] text-black font-semibold rounded-lg hover:bg-[#ffb347] transition-colors"
           >
             Start The Mirror
@@ -194,7 +237,7 @@ export default function PatternProfilePage() {
             You skipped The Mirror during onboarding. You can complete it now to unlock your personalized transformation roadmap.
           </p>
           <button
-            onClick={() => router.push('/mirror')}
+            onClick={() => router.push('/mirror?rerun=true')}
             className="px-6 py-3 bg-[#ff9e19] text-black font-semibold rounded-lg hover:bg-[#ffb347] transition-colors"
           >
             Complete The Mirror
@@ -226,10 +269,55 @@ export default function PatternProfilePage() {
   }
 
   // ============================================
+  // RENDER: NO TRANSFORMATION ROADMAP - GENERATE PROMPT
+  // ============================================
+  const renderNoRoadmapPrompt = () => (
+    <div className="bg-gradient-to-br from-[#111111] to-[#0a0a0a] rounded-xl border border-[#ff9e19]/30 p-8 text-center">
+      <div className="text-5xl mb-4">✨</div>
+      <h3 className="text-xl font-bold text-white mb-3">
+        Generate Your Transformation Roadmap
+      </h3>
+      <p className="text-gray-400 mb-6 max-w-md mx-auto">
+        Your patterns have been analyzed. Now let's create a personalized roadmap showing exactly how each IOS stage will transform these patterns.
+      </p>
+      
+      {regenerateError && (
+        <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-3 mb-4 max-w-md mx-auto">
+          <p className="text-red-400 text-sm">{regenerateError}</p>
+        </div>
+      )}
+      
+      <button
+        onClick={regenerateRoadmap}
+        disabled={isRegenerating}
+        className="px-6 py-3 bg-[#ff9e19] text-black font-semibold rounded-lg hover:bg-[#ffb347] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 mx-auto"
+      >
+        {isRegenerating ? (
+          <>
+            <div className="animate-spin w-5 h-5 border-2 border-black border-t-transparent rounded-full" />
+            Generating...
+          </>
+        ) : (
+          <>
+            <Sparkles size={18} />
+            Generate Transformation Roadmap
+          </>
+        )}
+      </button>
+      
+      <p className="text-gray-600 text-sm mt-4">
+        Takes about 10-15 seconds
+      </p>
+    </div>
+  );
+
+  // ============================================
   // RENDER: TRANSFORMATION ROADMAP
   // ============================================
   const renderTransformationRoadmap = () => {
-    if (!profile?.transformation_roadmap) return null;
+    if (!profile?.transformation_roadmap) {
+      return renderNoRoadmapPrompt();
+    }
 
     const { milestones, destination } = profile.transformation_roadmap;
 
@@ -451,7 +539,7 @@ export default function PatternProfilePage() {
         <div className="text-center mb-8">
           <div className="text-5xl mb-4">🪞</div>
           <h1 className="text-3xl font-bold text-white mb-2">
-            Your Pattern Profile
+            Pattern Profile & Transformation Map
           </h1>
           <p className="text-gray-400">
             Your transformation roadmap — revisit anytime.
@@ -518,7 +606,7 @@ export default function PatternProfilePage() {
             Have more ChatGPT history now? You can re-run The Mirror for deeper insights.
           </p>
           <button
-            onClick={() => router.push('/mirror')}
+            onClick={handleRerunMirror}
             className="px-6 py-3 bg-[#111111] text-gray-400 rounded-lg hover:text-white transition-colors flex items-center gap-2 mx-auto"
           >
             <RefreshCw size={18} />
