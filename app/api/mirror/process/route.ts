@@ -1,7 +1,6 @@
 // ============================================
 // app/api/mirror/process/route.ts
-// API endpoint for processing The Mirror analysis
-// Receives GPT output, parses it with Claude, maps to IOS stages
+// ENHANCED VERSION - Generates Transformation Roadmap
 // ============================================
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -12,10 +11,10 @@ import {
   generateIOSRoadmap, 
   calculateMirrorQuality,
   mapPatternToStages,
-  mapPatternToPractices
+  mapPatternToPractices,
+  IOS_STAGE_MAPPING
 } from '@/lib/mirrorMapping';
 
-// Initialize Anthropic client
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
 });
@@ -42,7 +41,9 @@ async function createSupabaseClient() {
   );
 }
 
-// System prompt for Claude to parse GPT output into structured format
+// ============================================
+// ENHANCED PARSING PROMPT
+// ============================================
 const PARSING_SYSTEM_PROMPT = `You are a pattern analysis parser. Your job is to take raw text output from a ChatGPT pattern analysis and convert it into a structured JSON format.
 
 The input will contain pattern analysis across these 7 categories:
@@ -99,9 +100,153 @@ Rules:
 - If the input is too vague or lacks substance, still output the structure but with empty/minimal patterns
 - ONLY output JSON - no markdown, no explanations, no preamble`;
 
+// ============================================
+// TRANSFORMATION ROADMAP GENERATION PROMPT
+// ============================================
+const ROADMAP_GENERATION_PROMPT = `You are a transformation architect. Given a user's pattern profile, create an emotionally compelling transformation roadmap.
+
+Your job is to take their patterns and create MILESTONES that show:
+1. What's broken (the cost of this pattern in their life)
+2. What changes (the specific transformation they'll experience)
+3. The shift (a one-line before → after statement)
+
+CRITICAL RULES:
+- Be SPECIFIC to their actual patterns, not generic
+- Use "you" language - speak directly to them
+- Show the COST emotionally - make them feel seen
+- Show the TRANSFORMATION concretely - what will be different
+- Keep each milestone focused on 1-2 related patterns
+- Write like a coach who deeply understands them, not a therapist with clinical distance
+- The language should create "oh shit, that's me" moments
+
+Output JSON in this exact structure:
+{
+  "milestones": [
+    {
+      "number": 1,
+      "title": "NERVOUS SYSTEM RESET",
+      "timeframe": "Weeks 1-2",
+      "stage": 1,
+      "stage_name": "Neural Priming",
+      "patterns_addressed": ["Pattern Name 1", "Pattern Name 2"],
+      "whats_broken": "Your 'Fight-or-flight default' keeps you in survival mode. You can't access clarity because your body is running threat detection 24/7. Even when you're 'relaxing,' your nervous system is scanning for danger.",
+      "what_changes": [
+        "You'll be able to downregulate in under 60 seconds",
+        "Stress stops living in your body overnight", 
+        "You'll notice triggers BEFORE they hijack you"
+      ],
+      "the_shift": "\"I am anxious\" → \"I notice anxiety arising\""
+    }
+  ],
+  "destination": {
+    "core_pattern_name": "The Core Pattern Name",
+    "liberation_statement": "When you complete this roadmap, '[Core Pattern]' will no longer run your life. You'll still [positive behavior] - but from wholeness, not wound. From choice, not compulsion."
+  }
+}
+
+Create 3-4 milestones maximum, focused on their highest priority patterns. Each milestone should map to a specific IOS stage.
+
+The milestones should build on each other - earlier ones create foundation for later ones.`;
+
+// ============================================
+// GENERATE TRANSFORMATION ROADMAP
+// ============================================
+async function generateTransformationRoadmap(
+  parsedPatterns: any,
+  iosRoadmap: any
+): Promise<any> {
+  try {
+    // Build context for roadmap generation
+    const priorityStages = iosRoadmap.priority_stages || [1, 3, 5];
+    
+    // Collect high-severity patterns
+    const allPatterns: any[] = [];
+    const categories = [
+      'nervous_system_patterns',
+      'awareness_blind_spots',
+      'identity_loops',
+      'attention_leaks',
+      'relational_patterns',
+      'emotional_outlook',
+      'shadow_material'
+    ];
+    
+    categories.forEach(cat => {
+      if (parsedPatterns[cat]?.patterns) {
+        parsedPatterns[cat].patterns.forEach((p: any) => {
+          allPatterns.push({ ...p, category: cat });
+        });
+      }
+    });
+    
+    // Sort by severity
+    allPatterns.sort((a, b) => b.severity - a.severity);
+    
+    // Build prompt context
+    const patternContext = `
+CORE PATTERN: ${parsedPatterns.core_pattern?.name || 'Not identified'}
+Description: ${parsedPatterns.core_pattern?.description || 'N/A'}
+
+HIGH-PRIORITY PATTERNS (severity 4-5):
+${allPatterns.filter(p => p.severity >= 4).map(p => `- ${p.name} (${p.category.replace('_', ' ')}): ${p.description}`).join('\n')}
+
+ALL PATTERNS:
+${allPatterns.map(p => `- ${p.name} (severity ${p.severity}): ${p.description}`).join('\n')}
+
+PRIORITY IOS STAGES: ${priorityStages.join(', ')}
+
+IOS STAGE DEFINITIONS:
+- Stage 1 (Neural Priming): Nervous system regulation, stress response, calm on demand
+- Stage 2 (Embodied Awareness): Body connection, somatic awareness, feeling states
+- Stage 3 (Identity Mode): Identity shifts, self-concept, acting from coherence
+- Stage 4 (Flow Mode): Attention, focus, deep work, productivity without burnout
+- Stage 5 (Relational Coherence): Relationships, boundaries, staying open in connection
+- Stage 6 (Integration): Deep pattern integration, shadow work, stable transformation
+`;
+
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 2000,
+      system: ROADMAP_GENERATION_PROMPT,
+      messages: [
+        {
+          role: 'user',
+          content: `Generate a transformation roadmap for this user:\n\n${patternContext}`
+        }
+      ]
+    });
+
+    const responseText = response.content
+      .filter(block => block.type === 'text')
+      .map(block => block.text)
+      .join('');
+
+    // Parse JSON response
+    const cleanedJson = responseText
+      .replace(/```json\n?/g, '')
+      .replace(/```\n?/g, '')
+      .trim();
+    
+    return JSON.parse(cleanedJson);
+
+  } catch (error) {
+    console.error('Failed to generate transformation roadmap:', error);
+    // Return a basic fallback structure
+    return {
+      milestones: [],
+      destination: {
+        core_pattern_name: parsedPatterns.core_pattern?.name || 'Your Core Pattern',
+        liberation_statement: 'Complete this roadmap to transform these patterns from unconscious drivers into conscious choices.'
+      }
+    };
+  }
+}
+
+// ============================================
+// API ROUTE HANDLER
+// ============================================
 export async function POST(request: NextRequest) {
   try {
-    // Get the raw GPT output from request body
     const { gptOutput } = await request.json();
     
     if (!gptOutput || typeof gptOutput !== 'string') {
@@ -111,7 +256,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate minimum content
     if (gptOutput.length < 200) {
       return NextResponse.json(
         { 
@@ -122,7 +266,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create Supabase client and verify authentication
     const supabase = await createSupabaseClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
@@ -133,7 +276,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Parse GPT output using Claude
+    // STEP 1: Parse GPT output using Claude
     const parseResponse = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 4000,
@@ -146,16 +289,13 @@ export async function POST(request: NextRequest) {
       ]
     });
 
-    // Extract text content from Claude's response
     const responseText = parseResponse.content
       .filter(block => block.type === 'text')
       .map(block => block.text)
       .join('');
 
-    // Parse the JSON response
     let parsedPatterns;
     try {
-      // Clean up any markdown formatting that might have slipped through
       const cleanedJson = responseText
         .replace(/```json\n?/g, '')
         .replace(/```\n?/g, '')
@@ -173,7 +313,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Add IOS mapping to each pattern
+    // STEP 2: Add IOS mapping to each pattern
     const categories = [
       'nervous_system_patterns',
       'awareness_blind_spots',
@@ -203,13 +343,16 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // Generate IOS Roadmap
+    // STEP 3: Generate basic IOS Roadmap
     const iosRoadmap = generateIOSRoadmap(parsedPatterns);
 
-    // Calculate quality score
+    // STEP 4: Generate Transformation Roadmap (the enhanced emotional version)
+    const transformationRoadmap = await generateTransformationRoadmap(parsedPatterns, iosRoadmap);
+
+    // STEP 5: Calculate quality score
     const qualityScore = calculateMirrorQuality(parsedPatterns);
 
-    // Prepare data for storage
+    // STEP 6: Prepare data for storage
     const patternProfileData = {
       user_id: user.id,
       raw_gpt_output: gptOutput,
@@ -222,12 +365,15 @@ export async function POST(request: NextRequest) {
       emotional_outlook: parsedPatterns.emotional_outlook || { patterns: [] },
       shadow_material: parsedPatterns.shadow_material || { patterns: [] },
       core_pattern: parsedPatterns.core_pattern || null,
-      ios_roadmap: iosRoadmap,
+      ios_roadmap: {
+        ...iosRoadmap,
+        transformation: transformationRoadmap // Enhanced roadmap stored here
+      },
       skipped: false,
       processed_at: new Date().toISOString()
     };
 
-    // Upsert to database (update if exists, insert if not)
+    // STEP 7: Save to database
     const { data: savedProfile, error: saveError } = await supabase
       .from('pattern_profiles')
       .upsert(patternProfileData, {
@@ -247,7 +393,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Return the processed data
+    // STEP 8: Return the processed data
     return NextResponse.json({
       success: true,
       data: {
@@ -263,7 +409,8 @@ export async function POST(request: NextRequest) {
           shadow: parsedPatterns.shadow_material
         },
         core_pattern: parsedPatterns.core_pattern,
-        ios_roadmap: iosRoadmap
+        ios_roadmap: iosRoadmap,
+        transformation_roadmap: transformationRoadmap
       }
     });
 
@@ -300,7 +447,6 @@ export async function GET(request: NextRequest) {
 
     if (fetchError) {
       if (fetchError.code === 'PGRST116') {
-        // No profile found
         return NextResponse.json({
           exists: false,
           data: null
@@ -326,6 +472,7 @@ export async function GET(request: NextRequest) {
         },
         core_pattern: profile.core_pattern,
         ios_roadmap: profile.ios_roadmap,
+        transformation_roadmap: profile.ios_roadmap?.transformation || null,
         processed_at: profile.processed_at
       }
     });
@@ -339,7 +486,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST to /api/mirror/skip - marks the mirror as skipped
+// PUT endpoint to skip mirror
 export async function PUT(request: NextRequest) {
   try {
     const supabase = await createSupabaseClient();
@@ -355,7 +502,6 @@ export async function PUT(request: NextRequest) {
     const { action } = await request.json();
 
     if (action === 'skip') {
-      // Create a "skipped" profile record
       const { error: upsertError } = await supabase
         .from('pattern_profiles')
         .upsert({
