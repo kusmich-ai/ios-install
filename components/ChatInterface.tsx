@@ -3685,12 +3685,12 @@ This isn't judgment — it's data. The resistance is telling you something. Want
   <p className="text-sm text-gray-400">
     Stage {progress?.currentStage || 1}: {getStageName(progress?.currentStage || 1)}
   </p>
-  <a 
-    href="/profile/patterns"
-    className="inline-flex items-center gap-1.5 mt-2 text-xs text-gray-500 hover:text-[#ff9e19] transition-colors"
-  >
-    🪞 <span className="hover:underline">Pattern Profile</span>
-  </a>
+ <a 
+  href="/profile/patterns"
+  className="inline-flex items-center gap-2 mt-3 px-3 py-1.5 bg-[#ff9e19]/10 hover:bg-[#ff9e19]/20 text-[#ff9e19] rounded-lg text-xs font-medium transition-colors border border-[#ff9e19]/30"
+>
+  🪞 Pattern Profile & Transformation Map
+</a>
 </div>
 
             {/* REwired Index */}
