@@ -1170,15 +1170,30 @@ export function buildCoachMessages(
   ];
 }
 
-export function getCoachOpeningMessage(coachId: string): string {
-  const coach = coaches[coachId];
-  return coach?.openingMessage || "Hey. What's on your mind?";
+export function getCoachOpeningMessage(coachId: string, userName?: string): string {
+  const name = userName ? `, ${userName}` : '';
+  
+  if (coachId === 'nic') {
+    return userName ? `Hey${name}. What's on your mind?` : "Hey. What's on your mind?";
+  }
+  
+  if (coachId === 'fehren') {
+    return userName 
+      ? `Let's just land for a second${name}... How are you actually doing - not the headline version?`
+      : "Let's just land for a second... How are you actually doing - not the headline version?";
+  }
+  
+  // Fallback for unknown coach IDs
+  if (coachId in coaches) {
+    const coach = coaches[coachId as CoachId];
+    return coach.openingMessage;
+  }
+  
+  return "Hey. What's on your mind?";
 }
 
 // Time-aware opening message
 export function getTimeAwareOpening(coachId: string, hour: number): string {
-  const coach = coaches[coachId];
-  
   if (coachId === 'nic') {
     if (hour >= 5 && hour < 12) {
       return "Morning. Ready to get after it?";
@@ -1203,5 +1218,6 @@ export function getTimeAwareOpening(coachId: string, hour: number): string {
     }
   }
   
+  const coach = coachId in coaches ? coaches[coachId as CoachId] : null;
   return coach?.openingMessage || "Hey. What's on your mind?";
 }
