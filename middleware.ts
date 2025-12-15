@@ -1,4 +1,4 @@
-// middleware.ts - UPDATED with The Mirror + Profile routes
+// middleware.ts - UPDATED with Mirror rerun support + Profile routes
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
@@ -33,8 +33,10 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Get current path
+  // Get current path and search params
   const path = request.nextUrl.pathname
+  const searchParams = request.nextUrl.searchParams
+  const isRerun = searchParams.get('rerun') === 'true'
 
   // CRITICAL: Refresh session before checking auth
   const { data: { session } } = await supabase.auth.getSession()
@@ -213,6 +215,12 @@ export async function middleware(request: NextRequest) {
       if (!baseline) {
         // No baseline yet - send to assessment first
         return NextResponse.redirect(new URL('/assessment', request.url))
+      }
+
+      // If rerun=true query param, allow access regardless of existing profile
+      if (isRerun) {
+        // Allow access to re-run The Mirror
+        return response
       }
 
       // Check if already completed or skipped The Mirror
