@@ -93,9 +93,18 @@ export default function MirrorPage() {
   const [copied, setCopied] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'roadmap' | 'patterns'>('roadmap');
+  const [isRerun, setIsRerun] = useState(false);
 
   useEffect(() => {
-    checkExistingProfile();
+    // Check if this is a rerun (from query param)
+    const params = new URLSearchParams(window.location.search);
+    const rerun = params.get('rerun') === 'true';
+    setIsRerun(rerun);
+    
+    // If not a rerun, check for existing profile
+    if (!rerun) {
+      checkExistingProfile();
+    }
   }, []);
 
   const checkExistingProfile = async () => {
