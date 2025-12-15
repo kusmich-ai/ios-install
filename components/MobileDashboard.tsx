@@ -149,14 +149,20 @@ export default function MobileDashboard({
         {/* Dashboard Content */}
         <div className="p-4 pt-6 overflow-y-auto h-full space-y-4">
           {/* Header */}
-          <div className="mb-2">
-            <h1 className="text-xl font-bold text-white mb-1">IOS System Installer</h1>
-            <p className="text-xs text-gray-400 mb-2">Neural & Mental Operating System</p>
-            <p className="text-sm font-medium text-white">{userName ? `Hey, ${userName}` : 'Welcome'}</p>
-            <p className="text-xs text-gray-400 mt-1">
-              Stage {currentStage}: {getStageName(currentStage)}
-            </p>
-          </div>
+<div className="mb-2">
+  <h1 className="text-xl font-bold text-white mb-1">IOS System Installer</h1>
+  <p className="text-xs text-gray-400 mb-2">Neural & Mental Operating System</p>
+  <p className="text-sm font-medium text-white">{userName ? `Hey, ${userName}` : 'Welcome'}</p>
+  <p className="text-xs text-gray-400 mt-1">
+    Stage {currentStage}: {getStageName(currentStage)}
+  </p>
+  <a 
+    href="/profile/patterns"
+    className="inline-flex items-center gap-1.5 mt-2 text-xs text-gray-500 hover:text-[#ff9e19] transition-colors"
+  >
+    🪞 <span className="hover:underline">Pattern Profile</span>
+  </a>
+</div>
 
           {/* REwired Index - Current with Delta */}
           <div className="bg-gray-900 rounded-lg p-4">
