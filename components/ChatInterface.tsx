@@ -3678,14 +3678,20 @@ This isn't judgment — it's data. The resistance is telling you something. Want
         <aside className="hidden md:flex flex-col w-80 border-r border-gray-800 bg-[#0a0a0a] overflow-y-auto">
           <div className="p-4 space-y-4">
             {/* User Info Header */}
-            <div className="border-b border-gray-800 pb-4">
-              <h2 className="text-lg font-semibold text-white">
-                {getUserName() ? `Hey, ${getUserName()}` : 'Welcome'}
-              </h2>
-              <p className="text-sm text-gray-400">
-                Stage {progress?.currentStage || 1}: {getStageName(progress?.currentStage || 1)}
-              </p>
-            </div>
+<div className="border-b border-gray-800 pb-4">
+  <h2 className="text-lg font-semibold text-white">
+    {getUserName() ? `Hey, ${getUserName()}` : 'Welcome'}
+  </h2>
+  <p className="text-sm text-gray-400">
+    Stage {progress?.currentStage || 1}: {getStageName(progress?.currentStage || 1)}
+  </p>
+  <a 
+    href="/profile/patterns"
+    className="inline-flex items-center gap-1.5 mt-2 text-xs text-gray-500 hover:text-[#ff9e19] transition-colors"
+  >
+    🪞 <span className="hover:underline">Pattern Profile</span>
+  </a>
+</div>
 
             {/* REwired Index */}
             <div className="bg-gray-900 rounded-lg p-4">
