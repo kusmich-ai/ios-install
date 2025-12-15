@@ -1,4 +1,4 @@
-// middleware.ts - UPDATED with The Mirror integration
+// middleware.ts - UPDATED with The Mirror + Profile routes
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
@@ -131,6 +131,14 @@ export async function middleware(request: NextRequest) {
   // ============================================
   if (path.startsWith('/coach/')) {
     // User is authenticated, allow access to coach pages
+    return response
+  }
+
+  // ============================================
+  // PROFILE ROUTES - Just need auth, skip onboarding checks
+  // ============================================
+  if (path.startsWith('/profile/')) {
+    // User is authenticated, allow access to profile pages
     return response
   }
 
