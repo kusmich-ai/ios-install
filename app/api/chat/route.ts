@@ -1,4 +1,4 @@
-// app/api/chat/route.ts - SECURED VERSION (TypeScript Fixed)
+// app/api/chat/route.ts - SECURED VERSION with Pattern Context
 import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
 import { microActionSystemPrompt } from '@/lib/microActionAPI';
@@ -17,6 +17,8 @@ import {
   getSafeErrorResponse,
 } from '@/lib/security/inputSanitization';
 import { checkRateLimit } from '@/lib/security/rateLimit';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -28,6 +30,115 @@ type MessageRole = 'user' | 'assistant';
 interface Message {
   role: string;
   content: string;
+}
+
+// ============================================
+// SUPABASE SERVER CLIENT
+// ============================================
+async function createSupabaseClient() {
+  const cookieStore = await cookies();
+  
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options);
+          });
+        },
+      },
+    }
+  );
+}
+
+// ============================================
+// PATTERN CONTEXT INJECTION (THE MIRROR)
+// ============================================
+async function getPatternContext(userId: string): Promise<string> {
+  try {
+    const supabase = await createSupabaseClient();
+    
+    const { data: profile, error } = await supabase
+      .from('pattern_profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+
+    if (error || !profile || profile.skipped) {
+      return '';
+    }
+
+    // Build context string for Claude
+    let context = `\n\n## USER'S PATTERN PROFILE (from The Mirror analysis)\n`;
+
+    // Add core pattern
+    if (profile.core_pattern?.name) {
+      context += `\n**CORE PATTERN:** "${profile.core_pattern.name}"`;
+      if (profile.core_pattern.description) {
+        context += ` - ${profile.core_pattern.description}`;
+      }
+      context += '\n';
+    }
+
+    // Add high-severity patterns (4-5)
+    const categories = [
+      { key: 'nervous_system_patterns', label: 'Nervous System' },
+      { key: 'awareness_blind_spots', label: 'Awareness' },
+      { key: 'identity_loops', label: 'Identity' },
+      { key: 'attention_leaks', label: 'Attention' },
+      { key: 'relational_patterns', label: 'Relational' },
+      { key: 'emotional_outlook', label: 'Emotional Outlook' },
+      { key: 'shadow_material', label: 'Shadow' }
+    ];
+
+    const highSeverityPatterns: string[] = [];
+    
+    categories.forEach(cat => {
+      const categoryData = profile[cat.key];
+      if (categoryData?.patterns) {
+        categoryData.patterns.forEach((pattern: { name: string; severity: number }) => {
+          if (pattern.severity >= 4) {
+            highSeverityPatterns.push(`${pattern.name} (${cat.label})`);
+          }
+        });
+      }
+    });
+
+    if (highSeverityPatterns.length > 0) {
+      context += `\n**HIGH-PRIORITY PATTERNS:**\n`;
+      highSeverityPatterns.forEach(p => {
+        context += `- ${p}\n`;
+      });
+    }
+
+    // Add IOS roadmap priorities
+    if (profile.ios_roadmap?.priority_stages) {
+      context += `\n**PRIORITY STAGES** for this user: ${profile.ios_roadmap.priority_stages.join(', ')}\n`;
+    }
+
+    // Add coaching instructions
+    context += `
+## PATTERN COACHING INSTRUCTIONS
+- Reference the user's patterns naturally when relevant (not clinically)
+- Connect current struggles to identified patterns when appropriate
+- Use pattern names directly (e.g., "This is the ${profile.core_pattern?.name || 'pattern'} showing up")
+- Point to IOS stages/practices that address specific patterns
+- Celebrate when user demonstrates awareness of or progress on patterns
+- Don't mention severity numbers or clinical language
+- Don't reference "The Mirror" by name unless user brings it up first
+`;
+
+    return context;
+
+  } catch (err) {
+    console.error('[API/Chat] Failed to get pattern context:', err);
+    return '';
+  }
 }
 
 // ============================================
@@ -306,13 +417,16 @@ export async function POST(req: Request) {
       }
     }
 
-    // STEP 5: PREPARE API CALL
+    // STEP 5: GET PATTERN CONTEXT (THE MIRROR)
+    const patternContext = await getPatternContext(userId);
+
+    // STEP 6: PREPARE API CALL
     let maxTokens = 2048;
-    let systemPrompt = mainSystemPrompt;
+    let systemPrompt = mainSystemPrompt + patternContext; // ← Pattern context added here
 
     switch (context) {
       case 'micro_action_setup':
-        systemPrompt = SECURITY_INSTRUCTIONS + '\n\n' + microActionSystemPrompt;
+        systemPrompt = SECURITY_INSTRUCTIONS + '\n\n' + microActionSystemPrompt + patternContext;
         maxTokens = 2048;
         break;
 
@@ -321,7 +435,7 @@ export async function POST(req: Request) {
         break;
 
       case 'flow_block_setup':
-        systemPrompt = SECURITY_INSTRUCTIONS + '\n\n' + flowBlockSystemPrompt;
+        systemPrompt = SECURITY_INSTRUCTIONS + '\n\n' + flowBlockSystemPrompt + patternContext;
         maxTokens = 2048;
         break;
 
@@ -334,12 +448,12 @@ export async function POST(req: Request) {
         break;
 
       case 'decentering_practice':
-        systemPrompt = decenteringSystemPrompt;
+        systemPrompt = decenteringSystemPrompt + patternContext;
         maxTokens = 1024;
         break;
 
       case 'meta_reflection':
-        systemPrompt = metaReflectionSystemPrompt;
+        systemPrompt = metaReflectionSystemPrompt + patternContext;
         if (additionalContext) {
           systemPrompt += '\n\n' + additionalContext;
         }
@@ -347,7 +461,7 @@ export async function POST(req: Request) {
         break;
 
       case 'reframe':
-        systemPrompt = reframeSystemPrompt;
+        systemPrompt = reframeSystemPrompt + patternContext;
         if (additionalContext) {
           systemPrompt += '\n\n' + additionalContext;
         }
@@ -368,7 +482,7 @@ export async function POST(req: Request) {
         content: cleanMessageContent(msg.content),
       }));
 
-    // STEP 6: MAKE API CALL
+    // STEP 7: MAKE API CALL
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: maxTokens,
