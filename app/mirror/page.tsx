@@ -1,7 +1,6 @@
 // ============================================
 // app/mirror/page.tsx
-// The Mirror - Full-screen immersive pattern analysis
-// Shows after baseline results, before chat
+// ENHANCED VERSION - With Transformation Roadmap
 // ============================================
 
 'use client';
@@ -17,7 +16,6 @@ import {
 } from '@/lib/mirrorPrompt';
 import { IOS_STAGE_MAPPING } from '@/lib/mirrorMapping';
 
-// Force dynamic rendering
 export const dynamic = 'force-dynamic';
 
 // Types
@@ -44,18 +42,24 @@ interface CorePattern {
   connected_patterns?: string[];
 }
 
-interface IOSRoadmap {
-  priority_stages: number[];
-  stage_mapping: Record<string, {
-    addresses: string[];
-    pattern_ids: string[];
-    primary_patterns: string[];
-  }>;
-  recommended_tools: {
-    tool: string;
-    reason: string;
-    unlocks_at: string;
-  }[];
+interface Milestone {
+  number: number;
+  title: string;
+  timeframe: string;
+  stage: number;
+  stage_name: string;
+  patterns_addressed: string[];
+  whats_broken: string;
+  what_changes: string[];
+  the_shift: string;
+}
+
+interface TransformationRoadmap {
+  milestones: Milestone[];
+  destination: {
+    core_pattern_name: string;
+    liberation_statement: string;
+  };
 }
 
 interface MirrorData {
@@ -70,17 +74,16 @@ interface MirrorData {
     shadow: PatternCategory;
   };
   core_pattern: CorePattern;
-  ios_roadmap: IOSRoadmap;
+  ios_roadmap: any;
+  transformation_roadmap: TransformationRoadmap;
 }
 
-// Step type
 type MirrorStep = 'intro' | 'prompt' | 'analyze' | 'results';
 
 export default function MirrorPage() {
   const router = useRouter();
   const supabase = createClient();
 
-  // State
   const [step, setStep] = useState<MirrorStep>('intro');
   const [gptOutput, setGptOutput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -89,8 +92,8 @@ export default function MirrorPage() {
   const [mirrorData, setMirrorData] = useState<MirrorData | null>(null);
   const [copied, setCopied] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'roadmap' | 'patterns'>('roadmap');
 
-  // Check if user already has a pattern profile
   useEffect(() => {
     checkExistingProfile();
   }, []);
@@ -101,11 +104,9 @@ export default function MirrorPage() {
       const data = await response.json();
       
       if (data.exists && !data.skipped && data.data) {
-        // User already has a profile, show results
         setMirrorData(data.data);
         setStep('results');
       } else if (data.exists && data.skipped) {
-        // User skipped before, redirect to chat
         router.push('/chat');
       }
     } catch (err) {
@@ -113,7 +114,6 @@ export default function MirrorPage() {
     }
   };
 
-  // Copy prompt to clipboard
   const copyPrompt = async () => {
     try {
       await navigator.clipboard.writeText(MIRROR_GPT_PROMPT);
@@ -124,7 +124,6 @@ export default function MirrorPage() {
     }
   };
 
-  // Process the GPT output
   const processAnalysis = async () => {
     if (!gptOutput.trim()) {
       setError('Please paste ChatGPT\'s response first.');
@@ -136,12 +135,12 @@ export default function MirrorPage() {
     
     try {
       setProcessingStage('Parsing patterns...');
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise(r => setTimeout(r, 800));
       
       setProcessingStage('Mapping to IOS stages...');
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise(r => setTimeout(r, 800));
       
-      setProcessingStage('Building your roadmap...');
+      setProcessingStage('Building your transformation roadmap...');
       
       const response = await fetch('/api/mirror/process', {
         method: 'POST',
@@ -167,7 +166,6 @@ export default function MirrorPage() {
     }
   };
 
-  // Skip The Mirror
   const skipMirror = async () => {
     try {
       await fetch('/api/mirror/process', {
@@ -182,12 +180,10 @@ export default function MirrorPage() {
     }
   };
 
-  // Continue to chat
   const continueToChat = () => {
     router.push('/chat');
   };
 
-  // Get severity color
   const getSeverityColor = (severity: number) => {
     switch (severity) {
       case 5: return 'text-red-400';
@@ -198,7 +194,6 @@ export default function MirrorPage() {
     }
   };
 
-  // Get severity label
   const getSeverityLabel = (severity: number) => {
     switch (severity) {
       case 5: return 'Critical';
@@ -209,7 +204,6 @@ export default function MirrorPage() {
     }
   };
 
-  // Category labels
   const categoryLabels: Record<string, { label: string; icon: string }> = {
     nervous_system: { label: 'Nervous System', icon: '⚡' },
     awareness: { label: 'Awareness Blind Spots', icon: '👁' },
@@ -226,7 +220,6 @@ export default function MirrorPage() {
   const renderIntro = () => (
     <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4">
       <div className="max-w-2xl w-full">
-        {/* Header */}
         <div className="text-center mb-12">
           <div className="text-6xl mb-4">🪞</div>
           <h1 className="text-4xl font-bold text-white mb-2">
@@ -237,7 +230,6 @@ export default function MirrorPage() {
           </p>
         </div>
 
-        {/* Description */}
         <div className="bg-[#111111] rounded-xl border border-[#1a1a1a] p-6 mb-8">
           <p className="text-gray-300 mb-6">
             {MIRROR_INTRO_TEXT.description}
@@ -259,12 +251,10 @@ export default function MirrorPage() {
           </div>
         </div>
 
-        {/* Time estimate */}
         <div className="text-center text-gray-500 mb-8">
           ⏱ {MIRROR_INTRO_TEXT.time}
         </div>
 
-        {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <button
             onClick={() => setStep('prompt')}
@@ -280,7 +270,6 @@ export default function MirrorPage() {
           </button>
         </div>
 
-        {/* Privacy note */}
         <p className="text-center text-gray-600 text-sm mt-8">
           🔒 {MIRROR_INTRO_TEXT.privacy}
         </p>
@@ -294,7 +283,6 @@ export default function MirrorPage() {
   const renderPrompt = () => (
     <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4">
       <div className="max-w-3xl w-full">
-        {/* Progress */}
         <div className="flex items-center justify-center gap-2 mb-8">
           <div className="w-3 h-3 rounded-full bg-[#ff9e19]" />
           <div className="w-12 h-0.5 bg-[#1a1a1a]" />
@@ -312,7 +300,6 @@ export default function MirrorPage() {
           </p>
         </div>
 
-        {/* Instructions */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
           {Object.entries(MIRROR_INSTRUCTIONS).map(([key, instruction], i) => (
             <div key={key} className="bg-[#111111] rounded-lg p-4 text-center">
@@ -322,7 +309,6 @@ export default function MirrorPage() {
           ))}
         </div>
 
-        {/* Prompt box */}
         <div className="bg-[#111111] rounded-xl border border-[#1a1a1a] p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <span className="text-gray-400 text-sm">Analysis Prompt</span>
@@ -344,7 +330,6 @@ export default function MirrorPage() {
           </div>
         </div>
 
-        {/* Next button */}
         <div className="flex justify-center">
           <button
             onClick={() => setStep('analyze')}
@@ -363,7 +348,6 @@ export default function MirrorPage() {
   const renderAnalyze = () => (
     <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4">
       <div className="max-w-3xl w-full">
-        {/* Progress */}
         <div className="flex items-center justify-center gap-2 mb-8">
           <div className="w-3 h-3 rounded-full bg-[#ff9e19]" />
           <div className="w-12 h-0.5 bg-[#ff9e19]" />
@@ -381,7 +365,6 @@ export default function MirrorPage() {
           </p>
         </div>
 
-        {/* Paste area */}
         <div className="bg-[#111111] rounded-xl border border-[#1a1a1a] p-6 mb-6">
           <textarea
             value={gptOutput}
@@ -391,7 +374,6 @@ export default function MirrorPage() {
             disabled={isProcessing}
           />
           
-          {/* Character count */}
           <div className="flex justify-between items-center mt-2">
             <span className="text-gray-600 text-sm">
               {gptOutput.length > 0 && `${gptOutput.length.toLocaleString()} characters`}
@@ -404,14 +386,12 @@ export default function MirrorPage() {
           </div>
         </div>
 
-        {/* Error message */}
         {error && (
           <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-4 mb-6">
             <p className="text-red-400">{error}</p>
           </div>
         )}
 
-        {/* Processing state */}
         {isProcessing && (
           <div className="bg-[#111111] rounded-xl border border-[#1a1a1a] p-6 mb-6">
             <div className="flex items-center justify-center gap-4">
@@ -421,7 +401,6 @@ export default function MirrorPage() {
           </div>
         )}
 
-        {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <button
             onClick={() => setStep('prompt')}
@@ -441,6 +420,206 @@ export default function MirrorPage() {
       </div>
     </div>
   );
+
+  // ============================================
+  // RENDER: TRANSFORMATION ROADMAP
+  // ============================================
+  const renderTransformationRoadmap = () => {
+    if (!mirrorData?.transformation_roadmap) return null;
+
+    const { milestones, destination } = mirrorData.transformation_roadmap;
+
+    return (
+      <div className="space-y-6">
+        {/* Core Pattern Banner */}
+        {mirrorData.core_pattern && (
+          <div className="bg-gradient-to-r from-[#ff9e19]/20 to-transparent rounded-xl border border-[#ff9e19]/30 p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <span className="text-2xl">🎯</span>
+              <span className="text-[#ff9e19] font-bold text-sm uppercase tracking-wide">Core Pattern</span>
+            </div>
+            <h3 className="text-2xl font-bold text-white mb-2">
+              "{mirrorData.core_pattern.name}"
+            </h3>
+            <p className="text-gray-400">
+              The root. Everything else branches from this.
+            </p>
+          </div>
+        )}
+
+        {/* Milestones */}
+        <div className="space-y-4">
+          {milestones.map((milestone, index) => (
+            <div 
+              key={index}
+              className="bg-[#111111] rounded-xl border border-[#1a1a1a] overflow-hidden"
+            >
+              {/* Milestone Header */}
+              <div className="bg-[#1a1a1a] px-6 py-4 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-[#ff9e19] flex items-center justify-center text-black font-bold">
+                    {milestone.number}
+                  </div>
+                  <div>
+                    <h3 className="text-white font-bold text-lg">{milestone.title}</h3>
+                    <p className="text-gray-500 text-sm">
+                      {milestone.timeframe} • Stage {milestone.stage}: {milestone.stage_name}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Milestone Content */}
+              <div className="p-6 space-y-6">
+                {/* What's Broken */}
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-red-400">✗</span>
+                    <span className="text-red-400 font-medium text-sm uppercase tracking-wide">What's Broken</span>
+                  </div>
+                  <p className="text-gray-300 leading-relaxed">
+                    {milestone.whats_broken}
+                  </p>
+                </div>
+
+                {/* What Changes */}
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-green-400">✓</span>
+                    <span className="text-green-400 font-medium text-sm uppercase tracking-wide">What Changes</span>
+                  </div>
+                  <ul className="space-y-2">
+                    {milestone.what_changes.map((change, i) => (
+                      <li key={i} className="flex items-start gap-3">
+                        <span className="text-[#ff9e19] mt-1">→</span>
+                        <span className="text-gray-300">{change}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* The Shift */}
+                <div className="bg-[#0a0a0a] rounded-lg p-4">
+                  <div className="text-gray-500 text-xs uppercase tracking-wide mb-2">The Shift</div>
+                  <p className="text-white font-medium italic">
+                    {milestone.the_shift}
+                  </p>
+                </div>
+
+                {/* Patterns Addressed */}
+                {milestone.patterns_addressed.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {milestone.patterns_addressed.map((pattern, i) => (
+                      <span 
+                        key={i}
+                        className="text-xs bg-[#ff9e19]/10 text-[#ff9e19] px-3 py-1 rounded-full"
+                      >
+                        {pattern}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Destination */}
+        {destination && (
+          <div className="bg-gradient-to-br from-[#111111] to-[#0a0a0a] rounded-xl border border-[#1a1a1a] p-8 text-center">
+            <div className="text-4xl mb-4">🏁</div>
+            <h3 className="text-xl font-bold text-white mb-4">THE DESTINATION</h3>
+            <p className="text-gray-300 leading-relaxed max-w-2xl mx-auto">
+              {destination.liberation_statement}
+            </p>
+            <p className="text-[#ff9e19] font-medium mt-6">
+              That's the installation.
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // ============================================
+  // RENDER: PATTERNS BREAKDOWN
+  // ============================================
+  const renderPatternsBreakdown = () => {
+    if (!mirrorData) return null;
+
+    return (
+      <div className="space-y-4">
+        {Object.entries(mirrorData.patterns).map(([key, category]) => {
+          const info = categoryLabels[key];
+          const patterns = category?.patterns || [];
+          const isExpanded = expandedCategory === key;
+          
+          if (patterns.length === 0) return null;
+
+          return (
+            <div
+              key={key}
+              className="bg-[#111111] rounded-xl border border-[#1a1a1a] overflow-hidden"
+            >
+              <button
+                onClick={() => setExpandedCategory(isExpanded ? null : key)}
+                className="w-full p-4 flex items-center justify-between hover:bg-[#1a1a1a]/50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-xl">{info?.icon}</span>
+                  <span className="text-white font-medium">{info?.label}</span>
+                  <span className="text-gray-500 text-sm">
+                    ({patterns.length} pattern{patterns.length !== 1 ? 's' : ''})
+                  </span>
+                </div>
+                <span className="text-gray-500">
+                  {isExpanded ? '▲' : '▼'}
+                </span>
+              </button>
+
+              {isExpanded && (
+                <div className="border-t border-[#1a1a1a] p-4 space-y-4">
+                  {patterns.map((pattern: Pattern, i: number) => (
+                    <div
+                      key={pattern.id || i}
+                      className="bg-[#0a0a0a] rounded-lg p-4"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <h4 className="text-white font-medium">{pattern.name}</h4>
+                        <span className={`text-sm ${getSeverityColor(pattern.severity)}`}>
+                          {getSeverityLabel(pattern.severity)}
+                        </span>
+                      </div>
+                      <p className="text-gray-400 text-sm mb-3">
+                        {pattern.description}
+                      </p>
+                      {pattern.evidence && (
+                        <p className="text-gray-500 text-sm italic mb-3">
+                          "{pattern.evidence}"
+                        </p>
+                      )}
+                      {pattern.ios_stages && pattern.ios_stages.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {pattern.ios_stages.map(stage => (
+                            <span
+                              key={stage}
+                              className="text-xs bg-[#ff9e19]/20 text-[#ff9e19] px-2 py-1 rounded"
+                            >
+                              Stage {stage}: {IOS_STAGE_MAPPING[stage as keyof typeof IOS_STAGE_MAPPING]?.name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
 
   // ============================================
   // RENDER: RESULTS STEP
@@ -469,7 +648,7 @@ export default function MirrorPage() {
               Your Pattern Profile
             </h1>
             <p className="text-gray-400">
-              Here's what's been running under the surface.
+              Here's what's been running under the surface — and how we'll transform it.
             </p>
           </div>
 
@@ -493,168 +672,38 @@ export default function MirrorPage() {
             </div>
           </div>
 
-          {/* Core Pattern - The Big Reveal */}
-          {mirrorData.core_pattern && (
-            <div className="bg-gradient-to-br from-[#1a1a1a] to-[#111111] rounded-xl border border-[#ff9e19]/30 p-6 mb-8">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="text-2xl">🎯</span>
-                <h2 className="text-xl font-bold text-[#ff9e19]">THE CORE PATTERN</h2>
-              </div>
-              <h3 className="text-2xl font-bold text-white mb-3">
-                {mirrorData.core_pattern.name}
-              </h3>
-              <p className="text-gray-300 mb-4">
-                {mirrorData.core_pattern.description}
-              </p>
-              {mirrorData.core_pattern.evidence && (
-                <div className="bg-[#0a0a0a] rounded-lg p-4">
-                  <p className="text-gray-500 text-sm mb-1">Evidence:</p>
-                  <p className="text-gray-400 text-sm italic">
-                    "{mirrorData.core_pattern.evidence}"
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Pattern Categories */}
-          <div className="space-y-4 mb-8">
-            <h2 className="text-xl font-bold text-white mb-4">Pattern Breakdown</h2>
-            
-            {Object.entries(mirrorData.patterns).map(([key, category]) => {
-              const info = categoryLabels[key];
-              const patterns = category?.patterns || [];
-              const isExpanded = expandedCategory === key;
-              
-              if (patterns.length === 0) return null;
-
-              return (
-                <div
-                  key={key}
-                  className="bg-[#111111] rounded-xl border border-[#1a1a1a] overflow-hidden"
-                >
-                  <button
-                    onClick={() => setExpandedCategory(isExpanded ? null : key)}
-                    className="w-full p-4 flex items-center justify-between hover:bg-[#1a1a1a]/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-xl">{info?.icon}</span>
-                      <span className="text-white font-medium">{info?.label}</span>
-                      <span className="text-gray-500 text-sm">
-                        ({patterns.length} pattern{patterns.length !== 1 ? 's' : ''})
-                      </span>
-                    </div>
-                    <span className="text-gray-500">
-                      {isExpanded ? '▲' : '▼'}
-                    </span>
-                  </button>
-
-                  {isExpanded && (
-                    <div className="border-t border-[#1a1a1a] p-4 space-y-4">
-                      {patterns.map((pattern: Pattern, i: number) => (
-                        <div
-                          key={pattern.id || i}
-                          className="bg-[#0a0a0a] rounded-lg p-4"
-                        >
-                          <div className="flex items-start justify-between mb-2">
-                            <h4 className="text-white font-medium">{pattern.name}</h4>
-                            <span className={`text-sm ${getSeverityColor(pattern.severity)}`}>
-                              {getSeverityLabel(pattern.severity)}
-                            </span>
-                          </div>
-                          <p className="text-gray-400 text-sm mb-3">
-                            {pattern.description}
-                          </p>
-                          {pattern.evidence && (
-                            <p className="text-gray-500 text-sm italic mb-3">
-                              "{pattern.evidence}"
-                            </p>
-                          )}
-                          {pattern.ios_stages && pattern.ios_stages.length > 0 && (
-                            <div className="flex flex-wrap gap-2">
-                              {pattern.ios_stages.map(stage => (
-                                <span
-                                  key={stage}
-                                  className="text-xs bg-[#ff9e19]/20 text-[#ff9e19] px-2 py-1 rounded"
-                                >
-                                  Stage {stage}: {IOS_STAGE_MAPPING[stage as keyof typeof IOS_STAGE_MAPPING]?.name}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+          {/* Tab Navigation */}
+          <div className="flex gap-2 mb-6">
+            <button
+              onClick={() => setActiveTab('roadmap')}
+              className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+                activeTab === 'roadmap'
+                  ? 'bg-[#ff9e19] text-black'
+                  : 'bg-[#111111] text-gray-400 hover:text-white'
+              }`}
+            >
+              🗺 Transformation Roadmap
+            </button>
+            <button
+              onClick={() => setActiveTab('patterns')}
+              className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+                activeTab === 'patterns'
+                  ? 'bg-[#ff9e19] text-black'
+                  : 'bg-[#111111] text-gray-400 hover:text-white'
+              }`}
+            >
+              📊 Pattern Breakdown
+            </button>
           </div>
 
-          {/* IOS Roadmap */}
-          {mirrorData.ios_roadmap && (
-            <div className="bg-[#111111] rounded-xl border border-[#1a1a1a] p-6 mb-8">
-              <h2 className="text-xl font-bold text-white mb-4">Your IOS Roadmap</h2>
-              <p className="text-gray-400 mb-6">
-                Based on your patterns, here's how the IOS stages will address them:
-              </p>
-
-              <div className="space-y-4">
-                {mirrorData.ios_roadmap.priority_stages.map((stage, i) => {
-                  const stageInfo = IOS_STAGE_MAPPING[stage as keyof typeof IOS_STAGE_MAPPING];
-                  const stageMapping = mirrorData.ios_roadmap.stage_mapping[stage.toString()];
-                  
-                  return (
-                    <div
-                      key={stage}
-                      className={`p-4 rounded-lg ${
-                        i === 0 ? 'bg-[#ff9e19]/10 border border-[#ff9e19]/30' : 'bg-[#0a0a0a]'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 mb-2">
-                        {i === 0 && <span className="text-[#ff9e19] text-sm">Priority →</span>}
-                        <h3 className="text-white font-medium">
-                          Stage {stage}: {stageInfo?.name}
-                        </h3>
-                      </div>
-                      <p className="text-gray-500 text-sm mb-2">
-                        {stageInfo?.tagline}
-                      </p>
-                      {stageMapping?.primary_patterns && (
-                        <p className="text-gray-400 text-sm">
-                          <span className="text-gray-500">Addresses:</span>{' '}
-                          {stageMapping.primary_patterns.join(', ')}
-                        </p>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Recommended tools */}
-              {mirrorData.ios_roadmap.recommended_tools.length > 0 && (
-                <div className="mt-6 pt-6 border-t border-[#1a1a1a]">
-                  <h3 className="text-gray-300 font-medium mb-3">Recommended Tools</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {mirrorData.ios_roadmap.recommended_tools.map((tool, i) => (
-                      <div
-                        key={i}
-                        className="bg-[#0a0a0a] rounded-lg px-3 py-2"
-                      >
-                        <span className="text-white text-sm">{tool.tool}</span>
-                        <span className="text-gray-500 text-xs ml-2">
-                          (unlocks {tool.unlocks_at})
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+          {/* Tab Content */}
+          <div className="mb-8">
+            {activeTab === 'roadmap' && renderTransformationRoadmap()}
+            {activeTab === 'patterns' && renderPatternsBreakdown()}
+          </div>
 
           {/* CTA */}
-          <div className="text-center">
+          <div className="text-center pt-8 border-t border-[#1a1a1a]">
             <p className="text-gray-400 mb-6">
               Your patterns are mapped. Your roadmap is clear. Time to start the installation.
             </p>
@@ -662,8 +711,11 @@ export default function MirrorPage() {
               onClick={continueToChat}
               className="px-8 py-4 bg-[#ff9e19] text-black font-semibold rounded-lg hover:bg-[#ffb347] transition-colors text-lg"
             >
-              Enter The System →
+              Begin Your Transformation →
             </button>
+            <p className="text-gray-600 text-sm mt-4">
+              You can revisit this anytime from your profile.
+            </p>
           </div>
         </div>
       </div>
