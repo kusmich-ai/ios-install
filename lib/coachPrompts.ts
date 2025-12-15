@@ -1103,6 +1103,7 @@ export interface CoachMetadata {
   title: string;
   description: string;
   avatarUrl: string;
+  accentColor: string;  // ADDED: accent color for UI theming
   specialties: string[];
   openingMessage: string;
 }
@@ -1116,6 +1117,7 @@ export const coaches: Record<CoachId, CoachMetadata> = {
     title: 'Systems Architect',
     description: 'Direct, witty, scientifically grounded coaching for transformation',
     avatarUrl: '/coaches/nic-avatar.png',
+    accentColor: '#ff9e19',  // ADDED: orange accent
     specialties: ['Neural rewiring', 'Pattern recognition', 'Identity work', 'Marketing strategy'],
     openingMessage: "Hey. What's on your mind?"
   },
@@ -1125,6 +1127,7 @@ export const coaches: Record<CoachId, CoachMetadata> = {
     title: 'Heart & Body Specialist',
     description: 'Spacious, empathetic holding for emotional processing',
     avatarUrl: '/coaches/fehren-avatar.png',
+    accentColor: '#7c9eb2',  // ADDED: blue-gray accent
     specialties: ['Somatic work', 'Parts work (IFS)', 'Emotional processing', 'Body wisdom'],
     openingMessage: "Let's just land for a second... How are you actually doing - not the headline version?"
   }
