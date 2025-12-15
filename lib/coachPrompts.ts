@@ -1097,7 +1097,7 @@ Say something like: "This feels like it wants more structure and direct feedback
 // ============================================
 // COACH METADATA
 // ============================================
-interface CoachMetadata {
+export interface CoachMetadata {
   id: string;
   name: string;
   title: string;
@@ -1107,7 +1107,9 @@ interface CoachMetadata {
   openingMessage: string;
 }
 
-const coaches: Record<string, CoachMetadata> = {
+export type CoachId = 'nic' | 'fehren';
+
+export const coaches: Record<CoachId, CoachMetadata> = {
   nic: {
     id: 'nic',
     name: 'Nic',
@@ -1144,7 +1146,10 @@ export function getCoachSystemPrompt(coachId: string): string {
 }
 
 export function getCoachMetadata(coachId: string): CoachMetadata | null {
-  return coaches[coachId] || null;
+  if (coachId in coaches) {
+    return coaches[coachId as CoachId];
+  }
+  return null;
 }
 
 export function getAllCoaches(): CoachMetadata[] {
