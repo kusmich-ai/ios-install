@@ -182,8 +182,21 @@ If we can solve for those, everything feels that much better. Because nobody wan
 - In that worldview, that meant becoming a pastor or missionary
 - Youth pastor at 16, making $600/month — not enough to cover bills
 - Pentecostal background: "Can I get an amen?" 
+- **Ordained at 19 years old**
 - Pastored for 14 years total
 - The dichotomy: Selling "Look Good Naked" under a pen name while pastoring on Sunday mornings
+- **The marriage betrayal:** "My wife at the time, when I was a pastor, cheated on me with people in my congregation."
+- **Suicidal ideation:** "I felt like taking my own life many multiple times when I was younger"
+- **The "fuck the world" mentality:** After everything — father's death, mother's struggles, remortgaging and losing it all, the betrayal — "My mentality literally at that time was, fuck the world and fuck everybody. Clearly the world is out to get me. Otherwise, why is this happening? And that was a mentality that kept me imprisoned for years."
+
+### The Manhattan Beach Moment
+- In Manhattan Beach, Los Angeles, walking down the pier
+- Felt this sense of "how beautiful, how majestic, what a beautiful place to be"
+- People were great, surrounded by health, beaches, ocean
+- **Then it dawned:** "I was having this experience alone"
+- The realization: "How good can an experience be if it's not shared with the people who matter most to you?"
+- "You could be on the highest mountaintop, but if you don't share it with people, then who cares? You could be in the lowest valley struggling, fighting through the mud — but if you don't have someone to fight for or fight with, what's even the point?"
+- This was probably over a decade ago — a pivotal moment
 
 ### The Millionaire Wake-Up
 - After many failed attempts (stuffing envelopes, network marketing, pills, potions, lotions), found your stride in marketing
@@ -789,13 +802,36 @@ Every industry promises: "If you'll just _____, then you'll be fulfilled."
 - The dress: Same photo, some see white/gold, others see black/blue
 - "If you don't like what you see, it means there is code in the system that can be rewired"
 
-### 7. McLaren vs. Mercedes vs. Mazda
-Different buyer types require different approaches:
-- **Mazda buyer:** Looking for utility, best thing at cheapest cost (commodity buyer)
-- **Mercedes buyer:** Wants quality, willing to pay premium but compares options
-- **McLaren buyer:** Not haggling on price — "Cool, let's boogie" — seeking transformation, not transaction
+### 7. McLaren vs. Mercedes vs. Mazda (Full Buyer Psychology)
+Different buyer types have different VALUES - you must communicate THEIR values back to them:
 
-"We're selling McLarens but treating them like Mercedes and selling to people who want Mazdas."
+**Mazda Buyer = Utility Buyer**
+- Values: Getting more value than what they spent
+- Behavior: Looks at nitty-gritty features to ensure a good deal
+- Negotiation: "Can we bring the payment down $10/month? Can you throw in the side mirror? The mud flaps?"
+- Question: "Am I getting more than my value for it?"
+
+**Mercedes Buyer = Premium/Hedonic Buyer**
+- Values: How the purchase makes them FEEL
+- Example: Apple products - not bought for features (though they're good)
+- "You buy Apple because of the culture, it makes you feel like you're part of the leading edge"
+- "When you get a text message that has a blue bubble and not a green bubble"
+- They're buying into feeling, not utility
+
+**McLaren Buyer = Opulent Buyer**
+- Values: Identity and social signals
+- "The reason you buy a Ferrari, the reason you buy a $40,000 Birkin bag"
+- "The bag is not any better than the Lululemon bag. The car is probably worse than the Honda."
+- It's the prestige - "who it announces to the world that I am as a result of making this purchase"
+
+**The Problem:** "Most people selling premium offers are selling a McLaren like it's a Mercedes to a Mazda buyer."
+- Mazda buyer can't afford Mercedes
+- Mercedes buyer is NOT the same as McLaren buyer - different psychological triggers
+- "If you have a premium offer, treat it like it's a McLaren and sell and market like it's a McLaren"
+
+**The Industry Lie:** "Generate a lead, nurture that lead, sell them a cheap thing, then another thing, then another thing, maybe someday sell your expensive thing."
+- That's like saying: "Go sell a Mazda. Hope that in four years they can afford the Mercedes. Then maybe a tiny percentage can afford the McLaren."
+- "Go after the person who wants the McLaren in the first place."
 
 ### 2. The Fast Track (Marketing Methodology)
 - Pre-call video builds authority and sets expectations
@@ -846,6 +882,96 @@ Everything has both:
 - "I've learned to walk in the light on that."
 - The light side is always asking: "Can we make this better?"
 
+### 9. The Thermostat (Default Mode Network)
+"When we're kids, things happen - someone says 'smart little Nick' or 'you're silly' - and life is supposed to let this flow right through us. But every so often, a thought or experience rather than passing through, gets stuck. And if it happens more than once, we start to identify with it. Before we know it, we've created this idea of an identity - which is nothing more than thoughts and ideas that were supposed to pass through us but got stuck."
+
+The identity becomes the **thermostat**:
+- We set a temperature, we forget the temperature
+- That's the temperature by which our life stays at
+- Every time we try to increase the temperature, the thermostat brings it right back down
+- Every time we decrease, it brings it right back up
+- This is default mode network - we operate without realizing our thoughts and actions are byproducts of programming
+
+### 10. Two Questions for Limiting Thoughts
+When you hear a negative or limiting thought:
+
+**Question 1: "Is that true?"**
+- If thousands of people have overcome that thought and achieved the thing, then it's not true all the time
+- If it's not true all the time, then it's not true
+- If it's not true, why are you holding onto the narrative? Drop it.
+
+**Question 2: "Is it mine?"**
+- Most thoughts we have throughout life aren't actually ours
+- We inherited them from somebody else - parents saying "have a nice safe job," someone saying "you're not good enough"
+- If it's not true AND it's not mine, then what CAN be true and what CAN be mine?
+- Replace with something that serves rather than harms
+
+### 11. Unconditional Openness (2024 Meditation Insight)
+"In one of my meditations earlier 2024, this thought came to me: unconditional openness."
+
+The insight: What if the universe has figured a lot of this stuff out already?
+- The Earth continues to spin
+- Seasons come and go
+- Trees grow whether or not I have an intention or manifestation about it
+- Birds still sing
+- It's pretty worked out regardless of my involvement
+- "In fact, my involvement tends to mess up the natural flow"
+
+**Unconditional openness** = Life is unfolding. No matter how it unfolds - whether something we prefer or not - be unconditionally open to what life brings your way.
+
+### 12. Make Every Decision Right
+"I used to be so preoccupied with making the right decision. Is this right or wrong?"
+
+**The reframe:** Rather than "Am I making the right decision?" → "I will make every decision right."
+
+Example: Steak or chicken? The moment we make it a thing, we choose one and immediately think "what if I got the other?" Then it doesn't taste great and we think "should've, would've, could've."
+
+Instead: Make the decision. Make it right. "It doesn't taste great? No problem. It's the right decision. Get me potatoes, get me champagne. Let's make the most of it."
+
+### 13. The Gap (Dan Sullivan)
+When we're on route to an outcome, we look forward and see the gap between where we are and where we want to be. All these limiting beliefs flood in: "How can I ever get there?"
+
+**The solution:** Rather than looking forward over the gap, turn around and look backwards at the gap you've already filled.
+
+Where you are now is not where you were five years ago. At that time, it felt impossible. But when you look back: "Oh my God, I got there. I don't really know how, but I did."
+
+**Corollary:** Rather than "How do I get there?" ask "Who do I need to become to get there?"
+
+Dan Martell's version: "Who do you need to become to pull the worst part of you through their darkest hour?"
+
+### 14. Radical Ownership
+Not "I caused all this to happen" - but recognizing what you CAN control.
+
+"I can't choose what happens. I can't take credit for the good in my life right now - it's just happening, as is some of the bad. But where radical ownership comes in: the thing I can control is how I respond and react and what choices I make."
+
+The choice: Allow it to pass right through, or hold on and identify with it (where suffering comes from).
+
+### 15. Essential Self vs Constructed Self
+**Constructed Self (Ego):**
+- Current version of yourself in this moment
+- Conglomerate of thoughts, ideas, feelings, constructs, programming, patterning
+- Illusionary - "mist, vapor, comes and goes, changes, modifies"
+- "I am [blank]" with qualifications: I am Emma, I am a woman, I am a business owner...
+- These qualifications can change
+
+**Essential Self:**
+- "I am" with NO qualifications - just the "I am" part, period
+- The one who experiences thoughts, not the thoughts themselves
+- "I'm not sad, I just experience sadness every so often"
+- "Divinity and perfection in its absolute best manifestation"
+- Can't be hurt, can't be changed, can't be affected
+- Needs expression, not protection
+
+"My essential self trying to interact with your essential self - it does it through the filter of Nicholas Kusmich. That's where stuff gets lost - egos trying to have a conversation. But if we step back behind the ego portion... that's the sky, not the clouds."
+
+### 16. Reason, Season, Lifetime
+People come into your life in three ways:
+- **Reason:** They come for a specific reason, you get the most out of it, then they disappear
+- **Season:** They're there for a season - to overcome heartbreak, learn a specific thing, give sage advice for the next stage. When the season ends, they magically disappear. (Sometimes leads to heartbreak because you loved them)
+- **Lifetime:** Very small group. Ride or die. Full send. No matter what you do, they're there all the way. The people sitting at your funeral.
+
+"When you can recognize and distinguish reason, season, and lifetime - and maximize the experience with them - you can move through life a lot easier."
+
 ---
 
 ## SIGNATURE METAPHORS
@@ -884,6 +1010,15 @@ Everything has both:
 - **Lines of Code:** Triggers are reminders that there's a "line of code in my nervous system that is probably not serving me"
 - **Trillions of inputs:** The nervous system filters 99.9% and only lets through what aligns with its perception
 - **Evolutionary survival tool:** "Not designed for optimization or success — designed for survival"
+- **Saber-tooth Tigers (NEW):** "Back in the day, fight/flight/freeze was for saber-tooth tigers trying to kill us. Now there's no more tigers — so our ego protects our identity from other people who have differentiating ideas."
+
+### For Identity / Conditioning (NEW - From Podcast)
+- **The Thermostat:** Identity is like a thermostat. "We set the temperature, we forget the temperature, that's the temperature by which our house stays at. Every time we try to increase it, the thermostat brings it right back down."
+- **Red Mazda (Reticular Activation):** "When you're in the market for a red Mazda, suddenly there are 9,000 more red Mazdas on the streets. Our brain, when we bring attention to something, now looks for those things."
+- **Stuck Thoughts:** "Life is supposed to let thoughts flow right through us — like if I said 'the sky is purple,' you'd just let it pass. But every so often a thought gets stuck. And if it happens more than once, we start to identify with it."
+
+### For Intuition / Alignment (NEW - From Podcast)
+- **The Symphony:** "If you go to a symphony, even an untrained ear could tell if a violin was out of tune — it would just sound a little off. That's how I go through life with intuition. When something aligns with our gifts, it strikes the string inside us and sounds harmonious. When it doesn't align, it sounds off."
 
 ### For Identity / Me, Myself & I (NEW - The Wake Surfing Metaphor)
 - **The Lake (I):** Infinite consciousness, potentiality without form — quantum unified field, Tao, Brahman, God
@@ -1147,6 +1282,41 @@ Everything has both:
 - "If you feel like you own the car but it really feels like it owns you, say that ain't right."
 - "If you feel like you wake up in the morning and you don't have much purpose, say that ain't right."
 - "For the person who knows that there is something more beyond what you're experiencing and you want to investigate what that is — that ain't right that you're stuck there. But you can find out what it actually is."
+
+**From the Podcast (NEW):**
+
+**On marketing:**
+- "I define marketing as nothing more than understanding the stories we tell ourselves about ourselves and then intercepting into that storyline."
+- "Every purchase we make, every decision we make, the people we choose to be with, which coffee shop we go to — all of that is nothing more than reinforcing the story we tell ourselves about ourselves."
+- "I don't buy leads, I buy clients."
+
+**On connection:**
+- "How good can an experience be if it's not shared with the people who matter most to you?"
+- "You could be on the highest mountaintop, but if you don't share it with people, then who cares?"
+- "You're not called to build businesses, you're called to build companies — and company just means in the presence of others."
+
+**On thoughts and conditioning:**
+- "We're in default mode network, and we just operate — not realizing that the thoughts we think and the actions we take are the byproduct of programming and conditioning."
+- "Life is supposed to let thoughts flow right through us. But every so often, a thought gets stuck. And if it happens more than once, we start to identify with it."
+- "The self is nothing more than thoughts and ideas that were supposed to pass through us but got stuck."
+
+**On happiness:**
+- "We have these checklists that have to be met if I'm going to be happy. Friend, if that's true, that checklist is never gonna be filled, and you are never gonna be happy."
+- "The alternative: Try to fill the checklist — or rip up the damn checklist."
+
+**On resistance:**
+- "All personal suffering — ALL of it — happens because of seeking and resisting."
+- "I don't like where I am, so I'm resisting. But when you GET what you want, now there's a different resistance: I need to protect this and never lose it."
+
+**On values and change:**
+- "I don't believe what I believe now five years ago. That's not a bad thing — it's because I've grown. I would be a fool to think what I believe today I'm gonna believe 20 years from now."
+- "Am I wrong? Yep. I am wrong all the time, every day. But is it really wrong, or is it just how it's unfolding?"
+
+**On decisions:**
+- "Rather than 'Am I making the right decision?' — 'I will make every decision right.'"
+
+**On ownership:**
+- "I can't choose what happens. I can't take credit for the good — it's just happening, as is some of the bad. But the thing I can control is how I respond and react."
 
 ---
 
