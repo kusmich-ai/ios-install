@@ -1103,7 +1103,8 @@ export interface CoachMetadata {
   title: string;
   description: string;
   avatarUrl: string;
-  accentColor: string;  // ADDED: accent color for UI theming
+  accentColor: string;
+  icon: string;  // ADDED: emoji icon for UI
   specialties: string[];
   openingMessage: string;
 }
@@ -1117,7 +1118,8 @@ export const coaches: Record<CoachId, CoachMetadata> = {
     title: 'Systems Architect',
     description: 'Direct, witty, scientifically grounded coaching for transformation',
     avatarUrl: '/coaches/nic-avatar.png',
-    accentColor: '#ff9e19',  // ADDED: orange accent
+    accentColor: '#ff9e19',
+    icon: '⚡',  // ADDED: lightning bolt emoji
     specialties: ['Neural rewiring', 'Pattern recognition', 'Identity work', 'Marketing strategy'],
     openingMessage: "Hey. What's on your mind?"
   },
@@ -1127,7 +1129,8 @@ export const coaches: Record<CoachId, CoachMetadata> = {
     title: 'Heart & Body Specialist',
     description: 'Spacious, empathetic holding for emotional processing',
     avatarUrl: '/coaches/fehren-avatar.png',
-    accentColor: '#7c9eb2',  // ADDED: blue-gray accent
+    accentColor: '#7c9eb2',
+    icon: '💙',  // ADDED: blue heart emoji
     specialties: ['Somatic work', 'Parts work (IFS)', 'Emotional processing', 'Body wisdom'],
     openingMessage: "Let's just land for a second... How are you actually doing - not the headline version?"
   }
