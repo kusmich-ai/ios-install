@@ -9,6 +9,7 @@ import { useResonanceBreathing } from '@/components/ResonanceModal';
 import { useAwarenessRep } from '@/components/AwarenessRepModal';
 import { useCoRegulation } from '@/components/CoRegulationModal';
 import { useNightlyDebrief } from '@/components/NightlyDebriefModal';
+import { useLoopDeLooping } from '@/components/LoopDeLoopingModal';
 
 interface FloatingActionButtonProps {
   progress: UserProgress;
@@ -49,6 +50,7 @@ export default function FloatingActionButton({
   const { open: openAwarenessRep, Modal: AwarenessRepModal } = useAwarenessRep();
   const { open: openCoRegulation, Modal: CoRegulationModal } = useCoRegulation();
   const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebrief();
+  const { open: openLoopDeLooping, Modal: LoopDeLoopingModal } = useLoopDeLooping();
 
   const currentStagePractices = getStagePractices(progress.currentStage);
   const unlockedTools = getUnlockedOnDemandTools(progress.currentStage);
@@ -153,9 +155,16 @@ export default function FloatingActionButton({
     }
   };
 
+  // Handle tool click - intercept tools with modals, pass others to chat
   const handleToolClick = (toolId: string) => {
-    onToolClick(toolId);
-    setIsOpen(false);
+    if (toolId === 'worry_loop_dissolver') {
+      openLoopDeLooping(userId);
+      setIsOpen(false);
+    } else {
+      // Pass through to parent handler for chat-based tools
+      onToolClick(toolId);
+      setIsOpen(false);
+    }
   };
 
   // Calculate completion stats
@@ -178,6 +187,7 @@ export default function FloatingActionButton({
       <NightlyDebriefModal 
         onComplete={() => handleModalComplete('nightly_debrief', 'Nightly Debrief')} 
       />
+      <LoopDeLoopingModal />
 
       {/* Overlay */}
       {isOpen && (
