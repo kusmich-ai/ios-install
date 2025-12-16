@@ -640,47 +640,6 @@ function getMissedDaysMessage(
   });
 }
 
-It's been **${daysMissed} days** since your last practice. Your adherence is at **${adherence.toFixed(0)}%**.
-
-I'm not going to sugarcoat it: a week away means your nervous system has started to forget the patterns we were building. That's just how neuroplasticity works — use it or lose it.
-
-But here's what matters: you're back. That's the hardest part.
-
-**Two options:**
-
-1. **Pick up where you left off** — Your Stage ${currentStage} rituals are waiting. Same practices, fresh start.
-2. **Reset your stage** — If life has fundamentally changed, we can restart Stage ${currentStage} from Day 1.
-
-What sounds right?`;
-  }
-  
-  if (daysMissed >= 4) {
-    return `Hey${userName ? `, ${userName}` : ''}.
-
-You've been away for **${daysMissed} days**. Adherence dropped to **${adherence.toFixed(0)}%**.
-
-Here's the deal: the system doesn't install without repetition. Your nervous system learns from consistency, not intensity.
-
-**Two options:**
-
-1. **Talk about it** — What got in the way? Sometimes the obstacle IS the practice.
-2. **Just restart** — No explanation needed. Your rituals are ready.
-
-What sounds better?`;
-  }
-  
-  // 2-3 days missed
-  return `Hey${userName ? `, ${userName}` : ''}.
-
-Missed a couple days — **${daysMissed} to be exact**. Adherence is at **${adherence.toFixed(0)}%**.
-
-No judgment. Life happens. The question is: what now?
-
-**Ready to pick back up?** Your Stage ${currentStage} rituals are waiting.
-
-Or if something's in the way, let's talk about it.`;
-}
-
 // ============================================
 // REGRESSION INTERVENTION MESSAGE
 // ============================================
