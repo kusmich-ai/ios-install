@@ -66,3 +66,6 @@ export {
 } from './helpers';
 
 export type { Practice, UnlockCriteria, Tool } from './helpers';
+
+/ Voice library for scenario-based responses
+export * from './voiceLibrary';
