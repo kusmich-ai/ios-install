@@ -332,6 +332,13 @@ export const ON_DEMAND_TOOLS = [
     unlockedAt: 1
   },
   {
+  id: 'worry_loop_dissolver',
+  name: 'Worry Loop Dissolver',
+  description: 'Dissolve worry or anxiety loops',
+  icon: '🔄',
+  unlocksAtStage: 1
+},
+  {
     id: 'meta_reflection',
     name: 'Meta-Reflection',
     shortName: 'Meta',
@@ -340,13 +347,12 @@ export const ON_DEMAND_TOOLS = [
     unlockedAt: 2
   },
   {
-    id: 'reframe',
-    name: 'Reframe Protocol',
-    shortName: 'Reframe',
-    icon: '🔄',
-    description: 'Update limiting interpretations',
-    unlockedAt: 3
-  },
+  id: 'reframe',
+  name: 'Reframe Protocol',
+  description: 'Update the story of a recent negative experience',  
+  icon: '🔀',  
+  unlocksAtStage: 3
+},
   {
     id: 'thought_hygiene',
     name: 'Thought Hygiene',
