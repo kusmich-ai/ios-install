@@ -634,7 +634,7 @@ function getMissedDaysMessage(
   
   return processTemplate(template, {
     daysAway: daysMissed,
-    adherence: adherence.toFixed(0),
+    adherence: Math.round(adherence),
     stageName: getStageName(currentStage),
     userName: userName || ''
   });
@@ -1208,9 +1208,9 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
       
       const unlockMessages: { [key: number]: string } = {
         2: processTemplate(unlockCelebrations.stage2.achievement, {
-          adherence: progress?.adherence_percentage?.toFixed(0) || '80',
+          adherence: Math.round(progress?.adherence_percentage || 80),
           consecutiveDays: progress?.consecutive_days || 14,
-          avgDelta: progress?.avg_delta?.toFixed(2) || '0.30'
+          avgDelta: Number((progress?.avg_delta || 0.30).toFixed(2))
         }),
         3: unlockCelebrations.stage3.achievement,
         4: unlockCelebrations.stage4.achievement,
