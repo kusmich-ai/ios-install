@@ -3212,8 +3212,6 @@ This isn't judgment — it's data. The resistance is telling you something. Want
         break;
         
       default:
-        
-      default:
         setMessages(prev => [...prev, { 
           role: 'assistant', 
           content: `Tool "${toolId}" is not yet implemented. Coming soon!` 
