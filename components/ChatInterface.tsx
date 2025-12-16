@@ -1210,7 +1210,7 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
         2: processTemplate(unlockCelebrations.stage2.achievement, {
           adherence: Math.round(progress?.adherencePercentage || 80),
           consecutiveDays: progress?.consecutiveDays || 14,
-          avgDelta: Number((progress?.avgDelta || 0.30).toFixed(2))
+          avgDelta: 0.30
         }),
         3: unlockCelebrations.stage3.achievement,
         4: unlockCelebrations.stage4.achievement,
