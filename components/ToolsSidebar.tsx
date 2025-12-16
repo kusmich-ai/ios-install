@@ -9,6 +9,7 @@ import { useResonanceBreathing } from '@/components/ResonanceModal';
 import { useAwarenessRep } from '@/components/AwarenessRepModal';
 import { useCoRegulation } from '@/components/CoRegulationModal';
 import { useNightlyDebrief } from '@/components/NightlyDebriefModal';
+import { useLoopDeLooping } from '@/components/LoopDeLoopingModal';
 
 interface ToolsSidebarProps {
   progress: UserProgress;
@@ -53,6 +54,7 @@ export default function ToolsSidebar({
   const { open: openAwarenessRep, Modal: AwarenessRepModal } = useAwarenessRep();
   const { open: openCoRegulation, Modal: CoRegulationModal } = useCoRegulation();
   const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebrief();
+  const { open: openLoopDeLooping, Modal: LoopDeLoopingModal } = useLoopDeLooping();
 
   const currentStagePractices = getStagePractices(progress.currentStage);
   const unlockedTools = getUnlockedOnDemandTools(progress.currentStage);
@@ -93,6 +95,16 @@ export default function ToolsSidebar({
     } else {
       // Other practices go to chat for guidance
       onPracticeClick(practiceId);
+    }
+  };
+
+  // Handle tool click - intercept tools with modals, pass others to chat
+  const handleToolClick = (toolId: string) => {
+    if (toolId === 'worry_loop_dissolver') {
+      openLoopDeLooping(userId);
+    } else {
+      // Pass through to parent handler for chat-based tools
+      onToolClick(toolId);
     }
   };
 
@@ -185,6 +197,7 @@ export default function ToolsSidebar({
       <NightlyDebriefModal 
         onComplete={() => handleModalComplete('nightly_debrief', 'Nightly Debrief')} 
       />
+      <LoopDeLoopingModal />
 
       <aside className="w-80 border-l border-gray-800 bg-[#111111] overflow-y-auto flex-shrink-0">
         <div className="p-4">
@@ -518,7 +531,7 @@ export default function ToolsSidebar({
                 {unlockedTools.map((tool) => (
                   <button
                     key={tool.id}
-                    onClick={() => onToolClick(tool.id)}
+                    onClick={() => handleToolClick(tool.id)}
                     className="w-full text-left p-3 rounded-lg bg-[#0a0a0a] border border-gray-700 hover:border-[#ff9e19] transition-all cursor-pointer"
                   >
                     <div className="flex items-start gap-3">
