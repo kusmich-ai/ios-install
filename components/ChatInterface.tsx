@@ -3253,9 +3253,19 @@ This isn't judgment — it's data. The resistance is telling you something. Want
         openReframe(user?.id, false);
         break;
 
-      case 'thought_hygiene':
+     case 'thought_hygiene':
         openThoughtHygiene(user?.id);
         break;
+
+      case 'co_regulation':
+        openCoRegulation();
+        break;
+
+      case 'nightly_debrief':
+        openNightlyDebrief();
+        break;
+        
+      default:
         
       default:
         setMessages(prev => [...prev, { 
@@ -3263,8 +3273,7 @@ This isn't judgment — it's data. The resistance is telling you something. Want
           content: `Tool "${toolId}" is not yet implemented. Coming soon!` 
         }]);
     }
-  }, [microActionState, flowBlockState, startMicroActionSetup, startFlowBlockSetup, openDecentering, openMetaReflection, openReframe, openThoughtHygiene, user?.id]);
-
+  }, [microActionState, flowBlockState, startMicroActionSetup, startFlowBlockSetup, openDecentering, openMetaReflection, openReframe, openThoughtHygiene, openCoRegulation, openNightlyDebrief, user?.id]);
   // ============================================
   // PROGRESS UPDATE HANDLER
   // ============================================
@@ -4329,6 +4338,8 @@ This isn't judgment — it's data. The resistance is telling you something. Want
       <MetaReflectionModal />
       <ReframeModal />
       <ThoughtHygieneModal />
+      <CoRegulationModal onComplete={() => handlePracticeCompleted('co_regulation')} />
+      <NightlyDebriefModal onComplete={() => handlePracticeCompleted('nightly_debrief')} />
     </div>
   );
 }
