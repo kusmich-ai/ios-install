@@ -331,12 +331,12 @@ export const ON_DEMAND_TOOLS = [
     description: 'Recognize thoughts as objects in awareness',
     unlockedAt: 1
   },
-  {
+{
   id: 'worry_loop_dissolver',
   name: 'Worry Loop Dissolver',
   description: 'Dissolve worry or anxiety loops',
   icon: '🔄',
-  unlocksAtStage: 1
+  unlockedAt: 1  // <-- Use unlockedAt, not unlocksAtStage
 },
   {
     id: 'meta_reflection',
@@ -346,12 +346,12 @@ export const ON_DEMAND_TOOLS = [
     description: 'Weekly system check-in',
     unlockedAt: 2
   },
-  {
+{
   id: 'reframe',
   name: 'Reframe Protocol',
-  description: 'Update the story of a recent negative experience',  
-  icon: '🔀',  
-  unlocksAtStage: 3
+  description: 'Update the story of a recent negative experience',
+  icon: '🔀',
+  unlockedAt: 3  
 },
   {
     id: 'thought_hygiene',
