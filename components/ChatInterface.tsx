@@ -22,6 +22,10 @@ import {
   isToolUnlocked,
   type TemplateContext,
   type SelectionContext
+// Voice library
+  getMissedPracticeResponse,
+  unlockCelebrations,
+  processTemplate
 } from '@/lib/templates';
 import { 
   startNewMicroActionSprint, 
@@ -115,6 +119,8 @@ import { useDecentering } from '@/components/DecenteringModal';
 import { useMetaReflection, isWeeklyReflectionDue, isSunday } from '@/components/MetaReflectionModal';
 import { useReframe } from '@/components/ReframeModal';
 import { useThoughtHygiene } from '@/components/ThoughtHygieneModal';
+import { useCoRegulation } from '@/components/CoRegulationModal';
+import { useNightlyDebrief } from '@/components/NightlyDebriefModal';
 
 // ============================================
 // DEV LOGGING UTILITY
@@ -621,9 +627,19 @@ function getMissedDaysMessage(
   userName: string,
   currentStage: number
 ): string {
-  // Different tone based on how long they've been away
-  if (daysMissed >= 7) {
-    return `Hey${userName ? `, ${userName}` : ''}.
+  const template = getMissedPracticeResponse(daysMissed, {
+    adherence,
+    stageName: getStageName(currentStage),
+    previousPattern: false
+  });
+  
+  return processTemplate(template, {
+    daysAway: daysMissed,
+    adherence: adherence.toFixed(0),
+    stageName: getStageName(currentStage),
+    userName: userName || ''
+  });
+}
 
 It's been **${daysMissed} days** since your last practice. Your adherence is at **${adherence.toFixed(0)}%**.
 
@@ -919,6 +935,8 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   const { open: openMetaReflection, Modal: MetaReflectionModal } = useMetaReflection();
   const { open: openReframe, Modal: ReframeModal } = useReframe();
   const { open: openThoughtHygiene, Modal: ThoughtHygieneModal } = useThoughtHygiene();
+  const { open: openCoRegulation, Modal: CoRegulationModal } = useCoRegulation();
+const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebrief();
 
   // ============================================
   // HELPER FUNCTIONS
@@ -1231,55 +1249,16 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
       setUnlockFlowState('eligible_shown');
       
       const unlockMessages: { [key: number]: string } = {
-        2: `🔓 **SYSTEM UPGRADE AVAILABLE**
-
-**Neural Priming stabilized.** Heart-mind coherence online.
-
-You've hit the unlock criteria:
-- ≥80% adherence ✓
-- 14+ days in stage ✓
-- Positive growth delta ✓
-
-You're ready to bring awareness into motion.
-
-**Unlock Stage 2: Embodied Awareness?**`,
-        3: `🔓 **SYSTEM UPGRADE AVAILABLE**
-
-**Embodiment achieved.** The body is now connected awareness.
-
-You've hit the unlock criteria:
-- ≥80% adherence ✓
-- 14+ days in stage ✓
-- Positive growth delta ✓
-
-Time to act from coherence.
-
-**Unlock Stage 3: Identity Mode?**`,
-        4: `🔓 **SYSTEM UPGRADE AVAILABLE**
-
-**Identity proof installed.** You now act from awareness, not toward it.
-
-You've hit the unlock criteria:
-- ≥80% adherence ✓
-- 14+ days in stage ✓
-- Positive growth delta ✓
-
-Ready to integrate high-level performance?
-
-**Unlock Stage 4: Flow Mode?**`,
-        5: `🔓 **SYSTEM UPGRADE AVAILABLE**
-
-**Flow performance stabilized.** The mind is no longer the operator — it's the tool.
-
-You've hit the unlock criteria:
-- ≥80% adherence ✓
-- 14+ days in stage ✓
-- Positive growth delta ✓
-
-Ready to train relational coherence?
-
-**Unlock Stage 5: Relational Coherence?**`,
-        6: `🔓 **SYSTEM UPGRADE AVAILABLE**
+  2: processTemplate(unlockCelebrations.stage2.achievement, {
+    adherence: progress?.adherence_percentage?.toFixed(0) || '80',
+    consecutiveDays: progress?.consecutive_days || 14,
+    avgDelta: progress?.avg_delta?.toFixed(2) || '0.30'
+  }),
+  3: unlockCelebrations.stage3.achievement,
+  4: unlockCelebrations.stage4.achievement,
+  5: unlockCelebrations.stage5.achievement,
+  6: unlockCelebrations.stage6.achievement
+};
 
 **Relational coherence stabilized.** You are now connected.
 
