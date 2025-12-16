@@ -21,11 +21,10 @@ import {
   getPracticeById,
   isToolUnlocked,
   type TemplateContext,
-  type SelectionContext
-// Voice library
+  type SelectionContext,
+  // Voice library
   getMissedPracticeResponse,
-  unlockCelebrations,
-  processTemplate
+  unlockCelebrations
 } from '@/lib/templates';
 import { 
   startNewMicroActionSprint, 
