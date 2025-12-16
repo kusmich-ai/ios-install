@@ -1207,27 +1207,15 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
       setUnlockFlowState('eligible_shown');
       
       const unlockMessages: { [key: number]: string } = {
-  2: processTemplate(unlockCelebrations.stage2.achievement, {
-    adherence: progress?.adherence_percentage?.toFixed(0) || '80',
-    consecutiveDays: progress?.consecutive_days || 14,
-    avgDelta: progress?.avg_delta?.toFixed(2) || '0.30'
-  }),
-  3: unlockCelebrations.stage3.achievement,
-  4: unlockCelebrations.stage4.achievement,
-  5: unlockCelebrations.stage5.achievement,
-  6: unlockCelebrations.stage6.achievement
-};
-
-**Relational coherence stabilized.** You are now connected.
-
-You've hit the unlock criteria:
-- ≥80% adherence ✓
-- 14+ days in stage ✓
-- Positive growth delta ✓
-
-Ready for full integration?
-
-**Unlock Stage 6: Integration?**`
+        2: processTemplate(unlockCelebrations.stage2.achievement, {
+          adherence: progress?.adherence_percentage?.toFixed(0) || '80',
+          consecutiveDays: progress?.consecutive_days || 14,
+          avgDelta: progress?.avg_delta?.toFixed(2) || '0.30'
+        }),
+        3: unlockCelebrations.stage3.achievement,
+        4: unlockCelebrations.stage4.achievement,
+        5: unlockCelebrations.stage5.achievement,
+        6: unlockCelebrations.stage6.achievement
       };
       
       const message = unlockMessages[nextStage] || `🔓 **Congratulations!** You're eligible to unlock Stage ${nextStage}.`;
