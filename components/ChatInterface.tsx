@@ -3259,14 +3259,15 @@ Give me your four numbers (e.g., "4 3 4 5").`;
           devLog('[ResistanceTracking]', 'Surfacing pattern:', pattern);
           
           // Try to get a template-based message first
+          const patternData = pattern as { type?: string; subType?: string; count?: number; intervention?: string };
           const templateMessage = getResistanceTemplateMessage({
-            type: pattern.type || 'excuse',
-            subType: pattern.subType,
-            count: pattern.count
+            type: patternData.type || 'excuse',
+            subType: patternData.subType,
+            count: patternData.count
           });
           
           // Use template message if available, otherwise fall back to original
-          const messageContent = templateMessage || pattern.intervention;
+          const messageContent = templateMessage || patternData.intervention || 'A pattern has been detected.';
           
           // Delay the pattern message so it doesn't override the opening
           setTimeout(() => {
