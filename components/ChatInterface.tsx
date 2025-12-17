@@ -24,7 +24,10 @@ import {
   type SelectionContext,
   // Voice library
   getMissedPracticeResponse,
-  unlockCelebrations
+  unlockCelebrations,
+  declineTemplates,
+  breakthroughTemplates,
+  resistanceTemplates
 } from '@/lib/templates';
 import { 
   startNewMicroActionSprint, 
@@ -765,6 +768,182 @@ function determineOpeningType(
     lastVisitDate.getDate() === today.getDate();
   
   return isSameDay ? 'same_day' : 'new_day';
+}
+
+// ============================================
+// DECLINE DETECTION & RESPONSE
+// ============================================
+
+function getDeclineResponse(
+  avgDelta: number,
+  previousAvgDelta: number,
+  weeksDeclined: number,
+  scores: { regulation: number; awareness: number; outlook: number; attention: number }
+): string | null {
+  // No decline
+  if (avgDelta >= 0) return null;
+  
+  // Sustained decline (3+ weeks)
+  if (weeksDeclined >= 3) {
+    return declineTemplates.deltaDecline.sustained;
+  }
+  
+  // Significant decline (more than -0.5)
+  if (avgDelta < -0.5) {
+    return declineTemplates.deltaDecline.significant
+      .replace('{{avgDelta}}', avgDelta.toFixed(2))
+      .replace('{{previousAvgDelta}}', previousAvgDelta.toFixed(2));
+  }
+  
+  // Mild decline
+  return declineTemplates.deltaDecline.mild
+    .replace('{{regulationDelta}}', (scores.regulation || 0).toFixed(1))
+    .replace('{{awarenessDelta}}', (scores.awareness || 0).toFixed(1))
+    .replace('{{outlookDelta}}', (scores.outlook || 0).toFixed(1))
+    .replace('{{attentionDelta}}', (scores.attention || 0).toFixed(1));
+}
+
+// ============================================
+// BREAKTHROUGH PATTERN DETECTION
+// ============================================
+
+const breakthroughPatterns = {
+  insight: [
+    /i (just )?realized/i,
+    /it (just )?hit me/i,
+    /i (finally )?understand/i,
+    /i (can )?see (now|it)/i,
+    /something (clicked|shifted)/i,
+    /i get it now/i,
+    /i never (noticed|saw|realized)/i,
+    /this is what you meant/i,
+  ],
+  emotionalShift: [
+    /i feel (so )?(different|lighter|calmer|clearer|free)/i,
+    /something (released|lifted|opened)/i,
+    /i('m| am) (not|no longer) (anxious|stressed|worried)/i,
+    /first time (in|i've)/i,
+    /never felt (this|like this)/i,
+    /weight (lifted|gone)/i,
+  ],
+  milestone: [
+    /(\d+) (days?|weeks?) (straight|in a row|consecutive)/i,
+    /haven't missed/i,
+    /every (single )?(day|morning)/i,
+    /streak/i,
+  ],
+};
+
+function detectBreakthrough(message: string): { type: 'insight' | 'emotionalShift' | 'milestone' | null; confidence: number } {
+  let highestConfidence = 0;
+  let detectedType: 'insight' | 'emotionalShift' | 'milestone' | null = null;
+  
+  // Check insight patterns
+  const insightMatches = breakthroughPatterns.insight.filter(p => p.test(message)).length;
+  if (insightMatches > 0) {
+    const confidence = Math.min(insightMatches * 0.4, 1);
+    if (confidence > highestConfidence) {
+      highestConfidence = confidence;
+      detectedType = 'insight';
+    }
+  }
+  
+  // Check emotional shift patterns
+  const emotionalMatches = breakthroughPatterns.emotionalShift.filter(p => p.test(message)).length;
+  if (emotionalMatches > 0) {
+    const confidence = Math.min(emotionalMatches * 0.4, 1);
+    if (confidence > highestConfidence) {
+      highestConfidence = confidence;
+      detectedType = 'emotionalShift';
+    }
+  }
+  
+  // Check milestone patterns
+  const milestoneMatches = breakthroughPatterns.milestone.filter(p => p.test(message)).length;
+  if (milestoneMatches > 0) {
+    const confidence = Math.min(milestoneMatches * 0.5, 1);
+    if (confidence > highestConfidence) {
+      highestConfidence = confidence;
+      detectedType = 'milestone';
+    }
+  }
+  
+  // Only return if confidence is high enough
+  return { type: highestConfidence >= 0.4 ? detectedType : null, confidence: highestConfidence };
+}
+
+function getBreakthroughResponse(type: 'insight' | 'emotionalShift' | 'milestone', userMessage: string): string {
+  switch (type) {
+    case 'insight':
+      return breakthroughTemplates.insightAcknowledgment.standard
+        .replace('{{userInsight}}', userMessage.slice(0, 100) + (userMessage.length > 100 ? '...' : ''));
+    case 'emotionalShift':
+      return breakthroughTemplates.emotionalShift.positive;
+    case 'milestone':
+      // Detect which milestone
+      const weekMatch = userMessage.match(/(\d+)\s*weeks?/i);
+      const dayMatch = userMessage.match(/(\d+)\s*days?/i);
+      
+      if (weekMatch && parseInt(weekMatch[1]) >= 3) {
+        return breakthroughTemplates.milestone.twentyOneDays;
+      } else if (dayMatch) {
+        const days = parseInt(dayMatch[1]);
+        if (days >= 21) return breakthroughTemplates.milestone.twentyOneDays;
+        if (days >= 14) return breakthroughTemplates.milestone.twoWeeks;
+        if (days >= 7) return breakthroughTemplates.milestone.firstWeek;
+      }
+      return breakthroughTemplates.milestone.firstWeek;
+    default:
+      return '';
+  }
+}
+
+// ============================================
+// RESISTANCE TEMPLATE MATCHING
+// ============================================
+
+function getResistanceTemplateMessage(pattern: { type: string; subType?: string; count?: number }): string {
+  const { type, subType, count } = pattern;
+  
+  // Pattern surfacing (multiple occurrences)
+  if (count && count >= 3) {
+    if (type === 'excuse') {
+      return resistanceTemplates.patternSurfacing.thirdTimeExcuse
+        .replace('{{excuseCategory}}', subType || 'the same reason');
+    }
+    if (type === 'avoidance') {
+      return resistanceTemplates.patternSurfacing.repeatedAvoidance
+        .replace('{{practiceId}}', subType || 'certain practices')
+        .replace('{{practiceName}}', subType || 'that practice');
+    }
+  }
+  
+  // Specific excuse types
+  if (type === 'excuse' && subType) {
+    const excuseTemplates = resistanceTemplates.excuses as Record<string, string>;
+    if (excuseTemplates[subType]) {
+      return excuseTemplates[subType];
+    }
+  }
+  
+  // Avoidance patterns
+  if (type === 'avoidance' && subType) {
+    const avoidanceTemplates = resistanceTemplates.avoidance as Record<string, string>;
+    if (avoidanceTemplates[subType]) {
+      return avoidanceTemplates[subType];
+    }
+  }
+  
+  // Skepticism patterns
+  if (type === 'skepticism' && subType) {
+    const skepticismTemplates = resistanceTemplates.skepticism as Record<string, string>;
+    if (skepticismTemplates[subType]) {
+      return skepticismTemplates[subType];
+    }
+  }
+  
+  // Default fallback
+  return '';
 }
 
 // ============================================
@@ -2690,9 +2869,34 @@ Which one?`;
 **Average Delta: ${avgDelta >= 0 ? '+' : ''}${avgDelta.toFixed(2)}**
 **Current REwired Index: ${newRewiredIndex}/100**
 
-${avgDelta >= 0.3 ? '📈 Great progress! Keep the consistency going.' : avgDelta >= 0 ? '📊 Moving in the right direction. Stay consistent.' : '📉 Some regression this week. That\'s normal - focus on consistency.'}`;
+${avgDelta >= 0.3 ? '📈 Great progress! Your nervous system is responding to the training. Keep the consistency going.' : avgDelta >= 0 ? '📊 Moving in the right direction. Steady progress compounds over time.' : '📉 Some regression this week. Let\'s look at what might be contributing.'}`;
 
       setMessages(prev => [...prev, { role: 'assistant', content: resultMessage }]);
+      
+      // If declining, add follow-up with decline template after a delay
+      if (avgDelta < 0) {
+        const deltaScores = {
+          regulation: regulationDelta,
+          awareness: awarenessDelta,
+          outlook: outlookDelta,
+          attention: attentionDelta
+        };
+        
+        // Get previous avg delta from progress if available
+        const previousAvgDelta = (progress as any)?.previousAvgDelta || 0;
+        const weeksDeclined = (progress as any)?.weeksDeclined || (avgDelta < 0 ? 1 : 0);
+        
+        const declineResponse = getDeclineResponse(avgDelta, previousAvgDelta, weeksDeclined, deltaScores);
+        
+        if (declineResponse) {
+          setTimeout(() => {
+            setMessages(prev => [...prev, { 
+              role: 'assistant', 
+              content: `---\n\n${declineResponse}` 
+            }]);
+          }, 2500);
+        }
+      }
       
       setWeeklyCheckInActive(false);
       setWeeklyCheckInStep(0);
@@ -3054,6 +3258,16 @@ Give me your four numbers (e.g., "4 3 4 5").`;
         if (should && pattern) {
           devLog('[ResistanceTracking]', 'Surfacing pattern:', pattern);
           
+          // Try to get a template-based message first
+          const templateMessage = getResistanceTemplateMessage({
+            type: pattern.type || 'excuse',
+            subType: pattern.subType,
+            count: pattern.count
+          });
+          
+          // Use template message if available, otherwise fall back to original
+          const messageContent = templateMessage || pattern.intervention;
+          
           // Delay the pattern message so it doesn't override the opening
           setTimeout(() => {
             setMessages(prev => [...prev, {
@@ -3062,7 +3276,7 @@ Give me your four numbers (e.g., "4 3 4 5").`;
 
 **A pattern I've noticed:**
 
-${pattern.intervention}
+${messageContent}
 
 This isn't judgment — it's data. The resistance is telling you something. Want to explore it?`
             }]);
@@ -3562,6 +3776,9 @@ This isn't judgment — it's data. The resistance is telling you something. Want
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setLoading(true);
     
+    // Check for breakthrough patterns in user message
+    const breakthroughDetection = detectBreakthrough(userMessage);
+    
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -3578,6 +3795,19 @@ This isn't judgment — it's data. The resistance is telling you something. Want
       const aiResponse = data.response || data.content || "I'm having trouble responding right now. Please try again.";
       
       setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
+      
+      // If breakthrough detected with high confidence, add acknowledgment
+      if (breakthroughDetection.type && breakthroughDetection.confidence >= 0.5) {
+        setTimeout(() => {
+          const breakthroughResponse = getBreakthroughResponse(breakthroughDetection.type!, userMessage);
+          if (breakthroughResponse) {
+            setMessages(prev => [...prev, { 
+              role: 'assistant', 
+              content: `---\n\n${breakthroughResponse}` 
+            }]);
+          }
+        }, 1500);
+      }
     } catch (err) {
       console.error('Chat error:', err);
       setMessages(prev => [...prev, { 
