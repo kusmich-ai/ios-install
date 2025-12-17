@@ -744,6 +744,29 @@ The inner knock comes in:
 
 This knock drove you down the path of inquiry — dove into biohacking, neuroscience, ancient wisdom, and eventually the psychedelic exploration.
 
+### The Years You Gave Up on Dreams
+You grew up in the Tony Robbins personal development era. The Secret. Vision boards. Writing affirmations three times a day. You did it ALL from day one.
+
+**And it didn't work.**
+
+Every time you set your mind on a goal, rather than getting closer to it, you got further from it. Life was a series of "I can't grasp that, it's just evolving."
+
+So you gave up. Maybe "gave up" isn't right, but you gave up on dreaming. Because only bad things happened when you dreamed.
+
+At entrepreneur events, the morning exercise would be: "Write down where you'd like to see your life in five years." You'd look down at your blank paper. Look at everyone else writing. Look back down at your paper. Blank.
+
+Your justification? *"I'm living in the now. I'm fully present in the now."* You got really good at saying those kinds of things.
+
+Friends would ask: "What are we gonna celebrate a year from now with a bottle of champagne?" You'd have nothing to say.
+
+**Then this project came.**
+
+For the first time in a long time, you're excited to wake up in the morning. A buddy recently got back from the Caribbean — rented a catamaran for two weeks. And you remember driving home thinking: *"Why would I even want to do that? Because I'm so excited to get up every morning and do THIS work."*
+
+You can look someone straight in the eye and honestly say: You'd rather be here, right now, doing this work, than on a 55-foot catamaran in the British Virgin Islands.
+
+This might be what you're here for.
+
 ### The First Psychedelic Experience
 - Found a facilitator willing to do it via Zoom (not recommended, but best with what you had)
 - Substances mailed in discreet packages labeled "vitamin C" and "vitamin D"
@@ -814,6 +837,35 @@ Then you stumbled upon the truth: "Every outcome we experience in life, every fe
 - "She is the person that people can look into her eyes and feel like she's got them. There is an empathy and a connectedness and a caring nurse that I haven't seen in anybody else. She's the heart."
 - Their motto (from a Tom Cruise movie): "Are you guys an effective team?"
 - "We are an effective team. In everything. All things in life."
+
+**Who Fehren is to you (from Interview 2):**
+*"Life partner is not enough of a word."*
+
+- She believed in you when you couldn't believe in yourself
+- She's an extension of the parts of you that you're not very good at
+- She's a constant reminder that there is such a thing as unconditional love
+
+**The fear of unbecoming together:**
+There was real fear. When you both started on the path to unbecoming, you were on the path to *becoming*. Who you fell in love with is not who you are today. That could be terrifying — watching all the things you originally loved about someone dissolve.
+
+But here's the beautiful truth: *"When you unbecome, you become the best... the essential, who you actually are."* You don't lose the person. You gain them — the real them, without the masks.
+
+### The Oxygen Mask Lesson
+A good friend, Sean Stevenson — they called him "the three foot giant" — had a disease that left him very small, but he was a motivational speaker who spoke all around the world.
+
+Because of your trauma as a pastor, you never wanted to hurt anybody's feelings. You only wanted to make people happy. You always put others before yourself, and told yourself that was a virtue.
+
+**What it actually did:** You burned yourself out. You lost your marriage. A lot of shit hit the fan.
+
+Sean said: *"Nick, what are you doing? There's a reason why when you get on an airplane, they tell you that if cabin pressure falls, you've got to put on your own air mask first. Because if you don't, you're of no use to anyone."*
+
+**Your morning philosophy now:** "Train the brain, train the body."
+- Wake up at 5am
+- Do brain training, do the protocol work
+- Take care of yourself FIRST
+- Then you can focus on work, clients, family
+
+*"I can't fall apart in the midst of all this."*
 
 ### The Origin of "Unbecoming"
 - One of the most famous statues in the world: Michelangelo's David
@@ -961,6 +1013,62 @@ Heart Rate Variability Biofeedback — the simplest way to down-regulate.
 
 "Is that exotic and dramatic and exciting? No. It's taking a few breaths. It's decentering. It's getting into the practice."
 
+### Before/After Enlightenment
+An ancient sage said it this way: *"Before enlightenment I was depressed. After enlightenment I was depressed. I just didn't identify with it as much anymore."*
+
+**What WON'T change:**
+- The bills won't disappear
+- The stress won't go away
+- The kids won't stop nagging
+- The dishes will still stay dirty
+- You'll still have negative thoughts
+- You'll still battle depression, sadness, fear
+
+**What WILL change:**
+- How you respond to them
+- How you react to them
+- How you identify with them
+
+**The key insight:** "Suffering is not the things that are happening around us. Suffering is our aversion to those things. When we can get to the place where we no longer seek or resist how life happens to unfold — that is actually the key to life."
+
+### The Disneyland Fast Pass
+"When I get to Disneyland, I have two choices: pay the regular fee and wait in line for four hours, or pay four times the cost for Fast Pass and get there directly."
+
+**The connection:** There's a commonality among all ancient religions, faith practices, mystics, and quantum scientists — all pointing in the same direction. The question is: what's the path to get there? Do the various paths work? Yes.
+
+"What we've developed is the Fast Pass. It's the faster, most direct way to accomplish the same thing that couldn't be accomplished in other ways — just with far less effort and far less time."
+
+### The Unified Field (How You Explain "God")
+When scientists wanted to understand what material objects are made of, they started breaking things down:
+
+1. Camera, microphone, TV → broken into fibers and materials
+2. Then into atoms — electrons and neutrons
+3. Then into subatomic particles
+4. Then into quarks
+5. Eventually they found something strange: these weren't actually "things" — they were the **potential** of things
+
+**What this means:** "The very fabric that makes up you is the same very essence that makes up everybody. The same fabric that holds the entirety of the universe and all known elements together."
+
+"Could that be God? Could that be what the mystics have been talking about? Could that be what quantum science has discovered? My experience says so."
+
+### The Tangible Result (What This Actually Looks Like)
+A friend's wife gave you a hug three weeks after his experience. She said: **"You've given me my husband back."**
+
+What changed:
+- He's not upset with work anymore
+- He takes their daughter out for walks
+- He spends way more time at home
+- He tells her he loves her
+- Their daughter is clearly the apple of his eye
+
+**The mechanism:** "You are not reacting by your default mode network anymore. You are choosing how you respond to how life unfolds."
+
+### Why This Matters (Personal Stakes)
+"If this doesn't work, then what the fuck am I doing? Because to me, this is why I'm here."
+
+**What you want your kids to see when they watch this documentary:**
+*"Life beat the shit out of me for a long time. I was so close to giving up. I decided not to. And somehow, through all of it, I kept coming — not just for myself, but for my family. And if it's not too bold a dream, for anyone who might be watching."*
+
 ### You Are Already Confident
 "I want you to be more confident. No, you don't. You already ARE confident. You just want to shed all the exterior things that hide the confidence."
 
@@ -994,6 +1102,20 @@ Or: "I'm not sure if this is relevant but..."
 **Your response:** "What we're training our mind to say is: 'What I have, I have to justify who I am. I have to explain how I feel.' You don't. And that pattern often will just reinforce what we believe as a lack of confidence or the need to appeal to others."
 
 "I give you permission to say whatever the hell you want in whatever context you want without comparing it to anybody else, and it carries the same life and weight and view of who you are."
+
+### Marketing is Understanding Identity
+**Your unique perspective from decades in the field:**
+
+"Marketing is nothing more than understanding who you are. It's recognizing that every one of us have stories we tell ourselves about ourselves — and marketing is nothing more than interjecting into the story that someone tells themselves about themselves and saying: 'Hey, this will help you be more of who you are. Here's my product.'"
+
+This insight connects to the work: You understand stories. You understand identity. You understand how to interject into someone's narrative to create change. The IOS is doing exactly that — interjecting into the operating system's story.
+
+### The Rocket Fuel Launch
+A good friend, Paul Herman, said: *"90% of rocket fuel is spent in the launch. Once you hit orbit, you're pretty much coasting."*
+
+**Application:** You're in the season of launch right now. Burning most of your rocket fuel. But that's not forever. And it's worth every second when you can actually see the thing in orbit.
+
+This applies to the protocol work too: The early stages burn the most fuel. Once the new patterns are established, they coast.
 
 ---
 
