@@ -1,7 +1,8 @@
+// /hooks/useSubscription.ts
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import { createClient } from '@/lib/supabase-client';
 
 type PlanType = 'quarterly' | 'biannual' | 'annual' | 'quarterly_coaching' | 'biannual_coaching' | 'annual_coaching';
 
@@ -69,7 +70,8 @@ export function useSubscription(): UseSubscriptionReturn {
   const isPastDue = subscription?.status === 'past_due';
   const isCanceled = subscription?.status === 'canceled';
 
-  // Check if plan includes coaching
+  // Check if plan includes coaching (by checking if plan_id contains 'coaching' in metadata)
+  // This will be stored in the subscription metadata from Stripe
   const hasCoachingAccess = subscription?.plan_id?.includes('coaching') || false;
 
   // Calculate days until expiry
@@ -97,13 +99,20 @@ export function useSubscription(): UseSubscriptionReturn {
 // Utility hook to manage subscription actions
 export function useSubscriptionActions() {
   const [loading, setLoading] = useState(false);
+  const supabase = createClient();
 
   const startCheckout = async (plan: PlanType) => {
     setLoading(true);
     try {
+      // Get the current session to pass auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      
       const response = await fetch('/api/stripe/create-checkout', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(session?.access_token && { 'Authorization': `Bearer ${session.access_token}` })
+        },
         body: JSON.stringify({ plan }),
       });
       
@@ -126,8 +135,15 @@ export function useSubscriptionActions() {
   const openPortal = async () => {
     setLoading(true);
     try {
+      // Get the current session to pass auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      
       const response = await fetch('/api/stripe/portal', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token && { 'Authorization': `Bearer ${session.access_token}` })
+        },
       });
       
       const { url, error } = await response.json();
