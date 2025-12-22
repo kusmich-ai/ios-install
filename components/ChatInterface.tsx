@@ -3,7 +3,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useIsMobile } from '@/app/hooks/useIsMobile';
 import { useUserProgress } from '@/app/hooks/useUserProgress';
+import { useSubscription, useSubscriptionActions } from '@/app/hooks/useSubscription';
 import ToolsSidebar from '@/components/ToolsSidebar';
+import { PaywallModal } from '@/components/PaywallModal';
 import FloatingActionButton from '@/components/FloatingActionButton';
 import MobileDashboard from '@/components/MobileDashboard';
 import { createClient } from '@/lib/supabase-client';
@@ -1075,6 +1077,11 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   const { open: openCoRegulation, Modal: CoRegulationModal } = useCoRegulation();
 const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebrief();
 
+  // Subscription hooks for paywall
+  const { isActive: hasActiveSubscription, loading: subscriptionLoading, refetch: refetchSubscription } = useSubscription();
+  const { startCheckout } = useSubscriptionActions();
+  const [showPaywall, setShowPaywall] = useState(false);
+
   // ============================================
   // HELPER FUNCTIONS
   // ============================================
@@ -1502,6 +1509,12 @@ When you're ready to learn more, click the "Unlock Stage 7?" button in your dash
   
   const handleUnlockConfirmation = async (confirmed: boolean) => {
     if (confirmed && pendingUnlockStage) {
+      // Check if subscription is required (Stage 2+) and user doesn't have one
+      if (pendingUnlockStage >= 2 && !hasActiveSubscription) {
+        setShowPaywall(true);
+        return;
+      }
+      
       try {
         const supabase = createClient();
         
@@ -1546,6 +1559,60 @@ Your new practices are now available.`
       }]);
     }
   };
+
+  // ============================================
+  // PAYWALL UPGRADE HANDLER
+  // ============================================
+  
+  type PlanType = 'quarterly' | 'biannual' | 'annual' | 'quarterly_coaching' | 'biannual_coaching' | 'annual_coaching';
+  
+  const handleUpgrade = async (plan: PlanType) => {
+    try {
+      await startCheckout(plan);
+      // User will be redirected to Stripe
+    } catch (err) {
+      console.error('[Upgrade] Error:', err);
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: "There was an error starting the checkout. Please try again." 
+      }]);
+    }
+  };
+
+  // Handle post-payment redirect
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const upgradeStatus = urlParams.get('upgrade');
+    
+    if (upgradeStatus === 'success') {
+      // Clear the URL parameter
+      window.history.replaceState({}, '', window.location.pathname);
+      
+      // Refetch subscription status
+      refetchSubscription().then(() => {
+        // Show success message
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: `**Welcome to the full IOS System!** 🎉
+
+Your subscription is now active. You have full access to all stages and practices.
+
+Ready to continue your transformation?`
+        }]);
+        
+        // If there was a pending unlock, retry it
+        if (pendingUnlockStage && pendingUnlockStage >= 2) {
+          handleUnlockConfirmation(true);
+        }
+      });
+    } else if (upgradeStatus === 'canceled') {
+      window.history.replaceState({}, '', window.location.pathname);
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: "No problem - you can upgrade whenever you're ready. Stage 1 practices are still available." 
+      }]);
+    }
+  }, []);
 
   // ============================================
   // HANDLE START NEW STAGE INTRO
@@ -4515,6 +4582,13 @@ This isn't judgment — it's data. The resistance is telling you something. Want
       <ThoughtHygieneModal />
       <CoRegulationModal onComplete={() => handlePracticeCompleted('co_regulation')} />
       <NightlyDebriefModal onComplete={() => handlePracticeCompleted('nightly_debrief')} />
+
+      {/* Paywall Modal */}
+      <PaywallModal 
+        isOpen={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        onUpgrade={handleUpgrade}
+      />
     </div>
   );
 }
