@@ -1,13 +1,26 @@
+// /app/api/stripe/create-checkout/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/utils/supabase/server';
+import { createClient } from '@supabase/supabase-js';
 import { stripe, PRICE_IDS, PlanType } from '@/lib/stripe';
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    // Create Supabase client with service role for operations
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
     
-    if (!user) {
+    // Get user from the access token in the Authorization header
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    const token = authHeader.substring(7);
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -60,6 +73,16 @@ export async function POST(req: NextRequest) {
         onConflict: 'user_id'
       });
     }
+
+    // Determine billing interval for subscription
+    const intervalMap: Record<PlanType, { interval: 'month' | 'year'; interval_count: number }> = {
+      quarterly: { interval: 'month', interval_count: 3 },
+      biannual: { interval: 'month', interval_count: 6 },
+      annual: { interval: 'year', interval_count: 1 },
+      quarterly_coaching: { interval: 'month', interval_count: 3 },
+      biannual_coaching: { interval: 'month', interval_count: 6 },
+      annual_coaching: { interval: 'year', interval_count: 1 },
+    };
 
     // Create checkout session
     const session = await stripe.checkout.sessions.create({
