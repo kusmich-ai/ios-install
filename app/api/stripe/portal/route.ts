@@ -1,10 +1,13 @@
 // /app/api/stripe/portal/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { stripe } from '@/lib/stripe';
+import { getStripe } from '@/lib/stripe';
 
 export async function POST(req: NextRequest) {
   try {
+    // Initialize Stripe inside the handler (not at module level)
+    const stripe = getStripe();
+    
     // Create Supabase client with service role
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
