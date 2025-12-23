@@ -1,5 +1,6 @@
+// /app/api/stripe/webhook/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { stripe } from '@/lib/stripe';
+import { getStripe } from '@/lib/stripe';
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 
@@ -19,6 +20,9 @@ export async function POST(req: NextRequest) {
   }
 
   let event: Stripe.Event;
+  
+  // Initialize Stripe inside the handler (not at module level)
+  const stripe = getStripe();
 
   try {
     event = stripe.webhooks.constructEvent(
@@ -37,7 +41,7 @@ export async function POST(req: NextRequest) {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
-        await handleCheckoutComplete(session);
+        await handleCheckoutComplete(session, stripe);
         break;
       }
       
@@ -80,7 +84,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
+async function handleCheckoutComplete(session: Stripe.Checkout.Session, stripe: Stripe) {
   const userId = session.metadata?.user_id;
   
   if (!userId) {
