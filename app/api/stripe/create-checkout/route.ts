@@ -1,10 +1,12 @@
-// /app/api/stripe/create-checkout/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { stripe, PRICE_IDS, PlanType } from '@/lib/stripe';
+import { getStripe, PRICE_IDS, PlanType } from '@/lib/stripe';
 
 export async function POST(req: NextRequest) {
   try {
+    // Initialize Stripe inside the handler (not at module level)
+    const stripe = getStripe();
+    
     // Create Supabase client with service role for operations
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
