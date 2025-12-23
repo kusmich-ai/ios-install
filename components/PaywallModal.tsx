@@ -1,7 +1,8 @@
+// /components/PaywallModal.tsx
 'use client';
 
 import { useState } from 'react';
-import { X, Check, Zap, Shield, Brain, Sparkles, Star, Users } from 'lucide-react';
+import { X, Check, Zap, Shield, Brain, Sparkles, Star, Users, Video, Mic } from 'lucide-react';
 
 type PlanType = 'quarterly' | 'biannual' | 'annual' | 'quarterly_coaching' | 'biannual_coaching' | 'annual_coaching';
 
@@ -43,17 +44,19 @@ export function PaywallModal({ isOpen, onClose, onUpgrade }: PaywallModalProps) 
   };
 
   const installerFeatures = [
-    { icon: Brain, text: 'Embodied Awareness & Somatic Practices' },
-    { icon: Star, text: '21-Day Identity Installation Cycles' },
-    { icon: Zap, text: 'Flow Mode Deep Work Training' },
+    { icon: Brain, text: 'All stage rituals including Embodied Awareness & Somatic Flow' },
+    { icon: Star, text: '21-Day Identity Installation and Flow Block Performance Cycles' },
     { icon: Shield, text: 'Relational Coherence Protocols' },
-    { icon: Sparkles, text: 'Full Integration & Stage 7 Access' },
+    { icon: Sparkles, text: 'Nic AI and Fehren AI Coaches ($1,200 Value)' },
+    { icon: Video, text: 'Science of Neural Liberation Course ($497 Value)' },
+    { icon: Zap, text: 'Full Integration of the MOS and NOS Kernels' },
   ];
 
   const coachingFeatures = [
-    { icon: Users, text: 'Weekly live calls with Nic & Fehren' },
-    { icon: Star, text: 'Guest experts & Charok Lama sessions' },
-    { icon: Zap, text: 'Direct Q&A and hot seat coaching' },
+    { icon: Users, text: 'Weekly live coaching calls with Nic, Fehren, and Leading Buddhist Lama Charok' },
+    { icon: Star, text: 'Monthly live coaching calls with world\'s leading guest experts' },
+    { icon: Mic, text: 'Direct Q&A and hot seat coaching' },
+    { icon: Video, text: 'All calls recorded and stored for easy access' },
   ];
 
   return (
@@ -80,10 +83,13 @@ export function PaywallModal({ isOpen, onClose, onUpgrade }: PaywallModalProps) 
             <Zap className="w-8 h-8 text-[#ff9e19]" />
           </div>
           <h2 className="text-2xl font-bold text-white mb-2">
-            Neural Priming Complete
+            Congratulations. Stage 1 Neural Priming Complete.
           </h2>
-          <p className="text-gray-400">
-            You've proven stability. Time to install the full system.
+          <p className="text-gray-400 mb-4">
+            You've now proven your stability. It's time to install the full system with Stages 2-7.
+          </p>
+          <p className="text-gray-500 text-sm">
+            Below are your options where you can get just the IOS Installer or the IOS Installer + Live Weekly Coaching.
           </p>
         </div>
 
@@ -108,28 +114,28 @@ export function PaywallModal({ isOpen, onClose, onUpgrade }: PaywallModalProps) 
                   : 'text-gray-400 hover:text-white'
               }`}
             >
-              Installer + Coaching
+              Installer + Live Coaching
             </button>
           </div>
         </div>
 
         {/* Features */}
         <div className="p-6 border-b border-[#1a1a1a]">
-          <p className="text-sm text-gray-500 uppercase tracking-wider font-medium mb-4">
-            {selectedTrack === 'installer' ? 'Full System Access' : 'Everything in Installer, Plus'}
+          <p className="text-sm text-[#ff9e19] uppercase tracking-wider font-semibold mb-4">
+            {selectedTrack === 'installer' ? 'Full System Access' : 'Everything in IOS Installer, PLUS'}
           </p>
           <div className="space-y-3">
             {(selectedTrack === 'installer' ? installerFeatures : coachingFeatures).map((feature, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <div className="flex-shrink-0 w-8 h-8 bg-[#ff9e19]/10 rounded-lg flex items-center justify-center">
+              <div key={i} className="flex items-start gap-3">
+                <div className="flex-shrink-0 w-8 h-8 bg-[#ff9e19]/10 rounded-lg flex items-center justify-center mt-0.5">
                   <feature.icon className="w-4 h-4 text-[#ff9e19]" />
                 </div>
-                <p className="text-gray-300">{feature.text}</p>
+                <p className="text-gray-300 text-sm leading-relaxed">{feature.text}</p>
               </div>
             ))}
           </div>
           {selectedTrack === 'coaching' && (
-            <p className="text-gray-500 text-sm mt-4 italic">
+            <p className="text-gray-500 text-sm mt-4 pt-4 border-t border-[#1a1a1a]">
               + All IOS Installer features included
             </p>
           )}
@@ -142,7 +148,7 @@ export function PaywallModal({ isOpen, onClose, onUpgrade }: PaywallModalProps) 
               {/* Annual - Best Value */}
               <button
                 onClick={() => setSelectedPlan('annual')}
-                className={`w-full p-4 rounded-xl border-2 transition-all text-left relative ${
+                className={`w-full p-5 rounded-xl border-2 transition-all text-left relative ${
                   selectedPlan === 'annual'
                     ? 'border-[#ff9e19] bg-[#ff9e19]/10'
                     : 'border-[#1a1a1a] hover:border-[#333]'
@@ -151,69 +157,81 @@ export function PaywallModal({ isOpen, onClose, onUpgrade }: PaywallModalProps) 
                 <div className="absolute -top-3 left-4 px-3 py-1 bg-[#ff9e19] text-black text-xs font-bold rounded-full">
                   SAVE 61%
                 </div>
-                <div className="flex justify-between items-center mt-1">
-                  <div>
-                    <span className="text-white font-semibold">Annual</span>
-                    <div className="text-gray-400 text-sm mt-0.5">Just $58/month</div>
+                <div className="flex items-start gap-4 pr-2">
+                  <div className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center mt-1 ${
+                    selectedPlan === 'annual' ? 'border-[#ff9e19] bg-[#ff9e19]' : 'border-gray-500'
+                  }`}>
+                    {selectedPlan === 'annual' && <Check className="w-3 h-3 text-black" />}
                   </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-white">$697</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap justify-between items-start gap-2">
+                      <div className="min-w-0">
+                        <span className="text-white font-semibold">Annual</span>
+                        <span className="text-gray-500 text-sm ml-2 hidden sm:inline">— for those committed and serious about upgrades</span>
+                        <p className="text-gray-500 text-xs sm:hidden mt-0.5">For those committed and serious</p>
+                      </div>
+                      <div className="text-2xl font-bold text-white flex-shrink-0">$697</div>
+                    </div>
+                    <div className="text-[#ff9e19] text-sm mt-1">Just $58/month billed annually</div>
                   </div>
-                </div>
-                <div className={`absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                  selectedPlan === 'annual' ? 'border-[#ff9e19] bg-[#ff9e19]' : 'border-gray-500'
-                }`}>
-                  {selectedPlan === 'annual' && <Check className="w-3 h-3 text-black" />}
                 </div>
               </button>
 
               {/* 6 Month */}
               <button
                 onClick={() => setSelectedPlan('biannual')}
-                className={`w-full p-4 rounded-xl border-2 transition-all text-left relative ${
+                className={`w-full p-5 rounded-xl border-2 transition-all text-left relative ${
                   selectedPlan === 'biannual'
                     ? 'border-[#ff9e19] bg-[#ff9e19]/10'
                     : 'border-[#1a1a1a] hover:border-[#333]'
                 }`}
               >
-                <div className="flex justify-between items-center">
-                  <div>
-                    <span className="text-white font-semibold">6 Months</span>
-                    <div className="text-gray-400 text-sm mt-0.5">$100/month</div>
+                <div className="flex items-start gap-4 pr-2">
+                  <div className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center mt-1 ${
+                    selectedPlan === 'biannual' ? 'border-[#ff9e19] bg-[#ff9e19]' : 'border-gray-500'
+                  }`}>
+                    {selectedPlan === 'biannual' && <Check className="w-3 h-3 text-black" />}
                   </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-white">$597</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap justify-between items-start gap-2">
+                      <div className="min-w-0">
+                        <span className="text-white font-semibold">6 Months Access</span>
+                        <span className="text-gray-500 text-sm ml-2 hidden sm:inline">— for those ready to roll their sleeves up</span>
+                        <p className="text-gray-500 text-xs sm:hidden mt-0.5">For those ready to roll their sleeves up</p>
+                      </div>
+                      <div className="text-2xl font-bold text-white flex-shrink-0">$597</div>
+                    </div>
+                    <div className="text-gray-400 text-sm mt-1">$100/month billed every 6 months</div>
                   </div>
-                </div>
-                <div className={`absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                  selectedPlan === 'biannual' ? 'border-[#ff9e19] bg-[#ff9e19]' : 'border-gray-500'
-                }`}>
-                  {selectedPlan === 'biannual' && <Check className="w-3 h-3 text-black" />}
                 </div>
               </button>
 
               {/* 3 Month */}
               <button
                 onClick={() => setSelectedPlan('quarterly')}
-                className={`w-full p-4 rounded-xl border-2 transition-all text-left relative ${
+                className={`w-full p-5 rounded-xl border-2 transition-all text-left relative ${
                   selectedPlan === 'quarterly'
                     ? 'border-[#ff9e19] bg-[#ff9e19]/10'
                     : 'border-[#1a1a1a] hover:border-[#333]'
                 }`}
               >
-                <div className="flex justify-between items-center">
-                  <div>
-                    <span className="text-white font-semibold">3 Months</span>
-                    <div className="text-gray-400 text-sm mt-0.5">$149/month</div>
+                <div className="flex items-start gap-4 pr-2">
+                  <div className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center mt-1 ${
+                    selectedPlan === 'quarterly' ? 'border-[#ff9e19] bg-[#ff9e19]' : 'border-gray-500'
+                  }`}>
+                    {selectedPlan === 'quarterly' && <Check className="w-3 h-3 text-black" />}
                   </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-white">$447</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap justify-between items-start gap-2">
+                      <div className="min-w-0">
+                        <span className="text-white font-semibold">3 Months Access</span>
+                        <span className="text-gray-500 text-sm ml-2 hidden sm:inline">— for those looking to dip their toe</span>
+                        <p className="text-gray-500 text-xs sm:hidden mt-0.5">For those looking to dip their toe</p>
+                      </div>
+                      <div className="text-2xl font-bold text-white flex-shrink-0">$447</div>
+                    </div>
+                    <div className="text-gray-400 text-sm mt-1">$149/month billed every 3 months</div>
                   </div>
-                </div>
-                <div className={`absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                  selectedPlan === 'quarterly' ? 'border-[#ff9e19] bg-[#ff9e19]' : 'border-gray-500'
-                }`}>
-                  {selectedPlan === 'quarterly' && <Check className="w-3 h-3 text-black" />}
                 </div>
               </button>
             </>
@@ -222,7 +240,7 @@ export function PaywallModal({ isOpen, onClose, onUpgrade }: PaywallModalProps) 
               {/* Annual Coaching - Best Value */}
               <button
                 onClick={() => setSelectedPlan('annual_coaching')}
-                className={`w-full p-4 rounded-xl border-2 transition-all text-left relative ${
+                className={`w-full p-5 rounded-xl border-2 transition-all text-left relative ${
                   selectedPlan === 'annual_coaching'
                     ? 'border-[#ff9e19] bg-[#ff9e19]/10'
                     : 'border-[#1a1a1a] hover:border-[#333]'
@@ -231,69 +249,81 @@ export function PaywallModal({ isOpen, onClose, onUpgrade }: PaywallModalProps) 
                 <div className="absolute -top-3 left-4 px-3 py-1 bg-[#ff9e19] text-black text-xs font-bold rounded-full">
                   BEST VALUE
                 </div>
-                <div className="flex justify-between items-center mt-1">
-                  <div>
-                    <span className="text-white font-semibold">Annual</span>
-                    <div className="text-gray-400 text-sm mt-0.5">Just $150/month</div>
+                <div className="flex items-start gap-4 pr-2">
+                  <div className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center mt-1 ${
+                    selectedPlan === 'annual_coaching' ? 'border-[#ff9e19] bg-[#ff9e19]' : 'border-gray-500'
+                  }`}>
+                    {selectedPlan === 'annual_coaching' && <Check className="w-3 h-3 text-black" />}
                   </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-white">$1,797</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap justify-between items-start gap-2">
+                      <div className="min-w-0">
+                        <span className="text-white font-semibold">Annual</span>
+                        <span className="text-gray-500 text-sm ml-2 hidden sm:inline">— for those committed and serious about upgrades</span>
+                        <p className="text-gray-500 text-xs sm:hidden mt-0.5">For those committed and serious</p>
+                      </div>
+                      <div className="text-2xl font-bold text-white flex-shrink-0">$1,797</div>
+                    </div>
+                    <div className="text-[#ff9e19] text-sm mt-1">Just $150/month billed annually</div>
                   </div>
-                </div>
-                <div className={`absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                  selectedPlan === 'annual_coaching' ? 'border-[#ff9e19] bg-[#ff9e19]' : 'border-gray-500'
-                }`}>
-                  {selectedPlan === 'annual_coaching' && <Check className="w-3 h-3 text-black" />}
                 </div>
               </button>
 
               {/* 6 Month Coaching */}
               <button
                 onClick={() => setSelectedPlan('biannual_coaching')}
-                className={`w-full p-4 rounded-xl border-2 transition-all text-left relative ${
+                className={`w-full p-5 rounded-xl border-2 transition-all text-left relative ${
                   selectedPlan === 'biannual_coaching'
                     ? 'border-[#ff9e19] bg-[#ff9e19]/10'
                     : 'border-[#1a1a1a] hover:border-[#333]'
                 }`}
               >
-                <div className="flex justify-between items-center">
-                  <div>
-                    <span className="text-white font-semibold">6 Months</span>
-                    <div className="text-gray-400 text-sm mt-0.5">$233/month</div>
+                <div className="flex items-start gap-4 pr-2">
+                  <div className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center mt-1 ${
+                    selectedPlan === 'biannual_coaching' ? 'border-[#ff9e19] bg-[#ff9e19]' : 'border-gray-500'
+                  }`}>
+                    {selectedPlan === 'biannual_coaching' && <Check className="w-3 h-3 text-black" />}
                   </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-white">$1,397</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap justify-between items-start gap-2">
+                      <div className="min-w-0">
+                        <span className="text-white font-semibold">6 Months Access</span>
+                        <span className="text-gray-500 text-sm ml-2 hidden sm:inline">— for those ready to roll their sleeves up</span>
+                        <p className="text-gray-500 text-xs sm:hidden mt-0.5">For those ready to roll their sleeves up</p>
+                      </div>
+                      <div className="text-2xl font-bold text-white flex-shrink-0">$1,397</div>
+                    </div>
+                    <div className="text-gray-400 text-sm mt-1">$233/month billed every 6 months</div>
                   </div>
-                </div>
-                <div className={`absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                  selectedPlan === 'biannual_coaching' ? 'border-[#ff9e19] bg-[#ff9e19]' : 'border-gray-500'
-                }`}>
-                  {selectedPlan === 'biannual_coaching' && <Check className="w-3 h-3 text-black" />}
                 </div>
               </button>
 
               {/* 3 Month Coaching */}
               <button
                 onClick={() => setSelectedPlan('quarterly_coaching')}
-                className={`w-full p-4 rounded-xl border-2 transition-all text-left relative ${
+                className={`w-full p-5 rounded-xl border-2 transition-all text-left relative ${
                   selectedPlan === 'quarterly_coaching'
                     ? 'border-[#ff9e19] bg-[#ff9e19]/10'
                     : 'border-[#1a1a1a] hover:border-[#333]'
                 }`}
               >
-                <div className="flex justify-between items-center">
-                  <div>
-                    <span className="text-white font-semibold">3 Months</span>
-                    <div className="text-gray-400 text-sm mt-0.5">$346/month</div>
+                <div className="flex items-start gap-4 pr-2">
+                  <div className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center mt-1 ${
+                    selectedPlan === 'quarterly_coaching' ? 'border-[#ff9e19] bg-[#ff9e19]' : 'border-gray-500'
+                  }`}>
+                    {selectedPlan === 'quarterly_coaching' && <Check className="w-3 h-3 text-black" />}
                   </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-white">$1,038</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap justify-between items-start gap-2">
+                      <div className="min-w-0">
+                        <span className="text-white font-semibold">3 Months Access</span>
+                        <span className="text-gray-500 text-sm ml-2 hidden sm:inline">— for those looking to dip their toe</span>
+                        <p className="text-gray-500 text-xs sm:hidden mt-0.5">For those looking to dip their toe</p>
+                      </div>
+                      <div className="text-2xl font-bold text-white flex-shrink-0">$1,038</div>
+                    </div>
+                    <div className="text-gray-400 text-sm mt-1">$346/month billed every 3 months</div>
                   </div>
-                </div>
-                <div className={`absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                  selectedPlan === 'quarterly_coaching' ? 'border-[#ff9e19] bg-[#ff9e19]' : 'border-gray-500'
-                }`}>
-                  {selectedPlan === 'quarterly_coaching' && <Check className="w-3 h-3 text-black" />}
                 </div>
               </button>
             </>
@@ -312,7 +342,7 @@ export function PaywallModal({ isOpen, onClose, onUpgrade }: PaywallModalProps) 
           <button
             onClick={handleUpgrade}
             disabled={loading}
-            className="w-full py-4 bg-[#ff9e19] hover:bg-[#ffb04d] text-black font-bold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full py-4 bg-[#ff9e19] hover:bg-[#ffb04d] text-black font-bold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base"
           >
             {loading ? (
               <>
@@ -321,15 +351,18 @@ export function PaywallModal({ isOpen, onClose, onUpgrade }: PaywallModalProps) 
               </>
             ) : (
               <>
-                <Zap className="w-5 h-5" />
-                {selectedTrack === 'installer' ? 'Install the IOS' : 'Install + Join Coaching'}
+                <Zap className="w-5 h-5 flex-shrink-0" />
+                <span>
+                  {selectedTrack === 'installer' 
+                    ? 'Install the IOS and Unlock The Full System' 
+                    : 'Install the IOS and Unlock The Full System + Live Coaching Calls'}
+                </span>
               </>
             )}
           </button>
           
-          <div className="flex items-center justify-center gap-4 mt-4 text-gray-500 text-sm">
-            <span>✓ 7-day guarantee</span>
-            <span>✓ Auto-renews at same rate</span>
+          <div className="flex items-center justify-center mt-4 text-gray-500 text-sm">
+            <span>Auto-renews at same rate until cancelled</span>
           </div>
         </div>
       </div>
