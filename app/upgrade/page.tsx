@@ -1,23 +1,47 @@
 // /app/upgrade/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Zap, Brain, Shield, Sparkles, Star, Users, ChevronDown, 
-  CheckCircle2, ArrowRight, MessageCircle, X,
-  TrendingUp, Clock, Heart, Target, Waves, Lock
+  CheckCircle2, ArrowRight, MessageCircle, X, Send,
+  TrendingUp, Clock, Heart, Target, Waves, Lock, Loader2
 } from 'lucide-react';
 import Link from 'next/link';
+import { useSubscriptionActions } from '@/hooks/useSubscription';
+
+type PlanType = 'quarterly' | 'biannual' | 'annual' | 'quarterly_coaching' | 'biannual_coaching' | 'annual_coaching';
 
 export default function UpgradePage() {
   const [selectedTrack, setSelectedTrack] = useState<'installer' | 'coaching'>('installer');
-  const [selectedPlan, setSelectedPlan] = useState<string>('annual');
+  const [selectedPlan, setSelectedPlan] = useState<PlanType>('annual');
   const [showChat, setShowChat] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  
+  const { startCheckout } = useSubscriptionActions();
 
   const handleTrackChange = (track: 'installer' | 'coaching') => {
     setSelectedTrack(track);
-    setSelectedPlan(track === 'installer' ? 'annual' : 'annual_coaching');
+    if (track === 'installer') {
+      setSelectedPlan('annual');
+    } else {
+      setSelectedPlan('annual_coaching');
+    }
+  };
+
+  const handleCheckout = async () => {
+    setCheckoutLoading(true);
+    setCheckoutError(null);
+    try {
+      await startCheckout(selectedPlan);
+    } catch (err) {
+      setCheckoutError('Failed to start checkout. Please try again.');
+      console.error('Checkout error:', err);
+    } finally {
+      setCheckoutLoading(false);
+    }
   };
 
   const scrollToPrice = () => {
@@ -443,6 +467,7 @@ export default function UpgradePage() {
             <p className="text-xl text-gray-400">Stage 1 is free. Stages 2-7 require commitment.</p>
           </div>
 
+          {/* Track Selector */}
           <div className="max-w-lg mx-auto mb-8">
             <div className="flex gap-2 p-1 bg-[#111] border border-[#1a1a1a] rounded-xl">
               <button
@@ -473,10 +498,16 @@ export default function UpgradePage() {
             </div>
           )}
 
+          {/* Pricing Cards */}
           <div className="grid md:grid-cols-3 gap-6">
             {selectedTrack === 'installer' ? (
               <>
-                <div onClick={() => setSelectedPlan('annual')} className={`relative p-6 rounded-2xl border-2 cursor-pointer transition-all ${selectedPlan === 'annual' ? 'border-[#ff9e19] bg-[#ff9e19]/10' : 'border-[#1a1a1a] bg-[#111] hover:border-[#333]'}`}>
+                <div 
+                  onClick={() => setSelectedPlan('annual')} 
+                  className={`relative p-6 rounded-2xl border-2 cursor-pointer transition-all ${
+                    selectedPlan === 'annual' ? 'border-[#ff9e19] bg-[#ff9e19]/10' : 'border-[#1a1a1a] bg-[#111] hover:border-[#333]'
+                  }`}
+                >
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-[#ff9e19] text-black text-xs font-bold rounded-full">SAVE 61%</div>
                   <div className="text-center pt-4">
                     <h3 className="text-xl font-bold mb-1">Annual Access</h3>
@@ -486,7 +517,12 @@ export default function UpgradePage() {
                     <p className="text-gray-500 text-sm mt-2">Billed annually</p>
                   </div>
                 </div>
-                <div onClick={() => setSelectedPlan('biannual')} className={`relative p-6 rounded-2xl border-2 cursor-pointer transition-all ${selectedPlan === 'biannual' ? 'border-[#ff9e19] bg-[#ff9e19]/10' : 'border-[#1a1a1a] bg-[#111] hover:border-[#333]'}`}>
+                <div 
+                  onClick={() => setSelectedPlan('biannual')} 
+                  className={`relative p-6 rounded-2xl border-2 cursor-pointer transition-all ${
+                    selectedPlan === 'biannual' ? 'border-[#ff9e19] bg-[#ff9e19]/10' : 'border-[#1a1a1a] bg-[#111] hover:border-[#333]'
+                  }`}
+                >
                   <div className="text-center">
                     <h3 className="text-xl font-bold mb-1">6 Months Access</h3>
                     <p className="text-gray-500 text-sm mb-4">Ready to roll your sleeves up</p>
@@ -495,7 +531,12 @@ export default function UpgradePage() {
                     <p className="text-gray-500 text-sm mt-2">Billed every 6 months</p>
                   </div>
                 </div>
-                <div onClick={() => setSelectedPlan('quarterly')} className={`relative p-6 rounded-2xl border-2 cursor-pointer transition-all ${selectedPlan === 'quarterly' ? 'border-[#ff9e19] bg-[#ff9e19]/10' : 'border-[#1a1a1a] bg-[#111] hover:border-[#333]'}`}>
+                <div 
+                  onClick={() => setSelectedPlan('quarterly')} 
+                  className={`relative p-6 rounded-2xl border-2 cursor-pointer transition-all ${
+                    selectedPlan === 'quarterly' ? 'border-[#ff9e19] bg-[#ff9e19]/10' : 'border-[#1a1a1a] bg-[#111] hover:border-[#333]'
+                  }`}
+                >
                   <div className="text-center">
                     <h3 className="text-xl font-bold mb-1">3 Months Access</h3>
                     <p className="text-gray-500 text-sm mb-4">Looking to dip your toe</p>
@@ -507,7 +548,12 @@ export default function UpgradePage() {
               </>
             ) : (
               <>
-                <div onClick={() => setSelectedPlan('annual_coaching')} className={`relative p-6 rounded-2xl border-2 cursor-pointer transition-all ${selectedPlan === 'annual_coaching' ? 'border-[#ff9e19] bg-[#ff9e19]/10' : 'border-[#1a1a1a] bg-[#111] hover:border-[#333]'}`}>
+                <div 
+                  onClick={() => setSelectedPlan('annual_coaching')} 
+                  className={`relative p-6 rounded-2xl border-2 cursor-pointer transition-all ${
+                    selectedPlan === 'annual_coaching' ? 'border-[#ff9e19] bg-[#ff9e19]/10' : 'border-[#1a1a1a] bg-[#111] hover:border-[#333]'
+                  }`}
+                >
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-[#ff9e19] text-black text-xs font-bold rounded-full">BEST VALUE</div>
                   <div className="text-center pt-4">
                     <h3 className="text-xl font-bold mb-1">Annual Access</h3>
@@ -517,7 +563,12 @@ export default function UpgradePage() {
                     <p className="text-gray-500 text-sm mt-2">Billed annually</p>
                   </div>
                 </div>
-                <div onClick={() => setSelectedPlan('biannual_coaching')} className={`relative p-6 rounded-2xl border-2 cursor-pointer transition-all ${selectedPlan === 'biannual_coaching' ? 'border-[#ff9e19] bg-[#ff9e19]/10' : 'border-[#1a1a1a] bg-[#111] hover:border-[#333]'}`}>
+                <div 
+                  onClick={() => setSelectedPlan('biannual_coaching')} 
+                  className={`relative p-6 rounded-2xl border-2 cursor-pointer transition-all ${
+                    selectedPlan === 'biannual_coaching' ? 'border-[#ff9e19] bg-[#ff9e19]/10' : 'border-[#1a1a1a] bg-[#111] hover:border-[#333]'
+                  }`}
+                >
                   <div className="text-center">
                     <h3 className="text-xl font-bold mb-1">6 Months Access</h3>
                     <p className="text-gray-500 text-sm mb-4">Ready to roll your sleeves up</p>
@@ -526,7 +577,12 @@ export default function UpgradePage() {
                     <p className="text-gray-500 text-sm mt-2">Billed every 6 months</p>
                   </div>
                 </div>
-                <div onClick={() => setSelectedPlan('quarterly_coaching')} className={`relative p-6 rounded-2xl border-2 cursor-pointer transition-all ${selectedPlan === 'quarterly_coaching' ? 'border-[#ff9e19] bg-[#ff9e19]/10' : 'border-[#1a1a1a] bg-[#111] hover:border-[#333]'}`}>
+                <div 
+                  onClick={() => setSelectedPlan('quarterly_coaching')} 
+                  className={`relative p-6 rounded-2xl border-2 cursor-pointer transition-all ${
+                    selectedPlan === 'quarterly_coaching' ? 'border-[#ff9e19] bg-[#ff9e19]/10' : 'border-[#1a1a1a] bg-[#111] hover:border-[#333]'
+                  }`}
+                >
                   <div className="text-center">
                     <h3 className="text-xl font-bold mb-1">3 Months Access</h3>
                     <p className="text-gray-500 text-sm mb-4">Looking to dip your toe</p>
@@ -539,13 +595,42 @@ export default function UpgradePage() {
             )}
           </div>
 
-          <div className="mt-8 text-center">
-            <Link href="/chat" className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#ff9e19] hover:bg-[#ffb04d] text-black font-bold rounded-xl transition-all text-lg">
-              <Zap className="w-5 h-5" />
-              Start With Free Stage 1 Now
-            </Link>
-            <p className="mt-4 text-gray-500 text-sm">Start Stage 1 free. Upgrade when you're ready for Stages 2-7.</p>
-            <p className="mt-2 text-gray-600 text-xs">Auto-renews at same rate until cancelled</p>
+          {/* Error Message */}
+          {checkoutError && (
+            <div className="mt-4 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-center">
+              <p className="text-red-400">{checkoutError}</p>
+            </div>
+          )}
+
+          {/* CTA Buttons */}
+          <div className="mt-8 text-center space-y-4">
+            <button 
+              onClick={handleCheckout}
+              disabled={checkoutLoading}
+              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#ff9e19] hover:bg-[#ffb04d] text-black font-bold rounded-xl transition-all text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {checkoutLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Zap className="w-5 h-5" />
+                  {selectedTrack === 'installer' 
+                    ? 'Install the IOS and Unlock The Full System' 
+                    : 'Install the IOS + Unlock Live Coaching'}
+                </>
+              )}
+            </button>
+            
+            <div>
+              <Link href="/chat" className="text-[#ff9e19] hover:underline">
+                Or start with free Stage 1 first →
+              </Link>
+            </div>
+            
+            <p className="text-gray-600 text-xs">Auto-renews at same rate until cancelled</p>
           </div>
         </div>
       </section>
@@ -565,9 +650,12 @@ export default function UpgradePage() {
               { q: "What are the AI coaches like?", a: "Nic AI and Fehren AI are trained on hundreds of real coaching conversations. They know the protocols intimately and adapt to your specific journey. They're not chatbots giving generic advice – they're coaches that hold you accountable, call out your patterns, and guide you through the stages. Available 24/7." },
             ].map((item, i) => (
               <div key={i} className="border border-[#1a1a1a] rounded-xl overflow-hidden">
-                <button onClick={() => setOpenFaq(openFaq === i ? null : i)} className="w-full p-6 text-left flex items-center justify-between gap-4 hover:bg-[#111] transition-colors">
+                <button 
+                  onClick={() => setOpenFaq(openFaq === i ? null : i)} 
+                  className="w-full p-6 text-left flex items-center justify-between gap-4 hover:bg-[#111] transition-colors"
+                >
                   <span className="font-medium">{item.q}</span>
-                  <ChevronDown className={`w-5 h-5 text-gray-500 transition-transform ${openFaq === i ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-5 h-5 text-gray-500 transition-transform flex-shrink-0 ${openFaq === i ? 'rotate-180' : ''}`} />
                 </button>
                 {openFaq === i && (
                   <div className="px-6 pb-6">
@@ -592,11 +680,17 @@ export default function UpgradePage() {
             It's real. And it's not going away until you upgrade the operating system.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/chat" className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#ff9e19] hover:bg-[#ffb04d] text-black font-bold rounded-xl transition-all text-lg">
+            <button 
+              onClick={scrollToPrice}
+              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#ff9e19] hover:bg-[#ffb04d] text-black font-bold rounded-xl transition-all text-lg"
+            >
               <Zap className="w-5 h-5" />
               Start Installing The IOS
-            </Link>
-            <button onClick={() => setShowChat(true)} className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all text-lg">
+            </button>
+            <button 
+              onClick={() => setShowChat(true)}
+              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all text-lg"
+            >
               <MessageCircle className="w-5 h-5" />
               Still Have Questions?
             </button>
@@ -604,36 +698,121 @@ export default function UpgradePage() {
         </div>
       </section>
 
-      {/* ===== CHAT WIDGET PLACEHOLDER ===== */}
+      {/* ===== SALES CHAT WIDGET ===== */}
       {showChat && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowChat(false)} />
-          <div className="relative bg-[#111] border border-[#1a1a1a] rounded-2xl w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
-            <div className="p-4 border-b border-[#1a1a1a] flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#ff9e19]/10 rounded-full flex items-center justify-center">
-                  <MessageCircle className="w-5 h-5 text-[#ff9e19]" />
-                </div>
-                <div>
-                  <div className="font-semibold">Chat with Us</div>
-                  <div className="text-xs text-gray-500">We're here to help</div>
-                </div>
-              </div>
-              <button onClick={() => setShowChat(false)} className="p-2 hover:bg-white/5 rounded-lg transition-colors">
-                <X className="w-5 h-5 text-gray-400" />
-              </button>
+        <SalesChat onClose={() => setShowChat(false)} />
+      )}
+    </div>
+  );
+}
+
+// ===== SALES CHAT COMPONENT =====
+function SalesChat({ onClose }: { onClose: () => void }) {
+  const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([
+    { role: 'assistant', content: "Hey! 👋 I'm here to answer any questions about the IOS Installer. What would you like to know?" }
+  ]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const sendMessage = async () => {
+    if (!input.trim() || loading) return;
+
+    const userMessage = input.trim();
+    setInput('');
+    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    setLoading(true);
+
+    try {
+      const response = await fetch('/api/sales-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          messages: [...messages, { role: 'user', content: userMessage }]
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to get response');
+
+      const data = await response.json();
+      setMessages(prev => [...prev, { role: 'assistant', content: data.message }]);
+    } catch (err) {
+      console.error('Chat error:', err);
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: "I'm having trouble connecting right now. Please try again, or you can start your free Stage 1 at /chat to talk with the AI coaches there." 
+      }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-[#111] border border-[#1a1a1a] rounded-2xl w-full max-w-lg h-[600px] max-h-[80vh] overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="p-4 border-b border-[#1a1a1a] flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-[#ff9e19]/10 rounded-full flex items-center justify-center">
+              <MessageCircle className="w-5 h-5 text-[#ff9e19]" />
             </div>
-            <div className="flex-1 p-4 overflow-y-auto">
-              <div className="bg-[#1a1a1a] rounded-xl p-4 mb-4">
-                <p className="text-gray-300">Hey! 👋 I'm here to answer any questions about the IOS Installer. What would you like to know?</p>
-              </div>
-              <p className="text-center text-gray-500 text-sm">
-                Full chat integration coming soon. For now, <Link href="/chat" className="text-[#ff9e19] hover:underline">start your free Stage 1</Link> and chat with the AI coaches there.
-              </p>
+            <div>
+              <div className="font-semibold">IOS Sales Advisor</div>
+              <div className="text-xs text-gray-500">Ask me anything about the IOS</div>
             </div>
           </div>
+          <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-lg transition-colors">
+            <X className="w-5 h-5 text-gray-400" />
+          </button>
         </div>
-      )}
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {messages.map((msg, i) => (
+            <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-[80%] p-4 rounded-2xl ${
+                msg.role === 'user' 
+                  ? 'bg-[#ff9e19] text-black rounded-br-md' 
+                  : 'bg-[#1a1a1a] text-gray-300 rounded-bl-md'
+              }`}>
+                <p className="whitespace-pre-wrap">{msg.content}</p>
+              </div>
+            </div>
+          ))}
+          {loading && (
+            <div className="flex justify-start">
+              <div className="bg-[#1a1a1a] text-gray-300 p-4 rounded-2xl rounded-bl-md">
+                <div className="flex gap-1">
+                  <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Input */}
+        <div className="p-4 border-t border-[#1a1a1a] flex-shrink-0">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+              placeholder="Ask a question..."
+              className="flex-1 px-4 py-3 bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#ff9e19]/50"
+            />
+            <button
+              onClick={sendMessage}
+              disabled={!input.trim() || loading}
+              className="px-4 py-3 bg-[#ff9e19] hover:bg-[#ffb04d] text-black rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Send className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
