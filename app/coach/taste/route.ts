@@ -2,13 +2,13 @@
 import { createClient } from '@/lib/supabase-server';
 import { NextRequest, NextResponse } from 'next/server';
 
-const FREE_MESSAGE_LIMIT = 3;
+const FREE_MESSAGE_LIMIT = 5;
 
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    
+    5
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
