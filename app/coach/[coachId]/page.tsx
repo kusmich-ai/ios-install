@@ -1,11 +1,11 @@
-// app/coach/[coachId]/page.tsx - COMPLETE VERSION WITH TASTE GATING
+// app/coach/[coachId]/page.tsx - COMPLETE VERSION WITH STAGE-BASED TASTE GATING
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase-client';
 import { coaches, getCoachOpeningMessage, CoachId } from '@/lib/coachPrompts';
-import { ArrowLeft, Plus, Trash2, MessageSquare, Send, Menu, X, AlertCircle, WifiOff, XCircle, Loader2, Check, Cloud, Brain, User, Heart, AlertTriangle, Target, Zap, Lightbulb, Settings, Clock, Shield, Sparkles, Search, Download } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, MessageSquare, Send, Menu, X, AlertCircle, WifiOff, XCircle, Loader2, Check, Cloud, Brain, User, Heart, AlertTriangle, Target, Zap, Lightbulb, Settings, Clock, Shield, Sparkles, Search, Download, Lock, ChevronRight } from 'lucide-react';
 
 // ============================================
 // TYPES
@@ -51,7 +51,8 @@ interface SearchResult {
 
 interface TasteStatus {
   hasAccess: boolean;
-  isPaid: boolean;
+  isFullAccess: boolean;
+  currentStage: number;
   messagesUsed: number;
   messagesRemaining: number;
   limit: number;
@@ -206,9 +207,9 @@ function InlineError({ message, onRetry, accentColor }: { message: string; onRet
 }
 
 // ============================================
-// UPGRADE MODAL (TASTE LIMIT)
+// STAGE 2 UNLOCK MODAL (Encouraging, not sales-y)
 // ============================================
-function CoachUpgradeModal({ 
+function Stage2UnlockModal({ 
   isOpen, 
   onClose, 
   coachId,
@@ -259,29 +260,30 @@ function CoachUpgradeModal({
               className="w-16 h-16 rounded-full flex items-center justify-center"
               style={{ backgroundColor: `${accentColor}20` }}
             >
-              <Sparkles className="w-8 h-8" style={{ color: accentColor }} />
+              <Lock className="w-8 h-8" style={{ color: accentColor }} />
             </div>
           </div>
 
           {/* Title */}
           <h2 className="text-xl font-semibold text-white text-center mb-2">
-            You've experienced a taste of {coachName}
+            You've had a taste of {coachName}
           </h2>
           
-          {/* Subtitle */}
+          {/* Encouraging message */}
           <p className="text-gray-400 text-center text-sm mb-6">
-            Full AI coaching unlocks in Stage 2 when you upgrade to the IOS Installer.
+            Full AI coaching unlocks at Stage 2. You're building the neural foundation right now — 
+            that groundwork makes coaching significantly more effective.
           </p>
 
-          {/* What you get */}
+          {/* What's waiting at Stage 2 */}
           <div className="bg-[#1a1a1a] rounded-xl p-4 mb-6">
             <p className="text-xs uppercase tracking-wider text-gray-500 mb-3">
-              With full access you get
+              What unlocks at Stage 2
             </p>
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <MessageSquare className="w-4 h-4" style={{ color: accentColor }} />
-                <span className="text-sm text-gray-300">Unlimited conversations with {coachName}</span>
+                <span className="text-sm text-gray-300">Unlimited conversations with both coaches</span>
               </div>
               <div className="flex items-center gap-3">
                 <Brain className="w-4 h-4" style={{ color: accentColor }} />
@@ -294,37 +296,36 @@ function CoachUpgradeModal({
                   <Heart className="w-4 h-4" style={{ color: accentColor }} />
                 )}
                 <span className="text-sm text-gray-300">
-                  {coachId === 'nic' 
-                    ? 'Pattern-breaking and nervous system coaching' 
-                    : 'Emotional processing and somatic guidance'}
+                  Deep protocol work with {coachName}
                 </span>
               </div>
               <div className="flex items-center gap-3">
                 <Sparkles className="w-4 h-4" style={{ color: accentColor }} />
-                <span className="text-sm text-gray-300">Access to both Nic & Fehren</span>
+                <span className="text-sm text-gray-300">New practices: Somatic Flow + more</span>
               </div>
             </div>
           </div>
 
-          {/* CTA */}
-          <button
-            onClick={() => router.push('/pricing')}
-            className={`w-full py-3 rounded-xl ${accentBg} ${accentHover} text-white font-medium transition-colors mb-3`}
-          >
-            Upgrade to Continue
-          </button>
+          {/* Encouragement */}
+          <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 mb-6">
+            <p className="text-sm text-green-400 text-center">
+              💪 Keep completing your daily practices. You're rewiring your nervous system — 
+              that's real progress.
+            </p>
+          </div>
 
-          {/* Secondary action */}
+          {/* CTA - Return to Stage 1 */}
           <button
             onClick={() => router.push('/chat')}
-            className="w-full py-2.5 text-gray-400 hover:text-white text-sm transition-colors"
+            className={`w-full py-3 rounded-xl ${accentBg} ${accentHover} text-white font-medium transition-colors flex items-center justify-center gap-2`}
           >
-            Continue Stage 1 practices instead
+            Continue Stage 1 Practices
+            <ChevronRight className="w-4 h-4" />
           </button>
 
           {/* Footer note */}
           <p className="text-center text-xs text-gray-600 mt-4">
-            Complete Stage 1 to prove you're ready for deeper work
+            Stage 1 typically takes 14+ days of consistent practice
           </p>
         </div>
       </div>
@@ -582,7 +583,7 @@ export default function CoachChatPage() {
   
   // Taste/access state
   const [tasteStatus, setTasteStatus] = useState<TasteStatus | null>(null);
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [showUnlockModal, setShowUnlockModal] = useState(false);
   const [tasteLoading, setTasteLoading] = useState(true);
   
   // Search state
@@ -645,7 +646,7 @@ export default function CoachChatPage() {
     } catch (error) {
       console.error('[Taste] Check error:', error);
       // Fail open - allow access if check fails
-      setTasteStatus({ hasAccess: true, isPaid: false, messagesUsed: 0, messagesRemaining: 3, limit: 3 });
+      setTasteStatus({ hasAccess: true, isFullAccess: false, currentStage: 1, messagesUsed: 0, messagesRemaining: 3, limit: 3 });
     } finally {
       setTasteLoading(false);
     }
@@ -653,7 +654,7 @@ export default function CoachChatPage() {
 
   // Increment taste count after successful message
   const incrementTasteCount = useCallback(async () => {
-    if (tasteStatus?.isPaid) return; // Don't track for paid users
+    if (tasteStatus?.isFullAccess) return; // Don't track for Stage 2+ users
     
     try {
       const response = await fetch('/api/coach/taste', {
@@ -673,13 +674,13 @@ export default function CoachChatPage() {
         
         // Show modal if they just hit the limit
         if (data.limitReached) {
-          setShowUpgradeModal(true);
+          setShowUnlockModal(true);
         }
       }
     } catch (error) {
       console.error('[Taste] Increment error:', error);
     }
-  }, [coachId, tasteStatus?.isPaid]);
+  }, [coachId, tasteStatus?.isFullAccess]);
 
   // Search function with debounce
   const searchConversations = useCallback(async (query: string) => {
@@ -709,12 +710,10 @@ export default function CoachChatPage() {
   const handleSearchChange = useCallback((value: string) => {
     setSearchQuery(value);
     
-    // Clear previous timeout
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
     
-    // Debounce search
     if (value.length >= 2) {
       searchTimeoutRef.current = setTimeout(() => {
         searchConversations(value);
@@ -821,7 +820,7 @@ export default function CoachChatPage() {
   async function startNewConversation() {
     // Check taste access before starting
     if (tasteStatus && !tasteStatus.hasAccess) {
-      setShowUpgradeModal(true);
+      setShowUnlockModal(true);
       return;
     }
     
@@ -878,7 +877,7 @@ export default function CoachChatPage() {
     
     // Check taste access before sending
     if (tasteStatus && !tasteStatus.hasAccess) {
-      setShowUpgradeModal(true);
+      setShowUnlockModal(true);
       return;
     }
     
@@ -908,7 +907,7 @@ export default function CoachChatPage() {
       setMessages(finalMessages);
       await saveConversation(finalMessages);
       
-      // Increment taste count for free users
+      // Increment taste count for Stage 1 users
       await incrementTasteCount();
       
       if (finalMessages.length > 0 && finalMessages.length % 10 === 0) {
@@ -959,7 +958,6 @@ export default function CoachChatPage() {
     router.push('/chat');
   }
 
-  // Export functions
   function exportConversation(conversationId: string) {
     window.open(`/api/coach/conversations/export?coachId=${coachId}&conversationId=${conversationId}`, '_blank');
   }
@@ -984,9 +982,9 @@ export default function CoachChatPage() {
     <div className="flex h-screen bg-[#0a0a0a]">
       <ToastContainer notifications={notifications} onDismiss={dismissToast} accentColor={accentColor} />
       <MemoryModal isOpen={memoryModalOpen} onClose={() => setMemoryModalOpen(false)} accentColor={accentColor} />
-      <CoachUpgradeModal 
-        isOpen={showUpgradeModal}
-        onClose={() => setShowUpgradeModal(false)}
+      <Stage2UnlockModal 
+        isOpen={showUnlockModal}
+        onClose={() => setShowUnlockModal(false)}
         coachId={coachId}
         coachName={coach.name}
         accentColor={accentColor}
@@ -1000,6 +998,10 @@ export default function CoachChatPage() {
           <div className="flex items-center gap-2">
             <span style={{ color: accentColor }}>{coach.icon}</span>
             <span className="font-medium text-white">{coach.name}</span>
+            {/* Stage indicator */}
+            {tasteStatus && !tasteStatus.isFullAccess && (
+              <span className="text-xs px-1.5 py-0.5 rounded bg-gray-800 text-gray-400">Preview</span>
+            )}
           </div>
           <button onClick={() => setMobileSidebarOpen(false)} className="md:hidden text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
         </div>
@@ -1033,7 +1035,6 @@ export default function CoachChatPage() {
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {/* Search Results */}
           {showSearchResults ? (
             <div className="px-2">
               {isSearching ? (
@@ -1070,7 +1071,6 @@ export default function CoachChatPage() {
               )}
             </div>
           ) : (
-            /* Normal conversation list */
             conversationsLoading ? <ConversationListSkeleton /> : conversations.length === 0 ? (
               <div className="p-4 text-gray-500 text-sm text-center">No conversations yet</div>
             ) : (
@@ -1115,14 +1115,13 @@ export default function CoachChatPage() {
           </div>
           <div className="flex items-center gap-3">
             <SaveStatus status={saveStatus} accentColor={accentColor} />
-            {/* Free messages remaining indicator */}
-            {tasteStatus && !tasteStatus.isPaid && tasteStatus.messagesRemaining > 0 && (
+            {/* Free messages remaining indicator - encouraging tone */}
+            {tasteStatus && !tasteStatus.isFullAccess && tasteStatus.messagesRemaining > 0 && (
               <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                <MessageSquare className="w-3 h-3" />
-                <span>{tasteStatus.messagesRemaining} free message{tasteStatus.messagesRemaining !== 1 ? 's' : ''} left</span>
+                <Sparkles className="w-3 h-3" style={{ color: accentColor }} />
+                <span>{tasteStatus.messagesRemaining} preview message{tasteStatus.messagesRemaining !== 1 ? 's' : ''}</span>
               </div>
             )}
-            {/* Download current conversation */}
             {activeConversationId && messages.length > 0 && (
               <button
                 onClick={() => exportConversation(activeConversationId)}
@@ -1132,7 +1131,6 @@ export default function CoachChatPage() {
                 <Download className="w-4 h-4" />
               </button>
             )}
-            {/* Quick-switch to other coach */}
             <button
               onClick={() => {
                 if (activeConversationId && messages.length >= 6) extractMemories(activeConversationId, messages, false);
@@ -1169,7 +1167,6 @@ export default function CoachChatPage() {
                           className="w-24 h-24 rounded-full object-cover"
                           style={{ borderColor: accentColor, borderWidth: '3px', borderStyle: 'solid' }}
                           onError={(e) => {
-                            // If all image formats fail, hide img and show emoji fallback
                             const target = e.currentTarget;
                             target.style.display = 'none';
                             const fallback = target.parentElement?.querySelector('.emoji-fallback');
@@ -1177,7 +1174,6 @@ export default function CoachChatPage() {
                           }}
                         />
                       </picture>
-                      {/* Emoji fallback (hidden by default) */}
                       <div 
                         className="emoji-fallback w-24 h-24 rounded-full items-center justify-center text-5xl bg-[#1a1a1a] hidden"
                         style={{ borderColor: accentColor, borderWidth: '3px', borderStyle: 'solid' }}
@@ -1239,10 +1235,7 @@ export default function CoachChatPage() {
                       ]).map((prompt, i) => (
                         <button
                           key={i}
-                          onClick={() => {
-                            startNewConversation();
-                            // Note: We can't pre-fill input easily here, but clicking starts the convo
-                          }}
+                          onClick={() => startNewConversation()}
                           className="w-full text-left text-sm text-gray-400 hover:text-white bg-[#0a0a0a] hover:bg-[#1a1a1a] rounded-lg px-3 py-2.5 transition-colors border border-transparent hover:border-gray-700"
                         >
                           "{prompt}"
@@ -1251,37 +1244,44 @@ export default function CoachChatPage() {
                     </div>
                   </div>
 
-                  {/* Free taste indicator */}
-                  {tasteStatus && !tasteStatus.isPaid && (
+                  {/* Free taste indicator - encouraging */}
+                  {tasteStatus && !tasteStatus.isFullAccess && (
                     <div className="mb-4 text-center">
                       <p className="text-xs text-gray-500">
                         {tasteStatus.messagesRemaining > 0 
-                          ? `✨ ${tasteStatus.messagesRemaining} free message${tasteStatus.messagesRemaining !== 1 ? 's' : ''} to try ${coach.name}`
-                          : `You've used your free preview. Upgrade to continue.`
+                          ? `✨ ${tasteStatus.messagesRemaining} preview message${tasteStatus.messagesRemaining !== 1 ? 's' : ''} to experience ${coach.name}`
+                          : `Full access unlocks at Stage 2`
                         }
                       </p>
                     </div>
                   )}
 
                   {/* Start button */}
-                  <LoadingButton 
-                    onClick={startNewConversation} 
-                    loading={creatingConversation} 
-                    loadingText="Starting..." 
-                    disabled={tasteStatus ? !tasteStatus.hasAccess : false}
-                    className={`w-full py-3 rounded-xl ${tasteStatus && !tasteStatus.hasAccess ? 'bg-gray-700 text-gray-400' : `${accentBg} ${accentHover} text-white`} font-medium transition-colors`}
-                  >
-                    {tasteStatus && !tasteStatus.hasAccess ? 'Upgrade to Continue' : 'Start a conversation'}
-                  </LoadingButton>
-
-                  {/* Upgrade button if no access */}
-                  {tasteStatus && !tasteStatus.hasAccess && (
-                    <button
-                      onClick={() => setShowUpgradeModal(true)}
-                      className={`w-full py-3 mt-3 rounded-xl ${accentBg} ${accentHover} text-white font-medium transition-colors`}
+                  {tasteStatus && !tasteStatus.hasAccess ? (
+                    <>
+                      <button
+                        onClick={() => setShowUnlockModal(true)}
+                        className="w-full py-3 rounded-xl bg-gray-700 text-gray-300 font-medium transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Lock className="w-4 h-4" />
+                        Full Access at Stage 2
+                      </button>
+                      <button
+                        onClick={() => router.push('/chat')}
+                        className={`w-full py-3 mt-3 rounded-xl ${accentBg} ${accentHover} text-white font-medium transition-colors`}
+                      >
+                        Continue Stage 1 Practices
+                      </button>
+                    </>
+                  ) : (
+                    <LoadingButton 
+                      onClick={startNewConversation} 
+                      loading={creatingConversation} 
+                      loadingText="Starting..." 
+                      className={`w-full py-3 rounded-xl ${accentBg} ${accentHover} text-white font-medium transition-colors`}
                     >
-                      See What's Included
-                    </button>
+                      Start a conversation
+                    </LoadingButton>
                   )}
 
                   {/* Switch coach hint */}
@@ -1327,15 +1327,17 @@ export default function CoachChatPage() {
         {activeConversationId && (
           <div className="border-t border-gray-800 p-4">
             <div className="max-w-3xl mx-auto">
-              {/* Show upgrade prompt if no access */}
+              {/* Show encouraging message if no access */}
               {tasteStatus && !tasteStatus.hasAccess ? (
                 <div className="text-center py-2">
-                  <p className="text-gray-400 text-sm mb-3">You've used your free messages with {coach.name}</p>
+                  <p className="text-gray-400 text-sm mb-3">
+                    You've experienced a preview of {coach.name}. Full access unlocks at Stage 2.
+                  </p>
                   <button
-                    onClick={() => setShowUpgradeModal(true)}
+                    onClick={() => router.push('/chat')}
                     className={`px-6 py-2 rounded-xl ${accentBg} ${accentHover} text-white font-medium transition-colors`}
                   >
-                    Upgrade to Continue
+                    Continue Stage 1 Practices
                   </button>
                 </div>
               ) : (
