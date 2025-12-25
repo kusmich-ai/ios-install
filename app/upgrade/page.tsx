@@ -59,17 +59,17 @@ export default function UpgradePage() {
         <div className="relative max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#ff9e19]/10 border border-[#ff9e19]/20 rounded-full mb-8">
             <Zap className="w-4 h-4 text-[#ff9e19]" />
-            <span className="text-sm text-[#ff9e19] font-medium">For High-Performers Who Feel The Inner Knock</span>
+            <span className="text-sm text-[#ff9e19] font-medium">For High-Performers Who Want To Get Unstuck and Unstoppable</span>
           </div>
 
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.1] mb-6">
-            You Don't Need Another Course.<br/>
+            You Don't Need Another Book, Course, App, Seminar, or Tactic.<br/>
             <span className="text-[#ff9e19]">You Need an Installation.</span>
           </h1>
 
           <p className="text-xl sm:text-2xl text-gray-400 max-w-3xl mx-auto mb-8 leading-relaxed">
-            The IOS Installer rewires your nervous system and mental architecture from the ground up. 
-            Not learning. Not implementation. <span className="text-white font-medium">Complete neural transformation.</span>
+            The IOS Installer rewires your nervous system and mental architecture for thriving. 
+            Not learning. Not implementation. <span className="text-white font-medium">Complete neural upgrade.</span>
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
@@ -92,11 +92,11 @@ export default function UpgradePage() {
           <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-500">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-[#ff9e19]" />
-              <span>HRV Improvements in 14 Days</span>
+              <span>HRV Improvements in less than 14 Days</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-[#ff9e19]" />
-              <span>7-Stage Progressive System</span>
+              <span>7-Stage Progressive System For Guranteed Results</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-[#ff9e19]" />
@@ -114,12 +114,12 @@ export default function UpgradePage() {
       <section className="py-20 px-4 border-t border-[#1a1a1a]">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl sm:text-4xl font-bold text-center mb-6">
-            You've Achieved Everything.<br/>
+            You've Reached Incredible Heights.<br/>
             <span className="text-gray-400">So Why Does Something Still Feel... Off?</span>
           </h2>
           
           <p className="text-xl text-gray-400 text-center mb-12 max-w-3xl mx-auto">
-            That quiet whisper that there must be more. That's not a bug in your programming. 
+            You know there is even more. That's not a bug in your programming. 
             It's a signal. <span className="text-white">We call it "The Inner Knock."</span>
           </p>
 
@@ -127,8 +127,8 @@ export default function UpgradePage() {
             {[
               { icon: Brain, title: "You've read the books", desc: "Atomic Habits. Think and Grow Rich. The Power of Now. You know the concepts. But knowing isn't installing." },
               { icon: Target, title: "You've tried the apps", desc: "Calm. Headspace. Waking Up. They work... until they don't. Because they address symptoms, not the operating system." },
-              { icon: Clock, title: "You've done the therapy", desc: "Valuable for processing. But you're not broken. You're running outdated software on hardware that needs an upgrade." },
-              { icon: TrendingUp, title: "You've hustled harder", desc: "More discipline. More willpower. More pushing through. But willpower is a limited resource. The system needs to change." },
+              { icon: Clock, title: "You've done the "work", desc: "Biohacked. Personal Developement. Plant Based Medicine. But you're not broken. You're running outdated software on hardware that needs an upgrade." },
+              { icon: TrendingUp, title: "You've hustled harder", desc: "More discipline. More willpower. More pushing through. But willpower is a limited resource. The system needs an upgrade." },
             ].map((item, i) => (
               <div key={i} className="p-6 bg-[#111] border border-[#1a1a1a] rounded-xl">
                 <div className="w-12 h-12 bg-red-500/10 rounded-xl flex items-center justify-center mb-4">
@@ -154,14 +154,14 @@ export default function UpgradePage() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#ff9e19]/10 border border-[#ff9e19]/20 rounded-full mb-6">
-              <span className="text-sm text-[#ff9e19] font-medium">THE UNIQUE MECHANISM</span>
+              <span className="text-sm text-[#ff9e19] font-medium">THE SOLUTION</span>
             </div>
             <h2 className="text-3xl sm:text-4xl font-bold mb-6">
               Introducing The IOS™<br/>
               <span className="text-[#ff9e19]">Integrated Operating System</span>
             </h2>
             <p className="text-xl text-gray-400 max-w-3xl mx-auto">
-              Not a course you watch. Not a practice you try to remember. 
+              Not a course you watch. Not a practice you try to remember. Not a "hack". 
               A complete neural and mental architecture that <span className="text-white font-medium">installs itself through progressive, competence-based unlocking.</span>
             </p>
           </div>
@@ -174,14 +174,14 @@ export default function UpgradePage() {
               <h3 className="text-2xl font-bold mb-4">Neural Operating System (NOS)</h3>
               <p className="text-gray-400 mb-6">
                 Your nervous system is the hardware. Most people are running in constant fight-or-flight, 
-                burning out their system. The NOS kernel teaches your nervous system a new baseline of calm, coherent regulation.
+                burning out their system. The NOS kernel gives your nervous system a new baseline of coherent regulation (aka deep flow state).
               </p>
               <ul className="space-y-3">
                 {[
                   "Measurable HRV improvement within 14 days",
-                  "Vagal tone optimization through resonance breathing",
-                  "Somatic awareness and embodied presence",
-                  "Stress response rewiring at the physiological level"
+                  "Vagal tone optimization through resonance training",
+                  "Awareness and embodied presence",
+                  "Chaos response rewiring at the physiological level"
                 ].map((item, i) => (
                   <li key={i} className="flex items-start gap-3">
                     <CheckCircle2 className="w-5 h-5 text-[#ff9e19] flex-shrink-0 mt-0.5" />
@@ -202,7 +202,7 @@ export default function UpgradePage() {
               </p>
               <ul className="space-y-3">
                 {[
-                  "Identity installation through 21-day micro-action cycles",
+                  "Identity installation through micro-action cycles",
                   "Flow state training for sustained deep work",
                   "Cognitive reframing protocols (not positive thinking)",
                   "Meta-awareness: watching the mind, not being run by it"
@@ -218,8 +218,8 @@ export default function UpgradePage() {
 
           <div className="grid sm:grid-cols-3 gap-6">
             {[
-              { old: "Learning", new: "Installation", desc: "You don't learn the IOS. It installs itself through daily practice that becomes automatic." },
-              { old: "Information", new: "Transformation", desc: "Not more content to consume. A progressive system that changes who you are." },
+              { old: "Learning", new: "Installation", desc: "You don't learn the IOS. It installs itself through short daily rituals that becomes automatic." },
+              { old: "Information", new: "Transformation", desc: "Not more content to consume (and remember). A progressive system that changes who you are." },
               { old: "Willpower", new: "System Design", desc: "Stop relying on discipline. Let the architecture of the system do the heavy lifting." },
             ].map((item, i) => (
               <div key={i} className="p-6 bg-[#111] border border-[#1a1a1a] rounded-xl text-center">
@@ -241,22 +241,22 @@ export default function UpgradePage() {
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold mb-6">
               7 Progressive Stages.<br/>
-              <span className="text-gray-400">Each Unlocked By Competence, Not Time.</span>
+              <span className="text-gray-400">Each Unlocked By Competence, Not Just Time.</span>
             </h2>
             <p className="text-xl text-gray-400 max-w-3xl mx-auto">
-              You can't skip ahead. The system advances you when your nervous system demonstrates readiness. 
-              This isn't a 30-day challenge. It's a <span className="text-white">complete transformation architecture.</span>
+              You can't skip ahead. The system advances you when your IOS demonstrates readiness. 
+              This isn't a 30-day challenge. It's a <span className="text-white">complete upgrade architecture.</span>
             </p>
           </div>
 
           <div className="space-y-4">
             {[
-              { stage: 1, name: "Neural Priming", tagline: "Stabilize the signal", desc: "HRVB breathing + Awareness training. The foundation everything builds on.", free: true },
-              { stage: 2, name: "Embodied Awareness", tagline: "Bring awareness into motion", desc: "Somatic flow practices. Your body becomes a coherent extension of your awareness." },
-              { stage: 3, name: "Identity Mode", tagline: "Act from coherence", desc: "21-day identity installation cycles. Become who you're meant to be through daily micro-proof." },
-              { stage: 4, name: "Flow Mode", tagline: "Train sustained attention", desc: "Deep work protocols. 60-90 minute flow blocks become your new normal." },
-              { stage: 5, name: "Relational Coherence", tagline: "Stay open in connection", desc: "Co-regulation practices. Your nervous system stays open even in difficult relationships." },
-              { stage: 6, name: "Integration", tagline: "Convert insight to trait", desc: "Nightly debrief protocols. Daily lessons encode into permanent trait-level changes." },
+              { stage: 1, name: "Neural Priming", tagline: "Stabilize the signal", desc: "Resonance training + Awareness reps. The foundation everything builds on.", free: true },
+              { stage: 2, name: "Embodied Awareness", tagline: "Bring awareness into the whole self", desc: "Somatic flow practices. Your body becomes a coherent extension of your awareness." },
+              { stage: 3, name: "Identity Mode", tagline: "Act from coherence", desc: "21-day identity installation cycles. Become who you're meant to be." },
+              { stage: 4, name: "Flow Mode", tagline: "Train sustained flow states", desc: "Deep work protocols. Flow blocks become your new normal." },
+              { stage: 5, name: "Relational Coherence", tagline: "Stay open in connection", desc: "Co-regulation practices. Your nervous system stays open and connected." },
+              { stage: 6, name: "Integration", tagline: "Convert insights ans states to traits", desc: "Nightly debrief protocols. Daily lessons encode into permanent trait-level changes." },
               { stage: 7, name: "Accelerated Expansion", tagline: "Awareness engineers itself", desc: "Advanced protocols. Supplements, neurofeedback, and guided expansion (by application only)." },
             ].map((item, i) => (
               <div 
@@ -295,7 +295,7 @@ export default function UpgradePage() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold mb-6">
-              Real Results. <span className="text-[#ff9e19]">Real Transformations.</span>
+              Real Results. <span className="text-[#ff9e19]">Real Upgrades.</span>
             </h2>
           </div>
 
@@ -390,10 +390,10 @@ export default function UpgradePage() {
                 <span className="text-4xl font-bold text-[#ff9e19]">NK</span>
               </div>
               <h3 className="text-xl font-semibold mb-2">Nicholas Kusmich</h3>
-              <p className="text-[#ff9e19] text-sm mb-4">Mind & Systems Architect</p>
+              <p className="text-[#ff9e19] text-sm mb-4">IOS Systems Architect</p>
               <p className="text-gray-400 text-sm">
                 Former pastor turned marketing strategist who's generated over $1B in client revenue. 
-                Now dedicated to helping high-performers install the inner operating system that matches their outer ambitions.
+                Now dedicated to helping high-performers install the integrated operating system that matches their outer ambitions.
               </p>
             </div>
 
@@ -404,7 +404,7 @@ export default function UpgradePage() {
               <h3 className="text-xl font-semibold mb-2">Fehren Kusmich</h3>
               <p className="text-[#ff9e19] text-sm mb-4">Heart & Body Specialist</p>
               <p className="text-gray-400 text-sm">
-                Indonesian-born spiritual psychology practitioner who brings somatic wisdom and heart-centered guidance. 
+                Certified practitioner who brings somatic wisdom and heart-centered guidance. 
                 Her spacious approach creates safety for deep transformation.
               </p>
             </div>
@@ -414,7 +414,7 @@ export default function UpgradePage() {
                 <span className="text-4xl font-bold text-[#ff9e19]">CL</span>
               </div>
               <h3 className="text-xl font-semibold mb-2">Charok Lama</h3>
-              <p className="text-[#ff9e19] text-sm mb-4">Buddhist Teacher & Life Coach</p>
+              <p className="text-[#ff9e19] text-sm mb-4">Leading Buddhist Teacher & Life Coach</p>
               <p className="text-gray-400 text-sm">
                 Recognized reincarnation of a Himalayan yogi. Trained at Kopan and Sera Je Monasteries. 
                 Bridges ancient wisdom with modern psychology, fluent in CBT and traditional Buddhist practice.
@@ -645,9 +645,9 @@ export default function UpgradePage() {
               { q: "How is this different from meditation apps like Calm or Headspace?", a: "Those apps teach you a practice. The IOS installs a complete operating system. Meditation apps address symptoms (stress, sleep). We rewire the underlying architecture – your nervous system's baseline and your mind's default patterns. Plus, you don't just follow guided audio. You have AI coaches that know your journey and adapt to your specific needs." },
               { q: "How is this different from therapy?", a: "Therapy is valuable for processing past experiences and treating clinical conditions. The IOS isn't therapy – it's systems engineering. We're not treating dysfunction; we're installing an upgrade. Many of our users continue therapy alongside the IOS; they work together beautifully." },
               { q: "How is this different from other courses or programs?", a: "Courses give you information. The IOS gives you installation. You don't 'learn' the IOS – it installs itself through progressive practice. You can't skip ahead or binge-watch. The system unlocks when your nervous system demonstrates competence. This isn't another thing to add to your life; it becomes how you operate." },
-              { q: "How much time does this take?", a: "Stage 1 is about 10 minutes per day (5-7 min HRVB breathing + 2 min awareness practice). As you progress, practices stack – but they're designed to integrate into your existing routine, not add hours to your day. Most users find the ROI on time is massive because their performance in everything else improves." },
+              { q: "How much time does this take?", a: "Stage 1 was about 7 minutes per day. As you progress, rituals stack but they're designed to integrate into your existing routine, not add hours to your day. Most users find the ROI on time is massive because their performance in everything else improves." },
               { q: "What if I've tried everything and nothing works?", a: "That's exactly who this is for. You've tried adding more apps, more practices, more discipline. The IOS takes a different approach: we upgrade the underlying system. If everything else has been software patches on a faulty operating system, this is the kernel update." },
-              { q: "What are the AI coaches like?", a: "Nic AI and Fehren AI are trained on hundreds of real coaching conversations. They know the protocols intimately and adapt to your specific journey. They're not chatbots giving generic advice – they're coaches that hold you accountable, call out your patterns, and guide you through the stages. Available 24/7." },
+              { q: "What are the AI coaches like?", a: "Nic AI and Fehren AI are trained on hundreds of real coaching conversations. They know the protocols intimately and adapt to your specific journey. They're not chatbots giving generic advice - they're coaches that hold you accountable, call out your patterns, and guide you through the stages. Available 24/7." },
             ].map((item, i) => (
               <div key={i} className="border border-[#1a1a1a] rounded-xl overflow-hidden">
                 <button 
