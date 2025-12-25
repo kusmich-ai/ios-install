@@ -2,7 +2,7 @@
 import { createClient } from '@/lib/supabase-server';
 import { NextRequest, NextResponse } from 'next/server';
 
-const FREE_MESSAGE_LIMIT = 4;
+const FREE_MESSAGE_LIMIT = 3;
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,26 +18,28 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Missing coachId' }, { status: 400 });
     }
 
-    // Check if user has an active subscription
-    const { data: subscription } = await supabase
-      .from('subscriptions')
-      .select('status')
+    // Check user's current stage from progress
+    const { data: progress } = await supabase
+      .from('ios_user_progress')
+      .select('current_stage')
       .eq('user_id', user.id)
-      .in('status', ['active', 'trialing'])
       .single();
 
-    if (subscription) {
-      // Paid user - unlimited access
+    const currentStage = progress?.current_stage || 1;
+
+    // Stage 2+ users get full access
+    if (currentStage >= 2) {
       return NextResponse.json({ 
         hasAccess: true, 
-        isPaid: true,
+        isFullAccess: true,
+        currentStage,
         messagesUsed: 0,
         messagesRemaining: Infinity,
         limit: Infinity
       });
     }
 
-    // Free user - check taste count
+    // Stage 1 users - check taste count
     const { data: tasteRecord } = await supabase
       .from('coach_taste_usage')
       .select('message_count')
@@ -50,7 +52,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       hasAccess: messagesUsed < FREE_MESSAGE_LIMIT,
-      isPaid: false,
+      isFullAccess: false,
+      currentStage,
       messagesUsed,
       messagesRemaining,
       limit: FREE_MESSAGE_LIMIT
@@ -76,19 +79,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing coachId' }, { status: 400 });
     }
 
-    // Check if user has an active subscription (skip increment for paid users)
-    const { data: subscription } = await supabase
-      .from('subscriptions')
-      .select('status')
+    // Check user's current stage - Stage 2+ users don't need tracking
+    const { data: progress } = await supabase
+      .from('ios_user_progress')
+      .select('current_stage')
       .eq('user_id', user.id)
-      .in('status', ['active', 'trialing'])
       .single();
 
-    if (subscription) {
-      return NextResponse.json({ success: true, isPaid: true });
+    const currentStage = progress?.current_stage || 1;
+
+    if (currentStage >= 2) {
+      return NextResponse.json({ success: true, isFullAccess: true });
     }
 
-    // Upsert the taste count
+    // Stage 1 - increment taste count
     const { data: existing } = await supabase
       .from('coach_taste_usage')
       .select('message_count')
@@ -97,7 +101,6 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (existing) {
-      // Increment existing
       await supabase
         .from('coach_taste_usage')
         .update({ 
@@ -107,7 +110,6 @@ export async function POST(request: NextRequest) {
         .eq('user_id', user.id)
         .eq('coach_id', coachId);
     } else {
-      // Create new record
       await supabase
         .from('coach_taste_usage')
         .insert({
@@ -121,7 +123,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      isPaid: false,
+      isFullAccess: false,
       messagesUsed: newCount,
       messagesRemaining: Math.max(0, FREE_MESSAGE_LIMIT - newCount),
       limitReached: newCount >= FREE_MESSAGE_LIMIT
