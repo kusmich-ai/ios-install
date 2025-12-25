@@ -2,7 +2,7 @@
 import { createClient } from '@/lib/supabase-server';
 import { NextRequest, NextResponse } from 'next/server';
 
-const FREE_MESSAGE_LIMIT = 3;
+const FREE_MESSAGE_LIMIT = 4;
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
 
     // Check user's current stage from progress
     const { data: progress } = await supabase
-      .from('ios_user_progress')
+      .from('user_progress')
       .select('current_stage')
       .eq('user_id', user.id)
       .single();
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
 
     // Check user's current stage - Stage 2+ users don't need tracking
     const { data: progress } = await supabase
-      .from('ios_user_progress')
+      .from('user_progress')
       .select('current_stage')
       .eq('user_id', user.id)
       .single();
