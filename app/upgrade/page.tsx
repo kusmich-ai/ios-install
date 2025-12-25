@@ -135,7 +135,7 @@ export default function UpgradePage() {
             {[
               { icon: Brain, title: "You've read the books", desc: "Atomic Habits. Think and Grow Rich. The Power of Now. You know the concepts. But knowing isn't installing." },
               { icon: Target, title: "You've tried the apps", desc: "Calm. Headspace. Waking Up. They work... until they don't. Because they address symptoms, not the operating system." },
-              { icon: Clock, title: "You've done the "work"", desc: "Biohacked. Personal Development. Plant Based Medicine. But you're not broken. You're running outdated software on hardware that needs an upgrade." },
+              { icon: Clock, title: "You've done the \"work\"", desc: "Biohacked. Personal Development. Plant Based Medicine. But you're not broken. You're running outdated software on hardware that needs an upgrade." },
               { icon: TrendingUp, title: "You've hustled harder", desc: "More discipline. More willpower. More pushing through. But willpower is a limited resource. The system needs an upgrade." },
             ].map((item, i) => (
               <div key={i} className="p-6 bg-[#111] border border-[#1a1a1a] rounded-xl">
