@@ -1,13 +1,13 @@
 // /app/upgrade/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { 
   Zap, Brain, Shield, Sparkles, Star, Users, ChevronDown, 
   CheckCircle2, ArrowRight, MessageCircle, X, Send,
-  TrendingUp, Clock, Heart, Target, Waves, Lock, Loader2
+  TrendingUp, Clock, Heart, Target, Waves, Lock, Loader2, User
 } from 'lucide-react';
-import Link from 'next/link';
+import Image from 'next/image';
 import { useSubscriptionActions } from '@/hooks/useSubscription';
 
 type PlanType = 'quarterly' | 'biannual' | 'annual' | 'quarterly_coaching' | 'biannual_coaching' | 'annual_coaching';
@@ -46,6 +46,14 @@ export default function UpgradePage() {
 
   const scrollToPrice = () => {
     document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // Dynamic button text based on selected track
+  const getButtonText = () => {
+    if (selectedTrack === 'coaching') {
+      return 'Upgrade To The Full IOS Installer + Live Coaching';
+    }
+    return 'Upgrade To The Full IOS Installer Now';
   };
 
   return (
@@ -96,7 +104,7 @@ export default function UpgradePage() {
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-[#ff9e19]" />
-              <span>7-Stage Progressive System For Guranteed Results</span>
+              <span>7-Stage Progressive System For Guaranteed Results</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-[#ff9e19]" />
@@ -127,7 +135,7 @@ export default function UpgradePage() {
             {[
               { icon: Brain, title: "You've read the books", desc: "Atomic Habits. Think and Grow Rich. The Power of Now. You know the concepts. But knowing isn't installing." },
               { icon: Target, title: "You've tried the apps", desc: "Calm. Headspace. Waking Up. They work... until they don't. Because they address symptoms, not the operating system." },
-              { icon: Clock, title: "You've done the "work", desc: "Biohacked. Personal Developement. Plant Based Medicine. But you're not broken. You're running outdated software on hardware that needs an upgrade." },
+              { icon: Clock, title: "You've done the "work"", desc: "Biohacked. Personal Development. Plant Based Medicine. But you're not broken. You're running outdated software on hardware that needs an upgrade." },
               { icon: TrendingUp, title: "You've hustled harder", desc: "More discipline. More willpower. More pushing through. But willpower is a limited resource. The system needs an upgrade." },
             ].map((item, i) => (
               <div key={i} className="p-6 bg-[#111] border border-[#1a1a1a] rounded-xl">
@@ -256,7 +264,7 @@ export default function UpgradePage() {
               { stage: 3, name: "Identity Mode", tagline: "Act from coherence", desc: "21-day identity installation cycles. Become who you're meant to be." },
               { stage: 4, name: "Flow Mode", tagline: "Train sustained flow states", desc: "Deep work protocols. Flow blocks become your new normal." },
               { stage: 5, name: "Relational Coherence", tagline: "Stay open in connection", desc: "Co-regulation practices. Your nervous system stays open and connected." },
-              { stage: 6, name: "Integration", tagline: "Convert insights ans states to traits", desc: "Nightly debrief protocols. Daily lessons encode into permanent trait-level changes." },
+              { stage: 6, name: "Integration", tagline: "Convert insights and states to traits", desc: "Nightly debrief protocols. Daily lessons encode into permanent trait-level changes." },
               { stage: 7, name: "Accelerated Expansion", tagline: "Awareness engineers itself", desc: "Advanced protocols. Supplements, neurofeedback, and guided expansion (by application only)." },
             ].map((item, i) => (
               <div 
@@ -379,15 +387,22 @@ export default function UpgradePage() {
 
       {/* ===== YOUR GUIDES ===== */}
       <section className="py-20 px-4 border-t border-[#1a1a1a]">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold mb-6">Your Guides On This Journey</h2>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {/* Nicholas */}
             <div className="text-center">
-              <div className="w-32 h-32 bg-[#1a1a1a] rounded-full mx-auto mb-6 flex items-center justify-center">
-                <span className="text-4xl font-bold text-[#ff9e19]">NK</span>
+              <div className="w-32 h-32 rounded-full mx-auto mb-6 overflow-hidden bg-[#1a1a1a]">
+                <Image
+                  src="/coaches/nic.webp"
+                  alt="Nicholas Kusmich"
+                  width={128}
+                  height={128}
+                  className="w-full h-full object-cover"
+                />
               </div>
               <h3 className="text-xl font-semibold mb-2">Nicholas Kusmich</h3>
               <p className="text-[#ff9e19] text-sm mb-4">IOS Systems Architect</p>
@@ -397,9 +412,16 @@ export default function UpgradePage() {
               </p>
             </div>
 
+            {/* Fehren */}
             <div className="text-center">
-              <div className="w-32 h-32 bg-[#1a1a1a] rounded-full mx-auto mb-6 flex items-center justify-center">
-                <span className="text-4xl font-bold text-[#ff9e19]">FK</span>
+              <div className="w-32 h-32 rounded-full mx-auto mb-6 overflow-hidden bg-[#1a1a1a]">
+                <Image
+                  src="/coaches/fehren.webp"
+                  alt="Fehren Kusmich"
+                  width={128}
+                  height={128}
+                  className="w-full h-full object-cover"
+                />
               </div>
               <h3 className="text-xl font-semibold mb-2">Fehren Kusmich</h3>
               <p className="text-[#ff9e19] text-sm mb-4">Heart & Body Specialist</p>
@@ -409,15 +431,35 @@ export default function UpgradePage() {
               </p>
             </div>
 
+            {/* Charok */}
             <div className="text-center">
-              <div className="w-32 h-32 bg-[#1a1a1a] rounded-full mx-auto mb-6 flex items-center justify-center">
-                <span className="text-4xl font-bold text-[#ff9e19]">CL</span>
+              <div className="w-32 h-32 rounded-full mx-auto mb-6 overflow-hidden bg-[#1a1a1a]">
+                <Image
+                  src="/coaches/charok.jpg"
+                  alt="Charok Lama"
+                  width={128}
+                  height={128}
+                  className="w-full h-full object-cover"
+                />
               </div>
               <h3 className="text-xl font-semibold mb-2">Charok Lama</h3>
               <p className="text-[#ff9e19] text-sm mb-4">Leading Buddhist Teacher & Life Coach</p>
               <p className="text-gray-400 text-sm">
                 Recognized reincarnation of a Himalayan yogi. Trained at Kopan and Sera Je Monasteries. 
                 Bridges ancient wisdom with modern psychology, fluent in CBT and traditional Buddhist practice.
+              </p>
+            </div>
+
+            {/* Guest Experts */}
+            <div className="text-center">
+              <div className="w-32 h-32 rounded-full mx-auto mb-6 overflow-hidden bg-[#1a1a1a] flex items-center justify-center">
+                <User className="w-16 h-16 text-gray-600" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Guest Experts</h3>
+              <p className="text-[#ff9e19] text-sm mb-4">World's Leading Experts</p>
+              <p className="text-gray-400 text-sm">
+                Each month there will be a guest who is a world class leader and authority in their field 
+                bringing their expertise and perspective to relevant topic matters.
               </p>
             </div>
           </div>
@@ -602,8 +644,8 @@ export default function UpgradePage() {
             </div>
           )}
 
-          {/* CTA Buttons */}
-          <div className="mt-8 text-center space-y-4">
+          {/* CTA Button */}
+          <div className="mt-8 text-center">
             <button 
               onClick={handleCheckout}
               disabled={checkoutLoading}
@@ -617,20 +659,12 @@ export default function UpgradePage() {
               ) : (
                 <>
                   <Zap className="w-5 h-5" />
-                  {selectedTrack === 'installer' 
-                    ? 'Install the IOS and Unlock The Full System' 
-                    : 'Install the IOS + Unlock Live Coaching'}
+                  {getButtonText()}
                 </>
               )}
             </button>
             
-            <div>
-              <Link href="/chat" className="text-[#ff9e19] hover:underline">
-                Or start with free Stage 1 first →
-              </Link>
-            </div>
-            
-            <p className="text-gray-600 text-xs">Auto-renews at same rate until cancelled</p>
+            <p className="mt-4 text-gray-600 text-xs">Auto-renews at same rate until cancelled</p>
           </div>
         </div>
       </section>
@@ -685,7 +719,7 @@ export default function UpgradePage() {
               className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#ff9e19] hover:bg-[#ffb04d] text-black font-bold rounded-xl transition-all text-lg"
             >
               <Zap className="w-5 h-5" />
-              Start Installing The IOS
+              Upgrade To The Full IOS Installer
             </button>
             <button 
               onClick={() => setShowChat(true)}
