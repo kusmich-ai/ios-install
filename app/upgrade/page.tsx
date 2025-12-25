@@ -8,7 +8,7 @@ import {
   TrendingUp, Clock, Heart, Target, Waves, Lock, Loader2, User
 } from 'lucide-react';
 import Image from 'next/image';
-import { useSubscriptionActions } from '@/hooks/useSubscription';
+import { useSubscriptionActions } from '@/app/hooks/useSubscription';
 
 type PlanType = 'quarterly' | 'biannual' | 'annual' | 'quarterly_coaching' | 'biannual_coaching' | 'annual_coaching';
 
