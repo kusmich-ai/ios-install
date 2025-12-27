@@ -4188,24 +4188,18 @@ This isn't judgment — it's data. The resistance is telling you something. Want
             IOS System Installer
           </div>
           <div className="flex items-center gap-2">
-            <a
               <Link 
   href="/coach/nic"
   className="flex items-center gap-1.5 px-3 py-1.5 bg-[#ff9e19]/10 hover:bg-[#ff9e19]/20 text-[#ff9e19] rounded-lg text-sm font-medium transition-colors border border-[#ff9e19]/30"
 >
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#ff9e19]/10 hover:bg-[#ff9e19]/20 text-[#ff9e19] rounded-lg text-sm font-medium transition-colors border border-[#ff9e19]/30"
-            >
               <span>⚡</span>
               <span className="hidden sm:inline">Coach with Nic</span>
               <span className="sm:hidden">Nic</span>
             </a>
-            <a
               <Link 
   href="/coach/fehren"
   className="flex items-center gap-1.5 px-3 py-1.5 bg-[#ff9e19]/10 hover:bg-[#ff9e19]/20 text-[#ff9e19] rounded-lg text-sm font-medium transition-colors border border-[#ff9e19]/30"
 >
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#7c9eb2]/10 hover:bg-[#7c9eb2]/20 text-[#7c9eb2] rounded-lg text-sm font-medium transition-colors border border-[#7c9eb2]/30"
-            >
               <span>💙</span>
               <span className="hidden sm:inline">Coach with Fehren</span>
               <span className="sm:hidden">Fehren</span>
