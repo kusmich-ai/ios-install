@@ -9,6 +9,7 @@ import { PaywallModal } from '@/components/PaywallModal';
 import FloatingActionButton from '@/components/FloatingActionButton';
 import MobileDashboard from '@/components/MobileDashboard';
 import { createClient } from '@/lib/supabase-client';
+import Link from 'next/link';
 
 // ============================================
 // TEMPLATE SYSTEM IMPORTS
@@ -4188,8 +4189,10 @@ This isn't judgment — it's data. The resistance is telling you something. Want
           </div>
           <div className="flex items-center gap-2">
             <a
-              Link href="/coach/nic"
-              rel="noopener noreferrer"
+              <Link 
+  href="/coach/nic"
+  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#ff9e19]/10 hover:bg-[#ff9e19]/20 text-[#ff9e19] rounded-lg text-sm font-medium transition-colors border border-[#ff9e19]/30"
+>
               className="flex items-center gap-1.5 px-3 py-1.5 bg-[#ff9e19]/10 hover:bg-[#ff9e19]/20 text-[#ff9e19] rounded-lg text-sm font-medium transition-colors border border-[#ff9e19]/30"
             >
               <span>⚡</span>
@@ -4197,8 +4200,10 @@ This isn't judgment — it's data. The resistance is telling you something. Want
               <span className="sm:hidden">Nic</span>
             </a>
             <a
-              Link href="/coach/fehren"
-              rel="noopener noreferrer"
+              <Link 
+  href="/coach/fehren"
+  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#ff9e19]/10 hover:bg-[#ff9e19]/20 text-[#ff9e19] rounded-lg text-sm font-medium transition-colors border border-[#ff9e19]/30"
+>
               className="flex items-center gap-1.5 px-3 py-1.5 bg-[#7c9eb2]/10 hover:bg-[#7c9eb2]/20 text-[#7c9eb2] rounded-lg text-sm font-medium transition-colors border border-[#7c9eb2]/30"
             >
               <span>💙</span>
