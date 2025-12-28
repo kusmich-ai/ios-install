@@ -170,9 +170,9 @@ export function useSubscription(): UseSubscriptionReturn {
   // NEW: Check if user can access a specific stage
   const canAccessStage = useCallback((stage: number): boolean => {
     if (stage <= FREE_STAGE_LIMIT) return true;
-    const isSubActive = isActive || isTrialing || 
-      (subscription?.cancel_at_period_end && daysUntilExpiry !== null && daysUntilExpiry > 0);
-    return isSubActive && stage <= access.currentStage;
+    const isSubActive = !!(isActive || isTrialing || 
+  (subscription?.cancel_at_period_end && daysUntilExpiry !== null && daysUntilExpiry > 0));
+return isSubActive && stage <= access.currentStage;
   }, [isActive, isTrialing, subscription?.cancel_at_period_end, daysUntilExpiry, access.currentStage]);
 
   // NEW: Trigger paywall with context
