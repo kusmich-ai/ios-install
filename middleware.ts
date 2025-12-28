@@ -275,7 +275,72 @@ export async function middleware(request: NextRequest) {
       console.error('Error checking chat access:', error)
     }
   }
+// ============================================
+// CHAT - Ensure all onboarding steps completed
+// ============================================
+if (path === '/chat' || path.startsWith('/chat/')) {
+  try {
+    // Check baseline first
+    const { data: baseline } = await supabase
+      .from('baseline_assessments')
+      .select('id')
+      .eq('user_id', session.user.id)
+      .maybeSingle()
 
+    if (!baseline) {
+      return NextResponse.redirect(new URL('/assessment', request.url))
+    }
+
+    // Check The Mirror
+    const { data: patternProfile } = await supabase
+      .from('pattern_profiles')
+      .select('id, skipped')
+      .eq('user_id', session.user.id)
+      .maybeSingle()
+
+    if (!patternProfile) {
+      return NextResponse.redirect(new URL('/mirror', request.url))
+    }
+
+    // ========== ADD THIS SECTION ==========
+    // Check subscription for Stage 2+ users
+    const { data: progress } = await supabase
+      .from('user_progress')
+      .select('current_stage')
+      .eq('user_id', session.user.id)
+      .maybeSingle()
+
+    const currentStage = progress?.current_stage || 1
+
+    if (currentStage > 1) {
+      const { data: subscription } = await supabase
+        .from('subscriptions')
+        .select('status, current_period_end, cancel_at_period_end')
+        .eq('user_id', session.user.id)
+        .maybeSingle()
+
+      const isSubscriptionActive = 
+        subscription?.status === 'active' || 
+        subscription?.status === 'trialing' ||
+        (subscription?.cancel_at_period_end && 
+         subscription?.current_period_end && 
+         new Date(subscription.current_period_end) > new Date())
+
+      if (!isSubscriptionActive) {
+        // Redirect to pricing with context
+        const pricingUrl = new URL('/pricing', request.url)
+        pricingUrl.searchParams.set('reason', 'subscription_required')
+        pricingUrl.searchParams.set('stage', currentStage.toString())
+        return NextResponse.redirect(pricingUrl)
+      }
+    }
+    // ========== END ADDITION ==========
+
+    // All checks passed - allow access to chat
+  } catch (error) {
+    console.error('Error checking chat access:', error)
+  }
+}
   // Allow access to current route
   return response
 }
