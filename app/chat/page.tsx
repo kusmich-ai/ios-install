@@ -27,6 +27,38 @@ export default async function ChatPage() {
 
     console.log('User found:', user.id);
 
+    // ========== SUBSCRIPTION CHECK FOR STAGE 2+ ==========
+    // Get user's current stage
+    const { data: progressData } = await supabase
+      .from('user_progress')
+      .select('current_stage')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    const currentStage = progressData?.current_stage || 1;
+
+    // If user is past Stage 1, verify they have active subscription
+    if (currentStage > 1) {
+      const { data: subscription } = await supabase
+        .from('subscriptions')
+        .select('status, current_period_end, cancel_at_period_end')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      const isSubscriptionActive = 
+        subscription?.status === 'active' || 
+        subscription?.status === 'trialing' ||
+        (subscription?.cancel_at_period_end && 
+         subscription?.current_period_end && 
+         new Date(subscription.current_period_end) > new Date());
+
+      if (!isSubscriptionActive) {
+        console.log('Subscription required for Stage 2+, redirecting to pricing');
+        redirect(`/pricing?reason=subscription_required&stage=${currentStage}`);
+      }
+    }
+    // ========== END SUBSCRIPTION CHECK ==========
+
     let baselineData = null;
     
     console.log('Loading baseline data...');
