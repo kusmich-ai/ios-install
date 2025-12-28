@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
       case 'customer.subscription.created':
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;
-        await handleSubscriptionUpdate(subscription);
+        await handleSubscriptionUpdate(subscription, stripe);
         break;
       }
       
@@ -104,12 +104,23 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session, stripe: 
   // Fetch full subscription details
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
 
+  // Extract plan_type from metadata or infer from price ID
+  let planType = subscription.metadata?.plan_type || null;
+  let interval = subscription.metadata?.interval || null;
+  
+  const priceId = subscription.items.data[0]?.price.id;
+  if (!planType && priceId) {
+    planType = priceId.includes('coaching') ? 'ios_coaching' : 'ios_installer';
+  }
+
   const { error } = await supabase.from('subscriptions').upsert({
     user_id: userId,
     stripe_customer_id: session.customer as string,
     stripe_subscription_id: subscriptionId,
     status: subscription.status,
-    plan_id: subscription.items.data[0]?.price.id,
+    plan_id: priceId,
+    plan_type: planType,
+    interval: interval,
     current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
     current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
     cancel_at_period_end: subscription.cancel_at_period_end,
@@ -135,7 +146,7 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session, stripe: 
   console.log(`[Stripe Webhook] Subscription activated for user: ${userId}`);
 }
 
-async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
+async function handleSubscriptionUpdate(subscription: Stripe.Subscription, stripe: Stripe) {
   // Try to get user_id from subscription metadata
   let userId = subscription.metadata?.user_id;
   
@@ -150,8 +161,49 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
     userId = existingSub?.user_id;
   }
 
+  // If still no user_id, try to find user by customer email (for manual/gifted subscriptions)
+  if (!userId && subscription.customer) {
+    try {
+      const customer = await stripe.customers.retrieve(subscription.customer as string);
+      
+      if (customer && !customer.deleted && 'email' in customer && customer.email) {
+        const customerEmail = customer.email.toLowerCase();
+        console.log(`[Stripe Webhook] Looking up user by email: ${customerEmail}`);
+        
+        // First try user_profiles table
+        const { data: profileUser } = await supabase
+          .from('user_profiles')
+          .select('id')
+          .ilike('email', customerEmail)
+          .single();
+        
+        if (profileUser) {
+          userId = profileUser.id;
+          console.log(`[Stripe Webhook] Found user by email in user_profiles: ${userId}`);
+        }
+        
+        // If not found in user_profiles, try auth.users via admin API
+        if (!userId) {
+          const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
+          
+          if (!listError && users) {
+            const matchedUser = users.find(u => u.email?.toLowerCase() === customerEmail);
+            if (matchedUser) {
+              userId = matchedUser.id;
+              console.log(`[Stripe Webhook] Found user by email in auth.users: ${userId}`);
+            }
+          }
+        }
+      }
+    } catch (emailLookupError) {
+      console.error('[Stripe Webhook] Email lookup failed:', emailLookupError);
+    }
+  }
+
   if (!userId) {
     console.error('[Stripe Webhook] Cannot find user_id for subscription:', subscription.id);
+    console.error('[Stripe Webhook] Customer ID:', subscription.customer);
+    console.error('[Stripe Webhook] Metadata:', subscription.metadata);
     return;
   }
 
@@ -159,11 +211,23 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
 
   console.log(`[Stripe Webhook] Subscription update for user ${userId}: ${subscription.status}`);
 
+  // Extract plan_type from metadata or infer from price ID
+  let planType = subscription.metadata?.plan_type || null;
+  let interval = subscription.metadata?.interval || null;
+  
+  const priceId = subscription.items.data[0]?.price.id;
+  if (!planType && priceId) {
+    planType = priceId.includes('coaching') ? 'ios_coaching' : 'ios_installer';
+  }
+
   const { error } = await supabase.from('subscriptions').upsert({
     user_id: userId,
+    stripe_customer_id: subscription.customer as string,
     stripe_subscription_id: subscription.id,
     status: subscription.status,
-    plan_id: subscription.items.data[0]?.price.id,
+    plan_id: priceId,
+    plan_type: planType,
+    interval: interval,
     current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
     current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
     cancel_at_period_end: subscription.cancel_at_period_end,
