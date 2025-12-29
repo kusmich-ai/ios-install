@@ -97,13 +97,13 @@ export default function AW5PrepPage() {
         {/* Header */}
         <div className="text-center mb-12">
           <p className="text-[#ff9e19] text-sm font-medium tracking-widest uppercase mb-2">
-            Neural Priming
+            Awaken with 5
           </p>
           <h1 className="text-white text-2xl md:text-3xl font-light">
             AW5 Core Prep Ritual
           </h1>
           <p className="text-gray-500 text-sm mt-2">
-            7 minute guided preparation
+            7 minute guided preparation protocol
           </p>
         </div>
 
