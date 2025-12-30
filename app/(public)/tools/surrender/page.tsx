@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 
 // ============================================
 // TYPES & CONSTANTS
@@ -49,7 +50,6 @@ const easeInOutQuad = (t: number): number => {
 // ============================================
 
 function createHoldTone(audioContext: AudioContext) {
-  // Lower tone for hold
   const oscillator = audioContext.createOscillator();
   const gainNode = audioContext.createGain();
   
@@ -68,7 +68,6 @@ function createHoldTone(audioContext: AudioContext) {
 }
 
 function createReleaseTone(audioContext: AudioContext) {
-  // Higher tone for release
   const oscillator = audioContext.createOscillator();
   const gainNode = audioContext.createGain();
   
@@ -186,6 +185,42 @@ function BreathingOrb({ orbScale, phase }: BreathingOrbProps) {
         </p>
       )}
     </div>
+  );
+}
+
+// ============================================
+// BACK BUTTON COMPONENT
+// ============================================
+
+function BackButton() {
+  return (
+    <Link 
+      href="/tools/awaken-with-5"
+      style={{
+        position: 'absolute',
+        top: '1.5rem',
+        left: '1.5rem',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.5rem',
+        color: 'rgba(245, 242, 236, 0.4)',
+        textDecoration: 'none',
+        fontSize: '0.85rem',
+        fontFamily: "'SF Pro Text', -apple-system, BlinkMacSystemFont, sans-serif",
+        transition: 'color 0.3s ease',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.color = COLORS.accent;
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.color = 'rgba(245, 242, 236, 0.4)';
+      }}
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M19 12H5M12 19l-7-7 7-7" />
+      </svg>
+      <span>Back to Guide</span>
+    </Link>
   );
 }
 
@@ -409,6 +444,9 @@ export default function SurrenderSimulationPage() {
     letterSpacing: '0.15em',
   };
 
+  // Show back button on instructions and complete screens only
+  const showBackButton = phase === 'instructions' || phase === 'complete';
+
   return (
     <div
       style={{
@@ -422,6 +460,9 @@ export default function SurrenderSimulationPage() {
         color: COLORS.textPrimary,
       }}
     >
+      {/* Back Button */}
+      {showBackButton && <BackButton />}
+
       {/* INSTRUCTIONS */}
       {phase === 'instructions' && (
         <div style={{ maxWidth: '420px', textAlign: 'center' }}>
@@ -682,7 +723,7 @@ export default function SurrenderSimulationPage() {
       )}
 
       {/* Footer */}
-      {(phase === 'instructions' || phase === 'complete') && (
+      {showBackButton && (
         <div style={{ position: 'absolute', bottom: '2rem', textAlign: 'center' }}>
           <p
             style={{
@@ -693,7 +734,7 @@ export default function SurrenderSimulationPage() {
           >
             Part of the{' '}
             <a
-              href="https://unbecoming.app"
+              href="https://awakenwith5.com"
               style={{
                 color: 'rgba(255, 158, 25, 0.6)',
                 textDecoration: 'none',
@@ -708,8 +749,9 @@ export default function SurrenderSimulationPage() {
                 e.currentTarget.style.color = 'rgba(255, 158, 25, 0.6)';
               }}
             >
-              IOS System
+              Awaken with 5
             </a>
+            {' '}experience
           </p>
         </div>
       )}
