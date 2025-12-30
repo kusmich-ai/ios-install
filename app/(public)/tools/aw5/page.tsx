@@ -2,19 +2,21 @@
 
 import Link from 'next/link';
 
-// Colors
+// Colors - matching awakenwith5.com light aesthetic
 const COLORS = {
-  background: "#000000",
-  textPrimary: "#F5F2EC",
-  textDim: "rgba(245, 242, 236, 0.5)",
-  textMuted: "rgba(245, 242, 236, 0.35)",
-  accent: "#ff9e19",
-  accentDim: "rgba(255, 158, 25, 0.15)",
-  cardBg: "rgba(255, 255, 255, 0.03)",
-  cardBorder: "rgba(255, 255, 255, 0.08)",
+  background: "#FAF9F7",
+  backgroundAlt: "#F5F3F0",
+  textPrimary: "#1a1a1a",
+  textSecondary: "#4a4a4a",
+  textMuted: "#7a7a7a",
+  accent: "#c9a227", // warm gold
+  accentHover: "#b8922a",
+  cardBg: "#FFFFFF",
+  cardBorder: "rgba(0, 0, 0, 0.08)",
+  divider: "rgba(0, 0, 0, 0.06)",
 };
 
-// Tool Card Component
+// Tool Card Component - More prominent with button
 function ToolCard({ 
   icon, 
   title, 
@@ -31,78 +33,90 @@ function ToolCard({
   href: string;
 }) {
   return (
-    <Link href={href} style={{ textDecoration: 'none' }}>
-      <div
-        style={{
-          backgroundColor: COLORS.cardBg,
-          border: `1px solid ${COLORS.cardBorder}`,
-          borderRadius: '12px',
-          padding: '1.5rem',
-          cursor: 'pointer',
-          transition: 'all 0.3s ease',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = 'rgba(255, 158, 25, 0.3)';
-          e.currentTarget.style.backgroundColor = 'rgba(255, 158, 25, 0.05)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = COLORS.cardBorder;
-          e.currentTarget.style.backgroundColor = COLORS.cardBg;
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <span style={{ fontSize: '1.5rem' }}>{icon}</span>
-            <h3 style={{ 
-              fontSize: '1.1rem', 
-              fontWeight: 400, 
-              color: COLORS.textPrimary,
-              margin: 0,
-              fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif",
-            }}>
-              {title}
-            </h3>
-          </div>
-          <span style={{ 
-            fontSize: '0.8rem', 
-            color: COLORS.accent,
-            fontFamily: "'SF Pro Text', -apple-system, BlinkMacSystemFont, sans-serif",
+    <div
+      style={{
+        backgroundColor: COLORS.cardBg,
+        border: `1px solid ${COLORS.cardBorder}`,
+        borderRadius: '16px',
+        padding: '2rem',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <span style={{ fontSize: '1.75rem' }}>{icon}</span>
+          <h3 style={{ 
+            fontSize: '1.25rem', 
+            fontWeight: 500, 
+            color: COLORS.textPrimary,
+            margin: 0,
+            fontFamily: "'Cormorant Garamond', Georgia, serif",
           }}>
-            {duration}
-          </span>
+            {title}
+          </h3>
         </div>
-        <p style={{ 
-          fontSize: '0.75rem', 
-          color: COLORS.textMuted, 
-          margin: '0 0 0.75rem 0',
-          fontFamily: "'SF Pro Text', -apple-system, BlinkMacSystemFont, sans-serif",
-        }}>
-          {frequency}
-        </p>
-        <p style={{ 
+        <span style={{ 
           fontSize: '0.85rem', 
-          color: COLORS.textDim, 
-          margin: '0 0 1rem 0',
-          lineHeight: 1.5,
-          fontFamily: "'SF Pro Text', -apple-system, BlinkMacSystemFont, sans-serif",
-        }}>
-          {description}
-        </p>
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: '0.5rem',
           color: COLORS.accent,
-          fontSize: '0.85rem',
-          fontFamily: "'SF Pro Text', -apple-system, BlinkMacSystemFont, sans-serif",
+          fontWeight: 500,
+          fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
         }}>
-          <span>Begin</span>
+          {duration}
+        </span>
+      </div>
+      
+      <p style={{ 
+        fontSize: '0.8rem', 
+        color: COLORS.textMuted, 
+        margin: '0 0 1rem 0',
+        fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
+      }}>
+        {frequency}
+      </p>
+      
+      <p style={{ 
+        fontSize: '0.95rem', 
+        color: COLORS.textSecondary, 
+        margin: '0 0 1.5rem 0',
+        lineHeight: 1.6,
+        fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
+      }}>
+        {description}
+      </p>
+      
+      <Link href={href} style={{ textDecoration: 'none' }}>
+        <button
+          style={{
+            padding: '0.875rem 1.75rem',
+            fontSize: '0.9rem',
+            fontWeight: 500,
+            backgroundColor: COLORS.accent,
+            color: '#fff',
+            border: 'none',
+            borderRadius: '100px',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = COLORS.accentHover;
+            e.currentTarget.style.transform = 'translateY(-1px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = COLORS.accent;
+            e.currentTarget.style.transform = 'translateY(0)';
+          }}
+        >
+          Begin Practice
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M5 12h14M12 5l7 7-7 7" />
           </svg>
-        </div>
-      </div>
-    </Link>
+        </button>
+      </Link>
+    </div>
   );
 }
 
@@ -123,10 +137,11 @@ function PillarCard({
       style={{
         backgroundColor: COLORS.cardBg,
         border: `1px solid ${COLORS.cardBorder}`,
-        borderRadius: '12px',
-        padding: '1.5rem',
+        borderRadius: '16px',
+        padding: '1.75rem',
         flex: 1,
         minWidth: '280px',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
       }}
     >
       <div style={{ 
@@ -134,35 +149,36 @@ function PillarCard({
         color: COLORS.accent, 
         letterSpacing: '0.15em',
         marginBottom: '0.5rem',
-        fontFamily: "'SF Pro Text', -apple-system, BlinkMacSystemFont, sans-serif",
+        fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
+        fontWeight: 600,
       }}>
         PILLAR {number}
       </div>
       <h3 style={{ 
         fontSize: '1.1rem', 
-        fontWeight: 400, 
+        fontWeight: 500, 
         color: COLORS.textPrimary,
         margin: '0 0 0.25rem 0',
-        fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif",
+        fontFamily: "'Cormorant Garamond', Georgia, serif",
       }}>
         {title}
       </h3>
       <p style={{ 
-        fontSize: '0.8rem', 
-        color: COLORS.textDim, 
+        fontSize: '0.85rem', 
+        color: COLORS.textMuted, 
         margin: '0 0 1rem 0',
         fontStyle: 'italic',
-        fontFamily: "'SF Pro Text', -apple-system, BlinkMacSystemFont, sans-serif",
+        fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
       }}>
         {subtitle}
       </p>
       <ul style={{ 
         margin: 0, 
-        paddingLeft: '1rem',
-        fontSize: '0.8rem',
-        color: COLORS.textDim,
-        lineHeight: 1.8,
-        fontFamily: "'SF Pro Text', -apple-system, BlinkMacSystemFont, sans-serif",
+        paddingLeft: '1.25rem',
+        fontSize: '0.85rem',
+        color: COLORS.textSecondary,
+        lineHeight: 1.9,
+        fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
       }}>
         {points.map((point, i) => (
           <li key={i}>{point}</li>
@@ -177,12 +193,12 @@ function SectionHeader({ title }: { title: string }) {
   return (
     <h2 style={{
       fontSize: '0.75rem',
-      fontWeight: 500,
+      fontWeight: 600,
       letterSpacing: '0.2em',
       color: COLORS.accent,
       textTransform: 'uppercase',
       marginBottom: '1.5rem',
-      fontFamily: "'SF Pro Text', -apple-system, BlinkMacSystemFont, sans-serif",
+      fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
     }}>
       {title}
     </h2>
@@ -191,38 +207,33 @@ function SectionHeader({ title }: { title: string }) {
 
 // Main Page Component
 export default function AwakenWith5Page() {
-  const fontHeading = {
-    fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    fontWeight: 300 as const,
-  };
-
-  const fontBody = {
-    fontFamily: "'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    fontWeight: 400 as const,
-  };
-
   return (
     <div
       style={{
         minHeight: '100vh',
         backgroundColor: COLORS.background,
         color: COLORS.textPrimary,
-        ...fontBody,
+        fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
       }}
     >
+      {/* Google Fonts */}
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap');
+      `}</style>
+
       {/* Hero Section */}
       <header
         style={{
           padding: '4rem 1.5rem 3rem',
           textAlign: 'center',
-          maxWidth: '720px',
+          maxWidth: '760px',
           margin: '0 auto',
         }}
       >
         <p
           style={{
-            fontSize: '0.7rem',
-            fontWeight: 500,
+            fontSize: '0.75rem',
+            fontWeight: 600,
             letterSpacing: '0.2em',
             color: COLORS.accent,
             textTransform: 'uppercase',
@@ -233,31 +244,31 @@ export default function AwakenWith5Page() {
         </p>
         <h1
           style={{
-            ...fontHeading,
-            fontSize: 'clamp(2rem, 6vw, 2.75rem)',
-            marginBottom: '2rem',
-            letterSpacing: '0.02em',
+            fontFamily: "'Cormorant Garamond', Georgia, serif",
+            fontSize: 'clamp(2.25rem, 6vw, 3rem)',
+            fontWeight: 500,
+            marginBottom: '2.5rem',
+            letterSpacing: '-0.01em',
+            lineHeight: 1.2,
           }}
         >
           Preparation Guide
         </h1>
         <p
           style={{
-            fontSize: 'clamp(1rem, 3vw, 1.125rem)',
-            color: COLORS.textDim,
-            lineHeight: 1.7,
-            fontStyle: 'italic',
-            maxWidth: '540px',
+            fontSize: 'clamp(1.05rem, 3vw, 1.2rem)',
+            color: COLORS.textSecondary,
+            lineHeight: 1.8,
+            maxWidth: '600px',
             margin: '0 auto',
           }}
         >
-          "5-MeO doesn't require you to learn anything.<br />
-          It requires you to let go of everything you think you are."
+          5-MeO through our Awaken with 5 experience doesn't require you to "learn" anything. It requires you to let go of everything you think you are.
         </p>
       </header>
 
       {/* Main Content */}
-      <main style={{ maxWidth: '900px', margin: '0 auto', padding: '0 1.5rem 4rem' }}>
+      <main style={{ maxWidth: '940px', margin: '0 auto', padding: '0 1.5rem 4rem' }}>
         
         {/* Purpose Section */}
         <section style={{ marginBottom: '4rem' }}>
@@ -275,24 +286,26 @@ export default function AwakenWith5Page() {
               style={{
                 backgroundColor: COLORS.cardBg,
                 border: `1px solid ${COLORS.cardBorder}`,
-                borderRadius: '12px',
-                padding: '1.5rem',
+                borderRadius: '16px',
+                padding: '1.75rem',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
               }}
             >
               <h3 style={{ 
-                fontSize: '0.9rem', 
-                fontWeight: 400, 
+                fontSize: '1rem', 
+                fontWeight: 500, 
                 color: COLORS.textMuted,
                 margin: '0 0 1rem 0',
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
               }}>
-                Preparation is <span style={{ color: 'rgba(255,100,100,0.7)' }}>not</span> about:
+                Preparation is <span style={{ color: '#c45c5c' }}>not</span> about:
               </h3>
               <ul style={{ 
                 margin: 0, 
                 paddingLeft: '1.25rem',
-                fontSize: '0.9rem',
-                color: COLORS.textDim,
-                lineHeight: 2,
+                fontSize: '0.95rem',
+                color: COLORS.textSecondary,
+                lineHeight: 2.1,
               }}>
                 <li>Trying to "achieve" anything</li>
                 <li>Fixing yourself</li>
@@ -304,26 +317,27 @@ export default function AwakenWith5Page() {
             {/* Is About */}
             <div
               style={{
-                backgroundColor: 'rgba(255, 158, 25, 0.05)',
-                border: `1px solid rgba(255, 158, 25, 0.15)`,
-                borderRadius: '12px',
-                padding: '1.5rem',
+                backgroundColor: 'rgba(201, 162, 39, 0.06)',
+                border: `1px solid rgba(201, 162, 39, 0.2)`,
+                borderRadius: '16px',
+                padding: '1.75rem',
               }}
             >
               <h3 style={{ 
-                fontSize: '0.9rem', 
-                fontWeight: 400, 
-                color: COLORS.textDim,
+                fontSize: '1rem', 
+                fontWeight: 500, 
+                color: COLORS.textSecondary,
                 margin: '0 0 1rem 0',
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
               }}>
                 Preparation <span style={{ color: COLORS.accent }}>is</span> about:
               </h3>
               <ul style={{ 
                 margin: 0, 
                 paddingLeft: '1.25rem',
-                fontSize: '0.9rem',
-                color: COLORS.textDim,
-                lineHeight: 2,
+                fontSize: '0.95rem',
+                color: COLORS.textSecondary,
+                lineHeight: 2.1,
               }}>
                 <li>Tuning your nervous system into safety & openness</li>
                 <li>Reducing internal friction</li>
@@ -334,12 +348,16 @@ export default function AwakenWith5Page() {
           </div>
 
           <p style={{ 
-            marginTop: '1.5rem', 
-            fontSize: '0.85rem', 
-            color: COLORS.textMuted,
+            marginTop: '1.75rem', 
+            fontSize: '0.95rem', 
+            color: COLORS.textSecondary,
             lineHeight: 1.7,
+            textAlign: 'center',
+            maxWidth: '700px',
+            marginLeft: 'auto',
+            marginRight: 'auto',
           }}>
-            Our protocol upgrades the NOS (Neural Operating System) so the MOS (Mental Operating System) doesn't panic when constructs dissolve.
+            Our Preparation protocol upgrades the NOS (Neural Operating System) so the MOS (Mental Operating System) doesn't panic when constructs dissolve. It's simple, easy to follow and allows you to have the best overall experience possible.
           </p>
         </section>
 
@@ -351,7 +369,7 @@ export default function AwakenWith5Page() {
             style={{
               display: 'flex',
               flexWrap: 'wrap',
-              gap: '1rem',
+              gap: '1.25rem',
             }}
           >
             <PillarCard
@@ -390,17 +408,35 @@ export default function AwakenWith5Page() {
           </div>
         </section>
 
-        {/* Your Preparation Tools */}
+        {/* Divider */}
+        <div style={{ 
+          height: '1px', 
+          backgroundColor: COLORS.divider, 
+          margin: '3rem 0',
+        }} />
+
+        {/* Your Preparation Tools - More prominent */}
         <section style={{ marginBottom: '4rem' }}>
-          <SectionHeader title="Your Preparation Tools" />
+          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+            <SectionHeader title="Your Preparation Tools" />
+            <p style={{ 
+              fontSize: '1.05rem', 
+              color: COLORS.textSecondary,
+              maxWidth: '500px',
+              margin: '0 auto',
+              lineHeight: 1.6,
+            }}>
+              Three guided practices to prepare your system for the experience.
+            </p>
+          </div>
           
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <ToolCard
               icon="☀️"
               title="Daily Core Ritual"
               duration="7 min"
               frequency="5-6 days per week for 4 weeks"
-              description="Guided audio combining Resonance Breathing, Open Monitoring, Awareness Recognition, and Somatic Slide."
+              description="Guided audio combining Resonance Breathing, Open Monitoring, Awareness Recognition, and Somatic Slide. This is your foundational daily practice."
               href="/tools/aw5-prep"
             />
             <ToolCard
@@ -408,7 +444,7 @@ export default function AwakenWith5Page() {
               title="Surrender Simulation"
               duration="~6 min"
               frequency="1-2 days per week for 4 weeks"
-              description="Progressive breath holds that train your body to remain open as intensity rises, without attempting to manage it."
+              description="Progressive breath holds that train your body to remain open as intensity rises, without attempting to manage it. Builds your surrender reflex."
               href="/tools/surrender-simulation"
             />
             <ToolCard
@@ -416,7 +452,7 @@ export default function AwakenWith5Page() {
               title="Identity Softening"
               duration="~5 min"
               frequency="1-2 days per week for 4 weeks"
-              description="Silent inquiry that loosens identity so recognition can happen effortlessly. Not about finding who you are — but noticing what remains."
+              description="Silent inquiry that loosens identity so recognition can happen effortlessly. Not about finding who you are — but noticing what remains when the story stops."
               href="/tools/identity-softening"
             />
           </div>
@@ -425,27 +461,29 @@ export default function AwakenWith5Page() {
           <div
             style={{
               marginTop: '1.5rem',
-              padding: '1.25rem',
+              padding: '1.5rem',
               backgroundColor: COLORS.cardBg,
               border: `1px solid ${COLORS.cardBorder}`,
-              borderRadius: '12px',
+              borderRadius: '16px',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
             }}
           >
             <p style={{ 
-              fontSize: '0.75rem', 
+              fontSize: '0.7rem', 
               color: COLORS.textMuted, 
               margin: '0 0 0.5rem 0',
-              letterSpacing: '0.1em',
+              letterSpacing: '0.15em',
               textTransform: 'uppercase',
+              fontWeight: 600,
             }}>
               Optional Add-on
             </p>
-            <p style={{ fontSize: '0.9rem', color: COLORS.textDim, margin: 0, lineHeight: 1.6 }}>
+            <p style={{ fontSize: '0.95rem', color: COLORS.textSecondary, margin: 0, lineHeight: 1.6 }}>
               <a 
                 href="https://pliability.com/" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                style={{ color: COLORS.accent, textDecoration: 'none' }}
+                style={{ color: COLORS.accent, textDecoration: 'none', fontWeight: 500 }}
               >
                 Pliability
               </a>
@@ -454,6 +492,13 @@ export default function AwakenWith5Page() {
           </div>
         </section>
 
+        {/* Divider */}
+        <div style={{ 
+          height: '1px', 
+          backgroundColor: COLORS.divider, 
+          margin: '3rem 0',
+        }} />
+
         {/* What to Avoid */}
         <section style={{ marginBottom: '4rem' }}>
           <SectionHeader title="What to Avoid" />
@@ -461,33 +506,34 @@ export default function AwakenWith5Page() {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-              gap: '1rem',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+              gap: '1.25rem',
             }}
           >
             {/* 7 Days */}
             <div
               style={{
-                backgroundColor: 'rgba(255, 100, 100, 0.05)',
-                border: '1px solid rgba(255, 100, 100, 0.15)',
-                borderRadius: '12px',
-                padding: '1.25rem',
+                backgroundColor: '#FEF2F2',
+                border: '1px solid #FECACA',
+                borderRadius: '16px',
+                padding: '1.5rem',
               }}
             >
               <h4 style={{ 
                 fontSize: '0.75rem', 
-                color: 'rgba(255, 130, 130, 0.9)',
+                color: '#B91C1C',
                 letterSpacing: '0.1em',
                 margin: '0 0 1rem 0',
                 textTransform: 'uppercase',
+                fontWeight: 600,
               }}>
                 7 Days Before
               </h4>
               <ul style={{ 
                 margin: 0, 
-                paddingLeft: '1rem',
-                fontSize: '0.85rem',
-                color: COLORS.textDim,
+                paddingLeft: '1.25rem',
+                fontSize: '0.9rem',
+                color: COLORS.textSecondary,
                 lineHeight: 2,
               }}>
                 <li>Alcohol</li>
@@ -495,9 +541,9 @@ export default function AwakenWith5Page() {
                 <li>Heavy stimulant use</li>
               </ul>
               <p style={{ 
-                fontSize: '0.75rem', 
+                fontSize: '0.8rem', 
                 color: COLORS.textMuted, 
-                marginTop: '0.75rem',
+                marginTop: '1rem',
                 marginBottom: 0,
                 fontStyle: 'italic',
               }}>
@@ -508,26 +554,27 @@ export default function AwakenWith5Page() {
             {/* 48 Hours */}
             <div
               style={{
-                backgroundColor: 'rgba(255, 180, 100, 0.05)',
-                border: '1px solid rgba(255, 180, 100, 0.15)',
-                borderRadius: '12px',
-                padding: '1.25rem',
+                backgroundColor: '#FFF7ED',
+                border: '1px solid #FED7AA',
+                borderRadius: '16px',
+                padding: '1.5rem',
               }}
             >
               <h4 style={{ 
                 fontSize: '0.75rem', 
-                color: 'rgba(255, 180, 100, 0.9)',
+                color: '#C2410C',
                 letterSpacing: '0.1em',
                 margin: '0 0 1rem 0',
                 textTransform: 'uppercase',
+                fontWeight: 600,
               }}>
                 48 Hours Before
               </h4>
               <ul style={{ 
                 margin: 0, 
-                paddingLeft: '1rem',
-                fontSize: '0.85rem',
-                color: COLORS.textDim,
+                paddingLeft: '1.25rem',
+                fontSize: '0.9rem',
+                color: COLORS.textSecondary,
                 lineHeight: 2,
               }}>
                 <li>Psychedelics</li>
@@ -535,9 +582,9 @@ export default function AwakenWith5Page() {
                 <li>Extreme cardio</li>
               </ul>
               <p style={{ 
-                fontSize: '0.75rem', 
+                fontSize: '0.8rem', 
                 color: COLORS.textMuted, 
-                marginTop: '0.75rem',
+                marginTop: '1rem',
                 marginBottom: 0,
                 fontStyle: 'italic',
               }}>
@@ -548,26 +595,27 @@ export default function AwakenWith5Page() {
             {/* 24 Hours */}
             <div
               style={{
-                backgroundColor: 'rgba(255, 220, 100, 0.05)',
-                border: '1px solid rgba(255, 220, 100, 0.15)',
-                borderRadius: '12px',
-                padding: '1.25rem',
+                backgroundColor: '#FEFCE8',
+                border: '1px solid #FEF08A',
+                borderRadius: '16px',
+                padding: '1.5rem',
               }}
             >
               <h4 style={{ 
                 fontSize: '0.75rem', 
-                color: 'rgba(255, 220, 100, 0.9)',
+                color: '#A16207',
                 letterSpacing: '0.1em',
                 margin: '0 0 1rem 0',
                 textTransform: 'uppercase',
+                fontWeight: 600,
               }}>
                 24 Hours Before
               </h4>
               <ul style={{ 
                 margin: 0, 
-                paddingLeft: '1rem',
-                fontSize: '0.85rem',
-                color: COLORS.textDim,
+                paddingLeft: '1.25rem',
+                fontSize: '0.9rem',
+                color: COLORS.textSecondary,
                 lineHeight: 2,
               }}>
                 <li>Porn / overstimulation</li>
@@ -576,9 +624,9 @@ export default function AwakenWith5Page() {
                 <li>Caffeine / stimulants</li>
               </ul>
               <p style={{ 
-                fontSize: '0.75rem', 
+                fontSize: '0.8rem', 
                 color: COLORS.textMuted, 
-                marginTop: '0.75rem',
+                marginTop: '1rem',
                 marginBottom: 0,
                 fontStyle: 'italic',
               }}>
@@ -596,17 +644,19 @@ export default function AwakenWith5Page() {
             style={{
               backgroundColor: COLORS.cardBg,
               border: `1px solid ${COLORS.cardBorder}`,
-              borderRadius: '12px',
-              padding: '1.5rem',
+              borderRadius: '16px',
+              padding: '2rem',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-              <span style={{ fontSize: '1.25rem' }}>🌙</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
+              <span style={{ fontSize: '1.5rem' }}>🌙</span>
               <h3 style={{ 
-                fontSize: '1rem', 
-                fontWeight: 400, 
+                fontSize: '1.25rem', 
+                fontWeight: 500, 
                 color: COLORS.textPrimary,
                 margin: 0,
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
               }}>
                 Evening Prep (10 minutes)
               </h3>
@@ -615,28 +665,28 @@ export default function AwakenWith5Page() {
             <ol style={{ 
               margin: '0 0 1.5rem 0', 
               paddingLeft: '1.5rem',
-              fontSize: '0.9rem',
-              color: COLORS.textDim,
-              lineHeight: 2,
+              fontSize: '0.95rem',
+              color: COLORS.textSecondary,
+              lineHeight: 2.1,
             }}>
               <li>Complete the Daily Core Ritual</li>
               <li>1 minute: Light gratitude + identity softening</li>
             </ol>
 
             <p style={{ 
-              fontSize: '0.85rem', 
-              color: COLORS.textMuted, 
+              fontSize: '0.9rem', 
+              color: COLORS.textPrimary, 
               margin: '0 0 0.75rem 0',
-              fontWeight: 500,
+              fontWeight: 600,
             }}>
               Then:
             </p>
             <ul style={{ 
               margin: 0, 
               paddingLeft: '1.5rem',
-              fontSize: '0.9rem',
-              color: COLORS.textDim,
-              lineHeight: 2,
+              fontSize: '0.95rem',
+              color: COLORS.textSecondary,
+              lineHeight: 2.1,
             }}>
               <li>Early bedtime</li>
               <li>Very light protein/carbs, no heavy meals</li>
@@ -646,9 +696,9 @@ export default function AwakenWith5Page() {
             </ul>
 
             <p style={{ 
-              marginTop: '1.25rem',
+              marginTop: '1.5rem',
               marginBottom: 0,
-              fontSize: '0.85rem', 
+              fontSize: '0.9rem', 
               color: COLORS.textMuted,
               fontStyle: 'italic',
             }}>
@@ -665,62 +715,64 @@ export default function AwakenWith5Page() {
             style={{
               backgroundColor: COLORS.cardBg,
               border: `1px solid ${COLORS.cardBorder}`,
-              borderRadius: '12px',
-              padding: '1.5rem',
+              borderRadius: '16px',
+              padding: '2rem',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
-              <span style={{ fontSize: '1.25rem' }}>☀️</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+              <span style={{ fontSize: '1.5rem' }}>☀️</span>
               <h3 style={{ 
-                fontSize: '1rem', 
-                fontWeight: 400, 
+                fontSize: '1.25rem', 
+                fontWeight: 500, 
                 color: COLORS.textPrimary,
                 margin: 0,
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
               }}>
                 The Day Has Arrived
               </h3>
             </div>
             
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               <div>
                 <p style={{ 
-                  fontSize: '0.9rem', 
+                  fontSize: '1rem', 
                   color: COLORS.textPrimary,
                   margin: '0 0 0.25rem 0',
                   fontWeight: 500,
                 }}>
                   1. Follow your normal routine
                 </p>
-                <p style={{ fontSize: '0.85rem', color: COLORS.textMuted, margin: 0 }}>
+                <p style={{ fontSize: '0.9rem', color: COLORS.textMuted, margin: 0 }}>
                   Don't be weird. Predictability = safety.
                 </p>
               </div>
               
               <div>
                 <p style={{ 
-                  fontSize: '0.9rem', 
+                  fontSize: '1rem', 
                   color: COLORS.textPrimary,
                   margin: '0 0 0.25rem 0',
                   fontWeight: 500,
                 }}>
                   2. Fast (or very light meal if needed)
                 </p>
-                <p style={{ fontSize: '0.85rem', color: COLORS.textMuted, margin: 0 }}>
+                <p style={{ fontSize: '0.9rem', color: COLORS.textMuted, margin: 0 }}>
                   We don't want your stomach full of food.
                 </p>
               </div>
               
               <div>
                 <p style={{ 
-                  fontSize: '0.9rem', 
+                  fontSize: '1rem', 
                   color: COLORS.textPrimary,
                   margin: '0 0 0.25rem 0',
                   fontWeight: 500,
                 }}>
                   3. "Allow Everything" mantra
                 </p>
-                <p style={{ fontSize: '0.85rem', color: COLORS.textMuted, margin: 0 }}>
-                  Repeat internally: "I am unconditionally open to allow any unfolding."
+                <p style={{ fontSize: '0.9rem', color: COLORS.textMuted, margin: 0 }}>
+                  Repeat internally throughout the morning.
                 </p>
               </div>
             </div>
@@ -728,20 +780,21 @@ export default function AwakenWith5Page() {
             {/* Mantra highlight */}
             <div
               style={{
-                marginTop: '1.5rem',
-                padding: '1.25rem',
-                backgroundColor: 'rgba(255, 158, 25, 0.08)',
-                border: '1px solid rgba(255, 158, 25, 0.2)',
-                borderRadius: '8px',
+                marginTop: '2rem',
+                padding: '1.5rem',
+                backgroundColor: 'rgba(201, 162, 39, 0.08)',
+                border: '1px solid rgba(201, 162, 39, 0.25)',
+                borderRadius: '12px',
                 textAlign: 'center',
               }}
             >
               <p style={{ 
-                fontSize: '1rem', 
-                color: COLORS.accent,
+                fontSize: '1.15rem', 
+                color: COLORS.textPrimary,
                 margin: 0,
                 fontStyle: 'italic',
                 lineHeight: 1.6,
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
               }}>
                 "I am unconditionally open to allow any unfolding."
               </p>
@@ -750,15 +803,20 @@ export default function AwakenWith5Page() {
         </section>
 
         {/* Footer */}
-        <footer style={{ textAlign: 'center', paddingTop: '2rem' }}>
-          <p style={{ fontSize: '0.75rem', color: COLORS.textMuted }}>
+        <footer style={{ 
+          textAlign: 'center', 
+          paddingTop: '2rem',
+          borderTop: `1px solid ${COLORS.divider}`,
+        }}>
+          <p style={{ fontSize: '0.8rem', color: COLORS.textMuted }}>
             Part of the{' '}
             <a
-              href="https://unbecoming.app"
-              style={{ color: 'rgba(255, 158, 25, 0.6)', textDecoration: 'none' }}
+              href="https://awakenwith5.com"
+              style={{ color: COLORS.accent, textDecoration: 'none', fontWeight: 500 }}
             >
-              IOS System
+              Awaken with 5
             </a>
+            {' '}experience
           </p>
         </footer>
       </main>
