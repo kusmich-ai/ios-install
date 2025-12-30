@@ -10,6 +10,7 @@ type Phase =
   | 'instructions'
   | 'opening'
   | 'warmup'
+  | 'leadExhale'
   | 'hold'
   | 'recovery'
   | 'message'
@@ -17,18 +18,40 @@ type Phase =
   | 'complete';
 
 const HOLD_DURATIONS = [10, 15, 20, 25, 30]; // seconds per round
-const WARMUP_DURATION = 120; // 2 minutes
+const WARMUP_DURATION = 60; // 1 minute
 const RECOVERY_DURATION = 30; // 30 seconds between holds
 const OPENING_DURATION = 12; // seconds
 const MESSAGE_DURATION = 10; // "Let this happen" visible duration
 const CLOSING_DURATION = 8; // How long closing text shows before complete
-const BREATH_CYCLE = 10; // 4s inhale + 6s exhale
+const LEAD_EXHALE_DURATION = 6; // 6 second exhale before hold
+
+// ============================================
+// LUXURY FONT STYLES
+// ============================================
+
+const fontStyles = {
+  heading: {
+    fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif",
+    fontWeight: 300,
+    letterSpacing: '0.02em',
+  },
+  body: {
+    fontFamily: "'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif",
+    fontWeight: 400,
+    letterSpacing: '0.01em',
+  },
+  label: {
+    fontFamily: "'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif",
+    fontWeight: 500,
+    letterSpacing: '0.15em',
+  },
+};
 
 // ============================================
 // AUDIO UTILITY - Web Audio API Bell Tone
 // ============================================
 
-function createBellTone(audioContext: AudioContext, frequency: number = 800, duration: number = 0.8) {
+function createBellTone(audioContext: AudioContext, frequency: number = 520, duration: number = 1.5) {
   const oscillator = audioContext.createOscillator();
   const gainNode = audioContext.createGain();
   
@@ -38,9 +61,9 @@ function createBellTone(audioContext: AudioContext, frequency: number = 800, dur
   oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
   oscillator.type = 'sine';
   
-  // Bell-like envelope: quick attack, longer decay
+  // Soft bell envelope
   gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-  gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.01);
+  gainNode.gain.linearRampToValueAtTime(0.15, audioContext.currentTime + 0.02);
   gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
   
   oscillator.start(audioContext.currentTime);
@@ -48,10 +71,83 @@ function createBellTone(audioContext: AudioContext, frequency: number = 800, dur
 }
 
 // ============================================
-// BREATHING ORB COMPONENT
+// MINIMAL BREATHING ORB COMPONENT
 // ============================================
 
-function BreathingOrb({ isActive }: { isActive: boolean }) {
+function BreathingOrb({ phase }: { phase: 'inhale' | 'exhale' | 'static' }) {
+  const [progress, setProgress] = useState(0);
+  
+  useEffect(() => {
+    if (phase === 'static') {
+      setProgress(0);
+      return;
+    }
+    
+    const duration = phase === 'inhale' ? 4000 : 6000;
+    const startTime = Date.now();
+    
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const p = Math.min(elapsed / duration, 1);
+      setProgress(p);
+    }, 16);
+    
+    return () => clearInterval(interval);
+  }, [phase]);
+  
+  // Scale: 1.0 at rest (exhaled), 1.35 at full inhale
+  let scale: number;
+  if (phase === 'inhale') {
+    scale = 1 + (progress * 0.35);
+  } else if (phase === 'exhale') {
+    scale = 1.35 - (progress * 0.35);
+  } else {
+    scale = 1;
+  }
+  
+  return (
+    <div className="flex flex-col items-center justify-center">
+      {/* Single clean orb */}
+      <div className="relative w-40 h-40 flex items-center justify-center">
+        {/* Subtle outer glow */}
+        <div 
+          className="absolute rounded-full transition-all duration-100 ease-out"
+          style={{ 
+            width: `${scale * 140}px`, 
+            height: `${scale * 140}px`,
+            background: 'radial-gradient(circle, rgba(255,158,25,0.08) 0%, transparent 70%)',
+          }}
+        />
+        {/* Main circle - single clean ring */}
+        <div 
+          className="absolute rounded-full transition-all duration-100 ease-out"
+          style={{ 
+            width: `${scale * 100}px`, 
+            height: `${scale * 100}px`,
+            border: '1px solid rgba(255,158,25,0.6)',
+            background: 'radial-gradient(circle, rgba(255,158,25,0.03) 0%, transparent 60%)',
+          }}
+        />
+      </div>
+      
+      {/* Breath cue - minimal styling */}
+      {phase !== 'static' && (
+        <p 
+          className="mt-10 text-gray-500 text-xs uppercase"
+          style={fontStyles.label}
+        >
+          {phase === 'inhale' ? 'Inhale' : 'Exhale'}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ============================================
+// CONTINUOUS BREATHING ORB (for warmup)
+// ============================================
+
+function ContinuousBreathingOrb({ isActive }: { isActive: boolean }) {
   const [breathPhase, setBreathPhase] = useState<'inhale' | 'exhale'>('inhale');
   const [progress, setProgress] = useState(0);
   
@@ -59,60 +155,55 @@ function BreathingOrb({ isActive }: { isActive: boolean }) {
     if (!isActive) return;
     
     const startTime = Date.now();
+    const BREATH_CYCLE = 10000; // 4s + 6s = 10s
     
     const interval = setInterval(() => {
-      const elapsed = (Date.now() - startTime) / 1000;
+      const elapsed = Date.now() - startTime;
       const cyclePosition = elapsed % BREATH_CYCLE;
       
-      if (cyclePosition < 4) {
+      if (cyclePosition < 4000) {
         setBreathPhase('inhale');
-        setProgress(cyclePosition / 4); // 0 to 1 over 4 seconds
+        setProgress(cyclePosition / 4000);
       } else {
         setBreathPhase('exhale');
-        setProgress((cyclePosition - 4) / 6); // 0 to 1 over 6 seconds
+        setProgress((cyclePosition - 4000) / 6000);
       }
-    }, 50);
+    }, 16);
     
     return () => clearInterval(interval);
   }, [isActive]);
   
-  // Calculate orb scale: 1.0 at rest, 1.4 at full inhale
+  // Scale: 1.0 at rest, 1.35 at full inhale
   const scale = breathPhase === 'inhale' 
-    ? 1 + (progress * 0.4)  // Expanding: 1.0 → 1.4
-    : 1.4 - (progress * 0.4); // Contracting: 1.4 → 1.0
+    ? 1 + (progress * 0.35)
+    : 1.35 - (progress * 0.35);
   
   return (
     <div className="flex flex-col items-center justify-center">
-      {/* Orb container */}
-      <div className="relative w-48 h-48 flex items-center justify-center">
-        {/* Outer glow */}
+      <div className="relative w-40 h-40 flex items-center justify-center">
         <div 
-          className="absolute rounded-full bg-[#ff9e19]/10 blur-xl transition-transform duration-300"
+          className="absolute rounded-full transition-all duration-75 ease-out"
           style={{ 
-            width: `${scale * 180}px`, 
-            height: `${scale * 180}px`,
+            width: `${scale * 140}px`, 
+            height: `${scale * 140}px`,
+            background: 'radial-gradient(circle, rgba(255,158,25,0.08) 0%, transparent 70%)',
           }}
         />
-        {/* Inner orb */}
         <div 
-          className="absolute rounded-full bg-gradient-to-br from-[#ff9e19]/30 to-[#ff9e19]/10 border border-[#ff9e19]/40 transition-transform duration-300"
+          className="absolute rounded-full transition-all duration-75 ease-out"
           style={{ 
-            width: `${scale * 120}px`, 
-            height: `${scale * 120}px`,
-          }}
-        />
-        {/* Core */}
-        <div 
-          className="absolute rounded-full bg-[#ff9e19]/20 transition-transform duration-300"
-          style={{ 
-            width: `${scale * 60}px`, 
-            height: `${scale * 60}px`,
+            width: `${scale * 100}px`, 
+            height: `${scale * 100}px`,
+            border: '1px solid rgba(255,158,25,0.6)',
+            background: 'radial-gradient(circle, rgba(255,158,25,0.03) 0%, transparent 60%)',
           }}
         />
       </div>
       
-      {/* Breath cue */}
-      <p className="text-gray-500 text-sm mt-8 tracking-widest uppercase">
+      <p 
+        className="mt-10 text-gray-500 text-xs uppercase"
+        style={fontStyles.label}
+      >
         {breathPhase === 'inhale' ? 'Inhale' : 'Exhale'}
       </p>
     </div>
@@ -123,11 +214,11 @@ function BreathingOrb({ isActive }: { isActive: boolean }) {
 // MAIN COMPONENT
 // ============================================
 
-export default function CO2SurrenderPage() {
+export default function SurrenderSimulationPage() {
   const [phase, setPhase] = useState<Phase>('instructions');
   const [currentRound, setCurrentRound] = useState(0);
-  const [showMessage, setShowMessage] = useState(false);
   const [messageOpacity, setMessageOpacity] = useState(1);
+  const [exhalePhase, setExhalePhase] = useState<'inhale' | 'exhale'>('inhale');
   const audioContextRef = useRef<AudioContext | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -145,7 +236,7 @@ export default function CO2SurrenderPage() {
     if (ctx.state === 'suspended') {
       ctx.resume();
     }
-    createBellTone(ctx, 600, 1.2); // Soft, lower frequency bell
+    createBellTone(ctx, 520, 1.5);
   }, [initAudio]);
 
   // Clear any running timer
@@ -166,18 +257,22 @@ export default function CO2SurrenderPage() {
           return 'warmup';
         
         case 'warmup':
-          // Start first hold
-          playTone();
+          // Start lead exhale for first hold
           setCurrentRound(1);
+          setExhalePhase('inhale');
+          return 'leadExhale';
+        
+        case 'leadExhale':
+          // End of lead exhale - start hold
+          playTone();
           return 'hold';
         
         case 'hold':
           // End of hold - play release tone
           playTone();
           
-          // After round 3, show message
+          // After round 3, show message (no additional tone)
           if (currentRound === 3) {
-            setShowMessage(true);
             setMessageOpacity(1);
             return 'message';
           }
@@ -191,15 +286,14 @@ export default function CO2SurrenderPage() {
           return 'recovery';
         
         case 'message':
-          // Message fades, continue to recovery
-          setShowMessage(false);
+          // Message done, continue to remainder of recovery
           return 'recovery';
         
         case 'recovery':
-          // Start next hold
-          playTone();
+          // Start lead exhale for next hold
           setCurrentRound(r => r + 1);
-          return 'hold';
+          setExhalePhase('inhale');
+          return 'leadExhale';
         
         case 'closing':
           return 'complete';
@@ -209,6 +303,21 @@ export default function CO2SurrenderPage() {
       }
     });
   }, [currentRound, playTone, clearTimer]);
+
+  // Handle lead exhale phase timing (inhale 4s, then exhale 6s)
+  useEffect(() => {
+    if (phase !== 'leadExhale') return;
+    
+    // Start with inhale
+    setExhalePhase('inhale');
+    
+    // After 4s, switch to exhale
+    const inhaleTimer = setTimeout(() => {
+      setExhalePhase('exhale');
+    }, 4000);
+    
+    return () => clearTimeout(inhaleTimer);
+  }, [phase]);
 
   // Timer management based on phase
   useEffect(() => {
@@ -223,11 +332,15 @@ export default function CO2SurrenderPage() {
       case 'warmup':
         duration = WARMUP_DURATION * 1000;
         break;
+      case 'leadExhale':
+        duration = LEAD_EXHALE_DURATION * 1000 + 4000; // 4s inhale + 6s exhale
+        break;
       case 'hold':
         duration = HOLD_DURATIONS[currentRound - 1] * 1000;
         break;
       case 'recovery':
-        duration = RECOVERY_DURATION * 1000;
+        // After round 3, recovery is only 20s (10s was message)
+        duration = (currentRound === 3 ? 20 : RECOVERY_DURATION) * 1000;
         break;
       case 'message':
         duration = MESSAGE_DURATION * 1000;
@@ -259,7 +372,6 @@ export default function CO2SurrenderPage() {
     clearTimer();
     setPhase('instructions');
     setCurrentRound(0);
-    setShowMessage(false);
     setMessageOpacity(1);
   };
 
@@ -268,34 +380,44 @@ export default function CO2SurrenderPage() {
   // ============================================
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center px-4">
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center px-6">
       
       {/* INSTRUCTIONS SCREEN */}
       {phase === 'instructions' && (
         <div className="max-w-md text-center">
-          <h1 className="text-white text-2xl md:text-3xl font-light mb-2">
-            CO₂ Surrender Simulation
-          </h1>
-          <p className="text-[#ff9e19] text-sm tracking-widest uppercase mb-8">
+          <p 
+            className="text-[#ff9e19] text-xs uppercase mb-3"
+            style={fontStyles.label}
+          >
             Awaken with 5
           </p>
+          <h1 
+            className="text-white text-2xl md:text-3xl mb-10"
+            style={fontStyles.heading}
+          >
+            Surrender Simulation
+          </h1>
           
-          <div className="text-gray-400 text-sm space-y-4 mb-12 text-left">
+          <div 
+            className="text-gray-400 text-sm space-y-4 mb-12 text-left leading-relaxed"
+            style={fontStyles.body}
+          >
             <p>
               This practice conditions your nervous system to surrender under rising intensity rather than fight or manage discomfort.
             </p>
             <p>
-              You'll begin with 2 minutes of slow breathing, followed by 5 progressive breath holds (10 to 30 seconds). A tone signals when to hold and when to release.
+              You'll begin with 1 minute of slow breathing, followed by 5 progressive breath holds (10 to 30 seconds). All holds are on the exhale with empty lungs. A tone signals when to hold and when to release.
             </p>
-            <p className="text-gray-500">
-              <strong className="text-gray-400">Duration:</strong> ~8 minutes<br />
-              <strong className="text-gray-400">Position:</strong> Seated, eyes closed preferred
+            <p className="text-gray-500 pt-2">
+              <span className="text-gray-400">Duration:</span> ~6 minutes<br />
+              <span className="text-gray-400">Position:</span> Seated comfortably. Follow prompts on screen.
             </p>
           </div>
           
           <button
             onClick={handleStart}
-            className="px-8 py-4 bg-[#ff9e19] text-black font-medium rounded-full hover:bg-[#ffb347] transition-colors"
+            className="px-10 py-4 bg-[#ff9e19] text-black rounded-full hover:bg-[#ffb347] transition-colors"
+            style={{ ...fontStyles.body, fontWeight: 500 }}
           >
             Begin Practice
           </button>
@@ -305,35 +427,59 @@ export default function CO2SurrenderPage() {
       {/* OPENING TEXT */}
       {phase === 'opening' && (
         <div className="max-w-sm text-center">
-          <p className="text-white text-xl md:text-2xl font-light leading-relaxed">
+          <p 
+            className="text-white text-xl md:text-2xl leading-relaxed"
+            style={fontStyles.heading}
+          >
             This is a surrender practice.
           </p>
-          <p className="text-white text-xl md:text-2xl font-light leading-relaxed mt-4">
+          <p 
+            className="text-white text-xl md:text-2xl leading-relaxed mt-6"
+            style={fontStyles.heading}
+          >
             Allow discomfort to rise.
           </p>
-          <p className="text-white text-xl md:text-2xl font-light leading-relaxed mt-4">
+          <p 
+            className="text-white text-xl md:text-2xl leading-relaxed mt-6"
+            style={fontStyles.heading}
+          >
             Do not manage it.
           </p>
         </div>
       )}
 
-      {/* WARMUP - Breathing with orb */}
+      {/* WARMUP - Continuous breathing with orb */}
       {phase === 'warmup' && (
-        <BreathingOrb isActive={true} />
+        <ContinuousBreathingOrb isActive={true} />
+      )}
+
+      {/* LEAD EXHALE - One breath with orb before hold */}
+      {phase === 'leadExhale' && (
+        <BreathingOrb phase={exhalePhase} />
       )}
 
       {/* HOLD */}
       {phase === 'hold' && (
         <div className="text-center">
-          <p className="text-white text-3xl md:text-4xl font-light tracking-widest">
+          <p 
+            className="text-white text-2xl md:text-3xl tracking-widest"
+            style={fontStyles.heading}
+          >
             HOLD
           </p>
         </div>
       )}
 
-      {/* RECOVERY - Black screen */}
+      {/* RECOVERY - "breathe normally" text */}
       {phase === 'recovery' && (
-        <div /> // Intentionally empty - black screen
+        <div className="text-center">
+          <p 
+            className="text-gray-600 text-sm"
+            style={fontStyles.body}
+          >
+            breathe normally
+          </p>
+        </div>
       )}
 
       {/* MESSAGE - "Let this happen." after round 3 */}
@@ -342,7 +488,10 @@ export default function CO2SurrenderPage() {
           className="text-center transition-opacity duration-[3000ms]"
           style={{ opacity: messageOpacity }}
         >
-          <p className="text-white text-xl md:text-2xl font-light">
+          <p 
+            className="text-white text-xl md:text-2xl"
+            style={fontStyles.heading}
+          >
             Let this happen.
           </p>
         </div>
@@ -351,10 +500,16 @@ export default function CO2SurrenderPage() {
       {/* CLOSING */}
       {phase === 'closing' && (
         <div className="max-w-sm text-center">
-          <p className="text-white text-xl md:text-2xl font-light leading-relaxed">
+          <p 
+            className="text-white text-xl md:text-2xl leading-relaxed"
+            style={fontStyles.heading}
+          >
             Return to natural breathing.
           </p>
-          <p className="text-white text-xl md:text-2xl font-light leading-relaxed mt-4">
+          <p 
+            className="text-white text-xl md:text-2xl leading-relaxed mt-6"
+            style={fontStyles.heading}
+          >
             Stay seated until your body settles on its own.
           </p>
         </div>
@@ -363,16 +518,32 @@ export default function CO2SurrenderPage() {
       {/* COMPLETE */}
       {phase === 'complete' && (
         <div className="text-center">
-          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-[#ff9e19]/10 flex items-center justify-center">
-            <span className="text-3xl">✓</span>
+          <div className="w-16 h-16 mx-auto mb-6 rounded-full border border-[#ff9e19]/30 flex items-center justify-center">
+            <svg 
+              className="w-6 h-6 text-[#ff9e19]" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
+            </svg>
           </div>
-          <h2 className="text-white text-xl mb-2">Practice Complete</h2>
-          <p className="text-gray-400 text-sm mb-8">
+          <h2 
+            className="text-white text-xl mb-2"
+            style={fontStyles.heading}
+          >
+            Practice Complete
+          </h2>
+          <p 
+            className="text-gray-500 text-sm mb-10"
+            style={fontStyles.body}
+          >
             Surrender capacity expanded.
           </p>
           <button
             onClick={handleRestart}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-transparent border border-gray-700 text-gray-300 rounded-full hover:border-[#ff9e19] hover:text-[#ff9e19] transition-all"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-transparent border border-gray-800 text-gray-400 rounded-full hover:border-[#ff9e19]/50 hover:text-gray-300 transition-all"
+            style={fontStyles.body}
           >
             Start Over
           </button>
@@ -381,12 +552,15 @@ export default function CO2SurrenderPage() {
 
       {/* Footer - only on instructions and complete */}
       {(phase === 'instructions' || phase === 'complete') && (
-        <div className="absolute bottom-6 text-center">
-          <p className="text-gray-600 text-xs">
+        <div className="absolute bottom-8 text-center">
+          <p 
+            className="text-gray-700 text-xs"
+            style={fontStyles.body}
+          >
             Part of the{' '}
             <a
               href="https://unbecoming.app"
-              className="text-[#ff9e19] hover:underline"
+              className="text-[#ff9e19]/70 hover:text-[#ff9e19] transition-colors"
               target="_blank"
               rel="noopener noreferrer"
             >
