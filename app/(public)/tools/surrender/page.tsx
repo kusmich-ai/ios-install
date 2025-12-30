@@ -10,7 +10,7 @@ type Phase =
   | 'instructions'
   | 'opening'
   | 'warmup'
-  | 'leadExhale'
+  | 'leadBreath'
   | 'hold'
   | 'recovery'
   | 'message'
@@ -18,123 +18,163 @@ type Phase =
   | 'complete';
 
 const HOLD_DURATIONS = [10, 15, 20, 25, 30]; // seconds per round
-const WARMUP_DURATION = 60; // 1 minute
-const RECOVERY_DURATION = 30; // 30 seconds between holds
-const OPENING_DURATION = 12; // seconds
-const MESSAGE_DURATION = 10; // "Let this happen" visible duration
-const CLOSING_DURATION = 8; // How long closing text shows before complete
-const LEAD_EXHALE_DURATION = 6; // 6 second exhale before hold
+const WARMUP_DURATION = 60000; // 1 minute in ms
+const RECOVERY_DURATION = 30000; // 30 seconds between holds
+const OPENING_DURATION = 12000; // 12 seconds
+const MESSAGE_DURATION = 10000; // "Let this happen" visible duration
+const CLOSING_DURATION = 8000; // How long closing text shows
+const INHALE_DURATION = 4000; // 4 seconds
+const EXHALE_DURATION = 6000; // 6 seconds
+const BREATH_CYCLE = 10000; // Full breath cycle
+
+// Colors matching ResonanceBreathing
+const COLORS = {
+  background: "#000000",
+  orbBase: "#F5F2EC",
+  accent: "#ff9e19",
+  accentDim: "rgba(255, 158, 25, 0.12)",
+  textPrimary: "#F5F2EC",
+  textDim: "rgba(245, 242, 236, 0.4)",
+  success: "#10b981",
+};
 
 // ============================================
-// LUXURY FONT STYLES
+// EASING FUNCTION
 // ============================================
 
-const fontStyles = {
-  heading: {
-    fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif",
-    fontWeight: 300,
-    letterSpacing: '0.02em',
-  },
-  body: {
-    fontFamily: "'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif",
-    fontWeight: 400,
-    letterSpacing: '0.01em',
-  },
-  label: {
-    fontFamily: "'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif",
-    fontWeight: 500,
-    letterSpacing: '0.15em',
-  },
+const easeInOutQuad = (t: number): number => {
+  return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 };
 
 // ============================================
 // AUDIO UTILITY - Web Audio API Bell Tone
 // ============================================
 
-function createBellTone(audioContext: AudioContext, frequency: number = 520, duration: number = 1.5) {
+function createBellTone(audioContext: AudioContext) {
   const oscillator = audioContext.createOscillator();
   const gainNode = audioContext.createGain();
   
   oscillator.connect(gainNode);
   gainNode.connect(audioContext.destination);
   
-  oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+  oscillator.frequency.setValueAtTime(520, audioContext.currentTime);
   oscillator.type = 'sine';
   
   // Soft bell envelope
   gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-  gainNode.gain.linearRampToValueAtTime(0.15, audioContext.currentTime + 0.02);
-  gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
+  gainNode.gain.linearRampToValueAtTime(0.12, audioContext.currentTime + 0.02);
+  gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 1.8);
   
   oscillator.start(audioContext.currentTime);
-  oscillator.stop(audioContext.currentTime + duration);
+  oscillator.stop(audioContext.currentTime + 1.8);
 }
 
 // ============================================
-// MINIMAL BREATHING ORB COMPONENT
+// MINIMAL BREATHING ORB COMPONENT (SVG-based)
 // ============================================
 
-function BreathingOrb({ phase }: { phase: 'inhale' | 'exhale' | 'static' }) {
-  const [progress, setProgress] = useState(0);
-  
-  useEffect(() => {
-    if (phase === 'static') {
-      setProgress(0);
-      return;
-    }
-    
-    const duration = phase === 'inhale' ? 4000 : 6000;
-    const startTime = Date.now();
-    
-    const interval = setInterval(() => {
-      const elapsed = Date.now() - startTime;
-      const p = Math.min(elapsed / duration, 1);
-      setProgress(p);
-    }, 16);
-    
-    return () => clearInterval(interval);
-  }, [phase]);
-  
-  // Scale: 1.0 at rest (exhaled), 1.35 at full inhale
-  let scale: number;
-  if (phase === 'inhale') {
-    scale = 1 + (progress * 0.35);
-  } else if (phase === 'exhale') {
-    scale = 1.35 - (progress * 0.35);
-  } else {
-    scale = 1;
-  }
-  
+interface BreathingOrbProps {
+  orbScale: number;
+  phase: 'inhale' | 'exhale' | 'idle';
+  isActive: boolean;
+}
+
+function BreathingOrb({ orbScale, phase, isActive }: BreathingOrbProps) {
   return (
-    <div className="flex flex-col items-center justify-center">
-      {/* Single clean orb */}
-      <div className="relative w-40 h-40 flex items-center justify-center">
-        {/* Subtle outer glow */}
-        <div 
-          className="absolute rounded-full transition-all duration-100 ease-out"
-          style={{ 
-            width: `${scale * 140}px`, 
-            height: `${scale * 140}px`,
-            background: 'radial-gradient(circle, rgba(255,158,25,0.08) 0%, transparent 70%)',
-          }}
+    <div
+      style={{
+        position: 'relative',
+        width: '200px',
+        height: '200px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      {/* Outer glow */}
+      <div
+        style={{
+          position: 'absolute',
+          width: '100%',
+          height: '100%',
+          borderRadius: '50%',
+          background: `radial-gradient(circle, ${COLORS.accentDim} 0%, transparent 70%)`,
+          transform: `scale(${orbScale * 1.4})`,
+          willChange: 'transform',
+        }}
+      />
+
+      {/* Main orb - clean minimal circle */}
+      <svg
+        viewBox="0 0 200 200"
+        style={{
+          width: '100%',
+          height: '100%',
+          transform: `scale(${orbScale})`,
+          willChange: 'transform',
+        }}
+      >
+        <defs>
+          <radialGradient id="orbGradient" cx="30%" cy="30%" r="70%">
+            <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.12" />
+            <stop offset="50%" stopColor={COLORS.orbBase} stopOpacity="0.08" />
+            <stop offset="100%" stopColor="#D4CFC7" stopOpacity="0.04" />
+          </radialGradient>
+
+          <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="2" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
+        {/* Background fill */}
+        <circle
+          cx="100"
+          cy="100"
+          r="80"
+          fill="url(#orbGradient)"
         />
-        {/* Main circle - single clean ring */}
-        <div 
-          className="absolute rounded-full transition-all duration-100 ease-out"
-          style={{ 
-            width: `${scale * 100}px`, 
-            height: `${scale * 100}px`,
-            border: '1px solid rgba(255,158,25,0.6)',
-            background: 'radial-gradient(circle, rgba(255,158,25,0.03) 0%, transparent 60%)',
-          }}
+
+        {/* Main ring */}
+        <circle
+          cx="100"
+          cy="100"
+          r="80"
+          fill="none"
+          stroke={COLORS.accent}
+          strokeWidth="1"
+          opacity={isActive ? 0.6 : 0.4}
+          filter="url(#softGlow)"
         />
-      </div>
-      
-      {/* Breath cue - minimal styling */}
-      {phase !== 'static' && (
-        <p 
-          className="mt-10 text-gray-500 text-xs uppercase"
-          style={fontStyles.label}
+
+        {/* Inner ring */}
+        <circle
+          cx="100"
+          cy="100"
+          r="50"
+          fill="none"
+          stroke={COLORS.accent}
+          strokeWidth="0.5"
+          opacity={isActive ? 0.3 : 0.15}
+        />
+      </svg>
+
+      {/* Phase label */}
+      {phase !== 'idle' && (
+        <p
+          style={{
+            position: 'absolute',
+            bottom: '-3rem',
+            fontSize: '0.7rem',
+            fontWeight: 400,
+            letterSpacing: '0.2em',
+            textTransform: 'uppercase',
+            color: COLORS.textDim,
+            fontFamily: "'SF Pro Text', -apple-system, BlinkMacSystemFont, sans-serif",
+          }}
         >
           {phase === 'inhale' ? 'Inhale' : 'Exhale'}
         </p>
@@ -144,85 +184,36 @@ function BreathingOrb({ phase }: { phase: 'inhale' | 'exhale' | 'static' }) {
 }
 
 // ============================================
-// CONTINUOUS BREATHING ORB (for warmup)
-// ============================================
-
-function ContinuousBreathingOrb({ isActive }: { isActive: boolean }) {
-  const [breathPhase, setBreathPhase] = useState<'inhale' | 'exhale'>('inhale');
-  const [progress, setProgress] = useState(0);
-  
-  useEffect(() => {
-    if (!isActive) return;
-    
-    const startTime = Date.now();
-    const BREATH_CYCLE = 10000; // 4s + 6s = 10s
-    
-    const interval = setInterval(() => {
-      const elapsed = Date.now() - startTime;
-      const cyclePosition = elapsed % BREATH_CYCLE;
-      
-      if (cyclePosition < 4000) {
-        setBreathPhase('inhale');
-        setProgress(cyclePosition / 4000);
-      } else {
-        setBreathPhase('exhale');
-        setProgress((cyclePosition - 4000) / 6000);
-      }
-    }, 16);
-    
-    return () => clearInterval(interval);
-  }, [isActive]);
-  
-  // Scale: 1.0 at rest, 1.35 at full inhale
-  const scale = breathPhase === 'inhale' 
-    ? 1 + (progress * 0.35)
-    : 1.35 - (progress * 0.35);
-  
-  return (
-    <div className="flex flex-col items-center justify-center">
-      <div className="relative w-40 h-40 flex items-center justify-center">
-        <div 
-          className="absolute rounded-full transition-all duration-75 ease-out"
-          style={{ 
-            width: `${scale * 140}px`, 
-            height: `${scale * 140}px`,
-            background: 'radial-gradient(circle, rgba(255,158,25,0.08) 0%, transparent 70%)',
-          }}
-        />
-        <div 
-          className="absolute rounded-full transition-all duration-75 ease-out"
-          style={{ 
-            width: `${scale * 100}px`, 
-            height: `${scale * 100}px`,
-            border: '1px solid rgba(255,158,25,0.6)',
-            background: 'radial-gradient(circle, rgba(255,158,25,0.03) 0%, transparent 60%)',
-          }}
-        />
-      </div>
-      
-      <p 
-        className="mt-10 text-gray-500 text-xs uppercase"
-        style={fontStyles.label}
-      >
-        {breathPhase === 'inhale' ? 'Inhale' : 'Exhale'}
-      </p>
-    </div>
-  );
-}
-
-// ============================================
 // MAIN COMPONENT
 // ============================================
 
 export default function SurrenderSimulationPage() {
+  // Phase state
   const [phase, setPhase] = useState<Phase>('instructions');
   const [currentRound, setCurrentRound] = useState(0);
   const [messageOpacity, setMessageOpacity] = useState(1);
-  const [exhalePhase, setExhalePhase] = useState<'inhale' | 'exhale'>('inhale');
+  
+  // Animation state
+  const [orbScale, setOrbScale] = useState(1);
+  const [breathPhase, setBreathPhase] = useState<'inhale' | 'exhale' | 'idle'>('idle');
+  
+  // Refs
   const audioContextRef = useRef<AudioContext | null>(null);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const phaseStartTimeRef = useRef<number>(0);
+  const animationFrameRef = useRef<number | null>(null);
+  const phaseRef = useRef<Phase>('instructions');
+  const currentRoundRef = useRef<number>(0);
 
-  // Initialize audio context on first interaction
+  // Keep refs in sync with state
+  useEffect(() => {
+    phaseRef.current = phase;
+  }, [phase]);
+
+  useEffect(() => {
+    currentRoundRef.current = currentRound;
+  }, [currentRound]);
+
+  // Initialize audio context
   const initAudio = useCallback(() => {
     if (!audioContextRef.current) {
       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -236,142 +227,193 @@ export default function SurrenderSimulationPage() {
     if (ctx.state === 'suspended') {
       ctx.resume();
     }
-    createBellTone(ctx, 520, 1.5);
+    createBellTone(ctx);
   }, [initAudio]);
 
-  // Clear any running timer
-  const clearTimer = useCallback(() => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
+  // Cleanup animation frame
+  const cancelAnimation = useCallback(() => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
     }
   }, []);
 
-  // Phase transition logic
-  const advancePhase = useCallback(() => {
-    clearTimer();
+  // Transition to next phase
+  const transitionToPhase = useCallback((newPhase: Phase, round?: number) => {
+    cancelAnimation();
+    phaseStartTimeRef.current = performance.now();
     
-    setPhase(currentPhase => {
-      switch (currentPhase) {
-        case 'opening':
-          return 'warmup';
-        
-        case 'warmup':
-          // Start lead exhale for first hold
-          setCurrentRound(1);
-          setExhalePhase('inhale');
-          return 'leadExhale';
-        
-        case 'leadExhale':
-          // End of lead exhale - start hold
-          playTone();
-          return 'hold';
-        
-        case 'hold':
-          // End of hold - play release tone
-          playTone();
-          
-          // After round 3, show message (no additional tone)
-          if (currentRound === 3) {
-            setMessageOpacity(1);
-            return 'message';
-          }
-          
-          // After round 5, go to closing
-          if (currentRound === 5) {
-            return 'closing';
-          }
-          
-          // Otherwise recovery
-          return 'recovery';
-        
-        case 'message':
-          // Message done, continue to remainder of recovery
-          return 'recovery';
-        
-        case 'recovery':
-          // Start lead exhale for next hold
-          setCurrentRound(r => r + 1);
-          setExhalePhase('inhale');
-          return 'leadExhale';
-        
-        case 'closing':
-          return 'complete';
-        
-        default:
-          return currentPhase;
+    if (round !== undefined) {
+      setCurrentRound(round);
+      currentRoundRef.current = round;
+    }
+    
+    setPhase(newPhase);
+    phaseRef.current = newPhase;
+
+    // Reset animation state for non-breathing phases
+    if (newPhase === 'hold' || newPhase === 'recovery' || newPhase === 'message' || 
+        newPhase === 'opening' || newPhase === 'closing' || newPhase === 'complete') {
+      setOrbScale(1);
+      setBreathPhase('idle');
+    }
+
+    // Play tones at appropriate times
+    if (newPhase === 'hold') {
+      playTone(); // Tone A - start hold
+    }
+  }, [cancelAnimation, playTone]);
+
+  // Main animation loop
+  const animate = useCallback((timestamp: number) => {
+    const elapsed = timestamp - phaseStartTimeRef.current;
+    const currentPhase = phaseRef.current;
+    const round = currentRoundRef.current;
+
+    // Handle phase-specific logic
+    switch (currentPhase) {
+      case 'opening': {
+        if (elapsed >= OPENING_DURATION) {
+          transitionToPhase('warmup');
+        }
+        break;
       }
-    });
-  }, [currentRound, playTone, clearTimer]);
 
-  // Handle lead exhale phase timing (inhale 4s, then exhale 6s)
-  useEffect(() => {
-    if (phase !== 'leadExhale') return;
-    
-    // Start with inhale
-    setExhalePhase('inhale');
-    
-    // After 4s, switch to exhale
-    const inhaleTimer = setTimeout(() => {
-      setExhalePhase('exhale');
-    }, 4000);
-    
-    return () => clearTimeout(inhaleTimer);
-  }, [phase]);
+      case 'warmup': {
+        // Continuous breathing animation
+        const cycleTime = elapsed % BREATH_CYCLE;
+        let scale: number;
+        let bPhase: 'inhale' | 'exhale';
 
-  // Timer management based on phase
-  useEffect(() => {
-    if (phase === 'instructions' || phase === 'complete') return;
-    
-    let duration = 0;
-    
-    switch (phase) {
-      case 'opening':
-        duration = OPENING_DURATION * 1000;
+        if (cycleTime < INHALE_DURATION) {
+          const progress = cycleTime / INHALE_DURATION;
+          const eased = easeInOutQuad(progress);
+          scale = 1 + eased * 0.35;
+          bPhase = 'inhale';
+        } else {
+          const progress = (cycleTime - INHALE_DURATION) / EXHALE_DURATION;
+          const eased = easeInOutQuad(progress);
+          scale = 1.35 - eased * 0.35;
+          bPhase = 'exhale';
+        }
+
+        setOrbScale(scale);
+        setBreathPhase(bPhase);
+
+        if (elapsed >= WARMUP_DURATION) {
+          transitionToPhase('leadBreath', 1);
+        }
         break;
-      case 'warmup':
-        duration = WARMUP_DURATION * 1000;
+      }
+
+      case 'leadBreath': {
+        // One full breath before hold (inhale then exhale)
+        const totalLeadDuration = INHALE_DURATION + EXHALE_DURATION;
+        let scale: number;
+        let bPhase: 'inhale' | 'exhale';
+
+        if (elapsed < INHALE_DURATION) {
+          const progress = elapsed / INHALE_DURATION;
+          const eased = easeInOutQuad(progress);
+          scale = 1 + eased * 0.35;
+          bPhase = 'inhale';
+        } else {
+          const exhaleElapsed = elapsed - INHALE_DURATION;
+          const progress = exhaleElapsed / EXHALE_DURATION;
+          const eased = easeInOutQuad(Math.min(progress, 1));
+          scale = 1.35 - eased * 0.35;
+          bPhase = 'exhale';
+        }
+
+        setOrbScale(scale);
+        setBreathPhase(bPhase);
+
+        if (elapsed >= totalLeadDuration) {
+          transitionToPhase('hold');
+        }
         break;
-      case 'leadExhale':
-        duration = LEAD_EXHALE_DURATION * 1000 + 4000; // 4s inhale + 6s exhale
+      }
+
+      case 'hold': {
+        const holdDuration = HOLD_DURATIONS[round - 1] * 1000;
+        
+        if (elapsed >= holdDuration) {
+          playTone(); // Tone B - release hold
+          
+          if (round === 5) {
+            transitionToPhase('closing');
+          } else if (round === 3) {
+            setMessageOpacity(1);
+            transitionToPhase('message');
+          } else {
+            transitionToPhase('recovery');
+          }
+        }
         break;
-      case 'hold':
-        duration = HOLD_DURATIONS[currentRound - 1] * 1000;
+      }
+
+      case 'message': {
+        // Fade out starting at 7 seconds
+        if (elapsed >= 7000 && elapsed < MESSAGE_DURATION) {
+          const fadeProgress = (elapsed - 7000) / 3000;
+          setMessageOpacity(1 - fadeProgress);
+        }
+        
+        if (elapsed >= MESSAGE_DURATION) {
+          transitionToPhase('recovery');
+        }
         break;
-      case 'recovery':
+      }
+
+      case 'recovery': {
         // After round 3, recovery is only 20s (10s was message)
-        duration = (currentRound === 3 ? 20 : RECOVERY_DURATION) * 1000;
+        const recoveryTime = round === 3 ? 20000 : RECOVERY_DURATION;
+        
+        if (elapsed >= recoveryTime) {
+          transitionToPhase('leadBreath', round + 1);
+        }
         break;
-      case 'message':
-        duration = MESSAGE_DURATION * 1000;
-        // Start fade at 7 seconds
-        setTimeout(() => {
-          setMessageOpacity(0);
-        }, 7000);
+      }
+
+      case 'closing': {
+        if (elapsed >= CLOSING_DURATION) {
+          transitionToPhase('complete');
+          return; // Stop animation loop
+        }
         break;
-      case 'closing':
-        duration = CLOSING_DURATION * 1000;
-        break;
+      }
+
+      case 'complete':
+        return; // Stop animation loop
     }
-    
-    if (duration > 0) {
-      timerRef.current = setTimeout(advancePhase, duration);
+
+    // Continue animation loop
+    animationFrameRef.current = requestAnimationFrame(animate);
+  }, [transitionToPhase, playTone]);
+
+  // Start animation when phase changes to active phase
+  useEffect(() => {
+    if (phase !== 'instructions' && phase !== 'complete') {
+      phaseStartTimeRef.current = performance.now();
+      animationFrameRef.current = requestAnimationFrame(animate);
     }
-    
-    return clearTimer;
-  }, [phase, currentRound, advancePhase, clearTimer]);
+
+    return cancelAnimation;
+  }, [phase, animate, cancelAnimation]);
 
   // Start the practice
   const handleStart = () => {
     initAudio();
-    setPhase('opening');
+    transitionToPhase('opening');
   };
 
   // Reset to beginning
   const handleRestart = () => {
-    clearTimer();
+    cancelAnimation();
     setPhase('instructions');
     setCurrentRound(0);
+    setOrbScale(1);
+    setBreathPhase('idle');
     setMessageOpacity(1);
   };
 
@@ -379,45 +421,103 @@ export default function SurrenderSimulationPage() {
   // RENDER
   // ============================================
 
+  const fontHeading = {
+    fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    fontWeight: 300 as const,
+    letterSpacing: '0.02em',
+  };
+
+  const fontBody = {
+    fontFamily: "'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    fontWeight: 400 as const,
+    letterSpacing: '0.01em',
+  };
+
+  const fontLabel = {
+    fontFamily: "'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    fontWeight: 500 as const,
+    letterSpacing: '0.15em',
+  };
+
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center px-6">
-      
+    <div
+      style={{
+        minHeight: '100vh',
+        backgroundColor: COLORS.background,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '1.5rem',
+        color: COLORS.textPrimary,
+      }}
+    >
       {/* INSTRUCTIONS SCREEN */}
       {phase === 'instructions' && (
-        <div className="max-w-md text-center">
-          <p 
-            className="text-[#ff9e19] text-xs uppercase mb-3"
-            style={fontStyles.label}
+        <div style={{ maxWidth: '420px', textAlign: 'center' }}>
+          <p
+            style={{
+              ...fontLabel,
+              color: COLORS.accent,
+              fontSize: '0.7rem',
+              textTransform: 'uppercase',
+              marginBottom: '0.75rem',
+            }}
           >
             Awaken with 5
           </p>
-          <h1 
-            className="text-white text-2xl md:text-3xl mb-10"
-            style={fontStyles.heading}
+          <h1
+            style={{
+              ...fontHeading,
+              fontSize: 'clamp(1.5rem, 5vw, 1.875rem)',
+              marginBottom: '2.5rem',
+            }}
           >
             Surrender Simulation
           </h1>
           
-          <div 
-            className="text-gray-400 text-sm space-y-4 mb-12 text-left leading-relaxed"
-            style={fontStyles.body}
+          <div
+            style={{
+              ...fontBody,
+              color: 'rgba(245, 242, 236, 0.7)',
+              fontSize: '0.9rem',
+              lineHeight: 1.7,
+              textAlign: 'left',
+              marginBottom: '3rem',
+            }}
           >
-            <p>
+            <p style={{ marginBottom: '1rem' }}>
               This practice conditions your nervous system to surrender under rising intensity rather than fight or manage discomfort.
             </p>
-            <p>
+            <p style={{ marginBottom: '1.5rem' }}>
               You'll begin with 1 minute of slow breathing, followed by 5 progressive breath holds (10 to 30 seconds). All holds are on the exhale with empty lungs. A tone signals when to hold and when to release.
             </p>
-            <p className="text-gray-500 pt-2">
-              <span className="text-gray-400">Duration:</span> ~6 minutes<br />
-              <span className="text-gray-400">Position:</span> Seated comfortably. Follow prompts on screen.
+            <p style={{ color: COLORS.textDim }}>
+              <span style={{ color: 'rgba(245, 242, 236, 0.6)' }}>Duration:</span> ~6 minutes<br />
+              <span style={{ color: 'rgba(245, 242, 236, 0.6)' }}>Position:</span> Seated comfortably. Follow prompts on screen.
             </p>
           </div>
           
           <button
             onClick={handleStart}
-            className="px-10 py-4 bg-[#ff9e19] text-black rounded-full hover:bg-[#ffb347] transition-colors"
-            style={{ ...fontStyles.body, fontWeight: 500 }}
+            style={{
+              ...fontBody,
+              padding: '1rem 2.5rem',
+              fontSize: '0.9rem',
+              fontWeight: 500,
+              backgroundColor: COLORS.accent,
+              color: '#000',
+              border: 'none',
+              borderRadius: '100px',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#ffb347';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = COLORS.accent;
+            }}
           >
             Begin Practice
           </button>
@@ -426,23 +526,14 @@ export default function SurrenderSimulationPage() {
 
       {/* OPENING TEXT */}
       {phase === 'opening' && (
-        <div className="max-w-sm text-center">
-          <p 
-            className="text-white text-xl md:text-2xl leading-relaxed"
-            style={fontStyles.heading}
-          >
+        <div style={{ maxWidth: '340px', textAlign: 'center' }}>
+          <p style={{ ...fontHeading, fontSize: 'clamp(1.25rem, 4vw, 1.5rem)', lineHeight: 1.6 }}>
             This is a surrender practice.
           </p>
-          <p 
-            className="text-white text-xl md:text-2xl leading-relaxed mt-6"
-            style={fontStyles.heading}
-          >
+          <p style={{ ...fontHeading, fontSize: 'clamp(1.25rem, 4vw, 1.5rem)', lineHeight: 1.6, marginTop: '1.5rem' }}>
             Allow discomfort to rise.
           </p>
-          <p 
-            className="text-white text-xl md:text-2xl leading-relaxed mt-6"
-            style={fontStyles.heading}
-          >
+          <p style={{ ...fontHeading, fontSize: 'clamp(1.25rem, 4vw, 1.5rem)', lineHeight: 1.6, marginTop: '1.5rem' }}>
             Do not manage it.
           </p>
         </div>
@@ -450,20 +541,23 @@ export default function SurrenderSimulationPage() {
 
       {/* WARMUP - Continuous breathing with orb */}
       {phase === 'warmup' && (
-        <ContinuousBreathingOrb isActive={true} />
+        <BreathingOrb orbScale={orbScale} phase={breathPhase} isActive={true} />
       )}
 
-      {/* LEAD EXHALE - One breath with orb before hold */}
-      {phase === 'leadExhale' && (
-        <BreathingOrb phase={exhalePhase} />
+      {/* LEAD BREATH - One breath with orb before hold */}
+      {phase === 'leadBreath' && (
+        <BreathingOrb orbScale={orbScale} phase={breathPhase} isActive={true} />
       )}
 
       {/* HOLD */}
       {phase === 'hold' && (
-        <div className="text-center">
-          <p 
-            className="text-white text-2xl md:text-3xl tracking-widest"
-            style={fontStyles.heading}
+        <div style={{ textAlign: 'center' }}>
+          <p
+            style={{
+              ...fontHeading,
+              fontSize: 'clamp(1.5rem, 5vw, 2rem)',
+              letterSpacing: '0.3em',
+            }}
           >
             HOLD
           </p>
@@ -472,10 +566,13 @@ export default function SurrenderSimulationPage() {
 
       {/* RECOVERY - "breathe normally" text */}
       {phase === 'recovery' && (
-        <div className="text-center">
-          <p 
-            className="text-gray-600 text-sm"
-            style={fontStyles.body}
+        <div style={{ textAlign: 'center' }}>
+          <p
+            style={{
+              ...fontBody,
+              fontSize: '0.85rem',
+              color: 'rgba(245, 242, 236, 0.3)',
+            }}
           >
             breathe normally
           </p>
@@ -484,13 +581,18 @@ export default function SurrenderSimulationPage() {
 
       {/* MESSAGE - "Let this happen." after round 3 */}
       {phase === 'message' && (
-        <div 
-          className="text-center transition-opacity duration-[3000ms]"
-          style={{ opacity: messageOpacity }}
+        <div
+          style={{
+            textAlign: 'center',
+            opacity: messageOpacity,
+            transition: 'opacity 0.5s ease',
+          }}
         >
-          <p 
-            className="text-white text-xl md:text-2xl"
-            style={fontStyles.heading}
+          <p
+            style={{
+              ...fontHeading,
+              fontSize: 'clamp(1.25rem, 4vw, 1.5rem)',
+            }}
           >
             Let this happen.
           </p>
@@ -499,17 +601,11 @@ export default function SurrenderSimulationPage() {
 
       {/* CLOSING */}
       {phase === 'closing' && (
-        <div className="max-w-sm text-center">
-          <p 
-            className="text-white text-xl md:text-2xl leading-relaxed"
-            style={fontStyles.heading}
-          >
+        <div style={{ maxWidth: '340px', textAlign: 'center' }}>
+          <p style={{ ...fontHeading, fontSize: 'clamp(1.25rem, 4vw, 1.5rem)', lineHeight: 1.6 }}>
             Return to natural breathing.
           </p>
-          <p 
-            className="text-white text-xl md:text-2xl leading-relaxed mt-6"
-            style={fontStyles.heading}
-          >
+          <p style={{ ...fontHeading, fontSize: 'clamp(1.25rem, 4vw, 1.5rem)', lineHeight: 1.6, marginTop: '1.5rem' }}>
             Stay seated until your body settles on its own.
           </p>
         </div>
@@ -517,33 +613,72 @@ export default function SurrenderSimulationPage() {
 
       {/* COMPLETE */}
       {phase === 'complete' && (
-        <div className="text-center">
-          <div className="w-16 h-16 mx-auto mb-6 rounded-full border border-[#ff9e19]/30 flex items-center justify-center">
-            <svg 
-              className="w-6 h-6 text-[#ff9e19]" 
-              fill="none" 
-              stroke="currentColor" 
+        <div style={{ textAlign: 'center' }}>
+          <div
+            style={{
+              width: '80px',
+              height: '80px',
+              margin: '0 auto 1.5rem',
+              borderRadius: '50%',
+              border: `1px solid rgba(255, 158, 25, 0.3)`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <svg
+              width="28"
+              height="28"
               viewBox="0 0 24 24"
+              fill="none"
+              stroke={COLORS.accent}
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
+              <polyline points="20 6 9 17 4 12" />
             </svg>
           </div>
-          <h2 
-            className="text-white text-xl mb-2"
-            style={fontStyles.heading}
+          <h2
+            style={{
+              ...fontHeading,
+              fontSize: '1.25rem',
+              marginBottom: '0.5rem',
+            }}
           >
             Practice Complete
           </h2>
-          <p 
-            className="text-gray-500 text-sm mb-10"
-            style={fontStyles.body}
+          <p
+            style={{
+              ...fontBody,
+              fontSize: '0.85rem',
+              color: COLORS.textDim,
+              marginBottom: '2.5rem',
+            }}
           >
             Surrender capacity expanded.
           </p>
           <button
             onClick={handleRestart}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-transparent border border-gray-800 text-gray-400 rounded-full hover:border-[#ff9e19]/50 hover:text-gray-300 transition-all"
-            style={fontStyles.body}
+            style={{
+              ...fontBody,
+              padding: '0.75rem 1.5rem',
+              fontSize: '0.8rem',
+              backgroundColor: 'transparent',
+              color: 'rgba(245, 242, 236, 0.5)',
+              border: '1px solid rgba(245, 242, 236, 0.2)',
+              borderRadius: '100px',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(255, 158, 25, 0.5)';
+              e.currentTarget.style.color = 'rgba(245, 242, 236, 0.8)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(245, 242, 236, 0.2)';
+              e.currentTarget.style.color = 'rgba(245, 242, 236, 0.5)';
+            }}
           >
             Start Over
           </button>
@@ -552,17 +687,36 @@ export default function SurrenderSimulationPage() {
 
       {/* Footer - only on instructions and complete */}
       {(phase === 'instructions' || phase === 'complete') && (
-        <div className="absolute bottom-8 text-center">
-          <p 
-            className="text-gray-700 text-xs"
-            style={fontStyles.body}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '2rem',
+            textAlign: 'center',
+          }}
+        >
+          <p
+            style={{
+              ...fontBody,
+              fontSize: '0.7rem',
+              color: 'rgba(245, 242, 236, 0.25)',
+            }}
           >
             Part of the{' '}
             <a
               href="https://unbecoming.app"
-              className="text-[#ff9e19]/70 hover:text-[#ff9e19] transition-colors"
+              style={{
+                color: 'rgba(255, 158, 25, 0.6)',
+                textDecoration: 'none',
+                transition: 'color 0.3s ease',
+              }}
               target="_blank"
               rel="noopener noreferrer"
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = COLORS.accent;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = 'rgba(255, 158, 25, 0.6)';
+              }}
             >
               IOS System
             </a>
