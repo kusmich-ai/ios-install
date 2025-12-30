@@ -10,27 +10,23 @@ type Phase =
   | 'instructions'
   | 'opening'
   | 'warmup'
-  | 'leadBreath'
   | 'hold'
   | 'recovery'
-  | 'recoveryBreath'
   | 'message'
   | 'closing'
   | 'complete';
 
 const HOLD_DURATIONS = [10, 15, 20, 25, 30]; // seconds per round
-const WARMUP_DURATION = 60000; // 1 minute in ms
-const RECOVERY_REST_DURATION = 10000; // 10 seconds "breathe normally"
-const RECOVERY_BREATH_DURATION = 20000; // 2 breaths (20 seconds)
+const WARMUP_DURATION = 60000; // 1 minute
+const RECOVERY_DURATION = 30000; // 30 seconds between holds
 const OPENING_DURATION = 12000; // 12 seconds
-const MESSAGE_DURATION = 10000; // "Let this happen" visible duration
-const CLOSING_DURATION = 8000; // How long closing text shows
+const MESSAGE_DURATION = 10000; // "Let this happen" visible
+const CLOSING_DURATION = 8000; // closing text duration
 const INHALE_DURATION = 4000; // 4 seconds
 const EXHALE_DURATION = 6000; // 6 seconds
 const BREATH_CYCLE = 10000; // Full breath cycle
-const LEAD_BREATH_DURATION = 20000; // 2 breaths before first hold
 
-// Colors matching ResonanceBreathing
+// Colors
 const COLORS = {
   background: "#000000",
   orbBase: "#F5F2EC",
@@ -38,7 +34,6 @@ const COLORS = {
   accentDim: "rgba(255, 158, 25, 0.12)",
   textPrimary: "#F5F2EC",
   textDim: "rgba(245, 242, 236, 0.4)",
-  success: "#10b981",
 };
 
 // ============================================
@@ -50,39 +45,57 @@ const easeInOutQuad = (t: number): number => {
 };
 
 // ============================================
-// AUDIO UTILITY - Web Audio API Bell Tone
+// AUDIO - Bell Tones (two distinct tones)
 // ============================================
 
-function createBellTone(audioContext: AudioContext) {
+function createHoldTone(audioContext: AudioContext) {
+  // Lower tone for hold
   const oscillator = audioContext.createOscillator();
   const gainNode = audioContext.createGain();
   
   oscillator.connect(gainNode);
   gainNode.connect(audioContext.destination);
   
-  oscillator.frequency.setValueAtTime(520, audioContext.currentTime);
+  oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
   oscillator.type = 'sine';
   
-  // Soft bell envelope
   gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-  gainNode.gain.linearRampToValueAtTime(0.12, audioContext.currentTime + 0.02);
-  gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 1.8);
+  gainNode.gain.linearRampToValueAtTime(0.15, audioContext.currentTime + 0.02);
+  gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 1.5);
   
   oscillator.start(audioContext.currentTime);
-  oscillator.stop(audioContext.currentTime + 1.8);
+  oscillator.stop(audioContext.currentTime + 1.5);
+}
+
+function createReleaseTone(audioContext: AudioContext) {
+  // Higher tone for release
+  const oscillator = audioContext.createOscillator();
+  const gainNode = audioContext.createGain();
+  
+  oscillator.connect(gainNode);
+  gainNode.connect(audioContext.destination);
+  
+  oscillator.frequency.setValueAtTime(660, audioContext.currentTime);
+  oscillator.type = 'sine';
+  
+  gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+  gainNode.gain.linearRampToValueAtTime(0.12, audioContext.currentTime + 0.02);
+  gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 1.2);
+  
+  oscillator.start(audioContext.currentTime);
+  oscillator.stop(audioContext.currentTime + 1.2);
 }
 
 // ============================================
-// MINIMAL BREATHING ORB COMPONENT (SVG-based)
+// BREATHING ORB COMPONENT (SVG-based)
 // ============================================
 
 interface BreathingOrbProps {
   orbScale: number;
   phase: 'inhale' | 'exhale' | 'idle';
-  isActive: boolean;
 }
 
-function BreathingOrb({ orbScale, phase, isActive }: BreathingOrbProps) {
+function BreathingOrb({ orbScale, phase }: BreathingOrbProps) {
   return (
     <div
       style={{
@@ -107,7 +120,7 @@ function BreathingOrb({ orbScale, phase, isActive }: BreathingOrbProps) {
         }}
       />
 
-      {/* Main orb - clean minimal circle */}
+      {/* Main orb */}
       <svg
         viewBox="0 0 200 200"
         style={{
@@ -133,15 +146,7 @@ function BreathingOrb({ orbScale, phase, isActive }: BreathingOrbProps) {
           </filter>
         </defs>
 
-        {/* Background fill */}
-        <circle
-          cx="100"
-          cy="100"
-          r="80"
-          fill="url(#orbGradient)"
-        />
-
-        {/* Main ring */}
+        <circle cx="100" cy="100" r="80" fill="url(#orbGradient)" />
         <circle
           cx="100"
           cy="100"
@@ -149,11 +154,9 @@ function BreathingOrb({ orbScale, phase, isActive }: BreathingOrbProps) {
           fill="none"
           stroke={COLORS.accent}
           strokeWidth="1"
-          opacity={isActive ? 0.6 : 0.4}
+          opacity="0.6"
           filter="url(#softGlow)"
         />
-
-        {/* Inner ring */}
         <circle
           cx="100"
           cy="100"
@@ -161,7 +164,7 @@ function BreathingOrb({ orbScale, phase, isActive }: BreathingOrbProps) {
           fill="none"
           stroke={COLORS.accent}
           strokeWidth="0.5"
-          opacity={isActive ? 0.3 : 0.15}
+          opacity="0.3"
         />
       </svg>
 
@@ -191,12 +194,11 @@ function BreathingOrb({ orbScale, phase, isActive }: BreathingOrbProps) {
 // ============================================
 
 export default function SurrenderSimulationPage() {
-  // Phase state
   const [phase, setPhase] = useState<Phase>('instructions');
   const [currentRound, setCurrentRound] = useState(0);
   const [messageOpacity, setMessageOpacity] = useState(1);
   
-  // Animation state
+  // Animation state (only used during warmup)
   const [orbScale, setOrbScale] = useState(1);
   const [breathPhase, setBreathPhase] = useState<'inhale' | 'exhale' | 'idle'>('idle');
   
@@ -207,7 +209,6 @@ export default function SurrenderSimulationPage() {
   const phaseRef = useRef<Phase>('instructions');
   const currentRoundRef = useRef<number>(0);
 
-  // Keep refs in sync with state
   useEffect(() => {
     phaseRef.current = phase;
   }, [phase]);
@@ -216,7 +217,6 @@ export default function SurrenderSimulationPage() {
     currentRoundRef.current = currentRound;
   }, [currentRound]);
 
-  // Initialize audio context
   const initAudio = useCallback(() => {
     if (!audioContextRef.current) {
       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -224,16 +224,18 @@ export default function SurrenderSimulationPage() {
     return audioContextRef.current;
   }, []);
 
-  // Play bell tone
-  const playTone = useCallback(() => {
+  const playHoldTone = useCallback(() => {
     const ctx = initAudio();
-    if (ctx.state === 'suspended') {
-      ctx.resume();
-    }
-    createBellTone(ctx);
+    if (ctx.state === 'suspended') ctx.resume();
+    createHoldTone(ctx);
   }, [initAudio]);
 
-  // Cleanup animation frame
+  const playReleaseTone = useCallback(() => {
+    const ctx = initAudio();
+    if (ctx.state === 'suspended') ctx.resume();
+    createReleaseTone(ctx);
+  }, [initAudio]);
+
   const cancelAnimation = useCallback(() => {
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
@@ -241,7 +243,6 @@ export default function SurrenderSimulationPage() {
     }
   }, []);
 
-  // Transition to next phase
   const transitionToPhase = useCallback((newPhase: Phase, round?: number) => {
     cancelAnimation();
     phaseStartTimeRef.current = performance.now();
@@ -254,18 +255,17 @@ export default function SurrenderSimulationPage() {
     setPhase(newPhase);
     phaseRef.current = newPhase;
 
-    // Reset animation state for non-breathing phases
-    if (newPhase === 'hold' || newPhase === 'recovery' || newPhase === 'message' || 
-        newPhase === 'opening' || newPhase === 'closing' || newPhase === 'complete') {
+    // Reset orb state when not in warmup
+    if (newPhase !== 'warmup') {
       setOrbScale(1);
       setBreathPhase('idle');
     }
 
-    // Play tones at appropriate times
+    // Play tones
     if (newPhase === 'hold') {
-      playTone(); // Tone A - start hold
+      playHoldTone();
     }
-  }, [cancelAnimation, playTone]);
+  }, [cancelAnimation, playHoldTone]);
 
   // Main animation loop
   const animate = useCallback((timestamp: number) => {
@@ -273,7 +273,6 @@ export default function SurrenderSimulationPage() {
     const currentPhase = phaseRef.current;
     const round = currentRoundRef.current;
 
-    // Handle phase-specific logic
     switch (currentPhase) {
       case 'opening': {
         if (elapsed >= OPENING_DURATION) {
@@ -283,7 +282,7 @@ export default function SurrenderSimulationPage() {
       }
 
       case 'warmup': {
-        // Continuous breathing animation
+        // Breathing animation
         const cycleTime = elapsed % BREATH_CYCLE;
         let scale: number;
         let bPhase: 'inhale' | 'exhale';
@@ -304,36 +303,7 @@ export default function SurrenderSimulationPage() {
         setBreathPhase(bPhase);
 
         if (elapsed >= WARMUP_DURATION) {
-          transitionToPhase('leadBreath', 1);
-        }
-        break;
-      }
-
-      case 'leadBreath': {
-        // Two full breaths before first hold (20 seconds total)
-        let scale: number;
-        let bPhase: 'inhale' | 'exhale';
-
-        const cycleTime = elapsed % BREATH_CYCLE;
-        
-        if (cycleTime < INHALE_DURATION) {
-          const progress = cycleTime / INHALE_DURATION;
-          const eased = easeInOutQuad(progress);
-          scale = 1 + eased * 0.35;
-          bPhase = 'inhale';
-        } else {
-          const exhaleElapsed = cycleTime - INHALE_DURATION;
-          const progress = exhaleElapsed / EXHALE_DURATION;
-          const eased = easeInOutQuad(Math.min(progress, 1));
-          scale = 1.35 - eased * 0.35;
-          bPhase = 'exhale';
-        }
-
-        setOrbScale(scale);
-        setBreathPhase(bPhase);
-
-        if (elapsed >= LEAD_BREATH_DURATION) {
-          transitionToPhase('hold');
+          transitionToPhase('hold', 1);
         }
         break;
       }
@@ -342,7 +312,7 @@ export default function SurrenderSimulationPage() {
         const holdDuration = HOLD_DURATIONS[round - 1] * 1000;
         
         if (elapsed >= holdDuration) {
-          playTone(); // Tone B - release hold
+          playReleaseTone();
           
           if (round === 5) {
             transitionToPhase('closing');
@@ -356,53 +326,26 @@ export default function SurrenderSimulationPage() {
         break;
       }
 
+      case 'recovery': {
+        // After round 3, recovery is only 20s (10s was message phase)
+        const recoveryTime = currentRoundRef.current === 3 ? 20000 : RECOVERY_DURATION;
+        
+        if (elapsed >= recoveryTime) {
+          transitionToPhase('hold', round + 1);
+        }
+        break;
+      }
+
       case 'message': {
-        // Fade out starting at 7 seconds
+        // Fade starting at 7s
         if (elapsed >= 7000 && elapsed < MESSAGE_DURATION) {
           const fadeProgress = (elapsed - 7000) / 3000;
           setMessageOpacity(1 - fadeProgress);
         }
         
         if (elapsed >= MESSAGE_DURATION) {
-          // After message, go to recovery breath (orb for 20s)
-          transitionToPhase('recoveryBreath', round + 1);
-        }
-        break;
-      }
-
-      case 'recovery': {
-        // 10 seconds of "breathe normally" black screen
-        if (elapsed >= RECOVERY_REST_DURATION) {
-          transitionToPhase('recoveryBreath', round + 1);
-        }
-        break;
-      }
-
-      case 'recoveryBreath': {
-        // Two breaths with orb (20 seconds) before next hold
-        let scale: number;
-        let bPhase: 'inhale' | 'exhale';
-
-        const cycleTime = elapsed % BREATH_CYCLE;
-        
-        if (cycleTime < INHALE_DURATION) {
-          const progress = cycleTime / INHALE_DURATION;
-          const eased = easeInOutQuad(progress);
-          scale = 1 + eased * 0.35;
-          bPhase = 'inhale';
-        } else {
-          const exhaleElapsed = cycleTime - INHALE_DURATION;
-          const progress = exhaleElapsed / EXHALE_DURATION;
-          const eased = easeInOutQuad(Math.min(progress, 1));
-          scale = 1.35 - eased * 0.35;
-          bPhase = 'exhale';
-        }
-
-        setOrbScale(scale);
-        setBreathPhase(bPhase);
-
-        if (elapsed >= RECOVERY_BREATH_DURATION) {
-          transitionToPhase('hold');
+          // Continue to recovery for remaining 20s
+          transitionToPhase('recovery');
         }
         break;
       }
@@ -410,36 +353,31 @@ export default function SurrenderSimulationPage() {
       case 'closing': {
         if (elapsed >= CLOSING_DURATION) {
           transitionToPhase('complete');
-          return; // Stop animation loop
+          return;
         }
         break;
       }
 
       case 'complete':
-        return; // Stop animation loop
+        return;
     }
 
-    // Continue animation loop
     animationFrameRef.current = requestAnimationFrame(animate);
-  }, [transitionToPhase, playTone]);
+  }, [transitionToPhase, playReleaseTone]);
 
-  // Start animation when phase changes to active phase
   useEffect(() => {
     if (phase !== 'instructions' && phase !== 'complete') {
       phaseStartTimeRef.current = performance.now();
       animationFrameRef.current = requestAnimationFrame(animate);
     }
-
     return cancelAnimation;
   }, [phase, animate, cancelAnimation]);
 
-  // Start the practice
   const handleStart = () => {
     initAudio();
     transitionToPhase('opening');
   };
 
-  // Reset to beginning
   const handleRestart = () => {
     cancelAnimation();
     setPhase('instructions');
@@ -484,7 +422,7 @@ export default function SurrenderSimulationPage() {
         color: COLORS.textPrimary,
       }}
     >
-      {/* INSTRUCTIONS SCREEN */}
+      {/* INSTRUCTIONS */}
       {phase === 'instructions' && (
         <div style={{ maxWidth: '420px', textAlign: 'center' }}>
           <p
@@ -515,19 +453,50 @@ export default function SurrenderSimulationPage() {
               fontSize: '0.9rem',
               lineHeight: 1.7,
               textAlign: 'left',
-              marginBottom: '3rem',
+              marginBottom: '2rem',
             }}
           >
             <p style={{ marginBottom: '1rem' }}>
               This practice conditions your nervous system to surrender under rising intensity rather than fight or manage discomfort.
             </p>
-            <p style={{ marginBottom: '1.5rem' }}>
-              You'll begin with 1 minute of slow breathing, followed by 5 progressive breath holds (10 to 30 seconds). All holds are on the exhale with empty lungs. A tone signals when to hold and when to release.
+            <p style={{ marginBottom: '1rem' }}>
+              You'll begin with 1 minute of guided breathing, followed by 5 progressive breath holds (10 to 30 seconds).
             </p>
-            <p style={{ color: COLORS.textDim }}>
-              <span style={{ color: 'rgba(245, 242, 236, 0.6)' }}>Duration:</span> ~6 minutes<br />
-              <span style={{ color: 'rgba(245, 242, 236, 0.6)' }}>Position:</span> Seated comfortably. Follow prompts on screen.
+          </div>
+
+          {/* Key instruction - emphasized */}
+          <div
+            style={{
+              backgroundColor: 'rgba(255, 158, 25, 0.08)',
+              border: '1px solid rgba(255, 158, 25, 0.2)',
+              borderRadius: '8px',
+              padding: '1rem 1.25rem',
+              marginBottom: '2rem',
+              textAlign: 'center',
+            }}
+          >
+            <p
+              style={{
+                ...fontBody,
+                color: COLORS.accent,
+                fontSize: '0.85rem',
+                lineHeight: 1.6,
+              }}
+            >
+              When a tone sounds, allow the breath to empty and hold at the end of the exhale.
             </p>
+          </div>
+
+          <div
+            style={{
+              ...fontBody,
+              color: COLORS.textDim,
+              fontSize: '0.85rem',
+              marginBottom: '2.5rem',
+            }}
+          >
+            <span style={{ color: 'rgba(245, 242, 236, 0.6)' }}>Duration:</span> ~6 minutes<br />
+            <span style={{ color: 'rgba(245, 242, 236, 0.6)' }}>Position:</span> Seated comfortably
           </div>
           
           <button
@@ -556,7 +525,7 @@ export default function SurrenderSimulationPage() {
         </div>
       )}
 
-      {/* OPENING TEXT */}
+      {/* OPENING */}
       {phase === 'opening' && (
         <div style={{ maxWidth: '340px', textAlign: 'center' }}>
           <p style={{ ...fontHeading, fontSize: 'clamp(1.25rem, 4vw, 1.5rem)', lineHeight: 1.6 }}>
@@ -571,19 +540,9 @@ export default function SurrenderSimulationPage() {
         </div>
       )}
 
-      {/* WARMUP - Continuous breathing with orb */}
+      {/* WARMUP - Orb */}
       {phase === 'warmup' && (
-        <BreathingOrb orbScale={orbScale} phase={breathPhase} isActive={true} />
-      )}
-
-      {/* LEAD BREATH - Two breaths with orb before first hold */}
-      {phase === 'leadBreath' && (
-        <BreathingOrb orbScale={orbScale} phase={breathPhase} isActive={true} />
-      )}
-
-      {/* RECOVERY BREATH - Two breaths with orb before subsequent holds */}
-      {phase === 'recoveryBreath' && (
-        <BreathingOrb orbScale={orbScale} phase={breathPhase} isActive={true} />
+        <BreathingOrb orbScale={orbScale} phase={breathPhase} />
       )}
 
       {/* HOLD */}
@@ -592,7 +551,7 @@ export default function SurrenderSimulationPage() {
           <p
             style={{
               ...fontHeading,
-              fontSize: 'clamp(1.5rem, 5vw, 2rem)',
+              fontSize: 'clamp(1.75rem, 6vw, 2.5rem)',
               letterSpacing: '0.3em',
             }}
           >
@@ -601,14 +560,14 @@ export default function SurrenderSimulationPage() {
         </div>
       )}
 
-      {/* RECOVERY - "breathe normally" text */}
+      {/* RECOVERY */}
       {phase === 'recovery' && (
         <div style={{ textAlign: 'center' }}>
           <p
             style={{
               ...fontBody,
-              fontSize: '0.85rem',
-              color: 'rgba(245, 242, 236, 0.3)',
+              fontSize: '0.9rem',
+              color: 'rgba(245, 242, 236, 0.4)',
             }}
           >
             breathe normally
@@ -616,7 +575,7 @@ export default function SurrenderSimulationPage() {
         </div>
       )}
 
-      {/* MESSAGE - "Let this happen." after round 3 */}
+      {/* MESSAGE - after round 3 */}
       {phase === 'message' && (
         <div
           style={{
@@ -657,7 +616,7 @@ export default function SurrenderSimulationPage() {
               height: '80px',
               margin: '0 auto 1.5rem',
               borderRadius: '50%',
-              border: `1px solid rgba(255, 158, 25, 0.3)`,
+              border: '1px solid rgba(255, 158, 25, 0.3)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -722,15 +681,9 @@ export default function SurrenderSimulationPage() {
         </div>
       )}
 
-      {/* Footer - only on instructions and complete */}
+      {/* Footer */}
       {(phase === 'instructions' || phase === 'complete') && (
-        <div
-          style={{
-            position: 'absolute',
-            bottom: '2rem',
-            textAlign: 'center',
-          }}
-        >
+        <div style={{ position: 'absolute', bottom: '2rem', textAlign: 'center' }}>
           <p
             style={{
               ...fontBody,
