@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Play, Pause, RotateCcw } from 'lucide-react';
+import Link from 'next/link';
+import { Play, Pause, RotateCcw, ArrowLeft } from 'lucide-react';
 
 export default function AW5PrepPage() {
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -83,6 +84,9 @@ export default function AW5PrepPage() {
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
+  // Show back button when not actively playing
+  const showBackButton = !hasStarted || isComplete;
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center px-4">
       {/* Hidden audio element */}
@@ -92,6 +96,17 @@ export default function AW5PrepPage() {
         preload="auto"
       />
 
+      {/* Back Button - Top Left */}
+      {showBackButton && (
+        <Link 
+          href="/tools/awaken-with-5"
+          className="absolute top-6 left-6 flex items-center gap-2 text-gray-500 hover:text-[#ff9e19] transition-colors text-sm"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back to Guide</span>
+        </Link>
+      )}
+
       {/* Main container */}
       <div className="w-full max-w-md">
         {/* Header */}
@@ -100,10 +115,10 @@ export default function AW5PrepPage() {
             Awaken with 5
           </p>
           <h1 className="text-white text-2xl md:text-3xl font-light">
-            AW5 Core Prep Ritual
+            Daily Core Ritual
           </h1>
           <p className="text-gray-500 text-sm mt-2">
-            7 minute guided preparation protocol
+            7 minute guided preparation
           </p>
         </div>
 
@@ -111,7 +126,7 @@ export default function AW5PrepPage() {
         {isComplete ? (
           <div className="text-center">
             <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-[#ff9e19]/10 flex items-center justify-center">
-              <span className="text-3xl">✓</span>
+              <span className="text-3xl text-[#ff9e19]">✓</span>
             </div>
             <h2 className="text-white text-xl mb-2">Ritual Complete</h2>
             <p className="text-gray-400 text-sm mb-8">
@@ -183,19 +198,22 @@ export default function AW5PrepPage() {
       </div>
 
       {/* Footer */}
-      <div className="absolute bottom-6 text-center">
-        <p className="text-gray-600 text-xs">
-          Part of the{' '}
-          <a
-            href="https://unbecoming.app"
-            className="text-[#ff9e19] hover:underline"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            IOS System
-          </a>
-        </p>
-      </div>
+      {showBackButton && (
+        <div className="absolute bottom-6 text-center">
+          <p className="text-gray-600 text-xs">
+            Part of the{' '}
+            <a
+              href="https://awakenwith5.com"
+              className="text-[#ff9e19]/60 hover:text-[#ff9e19] transition-colors"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Awaken with 5
+            </a>
+            {' '}experience
+          </p>
+        </div>
+      )}
     </div>
   );
 }
