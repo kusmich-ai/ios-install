@@ -445,7 +445,7 @@ export default function AwakenWith5Page() {
               duration="~6 min"
               frequency="1-2 days per week for 4 weeks"
               description="Progressive breath holds that train your body to remain open as intensity rises, without attempting to manage it. Builds your surrender reflex."
-              href="/tools/surrender-simulation"
+              href="/tools/surrender"
             />
             <ToolCard
               icon="🔮"
@@ -453,7 +453,7 @@ export default function AwakenWith5Page() {
               duration="~5 min"
               frequency="1-2 days per week for 4 weeks"
               description="Silent inquiry that loosens identity so recognition can happen effortlessly. Not about finding who you are — but noticing what remains when the story stops."
-              href="/tools/identity-softening"
+              href="/tools/identity"
             />
           </div>
 
