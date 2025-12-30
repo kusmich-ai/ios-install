@@ -13,19 +13,22 @@ type Phase =
   | 'leadBreath'
   | 'hold'
   | 'recovery'
+  | 'recoveryBreath'
   | 'message'
   | 'closing'
   | 'complete';
 
 const HOLD_DURATIONS = [10, 15, 20, 25, 30]; // seconds per round
 const WARMUP_DURATION = 60000; // 1 minute in ms
-const RECOVERY_DURATION = 30000; // 30 seconds between holds
+const RECOVERY_REST_DURATION = 10000; // 10 seconds "breathe normally"
+const RECOVERY_BREATH_DURATION = 20000; // 2 breaths (20 seconds)
 const OPENING_DURATION = 12000; // 12 seconds
 const MESSAGE_DURATION = 10000; // "Let this happen" visible duration
 const CLOSING_DURATION = 8000; // How long closing text shows
 const INHALE_DURATION = 4000; // 4 seconds
 const EXHALE_DURATION = 6000; // 6 seconds
 const BREATH_CYCLE = 10000; // Full breath cycle
+const LEAD_BREATH_DURATION = 20000; // 2 breaths before first hold
 
 // Colors matching ResonanceBreathing
 const COLORS = {
@@ -307,18 +310,19 @@ export default function SurrenderSimulationPage() {
       }
 
       case 'leadBreath': {
-        // One full breath before hold (inhale then exhale)
-        const totalLeadDuration = INHALE_DURATION + EXHALE_DURATION;
+        // Two full breaths before first hold (20 seconds total)
         let scale: number;
         let bPhase: 'inhale' | 'exhale';
 
-        if (elapsed < INHALE_DURATION) {
-          const progress = elapsed / INHALE_DURATION;
+        const cycleTime = elapsed % BREATH_CYCLE;
+        
+        if (cycleTime < INHALE_DURATION) {
+          const progress = cycleTime / INHALE_DURATION;
           const eased = easeInOutQuad(progress);
           scale = 1 + eased * 0.35;
           bPhase = 'inhale';
         } else {
-          const exhaleElapsed = elapsed - INHALE_DURATION;
+          const exhaleElapsed = cycleTime - INHALE_DURATION;
           const progress = exhaleElapsed / EXHALE_DURATION;
           const eased = easeInOutQuad(Math.min(progress, 1));
           scale = 1.35 - eased * 0.35;
@@ -328,7 +332,7 @@ export default function SurrenderSimulationPage() {
         setOrbScale(scale);
         setBreathPhase(bPhase);
 
-        if (elapsed >= totalLeadDuration) {
+        if (elapsed >= LEAD_BREATH_DURATION) {
           transitionToPhase('hold');
         }
         break;
@@ -360,17 +364,45 @@ export default function SurrenderSimulationPage() {
         }
         
         if (elapsed >= MESSAGE_DURATION) {
-          transitionToPhase('recovery');
+          // After message, go to recovery breath (orb for 20s)
+          transitionToPhase('recoveryBreath', round + 1);
         }
         break;
       }
 
       case 'recovery': {
-        // After round 3, recovery is only 20s (10s was message)
-        const recoveryTime = round === 3 ? 20000 : RECOVERY_DURATION;
+        // 10 seconds of "breathe normally" black screen
+        if (elapsed >= RECOVERY_REST_DURATION) {
+          transitionToPhase('recoveryBreath', round + 1);
+        }
+        break;
+      }
+
+      case 'recoveryBreath': {
+        // Two breaths with orb (20 seconds) before next hold
+        let scale: number;
+        let bPhase: 'inhale' | 'exhale';
+
+        const cycleTime = elapsed % BREATH_CYCLE;
         
-        if (elapsed >= recoveryTime) {
-          transitionToPhase('leadBreath', round + 1);
+        if (cycleTime < INHALE_DURATION) {
+          const progress = cycleTime / INHALE_DURATION;
+          const eased = easeInOutQuad(progress);
+          scale = 1 + eased * 0.35;
+          bPhase = 'inhale';
+        } else {
+          const exhaleElapsed = cycleTime - INHALE_DURATION;
+          const progress = exhaleElapsed / EXHALE_DURATION;
+          const eased = easeInOutQuad(Math.min(progress, 1));
+          scale = 1.35 - eased * 0.35;
+          bPhase = 'exhale';
+        }
+
+        setOrbScale(scale);
+        setBreathPhase(bPhase);
+
+        if (elapsed >= RECOVERY_BREATH_DURATION) {
+          transitionToPhase('hold');
         }
         break;
       }
@@ -544,8 +576,13 @@ export default function SurrenderSimulationPage() {
         <BreathingOrb orbScale={orbScale} phase={breathPhase} isActive={true} />
       )}
 
-      {/* LEAD BREATH - One breath with orb before hold */}
+      {/* LEAD BREATH - Two breaths with orb before first hold */}
       {phase === 'leadBreath' && (
+        <BreathingOrb orbScale={orbScale} phase={breathPhase} isActive={true} />
+      )}
+
+      {/* RECOVERY BREATH - Two breaths with orb before subsequent holds */}
+      {phase === 'recoveryBreath' && (
         <BreathingOrb orbScale={orbScale} phase={breathPhase} isActive={true} />
       )}
 
