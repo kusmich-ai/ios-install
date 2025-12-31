@@ -462,7 +462,7 @@ export default function ToolsSidebar({
                               // NORMAL PRACTICE BUTTONS
                               (() => {
                                 // Practices with working modals that auto-log on completion
-                                const hasWorkingModal = practice.id === 'hrvb' || practice.id === 'awareness_rep';
+                                const hasWorkingModal = practice.id === 'hrvb' || practice.id === 'awareness_rep' || practice.id === 'somatic_flow';
                                 
                                 return (
                                   <>
