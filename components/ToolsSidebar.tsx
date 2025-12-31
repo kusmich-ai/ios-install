@@ -7,6 +7,7 @@ import { getStagePractices, getUnlockedOnDemandTools } from '@/app/config/stages
 import type { UserProgress } from '@/app/hooks/useUserProgress';
 import { useResonanceBreathing } from '@/components/ResonanceModal';
 import { useAwarenessRep } from '@/components/AwarenessRepModal';
+import { useSomaticFlow } from '@/components/SomaticFlowModal';
 import { useCoRegulation } from '@/components/CoRegulationModal';
 import { useNightlyDebrief } from '@/components/NightlyDebriefModal';
 import { useLoopDeLooping } from '@/components/LoopDeLoopingModal';
@@ -52,6 +53,7 @@ export default function ToolsSidebar({
   // Initialize modal hooks
   const { open: openResonance, Modal: ResonanceModal } = useResonanceBreathing();
   const { open: openAwarenessRep, Modal: AwarenessRepModal } = useAwarenessRep();
+  const { open: openSomaticFlow, Modal: SomaticFlowModal } = useSomaticFlow();
   const { open: openCoRegulation, Modal: CoRegulationModal } = useCoRegulation();
   const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebrief();
   const { open: openLoopDeLooping, Modal: LoopDeLoopingModal } = useLoopDeLooping();
@@ -85,6 +87,8 @@ export default function ToolsSidebar({
       openResonance();
     } else if (practiceId === 'awareness_rep') {
       openAwarenessRep();
+      } else if (practiceId === 'somatic_flow') {
+    openSomaticFlow(); 
     } else if (practiceId === 'co_regulation') {
       openCoRegulation();
     } else if (practiceId === 'nightly_debrief') {
@@ -191,6 +195,9 @@ export default function ToolsSidebar({
       <AwarenessRepModal 
         onComplete={() => handleModalComplete('awareness_rep', 'Awareness Rep')} 
       />
+<SomaticFlowModal 
+  onComplete={() => handleModalComplete('somatic_flow', 'Somatic Flow')} 
+/>
       <CoRegulationModal 
         onComplete={() => handleModalComplete('co_regulation', 'Co-Regulation Practice')} 
       />
