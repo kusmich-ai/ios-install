@@ -7,6 +7,7 @@ import { getStagePractices, getUnlockedOnDemandTools } from '@/app/config/stages
 import type { UserProgress } from '@/app/hooks/useUserProgress';
 import { useResonanceBreathing } from '@/components/ResonanceModal';
 import { useAwarenessRep } from '@/components/AwarenessRepModal';
+import { useSomaticFlow } from '@/components/SomaticFlowModal';
 import { useCoRegulation } from '@/components/CoRegulationModal';
 import { useNightlyDebrief } from '@/components/NightlyDebriefModal';
 import { useLoopDeLooping } from '@/components/LoopDeLoopingModal';
@@ -48,6 +49,7 @@ export default function FloatingActionButton({
   // Initialize modal hooks
   const { open: openResonance, Modal: ResonanceModal } = useResonanceBreathing();
   const { open: openAwarenessRep, Modal: AwarenessRepModal } = useAwarenessRep();
+  const { open: openSomaticFlow, Modal: SomaticFlowModal } = useSomaticFlow();
   const { open: openCoRegulation, Modal: CoRegulationModal } = useCoRegulation();
   const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebrief();
   const { open: openLoopDeLooping, Modal: LoopDeLoopingModal } = useLoopDeLooping();
@@ -74,6 +76,9 @@ export default function FloatingActionButton({
     } else if (practiceId === 'awareness_rep') {
       openAwarenessRep();
       setIsOpen(false);
+      } else if (practiceId === 'somatic_flow') {
+  openSomaticFlow();
+  setIsOpen(false);
     } else if (practiceId === 'co_regulation') {
       openCoRegulation();
       setIsOpen(false);
@@ -186,6 +191,9 @@ export default function FloatingActionButton({
       />
       <NightlyDebriefModal 
         onComplete={() => handleModalComplete('nightly_debrief', 'Nightly Debrief')} 
+      />
+      <SomaticFlowModal 
+        onComplete={() => handleModalComplete('somatic_flow', 'Somatic Flow')} 
       />
       <LoopDeLoopingModal />
 
@@ -408,7 +416,7 @@ export default function FloatingActionButton({
                           // NORMAL PRACTICE BUTTONS
                           (() => {
                             // Practices with working modals that auto-log on completion
-                            const hasWorkingModal = practice.id === 'hrvb' || practice.id === 'awareness_rep';
+                            const hasWorkingModal = practice.id === 'hrvb' || practice.id === 'awareness_rep' || practice.id === 'somatic_flow';
                             
                             return (
                               <>
