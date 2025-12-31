@@ -176,7 +176,7 @@ export default function SomaticFlow({ onComplete }: SomaticFlowProps) {
       }}
       onClick={handleScreenTap}
     >
-      {/* Video Element - Full Screen */}
+      {/* Video Element - Centered */}
       <video
         ref={videoRef}
         src="/video/SomaticFlowS.mp4"
@@ -190,12 +190,15 @@ export default function SomaticFlow({ onComplete }: SomaticFlowProps) {
         onCanPlay={handleCanPlay}
         style={{
           position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: "85%",
+          maxWidth: "800px",
+          maxHeight: "70vh",
           objectFit: "contain",
-          backgroundColor: "#0a0a0a",
+          borderRadius: "12px",
+          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
         }}
       />
 
