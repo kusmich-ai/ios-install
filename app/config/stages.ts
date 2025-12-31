@@ -74,7 +74,7 @@ export const STAGES: Stage[] = [
         id: 'somatic_flow',
         name: 'Somatic Flow',
         shortName: 'Somatic',
-        duration: 3,
+        duration: 4,
         icon: '🧘',
         description: 'Cat-Cow + Squat-to-Reach with breath'
       }
