@@ -22,7 +22,7 @@ export default function Home() {
             className="px-8 py-4 rounded-lg font-semibold text-lg transition-all hover:opacity-90"
             style={{ backgroundColor: '#ff9e19', color: '#0a0a0a' }}
           >
-            Start Free Trial
+            Get Stage 1, 100% Free
           </Link>
           
           <Link
@@ -35,7 +35,7 @@ export default function Home() {
         </div>
         
         <p className="text-sm text-gray-500 mt-8">
-          7-day free trial • No credit card required
+          Stage 1 is 100% free. No credit card required.
         </p>
       </div>
     </div>
