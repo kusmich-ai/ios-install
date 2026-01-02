@@ -7,7 +7,7 @@ export default function Home() {
     <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0a0a0a' }}>
       <div className="text-center max-w-2xl px-4">
         <h1 className="text-6xl font-bold mb-6" style={{ color: '#ff9e19' }}>
-          IOS System
+          IOS Installation System
         </h1>
         <p className="text-2xl text-gray-300 mb-4">
           Integrated Operating System
