@@ -10,6 +10,7 @@ import FloatingActionButton from '@/components/FloatingActionButton';
 import MobileDashboard from '@/components/MobileDashboard';
 import { createClient } from '@/lib/supabase-client';
 import Link from 'next/link';
+import AwakenWithFiveCard from './AwakenWithFiveCard';
 
 // ============================================
 // TEMPLATE SYSTEM IMPORTS
