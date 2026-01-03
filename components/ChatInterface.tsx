@@ -4161,22 +4161,6 @@ This isn't judgment — it's data. The resistance is telling you something. Want
                 </button>
               </div>
             )}
-            
-            {/* Current Identity */}
-            {progress?.currentIdentity && (
-              <div className="bg-gray-900 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-gray-300 mb-2">Current Identity</h3>
-                <p className="text-sm text-[#ff9e19] font-medium">{progress.currentIdentity}</p>
-                {(progress as any)?.microAction && (
-                  <p className="text-xs text-gray-400 mt-1">Daily proof: {(progress as any).microAction}</p>
-                )}
-                {progress?.identitySprintDay && (
-                  <p className="text-xs text-gray-500 mt-2">
-                    Day {progress.identitySprintDay} of 21
-                  </p>
-                )}
-              </div>
-            )}
             {/* Current Identity */}
             {progress?.currentIdentity && (
               <div className="bg-gray-900 rounded-lg p-4">
