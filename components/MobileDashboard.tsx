@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
+import AwakenWithFiveCard from './AwakenWithFiveCard';
 
 interface UnlockProgress {
   adherenceMet: boolean;
@@ -402,8 +403,12 @@ export default function MobileDashboard({
               )}
             </div>
           )}
+
+          {/* Awaken with 5 CTA */}
+          <AwakenWithFiveCard />
         </div>
       </div>
     </>
   );
+}
 }
