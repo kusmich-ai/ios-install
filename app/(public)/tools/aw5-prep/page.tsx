@@ -10,7 +10,8 @@ export default function AW5PrepPage() {
   const [duration, setDuration] = useState(426); // 7:06 = 426 seconds
   const [isComplete, setIsComplete] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isAudioReady, setIsAudioReady] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
 
   // Format time as M:SS
@@ -32,8 +33,9 @@ export default function AW5PrepPage() {
       setDuration(audio.duration || 426);
     };
     
-    const onCanPlayThrough = () => {
-      console.log('[AW5Prep] Audio can play through');
+    const onCanPlay = () => {
+      console.log('[AW5Prep] Audio can play');
+      setIsAudioReady(true);
       setIsLoading(false);
       setAudioError(null);
     };
@@ -47,6 +49,7 @@ export default function AW5PrepPage() {
     const onPlay = () => {
       console.log('[AW5Prep] Audio playing');
       setIsPlaying(true);
+      setIsLoading(false);
     };
     
     const onPause = () => {
@@ -64,7 +67,7 @@ export default function AW5PrepPage() {
             errorMessage = 'Audio loading was aborted';
             break;
           case MediaError.MEDIA_ERR_NETWORK:
-            errorMessage = 'Network error while loading audio';
+            errorMessage = 'Network error - check your connection';
             break;
           case MediaError.MEDIA_ERR_DECODE:
             errorMessage = 'Audio file could not be decoded';
@@ -81,18 +84,22 @@ export default function AW5PrepPage() {
     };
     
     const onWaiting = () => {
-      console.log('[AW5Prep] Audio waiting/buffering');
-      setIsLoading(true);
+      console.log('[AW5Prep] Audio buffering...');
+      // Only show loading if already playing (buffering mid-playback)
+      if (isPlaying) {
+        setIsLoading(true);
+      }
     };
     
     const onPlaying = () => {
       console.log('[AW5Prep] Audio started playing');
       setIsLoading(false);
+      setIsPlaying(true);
     };
 
     audio.addEventListener('timeupdate', onTimeUpdate);
     audio.addEventListener('loadedmetadata', onLoadedMetadata);
-    audio.addEventListener('canplaythrough', onCanPlayThrough);
+    audio.addEventListener('canplay', onCanPlay);
     audio.addEventListener('ended', onEnded);
     audio.addEventListener('play', onPlay);
     audio.addEventListener('pause', onPause);
@@ -100,13 +107,10 @@ export default function AW5PrepPage() {
     audio.addEventListener('waiting', onWaiting);
     audio.addEventListener('playing', onPlaying);
 
-    // Try to load the audio
-    audio.load();
-
     return () => {
       audio.removeEventListener('timeupdate', onTimeUpdate);
       audio.removeEventListener('loadedmetadata', onLoadedMetadata);
-      audio.removeEventListener('canplaythrough', onCanPlayThrough);
+      audio.removeEventListener('canplay', onCanPlay);
       audio.removeEventListener('ended', onEnded);
       audio.removeEventListener('play', onPlay);
       audio.removeEventListener('pause', onPause);
@@ -114,7 +118,7 @@ export default function AW5PrepPage() {
       audio.removeEventListener('waiting', onWaiting);
       audio.removeEventListener('playing', onPlaying);
     };
-  }, []);
+  }, [isPlaying]);
 
   const togglePlayPause = async () => {
     const audio = audioRef.current;
@@ -129,6 +133,13 @@ export default function AW5PrepPage() {
       setAudioError(null);
       setIsLoading(true);
       audio.load();
+      
+      // Set a timeout to stop loading if it takes too long
+      setTimeout(() => {
+        if (!isAudioReady && !audioError) {
+          setIsLoading(false);
+        }
+      }, 10000);
       return;
     }
 
@@ -142,7 +153,17 @@ export default function AW5PrepPage() {
       try {
         setIsLoading(true);
         console.log('[AW5Prep] Attempting to play...');
+        
+        // Set a timeout to stop spinner if play takes too long
+        const loadingTimeout = setTimeout(() => {
+          if (!isPlaying) {
+            console.log('[AW5Prep] Play timeout - stopping spinner');
+            setIsLoading(false);
+          }
+        }, 5000);
+        
         await audio.play();
+        clearTimeout(loadingTimeout);
         console.log('[AW5Prep] Play successful');
       } catch (error) {
         console.error('[AW5Prep] Play failed:', error);
