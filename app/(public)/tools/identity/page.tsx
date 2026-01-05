@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import Link from 'next/link';
 
 // ============================================
 // TYPES & CONSTANTS
@@ -43,8 +42,8 @@ const COLORS = {
 
 function BackButton() {
   return (
-    <Link 
-      href="/tools/awaken-with-5"
+    <a 
+      href="https://www.unbecoming.app/tools/awaken-with-5"
       style={{
         position: 'absolute',
         top: '1.5rem',
@@ -69,7 +68,7 @@ function BackButton() {
         <path d="M19 12H5M12 19l-7-7 7-7" />
       </svg>
       <span>Back to Guide</span>
-    </Link>
+    </a>
   );
 }
 
