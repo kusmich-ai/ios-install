@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Play, Pause, RotateCcw, ArrowLeft } from 'lucide-react';
+import { Play, Pause, RotateCcw, ArrowLeft, Loader2 } from 'lucide-react';
 
 export default function AW5PrepPage() {
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -12,6 +12,7 @@ export default function AW5PrepPage() {
   const [hasStarted, setHasStarted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [readyState, setReadyState] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -136,23 +137,56 @@ export default function AW5PrepPage() {
       console.log('[Action] Pausing...');
       audio.pause();
     } else {
-      console.log('[Action] Playing...');
+      console.log('[Action] Playing... readyState:', audio.readyState);
+      
       try {
-        await audio.play();
-        console.log('[Action] Play promise resolved');
+        // iOS Safari fix: if audio hasn't loaded, load it first
+        if (audio.readyState < 2) {
+          console.log('[Action] Audio not ready, loading first...');
+          setIsLoading(true);
+          
+          // Create a promise that resolves when audio can play
+          const canPlayPromise = new Promise<void>((resolve, reject) => {
+            const timeout = setTimeout(() => {
+              reject(new Error('Audio load timeout'));
+            }, 10000);
+            
+            const onCanPlay = () => {
+              clearTimeout(timeout);
+              audio.removeEventListener('canplay', onCanPlay);
+              audio.removeEventListener('error', onError);
+              console.log('[Action] Audio ready after load');
+              resolve();
+            };
+            
+            const onError = () => {
+              clearTimeout(timeout);
+              audio.removeEventListener('canplay', onCanPlay);
+              audio.removeEventListener('error', onError);
+              reject(new Error('Audio load error'));
+            };
+            
+            audio.addEventListener('canplay', onCanPlay);
+            audio.addEventListener('error', onError);
+          });
+          
+          // Trigger load
+          audio.load();
+          
+          // Wait for it to be ready
+          await canPlayPromise;
+          setIsLoading(false);
+        }
         
-        // Double-check it's actually playing after a moment
-        setTimeout(() => {
-          if (audio.paused && !audio.ended) {
-            console.warn('[Action] Audio paused unexpectedly');
-            setIsPlaying(false);
-            setError('Tap again to play');
-          }
-        }, 500);
+        // Now play
+        await audio.play();
+        console.log('[Action] Play successful');
+        
       } catch (err) {
         console.error('[Action] Play failed:', err);
         setIsPlaying(false);
-        setError('Tap to play');
+        setIsLoading(false);
+        setError('Tap to try again');
       }
     }
   };
@@ -185,7 +219,7 @@ export default function AW5PrepPage() {
       {/* Audio element */}
       <audio
         ref={audioRef}
-        preload="metadata"
+        preload="auto"
         playsInline
       >
         <source src="/audio/AW5Prep.mp3" type="audio/mpeg" />
@@ -242,13 +276,16 @@ export default function AW5PrepPage() {
             <div className="flex justify-center mb-8">
               <button
                 onClick={handlePlayPause}
+                disabled={isLoading}
                 className={`w-20 h-20 rounded-full flex items-center justify-center transition-colors shadow-lg shadow-[#ff9e19]/20 ${
                   error 
                     ? 'bg-red-500/80 hover:bg-red-500' 
                     : 'bg-[#ff9e19] hover:bg-[#ffb347]'
-                }`}
+                } ${isLoading ? 'opacity-80' : ''}`}
               >
-                {isPlaying ? (
+                {isLoading ? (
+                  <Loader2 className="w-8 h-8 text-black animate-spin" />
+                ) : isPlaying ? (
                   <Pause className="w-8 h-8 text-black" fill="black" />
                 ) : (
                   <Play className="w-8 h-8 text-black ml-1" fill="black" />
@@ -301,7 +338,7 @@ export default function AW5PrepPage() {
             {/* Debug info - TEMPORARY - remove after testing */}
             {hasStarted && (
               <div className="mt-8 p-3 bg-gray-900 rounded text-xs text-gray-500 font-mono">
-                <p>State: {isPlaying ? 'PLAYING' : 'PAUSED'}</p>
+                <p>State: {isLoading ? 'LOADING' : isPlaying ? 'PLAYING' : 'PAUSED'}</p>
                 <p>Time: {currentTime.toFixed(1)}s / {duration.toFixed(1)}s</p>
                 <p>Ready: {readyState} (need 2+)</p>
                 {error && <p className="text-red-400">Error: {error}</p>}
