@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import Link from 'next/link';
-import { Play, Pause, RotateCcw, ArrowLeft } from 'lucide-react';
+import { Play, Pause, RotateCcw, ArrowLeft, Loader2 } from 'lucide-react';
 
 export default function AW5PrepPage() {
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -11,6 +10,8 @@ export default function AW5PrepPage() {
   const [duration, setDuration] = useState(426); // 7:06 = 426 seconds
   const [isComplete, setIsComplete] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [audioError, setAudioError] = useState<string | null>(null);
 
   // Format time as M:SS
   const formatTime = (seconds: number) => {
@@ -25,32 +26,111 @@ export default function AW5PrepPage() {
     if (!audio) return;
 
     const onTimeUpdate = () => setCurrentTime(audio.currentTime);
-    const onLoadedMetadata = () => setDuration(audio.duration || 426);
+    
+    const onLoadedMetadata = () => {
+      console.log('[AW5Prep] Audio metadata loaded, duration:', audio.duration);
+      setDuration(audio.duration || 426);
+    };
+    
+    const onCanPlayThrough = () => {
+      console.log('[AW5Prep] Audio can play through');
+      setIsLoading(false);
+      setAudioError(null);
+    };
+    
     const onEnded = () => {
+      console.log('[AW5Prep] Audio ended');
       setIsPlaying(false);
       setIsComplete(true);
     };
-    const onPlay = () => setIsPlaying(true);
-    const onPause = () => setIsPlaying(false);
+    
+    const onPlay = () => {
+      console.log('[AW5Prep] Audio playing');
+      setIsPlaying(true);
+    };
+    
+    const onPause = () => {
+      console.log('[AW5Prep] Audio paused');
+      setIsPlaying(false);
+    };
+    
+    const onError = (e: Event) => {
+      const target = e.target as HTMLAudioElement;
+      let errorMessage = 'Unable to load audio';
+      
+      if (target.error) {
+        switch (target.error.code) {
+          case MediaError.MEDIA_ERR_ABORTED:
+            errorMessage = 'Audio loading was aborted';
+            break;
+          case MediaError.MEDIA_ERR_NETWORK:
+            errorMessage = 'Network error while loading audio';
+            break;
+          case MediaError.MEDIA_ERR_DECODE:
+            errorMessage = 'Audio file could not be decoded';
+            break;
+          case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
+            errorMessage = 'Audio format not supported';
+            break;
+        }
+      }
+      
+      console.error('[AW5Prep] Audio error:', errorMessage, target.error);
+      setAudioError(errorMessage);
+      setIsLoading(false);
+    };
+    
+    const onWaiting = () => {
+      console.log('[AW5Prep] Audio waiting/buffering');
+      setIsLoading(true);
+    };
+    
+    const onPlaying = () => {
+      console.log('[AW5Prep] Audio started playing');
+      setIsLoading(false);
+    };
 
     audio.addEventListener('timeupdate', onTimeUpdate);
     audio.addEventListener('loadedmetadata', onLoadedMetadata);
+    audio.addEventListener('canplaythrough', onCanPlayThrough);
     audio.addEventListener('ended', onEnded);
     audio.addEventListener('play', onPlay);
     audio.addEventListener('pause', onPause);
+    audio.addEventListener('error', onError);
+    audio.addEventListener('waiting', onWaiting);
+    audio.addEventListener('playing', onPlaying);
+
+    // Try to load the audio
+    audio.load();
 
     return () => {
       audio.removeEventListener('timeupdate', onTimeUpdate);
       audio.removeEventListener('loadedmetadata', onLoadedMetadata);
+      audio.removeEventListener('canplaythrough', onCanPlayThrough);
       audio.removeEventListener('ended', onEnded);
       audio.removeEventListener('play', onPlay);
       audio.removeEventListener('pause', onPause);
+      audio.removeEventListener('error', onError);
+      audio.removeEventListener('waiting', onWaiting);
+      audio.removeEventListener('playing', onPlaying);
     };
   }, []);
 
-  const togglePlayPause = () => {
+  const togglePlayPause = async () => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio) {
+      console.error('[AW5Prep] No audio element');
+      return;
+    }
+
+    if (audioError) {
+      // Try to reload on error
+      console.log('[AW5Prep] Retrying audio load...');
+      setAudioError(null);
+      setIsLoading(true);
+      audio.load();
+      return;
+    }
 
     if (!hasStarted) {
       setHasStarted(true);
@@ -59,7 +139,16 @@ export default function AW5PrepPage() {
     if (isPlaying) {
       audio.pause();
     } else {
-      audio.play();
+      try {
+        setIsLoading(true);
+        console.log('[AW5Prep] Attempting to play...');
+        await audio.play();
+        console.log('[AW5Prep] Play successful');
+      } catch (error) {
+        console.error('[AW5Prep] Play failed:', error);
+        setAudioError('Tap again to play');
+        setIsLoading(false);
+      }
     }
   };
 
@@ -94,17 +183,18 @@ export default function AW5PrepPage() {
         ref={audioRef}
         src="/audio/AW5Prep.mp3"
         preload="auto"
+        playsInline
       />
 
       {/* Back Button - Top Left */}
       {showBackButton && (
-        <Link 
-          href="/tools/awaken-with-5"
+        <a 
+          href="https://www.unbecoming.app/tools/awaken-with-5"
           className="absolute top-6 left-6 flex items-center gap-2 text-gray-500 hover:text-[#ff9e19] transition-colors text-sm"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Guide</span>
-        </Link>
+        </a>
       )}
 
       {/* Main container */}
@@ -146,15 +236,29 @@ export default function AW5PrepPage() {
             <div className="flex justify-center mb-8">
               <button
                 onClick={togglePlayPause}
-                className="w-20 h-20 rounded-full bg-[#ff9e19] flex items-center justify-center hover:bg-[#ffb347] transition-colors shadow-lg shadow-[#ff9e19]/20"
+                disabled={isLoading && !audioError}
+                className={`w-20 h-20 rounded-full flex items-center justify-center transition-colors shadow-lg shadow-[#ff9e19]/20 ${
+                  audioError 
+                    ? 'bg-red-500/80 hover:bg-red-500' 
+                    : 'bg-[#ff9e19] hover:bg-[#ffb347]'
+                } ${isLoading && !audioError ? 'opacity-70' : ''}`}
               >
-                {isPlaying ? (
+                {isLoading && !audioError ? (
+                  <Loader2 className="w-8 h-8 text-black animate-spin" />
+                ) : isPlaying ? (
                   <Pause className="w-8 h-8 text-black" fill="black" />
                 ) : (
                   <Play className="w-8 h-8 text-black ml-1" fill="black" />
                 )}
               </button>
             </div>
+
+            {/* Error Message */}
+            {audioError && (
+              <p className="text-center text-red-400 text-sm mb-4">
+                {audioError}
+              </p>
+            )}
 
             {/* Progress Section */}
             <div className="space-y-3">
