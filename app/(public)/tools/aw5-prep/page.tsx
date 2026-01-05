@@ -189,7 +189,7 @@ export default function AW5PrepPage() {
       {/* Back Button - Top Left */}
       {showBackButton && (
         <a 
-          href="https://www.unbecoming.app/tools/awaken-with-5"
+          href="https://www.unbecoming.app/tools/aw5"
           className="absolute top-6 left-6 flex items-center gap-2 text-gray-500 hover:text-[#ff9e19] transition-colors text-sm"
         >
           <ArrowLeft className="w-4 h-4" />
