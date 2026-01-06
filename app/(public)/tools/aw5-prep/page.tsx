@@ -12,6 +12,7 @@ export default function AW5PrepPage() {
   const [hasStarted, setHasStarted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [readyState, setReadyState] = useState(0);
+  const [networkState, setNetworkState] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
   const formatTime = (seconds: number) => {
@@ -33,12 +34,14 @@ export default function AW5PrepPage() {
     const handleTimeUpdate = () => {
       setCurrentTime(audio.currentTime);
       setReadyState(audio.readyState);
+      setNetworkState(audio.networkState);
       syncPlayState();
     };
 
     const handleLoadedMetadata = () => {
       console.log('[Audio] Metadata loaded, duration:', audio.duration, 'readyState:', audio.readyState);
       setReadyState(audio.readyState);
+      setNetworkState(audio.networkState);
       if (audio.duration && isFinite(audio.duration)) {
         setDuration(audio.duration);
       }
@@ -48,13 +51,17 @@ export default function AW5PrepPage() {
     const handleCanPlay = () => {
       console.log('[Audio] Can play, readyState:', audio.readyState);
       setReadyState(audio.readyState);
+      setNetworkState(audio.networkState);
+      setIsLoading(false);
       setError(null);
     };
 
     const handlePlay = () => {
       console.log('[Audio] Play event, readyState:', audio.readyState);
       setReadyState(audio.readyState);
+      setNetworkState(audio.networkState);
       setIsPlaying(true);
+      setIsLoading(false);
     };
 
     const handlePause = () => {
@@ -69,9 +76,11 @@ export default function AW5PrepPage() {
     };
 
     const handleError = () => {
-      console.error('[Audio] Error:', audio.error);
+      console.error('[Audio] Error:', audio.error, 'networkState:', audio.networkState);
       setIsPlaying(false);
       setReadyState(audio.readyState);
+      setNetworkState(audio.networkState);
+      setIsLoading(false);
       
       if (audio.error) {
         switch (audio.error.code) {
@@ -90,13 +99,26 @@ export default function AW5PrepPage() {
     };
 
     const handleStalled = () => {
-      console.warn('[Audio] Stalled - buffering issues');
+      console.warn('[Audio] Stalled - buffering issues, networkState:', audio.networkState);
       setReadyState(audio.readyState);
+      setNetworkState(audio.networkState);
     };
 
     const handleWaiting = () => {
-      console.log('[Audio] Waiting for data...');
+      console.log('[Audio] Waiting for data...', 'networkState:', audio.networkState);
       setReadyState(audio.readyState);
+      setNetworkState(audio.networkState);
+    };
+
+    const handleLoadStart = () => {
+      console.log('[Audio] Load started, networkState:', audio.networkState);
+      setNetworkState(audio.networkState);
+    };
+
+    const handleProgress = () => {
+      console.log('[Audio] Progress, readyState:', audio.readyState, 'networkState:', audio.networkState);
+      setReadyState(audio.readyState);
+      setNetworkState(audio.networkState);
     };
 
     audio.addEventListener('timeupdate', handleTimeUpdate);
@@ -108,6 +130,8 @@ export default function AW5PrepPage() {
     audio.addEventListener('error', handleError);
     audio.addEventListener('stalled', handleStalled);
     audio.addEventListener('waiting', handleWaiting);
+    audio.addEventListener('loadstart', handleLoadStart);
+    audio.addEventListener('progress', handleProgress);
 
     return () => {
       audio.removeEventListener('timeupdate', handleTimeUpdate);
@@ -119,10 +143,12 @@ export default function AW5PrepPage() {
       audio.removeEventListener('error', handleError);
       audio.removeEventListener('stalled', handleStalled);
       audio.removeEventListener('waiting', handleWaiting);
+      audio.removeEventListener('loadstart', handleLoadStart);
+      audio.removeEventListener('progress', handleProgress);
     };
   }, []);
 
-  const handlePlayPause = async () => {
+  const handlePlayPause = () => {
     const audio = audioRef.current;
     if (!audio) return;
 
@@ -138,55 +164,36 @@ export default function AW5PrepPage() {
       audio.pause();
     } else {
       console.log('[Action] Playing... readyState:', audio.readyState);
+      setIsLoading(true);
       
-      try {
-        // iOS Safari fix: if audio hasn't loaded, load it first
-        if (audio.readyState < 2) {
-          console.log('[Action] Audio not ready, loading first...');
-          setIsLoading(true);
-          
-          // Create a promise that resolves when audio can play
-          const canPlayPromise = new Promise<void>((resolve, reject) => {
-            const timeout = setTimeout(() => {
-              reject(new Error('Audio load timeout'));
-            }, 10000);
+      // iOS fix: Set src again and load if not ready
+      if (audio.readyState < 2) {
+        console.log('[Action] Audio not ready, reloading...');
+        audio.src = 'https://www.unbecoming.app/audio/AW5Prep.mp3';
+        audio.load();
+      }
+      
+      // Play immediately - iOS needs this in the same gesture
+      const playPromise = audio.play();
+      
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            console.log('[Action] Play successful');
+            setIsLoading(false);
+          })
+          .catch((err) => {
+            console.error('[Action] Play failed:', err);
+            setIsPlaying(false);
+            setIsLoading(false);
             
-            const onCanPlay = () => {
-              clearTimeout(timeout);
-              audio.removeEventListener('canplay', onCanPlay);
-              audio.removeEventListener('error', onError);
-              console.log('[Action] Audio ready after load');
-              resolve();
-            };
-            
-            const onError = () => {
-              clearTimeout(timeout);
-              audio.removeEventListener('canplay', onCanPlay);
-              audio.removeEventListener('error', onError);
-              reject(new Error('Audio load error'));
-            };
-            
-            audio.addEventListener('canplay', onCanPlay);
-            audio.addEventListener('error', onError);
+            // If it failed due to not loaded, try once more after a delay
+            if (audio.readyState < 2) {
+              setError('Loading... tap again');
+            } else {
+              setError('Tap to play');
+            }
           });
-          
-          // Trigger load
-          audio.load();
-          
-          // Wait for it to be ready
-          await canPlayPromise;
-          setIsLoading(false);
-        }
-        
-        // Now play
-        await audio.play();
-        console.log('[Action] Play successful');
-        
-      } catch (err) {
-        console.error('[Action] Play failed:', err);
-        setIsPlaying(false);
-        setIsLoading(false);
-        setError('Tap to try again');
       }
     }
   };
@@ -221,10 +228,8 @@ export default function AW5PrepPage() {
         ref={audioRef}
         preload="auto"
         playsInline
-      >
-        <source src="/audio/AW5Prep.mp3" type="audio/mpeg" />
-        Your browser does not support the audio element.
-      </audio>
+        src="https://www.unbecoming.app/audio/AW5Prep.mp3"
+      />
 
       {/* Back Button */}
       {showBackButton && (
@@ -340,7 +345,7 @@ export default function AW5PrepPage() {
               <div className="mt-8 p-3 bg-gray-900 rounded text-xs text-gray-500 font-mono">
                 <p>State: {isLoading ? 'LOADING' : isPlaying ? 'PLAYING' : 'PAUSED'}</p>
                 <p>Time: {currentTime.toFixed(1)}s / {duration.toFixed(1)}s</p>
-                <p>Ready: {readyState} (need 2+)</p>
+                <p>Ready: {readyState} | Net: {networkState}</p>
                 {error && <p className="text-red-400">Error: {error}</p>}
               </div>
             )}
