@@ -169,7 +169,7 @@ export default function AW5PrepPage() {
       // iOS fix: Set src again and load if not ready
       if (audio.readyState < 2) {
         console.log('[Action] Audio not ready, reloading...');
-        audio.src = 'https://www.unbecoming.app/audio/AW5Prep.mp3';
+        // Don't change src - just call load
         audio.load();
       }
       
@@ -228,8 +228,10 @@ export default function AW5PrepPage() {
         ref={audioRef}
         preload="auto"
         playsInline
-        src="https://www.unbecoming.app/audio/AW5Prep.mp3"
-      />
+        crossOrigin="anonymous"
+      >
+        <source src="/audio/AW5Prep.mp3" type="audio/mpeg" />
+      </audio>
 
       {/* Back Button */}
       {showBackButton && (
@@ -346,6 +348,7 @@ export default function AW5PrepPage() {
                 <p>State: {isLoading ? 'LOADING' : isPlaying ? 'PLAYING' : 'PAUSED'}</p>
                 <p>Time: {currentTime.toFixed(1)}s / {duration.toFixed(1)}s</p>
                 <p>Ready: {readyState} | Net: {networkState}</p>
+                <p>Src: {audioRef.current?.currentSrc || 'none'}</p>
                 {error && <p className="text-red-400">Error: {error}</p>}
               </div>
             )}
