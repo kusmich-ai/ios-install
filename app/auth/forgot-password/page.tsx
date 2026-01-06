@@ -2,14 +2,14 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase-client'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
-  const supabase = createClientComponentClient()
+  const supabase = createClient()
 
   const handleResetRequest = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -60,57 +60,4 @@ export default function ForgotPasswordPage() {
         )}
 
         {!message && (
-          <form onSubmit={handleResetRequest} className="space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium mb-1 text-gray-300">
-                Email Address
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 rounded focus:outline-none focus:ring-2"
-                style={{
-                  backgroundColor: '#0a0a0a',
-                  color: '#ffffff',
-                  border: '1px solid #2a2a2a'
-                }}
-                placeholder="you@example.com"
-                required
-                disabled={loading}
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 rounded font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{
-                backgroundColor: '#ff9e19',
-                color: '#0a0a0a'
-              }}
-            >
-              {loading ? 'Sending...' : 'Send Reset Link'}
-            </button>
-          </form>
-        )}
-
-        <div className="text-center space-y-2">
-          <p className="text-sm text-gray-400">
-            Remember your password?{' '}
-            <Link href="/auth/signin" className="font-semibold hover:opacity-80 transition-opacity" style={{ color: '#ff9e19' }}>
-              Sign in
-            </Link>
-          </p>
-          <p className="text-sm text-gray-400">
-            Don't have an account?{' '}
-            <Link href="/auth/signup" className="font-semibold hover:opacity-80 transition-opacity" style={{ color: '#ff9e19' }}>
-              Sign up
-            </Link>
-          </p>
-        </div>
-      </div>
-    </div>
-  )
-}
+          <form onSubmit={handleResetRequest} className="space
