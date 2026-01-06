@@ -216,10 +216,14 @@ export function useUserProgress() {
       }
 
       // Fetch latest 2 weekly deltas to calculate week-over-week change
+      // ONLY include check-ins from current stage (after stage_start_date)
+      const stageStartForFilter = progressData.stage_start_date || '1970-01-01';
+      
       const { data: weeklyDeltas } = await supabase
         .from('weekly_deltas')
         .select('*')
         .eq('user_id', user.id)
+        .gte('week_of', stageStartForFilter)  // Only check-ins from current stage
         .order('week_of', { ascending: false })
         .limit(2);
 
