@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase-client'
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('')
@@ -12,9 +12,8 @@ export default function ResetPasswordPage() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const router = useRouter()
-  const supabase = createClientComponentClient()
+  const supabase = createClient()
 
-  // Password validation
   const passwordValidation = {
     minLength: password.length >= 8,
     hasUpperCase: /[A-Z]/.test(password),
