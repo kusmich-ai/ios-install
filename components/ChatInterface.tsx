@@ -12,6 +12,7 @@ import { createClient } from '@/lib/supabase-client';
 import Link from 'next/link';
 import AwakenWithFiveCard from './AwakenWithFiveCard';
 import DashboardSidebar from '@/components/DashboardSidebar';
+import { Zap, Heart } from 'lucide-react';
 
 // ============================================
 // TEMPLATE SYSTEM IMPORTS
@@ -3928,24 +3929,24 @@ This isn't judgment — it's data. The resistance is telling you something. Want
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col">
         {/* Header with Coach Buttons */}
-        <header className="h-14 border-b border-white/[0.06] flex items-center justify-between px-4 bg-[#111111] flex-shrink-0">
+        <header className="h-14 border-b border-white/[0.06] flex items-center justify-between px-4 bg-[#1a1a1a] flex-shrink-0">
           <div className="text-sm text-gray-500">
             IOS System Installer
           </div>
 <div className="flex items-center gap-2">
   <Link 
     href="/coach/nic"
-    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#ff9e19]/10 hover:bg-[#ff9e19]/20 text-[#ff9e19] rounded-lg text-sm font-medium transition-colors border border-[#ff9e19]/30"
+    className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 rounded-lg text-sm font-medium transition-colors border border-amber-500/30"
   >
-    <span>⚡</span>
+    <Zap className="w-4 h-4" />
     <span className="hidden sm:inline">Coach with Nic</span>
     <span className="sm:hidden">Nic</span>
   </Link>
   <Link 
     href="/coach/fehren"
-    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#7c9eb2]/10 hover:bg-[#7c9eb2]/20 text-[#7c9eb2] rounded-lg text-sm font-medium transition-colors border border-[#7c9eb2]/30"
+    className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-400/10 hover:bg-sky-400/20 text-sky-400 rounded-lg text-sm font-medium transition-colors border border-sky-400/30"
   >
-    <span>💙</span>
+    <Heart className="w-4 h-4" />
     <span className="hidden sm:inline">Coach with Fehren</span>
     <span className="sm:hidden">Fehren</span>
   </Link>
