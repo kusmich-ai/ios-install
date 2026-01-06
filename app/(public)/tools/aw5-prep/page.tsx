@@ -1,7 +1,50 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Play, Pause, RotateCcw, ArrowLeft, Loader2 } from 'lucide-react';
+import { Play, Pause, RotateCcw, ArrowLeft, Loader2, ExternalLink } from 'lucide-react';
+
+// Detect if running in an in-app browser (WebView)
+function isInAppBrowser(): boolean {
+  if (typeof window === 'undefined') return false;
+  
+  const ua = navigator.userAgent || navigator.vendor || '';
+  
+  // Common in-app browser indicators
+  const inAppIndicators = [
+    'FBAN', 'FBAV', // Facebook
+    'Instagram',
+    'Twitter',
+    'LinkedIn',
+    'Snapchat',
+    'TikTok',
+    'Pinterest',
+    'GSA/', // Gmail iOS
+    'Line/',
+    'KAKAOTALK',
+    'WeChat',
+    'MicroMessenger',
+  ];
+  
+  // Check for in-app indicators
+  if (inAppIndicators.some(indicator => ua.includes(indicator))) {
+    return true;
+  }
+  
+  // iOS-specific: Check if it's a WebView (not Safari or Chrome)
+  const isIOS = /iPad|iPhone|iPod/.test(ua);
+  if (isIOS) {
+    const isSafari = /Safari/.test(ua) && !/CriOS/.test(ua);
+    const isChrome = /CriOS/.test(ua);
+    const isStandalone = (window.navigator as any).standalone;
+    
+    // If iOS but not Safari, Chrome, or standalone PWA - likely in-app
+    if (!isSafari && !isChrome && !isStandalone) {
+      return true;
+    }
+  }
+  
+  return false;
+}
 
 export default function AW5PrepPage() {
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -14,6 +57,36 @@ export default function AW5PrepPage() {
   const [readyState, setReadyState] = useState(0);
   const [networkState, setNetworkState] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [bufferingStart, setBufferingStart] = useState<number | null>(null);
+  const [bufferingDuration, setBufferingDuration] = useState(0);
+  const [isInApp, setIsInApp] = useState(false);
+  const [showSafariPrompt, setShowSafariPrompt] = useState(false);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+
+  // Check for in-app browser on mount
+  useEffect(() => {
+    setIsInApp(isInAppBrowser());
+  }, []);
+
+  // Update buffering duration periodically
+  useEffect(() => {
+    if (!bufferingStart) {
+      setBufferingDuration(0);
+      return;
+    }
+    
+    const interval = setInterval(() => {
+      const duration = Date.now() - bufferingStart;
+      setBufferingDuration(duration);
+      
+      // If buffering for more than 10 seconds, show Safari prompt
+      if (duration > 10000 && !showSafariPrompt) {
+        setShowSafariPrompt(true);
+      }
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [bufferingStart, showSafariPrompt]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -35,6 +108,10 @@ export default function AW5PrepPage() {
       setCurrentTime(audio.currentTime);
       setReadyState(audio.readyState);
       setNetworkState(audio.networkState);
+      // Clear buffering tracker once audio actually starts
+      if (audio.currentTime > 0) {
+        setBufferingStart(null);
+      }
       syncPlayState();
     };
 
@@ -173,7 +250,8 @@ export default function AW5PrepPage() {
         audio.load();
       }
       
-      // Play immediately - iOS needs this in the same gesture
+      // Now play - track buffering time
+      setBufferingStart(Date.now());
       const playPromise = audio.play();
       
       if (playPromise !== undefined) {
@@ -186,9 +264,16 @@ export default function AW5PrepPage() {
             console.error('[Action] Play failed:', err);
             setIsPlaying(false);
             setIsLoading(false);
+            setBufferingStart(null);
             
-            // If it failed due to not loaded, try once more after a delay
-            if (audio.readyState < 2) {
+            const newAttempts = failedAttempts + 1;
+            setFailedAttempts(newAttempts);
+            
+            // After 2 failed attempts, show Safari prompt
+            if (newAttempts >= 2 || isInApp) {
+              setShowSafariPrompt(true);
+              setError('Audio blocked - open in Safari');
+            } else if (audio.readyState < 2) {
               setError('Loading... tap again');
             } else {
               setError('Tap to play');
@@ -259,6 +344,24 @@ export default function AW5PrepPage() {
           </p>
         </div>
 
+        {/* In-app browser warning - shows before user tries to play */}
+        {isInApp && !hasStarted && (
+          <div className="mb-8 p-4 bg-amber-900/30 border border-amber-500/50 rounded-xl">
+            <p className="text-amber-200 text-sm mb-3 text-center">
+              ⚠️ You&apos;re in an in-app browser. Audio may not work here.
+            </p>
+            <a
+              href="https://www.unbecoming.app/tools/aw5-prep"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full py-3 bg-amber-600 hover:bg-amber-500 text-white font-medium rounded-lg transition-colors"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Open in Safari
+            </a>
+          </div>
+        )}
+
         {/* Completion State */}
         {isComplete ? (
           <div className="text-center">
@@ -290,7 +393,7 @@ export default function AW5PrepPage() {
                     : 'bg-[#ff9e19] hover:bg-[#ffb347]'
                 } ${isLoading ? 'opacity-80' : ''}`}
               >
-                {isLoading ? (
+                {isLoading || (isPlaying && currentTime === 0 && readyState < 2) ? (
                   <Loader2 className="w-8 h-8 text-black animate-spin" />
                 ) : isPlaying ? (
                   <Pause className="w-8 h-8 text-black" fill="black" />
@@ -299,6 +402,39 @@ export default function AW5PrepPage() {
                 )}
               </button>
             </div>
+
+            {/* Buffering indicator */}
+            {isPlaying && currentTime === 0 && readyState < 2 && (
+              <div className="text-center mb-4">
+                <p className="text-[#ff9e19] text-sm">Buffering...</p>
+                {bufferingDuration > 8000 && (
+                  <p className="text-gray-400 text-xs mt-2">
+                    Taking a while? Try opening in Safari directly.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Safari Prompt - shows when in-app browser detected or after failures */}
+            {(showSafariPrompt || (isInApp && hasStarted)) && (
+              <div className="mb-6 p-4 bg-blue-900/30 border border-blue-500/50 rounded-xl">
+                <p className="text-blue-200 text-sm mb-3 text-center">
+                  Audio may not work in this browser. Open in Safari for the best experience.
+                </p>
+                <a
+                  href="https://www.unbecoming.app/tools/aw5-prep"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-lg transition-colors"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Open in Safari
+                </a>
+                <p className="text-gray-500 text-xs mt-2 text-center">
+                  Tap and hold the link, then choose &quot;Open in Safari&quot;
+                </p>
+              </div>
+            )}
 
             {/* Error Message */}
             {error && (
@@ -348,7 +484,8 @@ export default function AW5PrepPage() {
                 <p>State: {isLoading ? 'LOADING' : isPlaying ? 'PLAYING' : 'PAUSED'}</p>
                 <p>Time: {currentTime.toFixed(1)}s / {duration.toFixed(1)}s</p>
                 <p>Ready: {readyState} | Net: {networkState}</p>
-                <p>Src: {audioRef.current?.currentSrc || 'none'}</p>
+                <p>InApp: {isInApp ? 'YES' : 'no'} | Fails: {failedAttempts}</p>
+                {bufferingDuration > 0 && <p>Buffering: {(bufferingDuration / 1000).toFixed(0)}s</p>}
                 {error && <p className="text-red-400">Error: {error}</p>}
               </div>
             )}
