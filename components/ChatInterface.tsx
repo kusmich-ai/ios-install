@@ -3896,7 +3896,7 @@ This isn't judgment — it's data. The resistance is telling you something. Want
   
   if (isInitializing || progressLoading) {
     return (
-  <div className="flex h-screen bg-[#111111]">
+  <div className="flex h-screen bg-[#1a1a1a]>
         <div className="flex-1 flex items-center justify-center">
           <div className="text-gray-400">Loading your IOS...</div>
         </div>
@@ -3905,7 +3905,7 @@ This isn't judgment — it's data. The resistance is telling you something. Want
   }
 
   return (
-    <div className="flex h-screen bg-[#111111]">
+    <div className="flex h-screen bg-[#1a1a1a]">
       {/* Left Sidebar - Dashboard (Desktop Only) */}
       {!isMobile && (
         <DashboardSidebar
@@ -3952,7 +3952,7 @@ This isn't judgment — it's data. The resistance is telling you something. Want
 </div>
         </header>
         
-        <div className="flex-1 overflow-y-auto bg-[#111111]">
+        <div className="flex-1 overflow-y-auto bg-[#1a1a1a]">
           <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
             {messages.map((msg, idx) => (
               <div
@@ -4224,7 +4224,7 @@ This isn't judgment — it's data. The resistance is telling you something. Want
           </div>
         </div>
 
-        <div className="border-t border-white/[0.06] bg-[#111111]">
+        <div className="border-t border-white/[0.06] bg-[#1a1a1a]">
           <div className="max-w-4xl mx-auto px-4 py-4">
             <form onSubmit={sendMessage} className="flex gap-3">
               <textarea
