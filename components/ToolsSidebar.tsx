@@ -286,7 +286,11 @@ export default function ToolsSidebar({
   const { open: openThoughtHygiene, Modal: ThoughtHygieneModal } = useThoughtHygiene();
   
   const currentStage = progress?.currentStage ?? 1;
-  const completedToday = new Set(progress?.practicesCompletedToday || []);
+  const completedToday = new Set(
+  Object.entries(progress?.dailyPractices || {})
+    .filter(([_, status]) => status?.completed)
+    .map(([id]) => id)
+);
   
   // Get practices and tools based on stage
   const stagePractices = getStagePractices(currentStage);
