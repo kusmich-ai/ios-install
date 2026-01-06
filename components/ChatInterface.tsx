@@ -11,6 +11,7 @@ import MobileDashboard from '@/components/MobileDashboard';
 import { createClient } from '@/lib/supabase-client';
 import Link from 'next/link';
 import AwakenWithFiveCard from './AwakenWithFiveCard';
+import DashboardSidebar from '@/components/DashboardSidebar';
 
 // ============================================
 // TEMPLATE SYSTEM IMPORTS
@@ -3895,7 +3896,7 @@ This isn't judgment — it's data. The resistance is telling you something. Want
   
   if (isInitializing || progressLoading) {
     return (
-      <div className="flex h-screen bg-[#0a0a0a]">
+  <div className="flex h-screen bg-[#111111]">
         <div className="flex-1 flex items-center justify-center">
           <div className="text-gray-400">Loading your IOS...</div>
         </div>
@@ -3904,289 +3905,30 @@ This isn't judgment — it's data. The resistance is telling you something. Want
   }
 
   return (
-    <div className="flex h-screen bg-[#0a0a0a]">
+    <div className="flex h-screen bg-[#111111]">
       {/* Left Sidebar - Dashboard (Desktop Only) */}
       {!isMobile && (
-        <aside className="hidden md:flex flex-col w-80 border-r border-gray-800 bg-[#0a0a0a] overflow-y-auto">
-          <div className="p-4 space-y-4">
-            {/* User Info Header */}
-<div className="border-b border-gray-800 pb-4">
-  <h2 className="text-lg font-semibold text-white">
-    {getUserName() ? `Hey, ${getUserName()}` : 'Welcome'}
-  </h2>
-  <p className="text-sm text-gray-400">
-    Stage {progress?.currentStage || 1}: {getStageName(progress?.currentStage || 1)}
-  </p>
- <a 
-  href="/profile/patterns"
-  className="inline-flex items-center gap-2 mt-3 px-3 py-1.5 bg-[#ff9e19]/10 hover:bg-[#ff9e19]/20 text-[#ff9e19] rounded-lg text-xs font-medium transition-colors border border-[#ff9e19]/30"
->
-  🪞 Pattern Profile & Transformation Map
-</a>
-</div>
-
-            {/* REwired Index */}
-            <div className="bg-gray-900 rounded-lg p-4">
-              {(() => {
-                const currentReg = progress?.domainScores?.regulation ?? baselineData.domainScores.regulation;
-                const currentAware = progress?.domainScores?.awareness ?? baselineData.domainScores.awareness;
-                const currentOut = progress?.domainScores?.outlook ?? baselineData.domainScores.outlook;
-                const currentAtt = progress?.domainScores?.attention ?? baselineData.domainScores.attention;
-                const currentRewired = Math.round((currentReg + currentAware + currentOut + currentAtt) / 4 * 20);
-                const rewiredDelta = currentRewired - baselineData.rewiredIndex;
-                
-                return (
-                  <>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-gray-400">REwired Index</span>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-2xl font-bold ${getStatusColor(currentRewired)}`}>
-                          {currentRewired}
-                        </span>
-                        {rewiredDelta !== 0 && (
-                          <span className={`text-sm font-medium ${rewiredDelta > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                            {rewiredDelta > 0 ? '+' : ''}{rewiredDelta}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="w-full rounded-full h-2 bg-[#1a1a1a]">
-                      <div 
-                        className={`h-2 rounded-full transition-all ${
-                          currentRewired <= 20 ? 'bg-red-500' :
-                          currentRewired <= 40 ? 'bg-yellow-500' :
-                          currentRewired <= 60 ? 'bg-blue-500' :
-                          currentRewired <= 80 ? 'bg-green-500' :
-                          'bg-purple-500'
-                        }`}
-                        style={{ width: `${currentRewired}%` }}
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">{getStatusTier(currentRewired)}</p>
-                  </>
-                );
-              })()}
-            </div>
-
-            {/* Domain Scores */}
-            <div className="bg-gray-900 rounded-lg p-4 space-y-3">
-              <h3 className="text-sm font-medium text-gray-300 mb-2">Domain Scores</h3>
-              
-              {/* Regulation */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-gray-400">Regulation</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-[#22c55e]">
-                      {(progress?.domainScores?.regulation ?? baselineData.domainScores.regulation).toFixed(1)}/5
-                    </span>
-                    {progress?.domainDeltas?.regulation !== undefined && progress.domainDeltas.regulation !== 0 && (
-                      <span className={`text-xs font-medium ${progress.domainDeltas.regulation > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                        {progress.domainDeltas.regulation > 0 ? '↑' : '↓'}{Math.abs(progress.domainDeltas.regulation).toFixed(1)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="w-full rounded-full h-1.5 bg-[#1a1a1a]">
-                  <div 
-                    className="h-1.5 rounded-full bg-[#22c55e] transition-all"
-                    style={{ width: `${((progress?.domainScores?.regulation ?? baselineData.domainScores.regulation) / 5) * 100}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Awareness */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-gray-400">Awareness</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-[#3b82f6]">
-                      {(progress?.domainScores?.awareness ?? baselineData.domainScores.awareness).toFixed(1)}/5
-                    </span>
-                    {progress?.domainDeltas?.awareness !== undefined && progress.domainDeltas.awareness !== 0 && (
-                      <span className={`text-xs font-medium ${progress.domainDeltas.awareness > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                        {progress.domainDeltas.awareness > 0 ? '↑' : '↓'}{Math.abs(progress.domainDeltas.awareness).toFixed(1)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="w-full rounded-full h-1.5 bg-[#1a1a1a]">
-                  <div 
-                    className="h-1.5 rounded-full bg-[#3b82f6] transition-all"
-                    style={{ width: `${((progress?.domainScores?.awareness ?? baselineData.domainScores.awareness) / 5) * 100}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Outlook */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-gray-400">Outlook</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-[#f59e0b]">
-                      {(progress?.domainScores?.outlook ?? baselineData.domainScores.outlook).toFixed(1)}/5
-                    </span>
-                    {progress?.domainDeltas?.outlook !== undefined && progress.domainDeltas.outlook !== 0 && (
-                      <span className={`text-xs font-medium ${progress.domainDeltas.outlook > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                        {progress.domainDeltas.outlook > 0 ? '↑' : '↓'}{Math.abs(progress.domainDeltas.outlook).toFixed(1)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="w-full rounded-full h-1.5 bg-[#1a1a1a]">
-                  <div 
-                    className="h-1.5 rounded-full bg-[#f59e0b] transition-all"
-                    style={{ width: `${((progress?.domainScores?.outlook ?? baselineData.domainScores.outlook) / 5) * 100}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Attention */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-gray-400">Attention</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-[#a855f7]">
-                      {(progress?.domainScores?.attention ?? baselineData.domainScores.attention).toFixed(1)}/5
-                    </span>
-                    {progress?.domainDeltas?.attention !== undefined && progress.domainDeltas.attention !== 0 && (
-                      <span className={`text-xs font-medium ${progress.domainDeltas.attention > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                        {progress.domainDeltas.attention > 0 ? '↑' : '↓'}{Math.abs(progress.domainDeltas.attention).toFixed(1)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="w-full rounded-full h-1.5 bg-[#1a1a1a]">
-                  <div 
-                    className="h-1.5 rounded-full bg-[#a855f7] transition-all"
-                    style={{ width: `${((progress?.domainScores?.attention ?? baselineData.domainScores.attention) / 5) * 100}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Unlock Progress */}
-            {progress?.unlockProgress && !progress.unlockEligible && (
-              <div className="bg-gray-900 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-gray-300 mb-3">
-                  Stage {(progress.currentStage || 1) + 1} Unlock Progress
-                </h3>
-                
-                {progress.unlockEligible ? (
-                  <div className="text-center py-2">
-                    <span className="text-green-400 font-semibold">✓ Eligible for Unlock!</span>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {/* Adherence Progress */}
-                    <div className="flex items-center gap-2">
-                      <span className={`text-xs w-14 ${progress.unlockProgress.adherenceMet ? 'text-green-400' : 'text-gray-400'}`}>
-                        {progress.unlockProgress.adherenceMet ? '✓' : ''} Adherence
-                      </span>
-                      <div className="flex-1 h-1.5 bg-[#1a1a1a] rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full transition-all ${progress.unlockProgress.adherenceMet ? 'bg-green-500' : 'bg-[#ff9e19]'}`}
-                          style={{ width: progress.unlockProgress.adherenceMet ? '100%' : `${Math.min(100, (progress.adherencePercentage || 0) / progress.unlockProgress.requiredAdherence * 100)}%` }}
-                        />
-                      </div>
-                      <span className="text-xs text-gray-500 w-10 text-right">
-                        {progress.unlockProgress.adherenceMet ? '✓' : `${progress.adherencePercentage || 0}%`}
-                      </span>
-                    </div>
-                    
-                    {/* Days Progress */}
-                    <div className="flex items-center gap-2">
-                      <span className={`text-xs w-14 ${progress.unlockProgress.daysMet ? 'text-green-400' : 'text-gray-400'}`}>
-                        {progress.unlockProgress.daysMet ? '✓' : ''} Days
-                      </span>
-                      <div className="flex-1 h-1.5 bg-[#1a1a1a] rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full transition-all ${progress.unlockProgress.daysMet ? 'bg-green-500' : 'bg-[#ff9e19]'}`}
-                          style={{ width: progress.unlockProgress.daysMet ? '100%' : `${Math.min(100, (progress.consecutiveDays || 0) / progress.unlockProgress.requiredDays * 100)}%` }}
-                        />
-                      </div>
-                      <span className="text-xs text-gray-500 w-10 text-right">
-                        {progress.unlockProgress.daysMet ? '✓' : `${progress.consecutiveDays || 0}/${progress.unlockProgress.requiredDays}`}
-                      </span>
-                    </div>
-                    
-                    {/* Delta Progress */}
-                    <div className="flex items-center gap-2">
-                      <span className={`text-xs w-14 ${progress.unlockProgress.deltaMet ? 'text-green-400' : 'text-gray-400'}`}>
-                        {progress.unlockProgress.deltaMet ? '✓' : ''} Growth
-                      </span>
-                      <div className="flex-1 h-1.5 bg-[#1a1a1a] rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full transition-all ${progress.unlockProgress.deltaMet ? 'bg-green-500' : 'bg-[#ff9e19]'}`}
-                          style={{ width: progress.unlockProgress.deltaMet ? '100%' : `${Math.min(100, Math.max(0, ((progress.domainDeltas?.average || 0) / progress.unlockProgress.requiredDelta) * 100))}%` }}
-                        />
-                      </div>
-                      <span className="text-xs text-gray-500 w-10 text-right">
-                        {progress.unlockProgress.deltaMet ? '✓' : `+${(progress.domainDeltas?.average || 0).toFixed(1)}`}
-                      </span>
-                    </div>
-                    
-                    {/* Weekly Check-in */}
-                    <div className="flex items-center gap-2">
-                      <span className={`text-xs w-14 ${progress.unlockProgress.qualitativeMet ? 'text-green-400' : 'text-gray-400'}`}>
-                        {progress.unlockProgress.qualitativeMet ? '✓' : ''} Check-in
-                      </span>
-                      <div className="flex-1 h-1.5 bg-[#1a1a1a] rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full transition-all ${progress.unlockProgress.qualitativeMet ? 'bg-green-500' : 'bg-gray-600'}`}
-                          style={{ width: progress.unlockProgress.qualitativeMet ? '100%' : '0%' }}
-                        />
-                      </div>
-                      <span className="text-xs text-gray-500 w-10 text-right">
-                        {progress.unlockProgress.qualitativeMet ? '✓' : '—'}
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Stage 7 Unlock Button - Shows when eligible */}
-            {progress?.currentStage === 6 && progress?.unlockEligible && (
-              <div className="bg-gradient-to-r from-purple-900/50 to-orange-900/50 border border-purple-500/30 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-purple-300 mb-2">🔓 Final Stage Available</h3>
-                <p className="text-xs text-gray-400 mb-3">
-                  You've demonstrated mastery at Stage 6. Ready to explore what's beyond?
-                </p>
-                <button
-                  onClick={() => startStage7Introduction()}
-                  className="w-full px-4 py-2.5 bg-[#ff9e19] hover:bg-orange-600 text-white font-semibold rounded-xl transition-colors"
-                >
-                  Unlock Stage 7?
-                </button>
-              </div>
-            )}
-            {/* Current Identity */}
-            {progress?.currentIdentity && (
-              <div className="bg-gray-900 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-gray-300 mb-2">Current Identity</h3>
-                <p className="text-sm text-[#ff9e19] font-medium">{progress.currentIdentity}</p>
-                {(progress as any)?.microAction && (
-                  <p className="text-xs text-gray-400 mt-1">Daily proof: {(progress as any).microAction}</p>
-                )}
-                {progress?.identitySprintDay && (
-                  <p className="text-xs text-gray-500 mt-2">
-                    Day {progress.identitySprintDay} of 21
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Awaken with 5 CTA */}
-            <AwakenWithFiveCard />
-          </div>
-        </aside>
+        <DashboardSidebar
+          userName={getUserName()}
+          currentStage={progress?.currentStage || 1}
+          baselineRewiredIndex={baselineData.rewiredIndex}
+          baselineDomainScores={baselineData.domainScores}
+          currentDomainScores={progress?.domainScores}
+          domainDeltas={progress?.domainDeltas}
+          unlockProgress={progress?.unlockProgress}
+          unlockEligible={progress?.unlockEligible}
+          adherencePercentage={progress?.adherencePercentage || 0}
+          consecutiveDays={progress?.consecutiveDays || 0}
+          currentIdentity={progress?.currentIdentity ?? undefined}
+          microAction={(progress as any)?.microAction ?? undefined}
+          identitySprintDay={progress?.identitySprintDay ?? undefined}
+          onStage7Click={startStage7Introduction}
+        />
       )}
-
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col">
         {/* Header with Coach Buttons */}
-        <header className="h-14 border-b border-gray-800 flex items-center justify-between px-4 bg-[#0a0a0a] flex-shrink-0">
+        <header className="h-14 border-b border-white/[0.06] flex items-center justify-between px-4 bg-[#111111] flex-shrink-0">
           <div className="text-sm text-gray-500">
             IOS System Installer
           </div>
@@ -4210,7 +3952,7 @@ This isn't judgment — it's data. The resistance is telling you something. Want
 </div>
         </header>
         
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto bg-[#111111]">
           <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
             {messages.map((msg, idx) => (
               <div
@@ -4220,8 +3962,8 @@ This isn't judgment — it's data. The resistance is telling you something. Want
                 <div
                   className={`max-w-[85%] rounded-2xl px-6 py-4 ${
                     msg.role === 'user'
-                      ? 'bg-[#ff9e19] text-white'
-                      : 'bg-gray-800 text-gray-100 border border-gray-700'
+                      ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-sm shadow-amber-500/20'
+                      : 'bg-[#1a1a1a] text-zinc-100 border border-white/[0.06]'
                   }`}
                 >
                   {msg.role === 'user' ? (
@@ -4238,11 +3980,11 @@ This isn't judgment — it's data. The resistance is telling you something. Want
             
             {loading && (
               <div className="flex justify-start">
-                <div className="bg-gray-800 border border-gray-700 rounded-2xl px-6 py-4">
+                <div className="bg-[#1a1a1a] border border-white/[0.06] rounded-2xl px-6 py-4">
                   <div className="flex gap-2">
-                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" />
-                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    <div className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce" />
+                    <div className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <div className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                   </div>
                 </div>
               </div>
@@ -4253,7 +3995,7 @@ This isn't judgment — it's data. The resistance is telling you something. Want
               <div className="flex justify-center">
                 <button
                   onClick={() => handleQuickReply(introStep)}
-                  className="px-6 py-3 bg-[#ff9e19] hover:bg-orange-600 text-white font-semibold rounded-xl transition-colors shadow-lg"
+                  className="px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-xl font-semibold hover:from-amber-600 hover:to-amber-700 disabled:opacity-50 transition-all shadow-sm shadow-amber-500/20"
                 >
                   {currentQuickReply.buttonLabel}
                 </button>
@@ -4482,7 +4224,7 @@ This isn't judgment — it's data. The resistance is telling you something. Want
           </div>
         </div>
 
-        <div className="border-t border-gray-800 bg-[#0a0a0a]">
+        <div className="border-t border-white/[0.06] bg-[#111111]">
           <div className="max-w-4xl mx-auto px-4 py-4">
             <form onSubmit={sendMessage} className="flex gap-3">
               <textarea
@@ -4506,12 +4248,12 @@ This isn't judgment — it's data. The resistance is telling you something. Want
                 }
                 disabled={loading}
                 rows={1}
-                className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#ff9e19] disabled:opacity-50 resize-none min-h-[52px] max-h-[200px]"
+               className="flex-1 bg-[#1a1a1a] border border-white/[0.08] rounded-xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/30 disabled:opacity-50 resize-none min-h-[52px] max-h-[200px] transition-colors"
               />
               <button
                 type="submit"
                 disabled={!input.trim() || loading}
-                className="px-6 py-3 bg-[#ff9e19] text-white rounded-xl font-semibold hover:bg-orange-600 disabled:opacity-50 transition-colors"
+                className="px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-xl font-semibold hover:from-amber-600 hover:to-amber-700 disabled:opacity-50 transition-all shadow-sm shadow-amber-500/20"
               >
                 Send
               </button>
