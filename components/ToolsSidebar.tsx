@@ -1,564 +1,375 @@
-// components/ToolsSidebar.tsx
 'use client';
 
-import { useState } from 'react';
-import { ChevronRight, ChevronDown, Check, Loader2, RefreshCw, RotateCcw } from 'lucide-react';
-import { getStagePractices, getUnlockedOnDemandTools } from '@/app/config/stages';
-import type { UserProgress } from '@/app/hooks/useUserProgress';
-import { useResonanceBreathing } from '@/components/ResonanceModal';
-import { useAwarenessRep } from '@/components/AwarenessRepModal';
-import { useSomaticFlow } from '@/components/SomaticFlowModal';
-import { useCoRegulation } from '@/components/CoRegulationModal';
-import { useNightlyDebrief } from '@/components/NightlyDebriefModal';
-import { useLoopDeLooping } from '@/components/LoopDeLoopingModal';
+import { useState, useRef, useEffect } from 'react';
+import { Play, Pause, RotateCcw, ArrowLeft, Loader2 } from 'lucide-react';
 
-interface ToolsSidebarProps {
-  progress: UserProgress;
-  userId: string;
-  onPracticeClick: (practiceId: string) => void;
-  onToolClick: (toolId: string) => void;
-  onProgressUpdate?: () => Promise<void> | void;
-  onPracticeCompleted?: (practiceId: string, practiceName: string) => void;
-  isRefreshing?: boolean;
-}
+export default function AW5PrepPage() {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(426);
+  const [isComplete, setIsComplete] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [readyState, setReadyState] = useState(0);
+  const [networkState, setNetworkState] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
 
-// Map from config practice IDs to database practice_type values
-const PRACTICE_ID_MAP: { [key: string]: string } = {
-  'hrvb': 'hrvb',
-  'awareness_rep': 'awareness_rep',
-  'somatic_flow': 'somatic_flow',
-  'micro_action': 'micro_action',
-  'flow_block': 'flow_block',
-  'co_regulation': 'co_regulation',
-  'nightly_debrief': 'nightly_debrief',
-  // Legacy/alternate IDs
-  'hrvb_breathing': 'hrvb',
-  'resonance_breathing': 'hrvb',
-};
-
-export default function ToolsSidebar({ 
-  progress, 
-  userId,
-  onPracticeClick, 
-  onToolClick,
-  onProgressUpdate,
-  onPracticeCompleted,
-  isRefreshing = false
-}: ToolsSidebarProps) {
-  const [dailyExpanded, setDailyExpanded] = useState(true);
-  const [toolsExpanded, setToolsExpanded] = useState(true);
-  const [completing, setCompleting] = useState<string | null>(null);
-  const [completionError, setCompletionError] = useState<string | null>(null);
-
-  // Initialize modal hooks
-  const { open: openResonance, Modal: ResonanceModal } = useResonanceBreathing();
-  const { open: openAwarenessRep, Modal: AwarenessRepModal } = useAwarenessRep();
-  const { open: openSomaticFlow, Modal: SomaticFlowModal } = useSomaticFlow();
-  const { open: openCoRegulation, Modal: CoRegulationModal } = useCoRegulation();
-  const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebrief();
-  const { open: openLoopDeLooping, Modal: LoopDeLoopingModal } = useLoopDeLooping();
-
-  const currentStagePractices = getStagePractices(progress.currentStage);
-  const unlockedTools = getUnlockedOnDemandTools(progress.currentStage);
-
-  const getPracticeStatus = (practiceId: string): 'completed' | 'pending' | 'locked' => {
-    const mappedId = PRACTICE_ID_MAP[practiceId] || practiceId;
-    const practiceData = progress.dailyPractices[practiceId] || progress.dailyPractices[mappedId];
-    if (practiceData?.completed) return 'completed';
-    return 'pending';
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return '✅';
-      case 'pending':
-        return '⏳';
-      case 'locked':
-        return '🔒';
-      default:
-        return '⏳';
-    }
-  };
+  // Single useEffect for all audio events - no dependencies to avoid re-running
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
 
-  // Handle "Start Ritual" click - routes to appropriate modal or chat
-  const handleStartPractice = (practiceId: string) => {
-    if (practiceId === 'hrvb') {
-      openResonance();
-    } else if (practiceId === 'awareness_rep') {
-      openAwarenessRep();
-      } else if (practiceId === 'somatic_flow') {
-    openSomaticFlow(); 
-    } else if (practiceId === 'co_regulation') {
-      openCoRegulation();
-    } else if (practiceId === 'nightly_debrief') {
-      openNightlyDebrief();
-    } else if (practiceId === 'micro_action' || practiceId === 'flow_block') {
-      // Special practices route to tool click handler for guided flows
-      onToolClick(practiceId);
-    } else {
-      // Other practices go to chat for guidance
-      onPracticeClick(practiceId);
-    }
-  };
+    const syncPlayState = () => {
+      // Always sync with actual audio state
+      setIsPlaying(!audio.paused && !audio.ended);
+    };
 
-  // Handle tool click - intercept tools with modals, pass others to chat
-  const handleToolClick = (toolId: string) => {
-    if (toolId === 'worry_loop_dissolver') {
-      openLoopDeLooping(userId);
-    } else {
-      // Pass through to parent handler for chat-based tools
-      onToolClick(toolId);
-    }
-  };
+    const handleTimeUpdate = () => {
+      setCurrentTime(audio.currentTime);
+      setReadyState(audio.readyState);
+      setNetworkState(audio.networkState);
+      syncPlayState();
+    };
 
-  // Handle modal completion - logs practice and notifies chat
-  const handleModalComplete = async (practiceId: string, practiceName: string) => {
-    console.log(`[ToolsSidebar] Modal completed: ${practiceId}`);
-    
-    // Only log if not already completed today
-    if (getPracticeStatus(practiceId) !== 'completed') {
-      await handleMarkComplete(practiceId, practiceName);
-    }
-  };
+    const handleLoadedMetadata = () => {
+      console.log('[Audio] Metadata loaded, duration:', audio.duration, 'readyState:', audio.readyState);
+      setReadyState(audio.readyState);
+      setNetworkState(audio.networkState);
+      if (audio.duration && isFinite(audio.duration)) {
+        setDuration(audio.duration);
+      }
+      setError(null);
+    };
 
-  // Handle "Done" button click to mark practice complete
-  const handleMarkComplete = async (practiceId: string, practiceName: string, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    
-    if (!userId) {
-      setCompletionError('No user ID - please refresh the page');
-      return;
-    }
-    
-    try {
-      setCompleting(practiceId);
-      setCompletionError(null);
+    const handleCanPlay = () => {
+      console.log('[Audio] Can play, readyState:', audio.readyState);
+      setReadyState(audio.readyState);
+      setNetworkState(audio.networkState);
+      setIsLoading(false);
+      setError(null);
+    };
 
-      const dbPracticeType = PRACTICE_ID_MAP[practiceId] || practiceId;
+    const handlePlay = () => {
+      console.log('[Audio] Play event, readyState:', audio.readyState);
+      setReadyState(audio.readyState);
+      setNetworkState(audio.networkState);
+      setIsPlaying(true);
+      setIsLoading(false);
+    };
+
+    const handlePause = () => {
+      console.log('[Audio] Pause event');
+      setIsPlaying(false);
+    };
+
+    const handleEnded = () => {
+      console.log('[Audio] Ended');
+      setIsPlaying(false);
+      setIsComplete(true);
+    };
+
+    const handleError = () => {
+      console.error('[Audio] Error:', audio.error, 'networkState:', audio.networkState);
+      setIsPlaying(false);
+      setReadyState(audio.readyState);
+      setNetworkState(audio.networkState);
+      setIsLoading(false);
       
-      // Get client's local date in YYYY-MM-DD format
-      const now = new Date();
-      const localDate = now.getFullYear() + '-' + 
-        String(now.getMonth() + 1).padStart(2, '0') + '-' + 
-        String(now.getDate()).padStart(2, '0');
-
-      console.log('[ToolsSidebar] Logging practice:', { userId, practiceType: dbPracticeType, localDate });
-
-      const response = await fetch('/api/practices/log', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: userId,
-          practiceType: dbPracticeType,
-          completed: true,
-          localDate: localDate
-        })
-      });
-
-      const data = await response.json();
-      console.log('[ToolsSidebar] Response:', data);
-
-      if (!response.ok || data.error) {
-        throw new Error(data.error || `HTTP ${response.status}`);
+      if (audio.error) {
+        switch (audio.error.code) {
+          case MediaError.MEDIA_ERR_NETWORK:
+            setError('Network error - check connection');
+            break;
+          case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
+            setError('Audio format not supported');
+            break;
+          default:
+            setError('Unable to play audio');
+        }
+      } else {
+        setError('Unable to play audio');
       }
+    };
 
-      // Wait a moment for database to update
-      await new Promise(resolve => setTimeout(resolve, 300));
+    const handleStalled = () => {
+      console.warn('[Audio] Stalled - buffering issues, networkState:', audio.networkState);
+      setReadyState(audio.readyState);
+      setNetworkState(audio.networkState);
+    };
 
-      // Notify chat that practice was completed
-      if (onPracticeCompleted) {
-        onPracticeCompleted(practiceId, practiceName);
-      } else if (onProgressUpdate) {
-        await onProgressUpdate();
+    const handleWaiting = () => {
+      console.log('[Audio] Waiting for data...', 'networkState:', audio.networkState);
+      setReadyState(audio.readyState);
+      setNetworkState(audio.networkState);
+    };
+
+    const handleLoadStart = () => {
+      console.log('[Audio] Load started, networkState:', audio.networkState);
+      setNetworkState(audio.networkState);
+    };
+
+    const handleProgress = () => {
+      console.log('[Audio] Progress, readyState:', audio.readyState, 'networkState:', audio.networkState);
+      setReadyState(audio.readyState);
+      setNetworkState(audio.networkState);
+    };
+
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('canplay', handleCanPlay);
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('pause', handlePause);
+    audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('error', handleError);
+    audio.addEventListener('stalled', handleStalled);
+    audio.addEventListener('waiting', handleWaiting);
+    audio.addEventListener('loadstart', handleLoadStart);
+    audio.addEventListener('progress', handleProgress);
+
+    return () => {
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.removeEventListener('canplay', handleCanPlay);
+      audio.removeEventListener('play', handlePlay);
+      audio.removeEventListener('pause', handlePause);
+      audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('error', handleError);
+      audio.removeEventListener('stalled', handleStalled);
+      audio.removeEventListener('waiting', handleWaiting);
+      audio.removeEventListener('loadstart', handleLoadStart);
+      audio.removeEventListener('progress', handleProgress);
+    };
+  }, []);
+
+  const handlePlayPause = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    setError(null);
+
+    if (!hasStarted) {
+      setHasStarted(true);
+    }
+
+    // Check actual audio state, not React state
+    if (!audio.paused) {
+      console.log('[Action] Pausing...');
+      audio.pause();
+    } else {
+      console.log('[Action] Playing... readyState:', audio.readyState);
+      setIsLoading(true);
+      
+      // iOS fix: Set src again and load if not ready
+      if (audio.readyState < 2) {
+        console.log('[Action] Audio not ready, reloading...');
+        audio.src = 'https://www.unbecoming.app/audio/AW5Prep.mp3';
+        audio.load();
       }
-
-    } catch (err) {
-      console.error('[ToolsSidebar] Error completing practice:', err);
-      setCompletionError(err instanceof Error ? err.message : 'Failed to log completion');
-    } finally {
-      setCompleting(null);
+      
+      // Play immediately - iOS needs this in the same gesture
+      const playPromise = audio.play();
+      
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            console.log('[Action] Play successful');
+            setIsLoading(false);
+          })
+          .catch((err) => {
+            console.error('[Action] Play failed:', err);
+            setIsPlaying(false);
+            setIsLoading(false);
+            
+            // If it failed due to not loaded, try once more after a delay
+            if (audio.readyState < 2) {
+              setError('Loading... tap again');
+            } else {
+              setError('Tap to play');
+            }
+          });
+      }
     }
   };
 
-  // Calculate completion stats
-  const completedCount = currentStagePractices.filter(p => getPracticeStatus(p.id) === 'completed').length;
-  const totalCount = currentStagePractices.length;
-  const allComplete = completedCount === totalCount;
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    
+    const newTime = parseFloat(e.target.value);
+    audio.currentTime = newTime;
+    setCurrentTime(newTime);
+  };
+
+  const handleRestart = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    
+    audio.currentTime = 0;
+    setCurrentTime(0);
+    setIsComplete(false);
+    setIsPlaying(false);
+    setHasStarted(false);
+  };
+
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const showBackButton = !hasStarted || isComplete;
 
   return (
-    <>
-      {/* Modals - rendered at top level with onComplete callbacks */}
-      <ResonanceModal 
-        onComplete={() => handleModalComplete('hrvb', 'Resonance Breathing')} 
+    <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center px-4">
+      {/* Audio element */}
+      <audio
+        ref={audioRef}
+        preload="auto"
+        playsInline
+        src="https://www.unbecoming.app/audio/AW5Prep.mp3"
       />
-      <AwarenessRepModal 
-        onComplete={() => handleModalComplete('awareness_rep', 'Awareness Rep')} 
-      />
-<SomaticFlowModal 
-  onComplete={() => handleModalComplete('somatic_flow', 'Somatic Flow')} 
-/>
-      <CoRegulationModal 
-        onComplete={() => handleModalComplete('co_regulation', 'Co-Regulation Practice')} 
-      />
-      <NightlyDebriefModal 
-        onComplete={() => handleModalComplete('nightly_debrief', 'Nightly Debrief')} 
-      />
-      <LoopDeLoopingModal />
 
-      <aside className="w-80 border-l border-gray-800 bg-[#111111] overflow-y-auto flex-shrink-0">
-        <div className="p-4">
-          {/* Header */}
-          <div className="mb-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-white mb-1">Tools</h2>
-              {isRefreshing && (
-                <RefreshCw className="w-4 h-4 text-[#ff9e19] animate-spin" />
-              )}
-            </div>
-            <p className="text-xs text-gray-400">Stage {progress.currentStage} Rituals & Protocols</p>
-            {progress.dataDate && (
-              <p className="text-xs text-gray-600 mt-1">Data for: {progress.dataDate}</p>
-            )}
-          </div>
+      {/* Back Button */}
+      {showBackButton && (
+        <a 
+          href="https://www.unbecoming.app/tools/awaken-with-5"
+          className="absolute top-6 left-6 flex items-center gap-2 text-gray-500 hover:text-[#ff9e19] transition-colors text-sm"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back to Guide</span>
+        </a>
+      )}
 
-          {/* Progress Summary */}
-          <div className={`mb-4 p-3 rounded-lg border ${
-            allComplete 
-              ? 'bg-green-500/10 border-green-500/30' 
-              : 'bg-[#0a0a0a] border-gray-700'
-          }`}>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-400">Today's Progress</span>
-              <span className={`text-sm font-bold ${allComplete ? 'text-green-400' : 'text-[#ff9e19]'}`}>
-                {completedCount}/{totalCount}
-              </span>
-            </div>
-            <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
-              <div 
-                className={`h-full transition-all duration-500 ${allComplete ? 'bg-green-500' : 'bg-[#ff9e19]'}`}
-                style={{ width: `${(completedCount / totalCount) * 100}%` }}
-              />
-            </div>
-            {allComplete && (
-              <p className="text-xs text-green-400 mt-2 text-center">All rituals complete! 🎉</p>
-            )}
-          </div>
-
-          {/* Adherence Stats */}
-          <div className="mb-4 p-3 rounded-lg bg-[#0a0a0a] border border-gray-700">
-            <div className="grid grid-cols-2 gap-3 text-center">
-              <div>
-                <div className="text-lg font-bold text-[#ff9e19]">{progress.adherencePercentage}%</div>
-                <div className="text-xs text-gray-500">14-Day Adherence</div>
-              </div>
-              <div>
-                <div className="flex items-center justify-center gap-1">
-                  <span className="text-lg font-bold text-[#ff9e19]">{progress.consecutiveDays}</span>
-                  {progress.consecutiveDays >= 3 && <span className="text-sm">🔥</span>}
-                </div>
-                <div className="text-xs text-gray-500">Day Streak</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Error Display */}
-          {completionError && (
-            <div className="mb-4 p-2 bg-red-500/10 border border-red-500/30 rounded-lg">
-              <p className="text-xs text-red-400">{completionError}</p>
-            </div>
-          )}
-
-          {/* Daily Rituals Section */}
-          <div className="mb-6">
-            <button
-              onClick={() => setDailyExpanded(!dailyExpanded)}
-              className="w-full flex items-center justify-between text-sm font-semibold text-gray-300 hover:text-white transition-colors mb-3"
-            >
-              <span>DAILY RITUALS</span>
-              {dailyExpanded ? (
-                <ChevronDown className="w-4 h-4" />
-              ) : (
-                <ChevronRight className="w-4 h-4" />
-              )}
-            </button>
-
-            {dailyExpanded && (
-              <div className="space-y-2">
-                {currentStagePractices.map((practice) => {
-                  const status = getPracticeStatus(practice.id);
-                  const isCompleted = status === 'completed';
-                  const isCompleting = completing === practice.id;
-                  
-                  // Special handling for Micro-Action
-                  const isMicroAction = practice.id === 'micro_action';
-                  const hasIdentity = isMicroAction && !!(progress.currentIdentity);
-                  const currentIdentity = progress.currentIdentity || '';
-                  const identityDay = progress.identitySprintDay;
-                  
-                  // Special handling for Flow Block
-                  const isFlowBlock = practice.id === 'flow_block';
-                  const hasFlowBlockConfig = isFlowBlock && !!(progress.hasFlowBlockConfig);
-                  const flowBlockDay = progress.flowBlockSprintDay;
-                  
-                  // Special handling for Co-Regulation
-                  const isCoRegulation = practice.id === 'co_regulation';
-                  
-                  // Special handling for Nightly Debrief
-                  const isNightlyDebrief = practice.id === 'nightly_debrief';
-                  
-                  return (
-                    <div
-                      key={practice.id}
-                      className={`p-3 rounded-lg transition-all ${
-                        isCompleted
-                          ? 'bg-green-500/10 border border-green-500/20'
-                          : 'bg-[#0a0a0a] border border-gray-700 hover:border-gray-600'
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <span className="text-xl">{practice.icon}</span>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xs">{getStatusIcon(status)}</span>
-                            <span className={`text-sm font-medium ${
-                              isCompleted ? 'text-green-400' : 'text-white'
-                            }`}>
-                              {practice.name}
-                            </span>
-                          </div>
-                          
-                          {/* Show identity for Micro-Action if set */}
-                          {isMicroAction && hasIdentity && (
-                            <div className="text-xs text-[#ff9e19]/70 mb-1 truncate" title={currentIdentity}>
-                              {currentIdentity}
-                            </div>
-                          )}
-                          
-                          <div className="text-xs text-gray-400 ml-8 mb-2">
-                            {isMicroAction 
-                              ? (hasIdentity 
-                                  ? `Day ${identityDay} of 21 • 2-5 min` 
-                                  : 'Setup required')
-                              : isFlowBlock
-                                ? (hasFlowBlockConfig 
-                                    ? `Day ${flowBlockDay} of 21 • 60-90 min` 
-                                    : 'Setup required')
-                                : isCoRegulation
-                                  ? `${practice.duration} min • Evening`
-                                  : isNightlyDebrief
-                                    ? `${practice.duration} min • Before sleep`
-                                    : `${practice.duration} min`
-                            }
-                          </div>
-                          
-                          {/* Action Buttons */}
-                          <div className="flex gap-2">
-                            {isMicroAction ? (
-                              // MICRO-ACTION SPECIAL BUTTONS
-                              hasIdentity ? (
-                                // Has identity - show Complete button
-                                <>
-                                  {!isCompleted && (
-                                    <button
-                                      onClick={(e) => handleMarkComplete(practice.id, practice.name, e)}
-                                      disabled={isCompleting}
-                                      className={`flex-1 px-2 py-1.5 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1 ${
-                                        isCompleting
-                                          ? 'bg-gray-600 text-gray-400 cursor-wait'
-                                          : 'bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30'
-                                      }`}
-                                    >
-                                      {isCompleting ? (
-                                        <Loader2 className="w-3 h-3 animate-spin" />
-                                      ) : (
-                                        <Check className="w-3 h-3" />
-                                      )}
-                                      Complete Today's Micro-Action
-                                    </button>
-                                  )}
-                                  {isCompleted && (
-                                    <span className="flex-1 px-2 py-1.5 text-xs text-green-400 flex items-center justify-center gap-1">
-                                      <Check className="w-3 h-3" />
-                                      Done for today
-                                    </span>
-                                  )}
-                                </>
-                              ) : (
-                                // No identity - show Setup button
-                                <button
-                                  onClick={() => handleStartPractice(practice.id)}
-                                  className="flex-1 px-2 py-1.5 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1 bg-[#ff9e19]/20 text-[#ff9e19] hover:bg-[#ff9e19]/30"
-                                >
-                                  Set Up Identity
-                                </button>
-                              )
-                            ) : isFlowBlock ? (
-                              // FLOW BLOCK SPECIAL BUTTONS
-                              hasFlowBlockConfig ? (
-                                // Has active sprint - show appropriate button
-                                <>
-                                  {!isCompleted && (
-                                    <button
-                                      onClick={(e) => handleMarkComplete(practice.id, practice.name, e)}
-                                      disabled={isCompleting}
-                                      className={`flex-1 px-2 py-1.5 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1 ${
-                                        isCompleting
-                                          ? 'bg-gray-600 text-gray-400 cursor-wait'
-                                          : 'bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30'
-                                      }`}
-                                    >
-                                      {isCompleting ? (
-                                        <Loader2 className="w-3 h-3 animate-spin" />
-                                      ) : (
-                                        <Check className="w-3 h-3" />
-                                      )}
-                                      Complete Today's Block
-                                    </button>
-                                  )}
-                                  {isCompleted && (
-                                    <span className="flex-1 px-2 py-1.5 text-xs text-green-400 flex items-center justify-center gap-1">
-                                      <Check className="w-3 h-3" />
-                                      Flow Block Complete
-                                    </span>
-                                  )}
-                                </>
-                              ) : (
-                                // No active sprint - show Setup button
-                                <button
-                                  onClick={() => handleStartPractice(practice.id)}
-                                  className="flex-1 px-2 py-1.5 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1 bg-[#ff9e19]/20 text-[#ff9e19] hover:bg-[#ff9e19]/30"
-                                >
-                                  Set Up Flow Block
-                                </button>
-                              )
-                            ) : isCoRegulation || isNightlyDebrief ? (
-                              // CO-REGULATION AND NIGHTLY DEBRIEF BUTTONS
-                              <>
-                                {!isCompleted && (
-                                  <button
-                                    onClick={() => handleStartPractice(practice.id)}
-                                    className="flex-1 px-2 py-1.5 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30"
-                                  >
-                                    Start Ritual
-                                  </button>
-                                )}
-                                {isCompleted && (
-                                  <>
-                                    <button
-                                      onClick={() => handleStartPractice(practice.id)}
-                                      className="flex-1 px-2 py-1.5 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1 bg-gray-600/30 text-gray-400 hover:bg-gray-600/50 hover:text-gray-300"
-                                    >
-                                      <RotateCcw className="w-3 h-3" />
-                                      Run Again
-                                    </button>
-                                    <span className="px-2 py-1.5 text-xs text-green-400 flex items-center gap-1">
-                                      <Check className="w-3 h-3" />
-                                    </span>
-                                  </>
-                                )}
-                              </>
-                            ) : (
-                              // NORMAL PRACTICE BUTTONS
-                              (() => {
-                                // Practices with working modals that auto-log on completion
-                                const hasWorkingModal = practice.id === 'hrvb' || practice.id === 'awareness_rep' || practice.id === 'somatic_flow';
-                                
-                                return (
-                                  <>
-                                    {/* Start/Re-run Button - Always visible */}
-                                    <button
-                                      onClick={() => handleStartPractice(practice.id)}
-                                      className={`flex-1 px-2 py-1.5 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1 ${
-                                        isCompleted
-                                          ? 'bg-gray-600/30 text-gray-400 hover:bg-gray-600/50 hover:text-gray-300'
-                                          : 'bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30'
-                                      }`}
-                                    >
-                                      {isCompleted && <RotateCcw className="w-3 h-3" />}
-                                      {isCompleted ? 'Run Again' : 'Start Ritual'}
-                                    </button>
-                                    
-                                    {/* Done Button - Only show for practices WITHOUT working modals (e.g., somatic_flow) */}
-                                    {!isCompleted && !hasWorkingModal && (
-                                      <button
-                                        onClick={(e) => handleMarkComplete(practice.id, practice.name, e)}
-                                        disabled={isCompleting}
-                                        className={`px-3 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1 ${
-                                          isCompleting
-                                            ? 'bg-gray-600 text-gray-400 cursor-wait'
-                                            : 'bg-[#ff9e19]/20 text-[#ff9e19] hover:bg-[#ff9e19]/30'
-                                        }`}
-                                      >
-                                        {isCompleting ? (
-                                          <Loader2 className="w-3 h-3 animate-spin" />
-                                        ) : (
-                                          <Check className="w-3 h-3" />
-                                        )}
-                                        Done
-                                      </button>
-                                    )}
-                                    
-                                    {/* Completed indicator */}
-                                    {isCompleted && (
-                                      <span className="px-2 py-1.5 text-xs text-green-400 flex items-center gap-1">
-                                        <Check className="w-3 h-3" />
-                                      </span>
-                                    )}
-                                  </>
-                                );
-                              })()
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* On-Demand Tools Section */}
-          <div>
-            <button
-              onClick={() => setToolsExpanded(!toolsExpanded)}
-              className="w-full flex items-center justify-between text-sm font-semibold text-gray-300 hover:text-white transition-colors mb-3"
-            >
-              <span>ON-DEMAND TOOLS</span>
-              {toolsExpanded ? (
-                <ChevronDown className="w-4 h-4" />
-              ) : (
-                <ChevronRight className="w-4 h-4" />
-              )}
-            </button>
-
-            {toolsExpanded && (
-              <div className="space-y-2">
-                {unlockedTools.map((tool) => (
-                  <button
-                    key={tool.id}
-                    onClick={() => handleToolClick(tool.id)}
-                    className="w-full text-left p-3 rounded-lg bg-[#0a0a0a] border border-gray-700 hover:border-[#ff9e19] transition-all cursor-pointer"
-                  >
-                    <div className="flex items-start gap-3">
-                      <span className="text-xl">{tool.icon}</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-white mb-1">
-                          {tool.name}
-                        </div>
-                        <div className="text-xs text-gray-400">
-                          {tool.description}
-                        </div>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+      {/* Main container */}
+      <div className="w-full max-w-md">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <p className="text-[#ff9e19] text-sm font-medium tracking-widest uppercase mb-2">
+            Awaken with 5
+          </p>
+          <h1 className="text-white text-2xl md:text-3xl font-light">
+            Daily Core Ritual
+          </h1>
+          <p className="text-gray-500 text-sm mt-2">
+            7 minute guided preparation
+          </p>
         </div>
-      </aside>
-    </>
+
+        {/* Completion State */}
+        {isComplete ? (
+          <div className="text-center">
+            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-[#ff9e19]/10 flex items-center justify-center">
+              <span className="text-3xl text-[#ff9e19]">✓</span>
+            </div>
+            <h2 className="text-white text-xl mb-2">Ritual Complete</h2>
+            <p className="text-gray-400 text-sm mb-8">
+              Your nervous system is primed and ready.
+            </p>
+            <button
+              onClick={handleRestart}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-transparent border border-gray-700 text-gray-300 rounded-full hover:border-[#ff9e19] hover:text-[#ff9e19] transition-all"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Play Again
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Play/Pause Button */}
+            <div className="flex justify-center mb-8">
+              <button
+                onClick={handlePlayPause}
+                disabled={isLoading}
+                className={`w-20 h-20 rounded-full flex items-center justify-center transition-colors shadow-lg shadow-[#ff9e19]/20 ${
+                  error 
+                    ? 'bg-red-500/80 hover:bg-red-500' 
+                    : 'bg-[#ff9e19] hover:bg-[#ffb347]'
+                } ${isLoading ? 'opacity-80' : ''}`}
+              >
+                {isLoading ? (
+                  <Loader2 className="w-8 h-8 text-black animate-spin" />
+                ) : isPlaying ? (
+                  <Pause className="w-8 h-8 text-black" fill="black" />
+                ) : (
+                  <Play className="w-8 h-8 text-black ml-1" fill="black" />
+                )}
+              </button>
+            </div>
+
+            {/* Error Message */}
+            {error && (
+              <p className="text-center text-red-400 text-sm mb-4">
+                {error}
+              </p>
+            )}
+
+            {/* Progress Section */}
+            <div className="space-y-3">
+              <div className="relative">
+                <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-[#ff9e19] transition-all duration-200"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max={duration}
+                  value={currentTime}
+                  onChange={handleSeek}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+              </div>
+
+              <div className="flex justify-between text-sm text-gray-500">
+                <span>{formatTime(currentTime)}</span>
+                <span>{formatTime(duration)}</span>
+              </div>
+            </div>
+
+            {/* Instructions */}
+            {!hasStarted && (
+              <div className="mt-12 text-center">
+                <p className="text-gray-500 text-sm">
+                  Find a quiet space. Sit or stand comfortably.<br />
+                  Press play when ready.
+                </p>
+              </div>
+            )}
+
+            {/* Debug info - TEMPORARY - remove after testing */}
+            {hasStarted && (
+              <div className="mt-8 p-3 bg-gray-900 rounded text-xs text-gray-500 font-mono">
+                <p>State: {isLoading ? 'LOADING' : isPlaying ? 'PLAYING' : 'PAUSED'}</p>
+                <p>Time: {currentTime.toFixed(1)}s / {duration.toFixed(1)}s</p>
+                <p>Ready: {readyState} | Net: {networkState}</p>
+                {error && <p className="text-red-400">Error: {error}</p>}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Footer */}
+      {showBackButton && (
+        <div className="absolute bottom-6 text-center">
+          <p className="text-gray-600 text-xs">
+            Part of the{' '}
+            <a
+              href="https://awakenwith5.com"
+              className="text-[#ff9e19]/60 hover:text-[#ff9e19] transition-colors"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Awaken with 5
+            </a>
+            {' '}experience
+          </p>
+        </div>
+      )}
+    </div>
   );
 }
