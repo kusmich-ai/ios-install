@@ -71,13 +71,13 @@ export default function ResetPasswordPage() {
         </div>
 
         {message && (
-          <div className="p-4 rounded-lg text-center" style={{ backgroundColor: '#ff9e1920', border: '1px solid #ff9e19' }}>
+          <div className="p-4 rounded-lg text-center" style={{ backgroundColor: 'rgba(255, 158, 25, 0.125)', border: '1px solid #ff9e19' }}>
             <p style={{ color: '#ff9e19' }}>{message}</p>
           </div>
         )}
 
         {error && (
-          <div className="p-3 rounded text-sm" style={{ backgroundColor: '#ff000020', color: '#ff6b6b', border: '1px solid #ff6b6b' }}>
+          <div className="p-3 rounded text-sm" style={{ backgroundColor: 'rgba(255, 0, 0, 0.125)', color: '#ff6b6b', border: '1px solid #ff6b6b' }}>
             {error}
           </div>
         )}
