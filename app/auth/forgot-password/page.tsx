@@ -43,21 +43,74 @@ export default function ForgotPasswordPage() {
             Reset Password
           </h2>
           <p className="mt-2 text-sm text-gray-400">
-            Enter your email address and we'll send you a reset link
+            Enter your email address and we&apos;ll send you a reset link
           </p>
         </div>
 
         {message && (
-          <div className="p-4 rounded-lg text-center" style={{ backgroundColor: '#ff9e1920', border: '1px solid #ff9e19' }}>
+          <div className="p-4 rounded-lg text-center" style={{ backgroundColor: 'rgba(255, 158, 25, 0.125)', border: '1px solid #ff9e19' }}>
             <p style={{ color: '#ff9e19' }}>{message}</p>
           </div>
         )}
 
         {error && (
-          <div className="p-3 rounded text-sm" style={{ backgroundColor: '#ff000020', color: '#ff6b6b', border: '1px solid #ff6b6b' }}>
+          <div className="p-3 rounded text-sm" style={{ backgroundColor: 'rgba(255, 0, 0, 0.125)', color: '#ff6b6b', border: '1px solid #ff6b6b' }}>
             {error}
           </div>
         )}
 
         {!message && (
-          <form onSubmit={handleResetRequest} className="space
+          <form onSubmit={handleResetRequest} className="space-y-4">
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium mb-1 text-gray-300">
+                Email Address
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-3 py-2 rounded focus:outline-none focus:ring-2"
+                style={{
+                  backgroundColor: '#0a0a0a',
+                  color: '#ffffff',
+                  border: '1px solid #2a2a2a'
+                }}
+                placeholder="you@example.com"
+                required
+                disabled={loading}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 rounded font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{
+                backgroundColor: '#ff9e19',
+                color: '#0a0a0a'
+              }}
+            >
+              {loading ? 'Sending...' : 'Send Reset Link'}
+            </button>
+          </form>
+        )}
+
+        <div className="text-center space-y-2">
+          <p className="text-sm text-gray-400">
+            Remember your password?{' '}
+            <Link href="/auth/signin" className="font-semibold hover:opacity-80 transition-opacity" style={{ color: '#ff9e19' }}>
+              Sign in
+            </Link>
+          </p>
+          <p className="text-sm text-gray-400">
+            Don&apos;t have an account?{' '}
+            <Link href="/auth/signup" className="font-semibold hover:opacity-80 transition-opacity" style={{ color: '#ff9e19' }}>
+              Sign up
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
