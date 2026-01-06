@@ -1,6 +1,7 @@
 // ============================================
 // app/profile/patterns/page.tsx
 // Pattern Profile Page - ENHANCED with Visual Timeline
+// Luxury styling update
 // ============================================
 
 'use client';
@@ -74,15 +75,15 @@ interface PatternProfile {
   processed_at: string;
 }
 
-// Stage info for the visual timeline
+// Stage info for the visual timeline - refined, sophisticated colors
 const STAGE_INFO: Record<number, { name: string; icon: string; color: string }> = {
-  1: { name: 'Neural Priming', icon: '🫁', color: '#22c55e' },
-  2: { name: 'Embodied Awareness', icon: '🧘', color: '#3b82f6' },
-  3: { name: 'Identity Mode', icon: '⚡', color: '#f59e0b' },
-  4: { name: 'Flow Mode', icon: '🎯', color: '#a855f7' },
-  5: { name: 'Relational Coherence', icon: '💞', color: '#ec4899' },
-  6: { name: 'Integration', icon: '🌙', color: '#6366f1' },
-  7: { name: 'Accelerated Expansion', icon: '🚀', color: '#ff9e19' }
+  1: { name: 'Neural Priming', icon: '🫁', color: '#059669' },      // emerald-600
+  2: { name: 'Embodied Awareness', icon: '🧘', color: '#2563eb' },  // blue-600
+  3: { name: 'Identity Mode', icon: '⚡', color: '#d97706' },       // amber-600
+  4: { name: 'Flow Mode', icon: '🎯', color: '#7c3aed' },           // violet-600
+  5: { name: 'Relational Coherence', icon: '💞', color: '#db2777' }, // pink-600
+  6: { name: 'Integration', icon: '🌙', color: '#4f46e5' },         // indigo-600
+  7: { name: 'Accelerated Expansion', icon: '🚀', color: '#b45309' } // amber-700
 };
 
 export default function PatternProfilePage() {
@@ -196,13 +197,14 @@ export default function PatternProfilePage() {
     router.push('/mirror?rerun=true');
   };
 
+  // Refined severity colors - more muted and sophisticated
   const getSeverityColor = (severity: number) => {
     switch (severity) {
-      case 5: return 'text-red-400';
-      case 4: return 'text-orange-400';
-      case 3: return 'text-yellow-400';
-      case 2: return 'text-blue-400';
-      default: return 'text-gray-400';
+      case 5: return 'text-rose-400';
+      case 4: return 'text-amber-400';
+      case 3: return 'text-yellow-500';
+      case 2: return 'text-sky-400';
+      default: return 'text-zinc-400';
     }
   };
 
@@ -246,10 +248,10 @@ export default function PatternProfilePage() {
   // ============================================
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+      <div className="min-h-screen bg-[#1a1a1a] flex items-center justify-center">
         <div className="flex items-center gap-4">
-          <div className="animate-spin w-6 h-6 border-2 border-[#ff9e19] border-t-transparent rounded-full" />
-          <span className="text-gray-400">Loading your pattern profile...</span>
+          <div className="animate-spin w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full" />
+          <span className="text-zinc-400">Loading your pattern profile...</span>
         </div>
       </div>
     );
@@ -260,16 +262,16 @@ export default function PatternProfilePage() {
   // ============================================
   if (error === 'not_found') {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#1a1a1a] flex items-center justify-center p-4">
         <div className="max-w-md w-full text-center">
           <div className="text-6xl mb-6">🪞</div>
           <h1 className="text-2xl font-bold text-white mb-4">No Pattern Profile Yet</h1>
-          <p className="text-gray-400 mb-8">
+          <p className="text-zinc-400 mb-8">
             You haven't completed The Mirror yet. Complete the pattern analysis to see your transformation roadmap.
           </p>
           <button
             onClick={() => router.push('/mirror?rerun=true')}
-            className="px-6 py-3 bg-[#ff9e19] text-black font-semibold rounded-lg hover:bg-[#ffb347] transition-colors"
+            className="px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold rounded-xl hover:from-amber-600 hover:to-amber-700 transition-all shadow-sm shadow-amber-500/20"
           >
             Start The Mirror
           </button>
@@ -280,16 +282,16 @@ export default function PatternProfilePage() {
 
   if (error === 'skipped') {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#1a1a1a] flex items-center justify-center p-4">
         <div className="max-w-md w-full text-center">
           <div className="text-6xl mb-6">🪞</div>
           <h1 className="text-2xl font-bold text-white mb-4">Mirror Skipped</h1>
-          <p className="text-gray-400 mb-8">
+          <p className="text-zinc-400 mb-8">
             You skipped The Mirror during onboarding. You can complete it now to unlock your personalized transformation roadmap.
           </p>
           <button
             onClick={() => router.push('/mirror?rerun=true')}
-            className="px-6 py-3 bg-[#ff9e19] text-black font-semibold rounded-lg hover:bg-[#ffb347] transition-colors"
+            className="px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold rounded-xl hover:from-amber-600 hover:to-amber-700 transition-all shadow-sm shadow-amber-500/20"
           >
             Complete The Mirror
           </button>
@@ -300,16 +302,16 @@ export default function PatternProfilePage() {
 
   if (error === 'error' || !profile) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#1a1a1a] flex items-center justify-center p-4">
         <div className="max-w-md w-full text-center">
           <div className="text-6xl mb-6">⚠️</div>
           <h1 className="text-2xl font-bold text-white mb-4">Something Went Wrong</h1>
-          <p className="text-gray-400 mb-8">
+          <p className="text-zinc-400 mb-8">
             We couldn't load your pattern profile. Please try again.
           </p>
           <button
             onClick={fetchPatternProfile}
-            className="px-6 py-3 bg-[#ff9e19] text-black font-semibold rounded-lg hover:bg-[#ffb347] transition-colors flex items-center gap-2 mx-auto"
+            className="px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold rounded-xl hover:from-amber-600 hover:to-amber-700 transition-all shadow-sm shadow-amber-500/20 flex items-center gap-2 mx-auto"
           >
             <RefreshCw size={18} />
             Try Again
@@ -323,30 +325,30 @@ export default function PatternProfilePage() {
   // RENDER: NO TRANSFORMATION ROADMAP
   // ============================================
   const renderNoRoadmapPrompt = () => (
-    <div className="bg-gradient-to-br from-[#111111] to-[#0a0a0a] rounded-xl border border-[#ff9e19]/30 p-8 text-center">
+    <div className="bg-gradient-to-br from-[#222222] to-[#1a1a1a] rounded-xl border border-amber-500/30 p-8 text-center">
       <div className="text-5xl mb-4">✨</div>
       <h3 className="text-xl font-bold text-white mb-3">
         Generate Your Transformation Roadmap
       </h3>
-      <p className="text-gray-400 mb-6 max-w-md mx-auto">
+      <p className="text-zinc-400 mb-6 max-w-md mx-auto">
         Your patterns have been analyzed. Now let's create a personalized roadmap showing exactly how each IOS stage will transform these patterns.
       </p>
       
       {regenerateError && (
-        <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-4 mb-4 max-w-lg mx-auto text-left">
-          <p className="text-red-400 text-sm font-medium mb-1">Error:</p>
-          <p className="text-red-300 text-sm font-mono break-all">{regenerateError}</p>
+        <div className="bg-rose-500/10 border border-rose-500/30 rounded-lg p-4 mb-4 max-w-lg mx-auto text-left">
+          <p className="text-rose-400 text-sm font-medium mb-1">Error:</p>
+          <p className="text-rose-300 text-sm font-mono break-all">{regenerateError}</p>
         </div>
       )}
       
       <button
         onClick={regenerateRoadmap}
         disabled={isRegenerating}
-        className="px-6 py-3 bg-[#ff9e19] text-black font-semibold rounded-lg hover:bg-[#ffb347] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 mx-auto"
+        className="px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold rounded-xl hover:from-amber-600 hover:to-amber-700 transition-all shadow-sm shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 mx-auto"
       >
         {isRegenerating ? (
           <>
-            <div className="animate-spin w-5 h-5 border-2 border-black border-t-transparent rounded-full" />
+            <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
             Generating...
           </>
         ) : (
@@ -357,7 +359,7 @@ export default function PatternProfilePage() {
         )}
       </button>
       
-      <p className="text-gray-600 text-sm mt-4">
+      <p className="text-zinc-600 text-sm mt-4">
         Takes about 10-15 seconds
       </p>
     </div>
@@ -376,13 +378,13 @@ export default function PatternProfilePage() {
     return (
       <div className="space-y-6">
         {/* Current Position Indicator */}
-        <div className="bg-gradient-to-r from-[#ff9e19]/20 via-[#ff9e19]/10 to-transparent rounded-xl border border-[#ff9e19]/30 p-4">
+        <div className="bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-transparent rounded-xl border border-amber-500/30 p-4">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-[#ff9e19] flex items-center justify-center">
-              <MapPin className="w-6 h-6 text-black" />
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
+              <MapPin className="w-6 h-6 text-white" />
             </div>
             <div>
-              <p className="text-gray-400 text-sm">You are here</p>
+              <p className="text-zinc-400 text-sm">You are here</p>
               <p className="text-white font-bold text-lg">
                 Stage {currentStage}: {STAGE_INFO[currentStage]?.name || 'Unknown'}
               </p>
@@ -392,15 +394,15 @@ export default function PatternProfilePage() {
 
         {/* Core Pattern Banner */}
         {profile.core_pattern && (
-          <div className="bg-[#111111] rounded-xl border border-red-500/30 p-6">
+          <div className="bg-[#222222] rounded-xl border border-rose-500/20 p-6">
             <div className="flex items-center gap-3 mb-3">
               <span className="text-2xl">🎯</span>
-              <span className="text-red-400 font-bold text-sm uppercase tracking-wide">Core Pattern to Transform</span>
+              <span className="text-rose-400 font-bold text-sm uppercase tracking-wide">Core Pattern to Transform</span>
             </div>
             <h3 className="text-2xl font-bold text-white mb-2">
               "{profile.core_pattern.name}"
             </h3>
-            <p className="text-gray-400">
+            <p className="text-zinc-400">
               {profile.core_pattern.description || 'The root pattern. Everything else branches from this.'}
             </p>
           </div>
@@ -409,16 +411,16 @@ export default function PatternProfilePage() {
         {/* Visual Timeline */}
         <div className="relative">
           {/* Timeline line */}
-          <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-[#ff9e19] via-[#ff9e19]/50 to-[#1a1a1a]" />
+          <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-amber-500 via-amber-500/30 to-zinc-800" />
           
           {/* Start marker */}
           <div className="relative flex items-center gap-4 mb-8 pl-1">
-            <div className="w-10 h-10 rounded-full bg-[#0a0a0a] border-2 border-[#ff9e19] flex items-center justify-center z-10">
+            <div className="w-10 h-10 rounded-full bg-[#1a1a1a] border-2 border-amber-500 flex items-center justify-center z-10">
               <span className="text-lg">🏁</span>
             </div>
             <div>
-              <p className="text-[#ff9e19] font-semibold">START</p>
-              <p className="text-gray-500 text-sm">Your transformation begins</p>
+              <p className="text-amber-500 font-semibold">START</p>
+              <p className="text-zinc-500 text-sm">Your transformation begins</p>
             </div>
           </div>
 
@@ -435,18 +437,18 @@ export default function PatternProfilePage() {
                   <div 
                     className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
                       status === 'completed' 
-                        ? 'bg-green-500 border-green-500' 
+                        ? 'bg-emerald-600 border-emerald-600' 
                         : status === 'current'
-                          ? 'bg-[#ff9e19] border-[#ff9e19] ring-4 ring-[#ff9e19]/30 animate-pulse'
-                          : 'bg-[#1a1a1a] border-[#333]'
+                          ? 'bg-gradient-to-br from-amber-500 to-amber-600 border-amber-500 ring-4 ring-amber-500/20'
+                          : 'bg-[#222222] border-zinc-700'
                     }`}
                   >
                     {status === 'completed' ? (
                       <Check className="w-5 h-5 text-white" />
                     ) : status === 'current' ? (
-                      <MapPin className="w-5 h-5 text-black" />
+                      <MapPin className="w-5 h-5 text-white" />
                     ) : (
-                      <span className="text-gray-500 font-bold">{milestone.number}</span>
+                      <span className="text-zinc-500 font-bold">{milestone.number}</span>
                     )}
                   </div>
                 </div>
@@ -454,22 +456,22 @@ export default function PatternProfilePage() {
                 {/* Milestone Card */}
                 <div className={`ml-16 rounded-xl border overflow-hidden transition-all ${
                   status === 'completed'
-                    ? 'bg-green-500/5 border-green-500/30'
+                    ? 'bg-emerald-500/5 border-emerald-500/20'
                     : status === 'current'
-                      ? 'bg-[#ff9e19]/10 border-[#ff9e19]/50 shadow-lg shadow-[#ff9e19]/10'
-                      : 'bg-[#111111] border-[#1a1a1a]'
+                      ? 'bg-amber-500/10 border-amber-500/30 shadow-lg shadow-amber-500/5'
+                      : 'bg-[#222222] border-white/[0.06]'
                 }`}>
                   {/* Card Header - Clickable */}
                   <button
                     onClick={() => setExpandedMilestone(isExpanded ? null : index)}
-                    className="w-full p-4 flex items-center justify-between hover:bg-white/5 transition-colors"
+                    className="w-full p-4 flex items-center justify-between hover:bg-white/[0.02] transition-colors"
                   >
                     <div className="flex items-center gap-4">
                       {/* Stage Badge */}
                       <div 
                         className="px-3 py-1 rounded-full text-xs font-bold"
                         style={{ 
-                          backgroundColor: `${stageInfo.color}20`,
+                          backgroundColor: `${stageInfo.color}15`,
                           color: stageInfo.color
                         }}
                       >
@@ -478,12 +480,12 @@ export default function PatternProfilePage() {
                       
                       <div className="text-left">
                         <h3 className={`font-bold ${
-                          status === 'completed' ? 'text-green-400' :
-                          status === 'current' ? 'text-[#ff9e19]' : 'text-white'
+                          status === 'completed' ? 'text-emerald-400' :
+                          status === 'current' ? 'text-amber-500' : 'text-white'
                         }`}>
                           {milestone.title}
                         </h3>
-                        <p className="text-gray-500 text-sm">
+                        <p className="text-zinc-500 text-sm">
                           {milestone.timeframe} • {milestone.stage_name}
                         </p>
                       </div>
@@ -491,12 +493,12 @@ export default function PatternProfilePage() {
                     
                     <div className="flex items-center gap-3">
                       {status === 'completed' && (
-                        <span className="text-green-400 text-xs font-medium">COMPLETE</span>
+                        <span className="text-emerald-400 text-xs font-medium">COMPLETE</span>
                       )}
                       {status === 'current' && (
-                        <span className="text-[#ff9e19] text-xs font-medium animate-pulse">IN PROGRESS</span>
+                        <span className="text-amber-500 text-xs font-medium">IN PROGRESS</span>
                       )}
-                      <span className={`text-gray-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
+                      <span className={`text-zinc-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
                         ▼
                       </span>
                     </div>
@@ -504,14 +506,14 @@ export default function PatternProfilePage() {
 
                   {/* Expanded Content */}
                   {isExpanded && (
-                    <div className="border-t border-[#1a1a1a] p-6 space-y-6">
+                    <div className="border-t border-white/[0.06] p-6 space-y-6">
                       {/* What's Broken */}
                       <div>
                         <div className="flex items-center gap-2 mb-3">
-                          <span className="text-red-400">✗</span>
-                          <span className="text-red-400 font-medium text-sm uppercase tracking-wide">What's Broken</span>
+                          <span className="text-rose-400">✗</span>
+                          <span className="text-rose-400 font-medium text-sm uppercase tracking-wide">What's Broken</span>
                         </div>
-                        <p className="text-gray-300 leading-relaxed">
+                        <p className="text-zinc-300 leading-relaxed">
                           {milestone.whats_broken}
                         </p>
                       </div>
@@ -519,22 +521,22 @@ export default function PatternProfilePage() {
                       {/* What Changes */}
                       <div>
                         <div className="flex items-center gap-2 mb-3">
-                          <span className="text-green-400">✓</span>
-                          <span className="text-green-400 font-medium text-sm uppercase tracking-wide">What Changes</span>
+                          <span className="text-emerald-400">✓</span>
+                          <span className="text-emerald-400 font-medium text-sm uppercase tracking-wide">What Changes</span>
                         </div>
                         <ul className="space-y-2">
                           {milestone.what_changes.map((change, i) => (
                             <li key={i} className="flex items-start gap-3">
-                              <span className="text-[#ff9e19] mt-1">→</span>
-                              <span className="text-gray-300">{change}</span>
+                              <span className="text-amber-500 mt-1">→</span>
+                              <span className="text-zinc-300">{change}</span>
                             </li>
                           ))}
                         </ul>
                       </div>
 
                       {/* The Shift */}
-                      <div className="bg-[#0a0a0a] rounded-lg p-4">
-                        <div className="text-gray-500 text-xs uppercase tracking-wide mb-2">The Shift</div>
+                      <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/[0.04]">
+                        <div className="text-zinc-500 text-xs uppercase tracking-wide mb-2">The Shift</div>
                         <p className="text-white font-medium italic">
                           {milestone.the_shift}
                         </p>
@@ -543,12 +545,12 @@ export default function PatternProfilePage() {
                       {/* Patterns Addressed */}
                       {milestone.patterns_addressed && milestone.patterns_addressed.length > 0 && (
                         <div>
-                          <div className="text-gray-500 text-xs uppercase tracking-wide mb-2">Patterns Addressed</div>
+                          <div className="text-zinc-500 text-xs uppercase tracking-wide mb-2">Patterns Addressed</div>
                           <div className="flex flex-wrap gap-2">
                             {milestone.patterns_addressed.map((pattern, i) => (
                               <span 
                                 key={i}
-                                className="text-xs bg-[#ff9e19]/10 text-[#ff9e19] px-3 py-1 rounded-full"
+                                className="text-xs bg-amber-500/10 text-amber-500 px-3 py-1 rounded-full border border-amber-500/20"
                               >
                                 {pattern}
                               </span>
@@ -565,26 +567,26 @@ export default function PatternProfilePage() {
 
           {/* Destination marker */}
           <div className="relative flex items-center gap-4 pl-1 mt-8">
-            <div className="w-10 h-10 rounded-full bg-[#0a0a0a] border-2 border-purple-500 flex items-center justify-center z-10">
-              <Flag className="w-5 h-5 text-purple-500" />
+            <div className="w-10 h-10 rounded-full bg-[#1a1a1a] border-2 border-violet-500 flex items-center justify-center z-10">
+              <Flag className="w-5 h-5 text-violet-500" />
             </div>
             <div>
-              <p className="text-purple-400 font-semibold">DESTINATION</p>
-              <p className="text-gray-500 text-sm">Full IOS Installation Complete</p>
+              <p className="text-violet-400 font-semibold">DESTINATION</p>
+              <p className="text-zinc-500 text-sm">Full IOS Installation Complete</p>
             </div>
           </div>
         </div>
 
         {/* Destination Card */}
         {destination && (
-          <div className="bg-gradient-to-br from-purple-500/10 to-[#0a0a0a] rounded-xl border border-purple-500/30 p-8 text-center mt-8">
+          <div className="bg-gradient-to-br from-violet-500/10 to-[#1a1a1a] rounded-xl border border-violet-500/20 p-8 text-center mt-8">
             <div className="text-4xl mb-4">🏆</div>
             <h3 className="text-xl font-bold text-white mb-4">THE DESTINATION</h3>
-            <p className="text-gray-300 leading-relaxed max-w-2xl mx-auto text-lg">
+            <p className="text-zinc-300 leading-relaxed max-w-2xl mx-auto text-lg">
               {destination.liberation_statement}
             </p>
-            <div className="mt-6 pt-6 border-t border-purple-500/20">
-              <p className="text-purple-400 font-medium">
+            <div className="mt-6 pt-6 border-t border-violet-500/20">
+              <p className="text-violet-400 font-medium">
                 That's the installation. That's who you're becoming.
               </p>
             </div>
@@ -592,7 +594,7 @@ export default function PatternProfilePage() {
         )}
 
         {/* Progress Summary */}
-        <div className="bg-[#111111] rounded-xl border border-[#1a1a1a] p-6">
+        <div className="bg-[#222222] rounded-xl border border-white/[0.06] p-6">
           <h4 className="text-white font-semibold mb-4">Your Journey Progress</h4>
           <div className="flex items-center gap-2 mb-4">
             {milestones.map((m, i) => {
@@ -601,8 +603,8 @@ export default function PatternProfilePage() {
                 <div key={i} className="flex-1 flex items-center">
                   <div 
                     className={`h-2 flex-1 rounded-full ${
-                      status === 'completed' ? 'bg-green-500' :
-                      status === 'current' ? 'bg-[#ff9e19]' : 'bg-[#1a1a1a]'
+                      status === 'completed' ? 'bg-emerald-500' :
+                      status === 'current' ? 'bg-amber-500' : 'bg-zinc-800'
                     }`}
                   />
                   {i < milestones.length - 1 && <div className="w-1" />}
@@ -610,7 +612,7 @@ export default function PatternProfilePage() {
               );
             })}
           </div>
-          <div className="flex justify-between text-xs text-gray-500">
+          <div className="flex justify-between text-xs text-zinc-500">
             <span>Start</span>
             <span>Stage {currentStage} of {Math.max(...milestones.map(m => m.stage))}</span>
             <span>Destination</span>
@@ -638,30 +640,30 @@ export default function PatternProfilePage() {
           return (
             <div
               key={key}
-              className="bg-[#111111] rounded-xl border border-[#1a1a1a] overflow-hidden"
+              className="bg-[#222222] rounded-xl border border-white/[0.06] overflow-hidden"
             >
               <button
                 onClick={() => setExpandedCategory(isExpanded ? null : key)}
-                className="w-full p-4 flex items-center justify-between hover:bg-[#1a1a1a]/50 transition-colors"
+                className="w-full p-4 flex items-center justify-between hover:bg-white/[0.02] transition-colors"
               >
                 <div className="flex items-center gap-3">
                   <span className="text-xl">{info?.icon}</span>
                   <span className="text-white font-medium">{info?.label}</span>
-                  <span className="text-gray-500 text-sm">
+                  <span className="text-zinc-500 text-sm">
                     ({patterns.length} pattern{patterns.length !== 1 ? 's' : ''})
                   </span>
                 </div>
-                <span className="text-gray-500">
+                <span className="text-zinc-500">
                   {isExpanded ? '▲' : '▼'}
                 </span>
               </button>
 
               {isExpanded && (
-                <div className="border-t border-[#1a1a1a] p-4 space-y-4">
+                <div className="border-t border-white/[0.06] p-4 space-y-4">
                   {patterns.map((pattern: Pattern, i: number) => (
                     <div
                       key={pattern.id || i}
-                      className="bg-[#0a0a0a] rounded-lg p-4"
+                      className="bg-[#1a1a1a] rounded-lg p-4 border border-white/[0.04]"
                     >
                       <div className="flex items-start justify-between mb-2">
                         <h4 className="text-white font-medium">{pattern.name}</h4>
@@ -669,11 +671,11 @@ export default function PatternProfilePage() {
                           {getSeverityLabel(pattern.severity)}
                         </span>
                       </div>
-                      <p className="text-gray-400 text-sm mb-3">
+                      <p className="text-zinc-400 text-sm mb-3">
                         {pattern.description}
                       </p>
                       {pattern.evidence && (
-                        <p className="text-gray-500 text-sm italic mb-3">
+                        <p className="text-zinc-500 text-sm italic mb-3">
                           "{pattern.evidence}"
                         </p>
                       )}
@@ -682,7 +684,7 @@ export default function PatternProfilePage() {
                           {pattern.ios_stages.map(stage => (
                             <span
                               key={stage}
-                              className="text-xs bg-[#ff9e19]/20 text-[#ff9e19] px-2 py-1 rounded"
+                              className="text-xs bg-amber-500/10 text-amber-500 px-2 py-1 rounded border border-amber-500/20"
                             >
                               Stage {stage}: {IOS_STAGE_MAPPING[stage as keyof typeof IOS_STAGE_MAPPING]?.name}
                             </span>
@@ -704,19 +706,19 @@ export default function PatternProfilePage() {
   // MAIN RENDER
   // ============================================
   return (
-    <div className="min-h-screen bg-[#0a0a0a] py-8 px-4">
+    <div className="min-h-screen bg-[#1a1a1a] py-8 px-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+            className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors"
           >
             <ArrowLeft size={20} />
             Back
           </button>
           {profile.processed_at && (
-            <span className="text-gray-600 text-sm">
+            <span className="text-zinc-600 text-sm">
               Analyzed {formatDate(profile.processed_at)}
             </span>
           )}
@@ -728,20 +730,20 @@ export default function PatternProfilePage() {
           <h1 className="text-3xl font-bold text-white mb-2">
             Your Transformation Roadmap
           </h1>
-          <p className="text-gray-400">
+          <p className="text-zinc-400">
             A personalized map from where you are to who you're becoming
           </p>
         </div>
 
         {/* Quality Score */}
-        <div className="bg-[#111111] rounded-xl border border-[#1a1a1a] p-4 mb-8">
+        <div className="bg-[#222222] rounded-xl border border-white/[0.06] p-4 mb-8">
           <div className="flex items-center gap-4">
             <div className="flex gap-1">
               {[1, 2, 3, 4, 5].map((n) => (
                 <div
                   key={n}
-                  className={`w-2 h-8 rounded-full ${
-                    n <= profile.quality_score ? 'bg-[#ff9e19]' : 'bg-[#1a1a1a]'
+                  className={`w-2 h-8 rounded-full transition-colors ${
+                    n <= profile.quality_score ? 'bg-amber-500' : 'bg-zinc-800'
                   }`}
                 />
               ))}
@@ -750,7 +752,7 @@ export default function PatternProfilePage() {
               <p className="text-white font-medium">
                 Analysis Quality: {profile.quality_score}/5
               </p>
-              <p className="text-gray-400 text-sm">
+              <p className="text-zinc-400 text-sm">
                 Based on depth and evidence from your ChatGPT history
               </p>
             </div>
@@ -761,20 +763,20 @@ export default function PatternProfilePage() {
         <div className="flex gap-2 mb-6">
           <button
             onClick={() => setActiveTab('roadmap')}
-            className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+            className={`px-6 py-3 rounded-xl font-medium transition-all ${
               activeTab === 'roadmap'
-                ? 'bg-[#ff9e19] text-black'
-                : 'bg-[#111111] text-gray-400 hover:text-white'
+                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-sm shadow-amber-500/20'
+                : 'bg-[#222222] text-zinc-400 hover:text-white border border-white/[0.06]'
             }`}
           >
             🗺 Transformation Roadmap
           </button>
           <button
             onClick={() => setActiveTab('patterns')}
-            className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+            className={`px-6 py-3 rounded-xl font-medium transition-all ${
               activeTab === 'patterns'
-                ? 'bg-[#ff9e19] text-black'
-                : 'bg-[#111111] text-gray-400 hover:text-white'
+                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-sm shadow-amber-500/20'
+                : 'bg-[#222222] text-zinc-400 hover:text-white border border-white/[0.06]'
             }`}
           >
             📊 Pattern Breakdown
@@ -788,13 +790,13 @@ export default function PatternProfilePage() {
         </div>
 
         {/* Re-run Option */}
-        <div className="text-center pt-8 border-t border-[#1a1a1a]">
-          <p className="text-gray-500 text-sm mb-4">
+        <div className="text-center pt-8 border-t border-white/[0.06]">
+          <p className="text-zinc-500 text-sm mb-4">
             Have more ChatGPT history now? You can re-run The Mirror for deeper insights.
           </p>
           <button
             onClick={handleRerunMirror}
-            className="px-6 py-3 bg-[#111111] text-gray-400 rounded-lg hover:text-white transition-colors flex items-center gap-2 mx-auto"
+            className="px-6 py-3 bg-[#222222] text-zinc-400 rounded-xl hover:text-white hover:bg-[#2a2a2a] transition-all flex items-center gap-2 mx-auto border border-white/[0.06]"
           >
             <RefreshCw size={18} />
             Re-run The Mirror
