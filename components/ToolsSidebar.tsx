@@ -1,8 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useUserProgress } from '@/app/hooks/useUserProgress';
-import { createClient } from '@/lib/supabase-client';
+import { useState } from 'react';
+import { getStagePractices, getUnlockedOnDemandTools } from '@/app/config/stages';
+import type { UserProgress } from '@/app/hooks/useUserProgress';
+
+// Your actual modal imports
+import { useResonanceBreathing } from '@/components/ResonanceModal';
+import { useAwarenessRep } from '@/components/AwarenessRepModal';
+import { useCoRegulation } from '@/components/CoRegulationModal';
+import { useNightlyDebrief } from '@/components/NightlyDebriefModal';
+
+// On-demand tool modals
+import { useDecentering } from '@/components/DecenteringModal';
+import { useMetaReflection } from '@/components/MetaReflectionModal';
+import { useReframe } from '@/components/ReframeModal';
+import { useThoughtHygiene } from '@/components/ThoughtHygieneModal';
 
 // Lucide Icons - Refined, professional set
 import {
@@ -19,190 +31,85 @@ import {
   Sparkles,       // Thought hygiene
   Check,
   Lock,
-  Play,
   ChevronDown,
   ChevronUp,
   Clock,
   Flame,
+  Loader2,
+  RotateCcw,
 } from 'lucide-react';
-
-// Practice Modal imports
-import { useHRVB } from '@/components/HRVBModal';
-import { useAwarenessRep } from '@/components/AwarenessRepModal';
-import { useSomaticFlow } from '@/components/SomaticFlowModal';
-import { useMicroAction } from '@/components/MicroActionModal';
-import { useFlowBlock } from '@/components/FlowBlockModal';
-import { useCoRegulation } from '@/components/CoRegulationModal';
-import { useNightlyDebrief } from '@/components/NightlyDebriefModal';
-
-// Tool Modal imports
-import { useDecentering } from '@/components/DecenteringModal';
-import { useMetaReflection } from '@/components/MetaReflectionModal';
-import { useReframe } from '@/components/ReframeModal';
-import { useThoughtHygiene } from '@/components/ThoughtHygieneModal';
 
 // ============================================
 // TYPES
 // ============================================
 
-interface Practice {
-  id: string;
-  name: string;
-  duration: string;
-  icon: React.ComponentType<{ className?: string }>;
-  stage: number;
-  description: string;
-}
-
-interface Tool {
-  id: string;
-  name: string;
-  icon: React.ComponentType<{ className?: string }>;
-  stage: number;
-  description: string;
-}
-
 interface ToolsSidebarProps {
-  onPracticeClick?: (practiceId: string) => void;
-  onToolClick?: (toolId: string) => void;
-  onProgressUpdate?: () => void;
-  onPracticeCompleted?: (practiceId: string) => void;
-  currentStage?: number;
+  progress: UserProgress;
+  userId: string;
+  onPracticeClick: (practiceId: string) => void;
+  onToolClick: (toolId: string) => void;
+  onProgressUpdate?: () => Promise<void> | void;
+  onPracticeCompleted?: (practiceId: string, practiceName: string) => void;
+  isRefreshing?: boolean;
 }
 
-// ============================================
-// PRACTICE DEFINITIONS
-// ============================================
+// Icon mapping for practices
+const practiceIcons: { [key: string]: React.ComponentType<{ className?: string }> } = {
+  hrvb: Wind,
+  awareness_rep: Eye,
+  somatic_flow: Activity,
+  micro_action: Zap,
+  flow_block: Target,
+  co_regulation: Heart,
+  nightly_debrief: Moon,
+};
 
-const practices: Practice[] = [
-  {
-    id: 'hrvb',
-    name: 'Resonance Breathing',
-    duration: '5 min',
-    icon: Wind,
-    stage: 1,
-    description: 'Vagal toning & HRV optimization',
-  },
-  {
-    id: 'awareness_rep',
-    name: 'Awareness Rep',
-    duration: '2 min',
-    icon: Eye,
-    stage: 1,
-    description: 'Meta-awareness training',
-  },
-  {
-    id: 'somatic_flow',
-    name: 'Somatic Flow',
-    duration: '3 min',
-    icon: Activity,
-    stage: 2,
-    description: 'Embodied movement practice',
-  },
-  {
-    id: 'micro_action',
-    name: 'Morning Micro-Action',
-    duration: '2-3 min',
-    icon: Zap,
-    stage: 3,
-    description: 'Identity proof action',
-  },
-  {
-    id: 'flow_block',
-    name: 'Flow Block',
-    duration: '60-90 min',
-    icon: Target,
-    stage: 4,
-    description: 'Deep work immersion',
-  },
-  {
-    id: 'co_regulation',
-    name: 'Co-Regulation',
-    duration: '3-5 min',
-    icon: Heart,
-    stage: 5,
-    description: 'Relational coherence',
-  },
-  {
-    id: 'nightly_debrief',
-    name: 'Nightly Debrief',
-    duration: '2 min',
-    icon: Moon,
-    stage: 6,
-    description: 'Daily integration',
-  },
-];
+// Icon mapping for tools
+const toolIcons: { [key: string]: React.ComponentType<{ className?: string }> } = {
+  decentering: Layers,
+  meta_reflection: Compass,
+  reframe: RefreshCw,
+  thought_hygiene: Sparkles,
+};
 
-// ============================================
-// TOOL DEFINITIONS
-// ============================================
+// Practice descriptions
+const practiceDescriptions: { [key: string]: string } = {
+  hrvb: 'Vagal toning & HRV optimization',
+  awareness_rep: 'Meta-awareness training',
+  somatic_flow: 'Embodied movement practice',
+  micro_action: 'Identity proof action',
+  flow_block: 'Deep work immersion',
+  co_regulation: 'Relational coherence',
+  nightly_debrief: 'Daily integration',
+};
 
-const tools: Tool[] = [
-  {
-    id: 'decentering',
-    name: 'Decentering',
-    icon: Layers,
-    stage: 1,
-    description: 'Observer perspective shift',
-  },
-  {
-    id: 'meta_reflection',
-    name: 'Meta-Reflection',
-    icon: Compass,
-    stage: 2,
-    description: 'Weekly awareness review',
-  },
-  {
-    id: 'reframe',
-    name: 'Reframe Protocol',
-    icon: RefreshCw,
-    stage: 3,
-    description: 'Interpretation debugging',
-  },
-  {
-    id: 'thought_hygiene',
-    name: 'Thought Hygiene',
-    icon: Sparkles,
-    stage: 4,
-    description: 'Mental cache clearing',
-  },
-];
+// Tool descriptions
+const toolDescriptions: { [key: string]: string } = {
+  decentering: 'Observer perspective shift',
+  meta_reflection: 'Weekly awareness review',
+  reframe: 'Interpretation debugging',
+  thought_hygiene: 'Mental cache clearing',
+};
 
 // ============================================
 // PRACTICE CARD COMPONENT
 // ============================================
 
 interface PracticeCardProps {
-  practice: Practice;
-  isUnlocked: boolean;
+  practice: {
+    id: string;
+    name: string;
+    duration: string;
+    stage: number;
+  };
   isCompleted: boolean;
   onStart: () => void;
   streak?: number;
 }
 
-function PracticeCard({ practice, isUnlocked, isCompleted, onStart, streak }: PracticeCardProps) {
-  const Icon = practice.icon;
-  
-  if (!isUnlocked) {
-    return (
-      <div className="group relative bg-white/60 rounded-xl p-4 border border-black/[0.04] opacity-60">
-        <div className="flex items-start gap-3">
-          {/* Icon */}
-          <div className="w-10 h-10 rounded-xl bg-zinc-100 flex items-center justify-center flex-shrink-0">
-            <Lock className="w-4 h-4 text-zinc-400" />
-          </div>
-          
-          {/* Content */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-zinc-400 truncate">{practice.name}</span>
-            </div>
-            <p className="text-xs text-zinc-400 mt-0.5">Stage {practice.stage}+</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+function PracticeCard({ practice, isCompleted, onStart, streak }: PracticeCardProps) {
+  const Icon = practiceIcons[practice.id] || Zap;
+  const description = practiceDescriptions[practice.id] || '';
   
   return (
     <div 
@@ -237,14 +144,14 @@ function PracticeCard({ practice, isUnlocked, isCompleted, onStart, streak }: Pr
             <span className={`text-sm font-semibold truncate ${isCompleted ? 'text-emerald-700' : 'text-zinc-800'}`}>
               {practice.name}
             </span>
-            {streak && streak > 0 && (
+            {streak && streak > 0 && !isCompleted && (
               <span className="inline-flex items-center gap-0.5 text-xs font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">
                 <Flame className="w-3 h-3" />
                 {streak}
               </span>
             )}
           </div>
-          <p className="text-xs text-zinc-500 mt-0.5">{practice.description}</p>
+          <p className="text-xs text-zinc-500 mt-0.5">{description}</p>
           
           {/* Duration & Action */}
           <div className="flex items-center justify-between mt-3">
@@ -275,17 +182,50 @@ function PracticeCard({ practice, isUnlocked, isCompleted, onStart, streak }: Pr
 }
 
 // ============================================
+// LOCKED PRACTICE CARD
+// ============================================
+
+interface LockedPracticeCardProps {
+  practice: {
+    id: string;
+    name: string;
+    stage: number;
+  };
+}
+
+function LockedPracticeCard({ practice }: LockedPracticeCardProps) {
+  return (
+    <div className="group relative bg-white/60 rounded-xl p-4 border border-black/[0.04] opacity-60">
+      <div className="flex items-start gap-3">
+        <div className="w-10 h-10 rounded-xl bg-zinc-100 flex items-center justify-center flex-shrink-0">
+          <Lock className="w-4 h-4 text-zinc-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <span className="text-sm font-medium text-zinc-400 truncate block">{practice.name}</span>
+          <p className="text-xs text-zinc-400 mt-0.5">Unlocks at Stage {practice.stage}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
 // TOOL CARD COMPONENT
 // ============================================
 
 interface ToolCardProps {
-  tool: Tool;
+  tool: {
+    id: string;
+    name: string;
+    stage: number;
+  };
   isUnlocked: boolean;
   onActivate: () => void;
 }
 
 function ToolCard({ tool, isUnlocked, onActivate }: ToolCardProps) {
-  const Icon = tool.icon;
+  const Icon = toolIcons[tool.id] || Sparkles;
+  const description = toolDescriptions[tool.id] || '';
   
   if (!isUnlocked) {
     return (
@@ -311,9 +251,8 @@ function ToolCard({ tool, isUnlocked, onActivate }: ToolCardProps) {
       </div>
       <div className="flex-1 min-w-0">
         <span className="text-sm font-medium text-zinc-700 group-hover:text-zinc-900 truncate block">{tool.name}</span>
-        <span className="text-xs text-zinc-500">{tool.description}</span>
+        <span className="text-xs text-zinc-500">{description}</span>
       </div>
-      <Play className="w-4 h-4 text-zinc-400 group-hover:text-amber-500 transition-colors duration-200" />
     </button>
   );
 }
@@ -323,148 +262,82 @@ function ToolCard({ tool, isUnlocked, onActivate }: ToolCardProps) {
 // ============================================
 
 export default function ToolsSidebar({
+  progress,
+  userId,
   onPracticeClick,
   onToolClick,
   onProgressUpdate,
   onPracticeCompleted,
-  currentStage: propStage,
+  isRefreshing = false,
 }: ToolsSidebarProps) {
-  const { progress, loading, refetchProgress } = useUserProgress();
-  const [completedToday, setCompletedToday] = useState<Set<string>>(new Set());
   const [practicesExpanded, setPracticesExpanded] = useState(true);
   const [toolsExpanded, setToolsExpanded] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
   
-  // Modal hooks
-  const { open: openHRVB, Modal: HRVBModal } = useHRVB();
+  // Initialize modal hooks - USING YOUR ACTUAL IMPORTS
+  const { open: openResonance, Modal: ResonanceModal } = useResonanceBreathing();
   const { open: openAwarenessRep, Modal: AwarenessRepModal } = useAwarenessRep();
-  const { open: openSomaticFlow, Modal: SomaticFlowModal } = useSomaticFlow();
-  const { open: openMicroAction, Modal: MicroActionModal } = useMicroAction();
-  const { open: openFlowBlock, Modal: FlowBlockModal } = useFlowBlock();
   const { open: openCoRegulation, Modal: CoRegulationModal } = useCoRegulation();
   const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebrief();
   
+  // On-demand tool modals
   const { open: openDecentering, Modal: DecenteringModal } = useDecentering();
   const { open: openMetaReflection, Modal: MetaReflectionModal } = useMetaReflection();
   const { open: openReframe, Modal: ReframeModal } = useReframe();
   const { open: openThoughtHygiene, Modal: ThoughtHygieneModal } = useThoughtHygiene();
   
-  const currentStage = propStage ?? progress?.currentStage ?? 1;
-
-  // Get user ID on mount
-  useEffect(() => {
-    const getUser = async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) setUserId(user.id);
-    };
-    getUser();
-  }, []);
-
-  // Load completed practices for today
-  useEffect(() => {
-    const loadTodaysPractices = async () => {
-      if (!userId) return;
-      
-      const supabase = createClient();
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      const { data } = await supabase
-        .from('practice_logs')
-        .select('practice_type')
-        .eq('user_id', userId)
-        .gte('completed_at', today.toISOString());
-      
-      if (data) {
-        setCompletedToday(new Set(data.map(p => p.practice_type)));
-      }
-    };
-    
-    loadTodaysPractices();
-  }, [userId, progress]);
-
-  // Handle practice completion
-  const handlePracticeComplete = async (practiceId: string) => {
-    if (!userId) return;
-    
-    try {
-      const supabase = createClient();
-      await supabase.from('practice_logs').insert({
-        user_id: userId,
-        practice_type: practiceId,
-        completed_at: new Date().toISOString(),
-        stage: currentStage,
-      });
-      
-      setCompletedToday(prev => new Set([...prev, practiceId]));
-      
-      if (onPracticeCompleted) onPracticeCompleted(practiceId);
-      if (onProgressUpdate) onProgressUpdate();
-      if (refetchProgress) refetchProgress();
-    } catch (error) {
-      console.error('Failed to log practice:', error);
+  const currentStage = progress?.currentStage ?? 1;
+  const completedToday = new Set(progress?.practicesCompletedToday || []);
+  
+  // Get practices and tools based on stage
+  const stagePractices = getStagePractices(currentStage);
+  const unlockedTools = getUnlockedOnDemandTools(currentStage);
+  
+  // Handle modal completion
+  const handleModalComplete = async (practiceId: string, practiceName: string) => {
+    if (onPracticeCompleted) {
+      onPracticeCompleted(practiceId, practiceName);
+    }
+    if (onProgressUpdate) {
+      await onProgressUpdate();
     }
   };
-
-  // Handle practice start
-  const handlePracticeStart = (practiceId: string) => {
-    if (onPracticeClick) onPracticeClick(practiceId);
-    
-    switch (practiceId) {
-      case 'hrvb':
-        openHRVB(userId, () => handlePracticeComplete('hrvb'));
-        break;
-      case 'awareness_rep':
-        openAwarenessRep(userId, () => handlePracticeComplete('awareness_rep'));
-        break;
-      case 'somatic_flow':
-        openSomaticFlow(userId, () => handlePracticeComplete('somatic_flow'));
-        break;
-      case 'micro_action':
-        openMicroAction(userId, () => handlePracticeComplete('micro_action'));
-        break;
-      case 'flow_block':
-        openFlowBlock(userId, () => handlePracticeComplete('flow_block'));
-        break;
-      case 'co_regulation':
-        openCoRegulation(() => handlePracticeComplete('co_regulation'));
-        break;
-      case 'nightly_debrief':
-        openNightlyDebrief(() => handlePracticeComplete('nightly_debrief'));
-        break;
+  
+  // Handle practice start - routes to appropriate modal or chat
+  const handleStartPractice = (practiceId: string) => {
+    if (practiceId === 'hrvb') {
+      openResonance();
+    } else if (practiceId === 'awareness_rep') {
+      openAwarenessRep();
+    } else if (practiceId === 'co_regulation') {
+      openCoRegulation();
+    } else if (practiceId === 'nightly_debrief') {
+      openNightlyDebrief();
+    } else if (practiceId === 'micro_action' || practiceId === 'flow_block' || practiceId === 'somatic_flow') {
+      // These route to chat for guided flows
+      onToolClick(practiceId);
+    } else {
+      onPracticeClick(practiceId);
     }
   };
-
+  
   // Handle tool activation
   const handleToolActivate = (toolId: string) => {
-    if (onToolClick) onToolClick(toolId);
-    
-    switch (toolId) {
-      case 'decentering':
-        openDecentering(userId);
-        break;
-      case 'meta_reflection':
-        openMetaReflection(userId, false);
-        break;
-      case 'reframe':
-        openReframe(userId, false);
-        break;
-      case 'thought_hygiene':
-        openThoughtHygiene(userId);
-        break;
+    if (toolId === 'decentering') {
+      openDecentering(userId);
+    } else if (toolId === 'meta_reflection') {
+      openMetaReflection(userId, false);
+    } else if (toolId === 'reframe') {
+      openReframe(userId, false);
+    } else if (toolId === 'thought_hygiene') {
+      openThoughtHygiene(userId);
+    } else {
+      onToolClick(toolId);
     }
   };
-
-  // Get unlocked practices and tools
-  const unlockedPractices = practices.filter(p => p.stage <= currentStage);
-  const lockedPractices = practices.filter(p => p.stage > currentStage);
-  const unlockedTools = tools.filter(t => t.stage <= currentStage);
-  const lockedTools = tools.filter(t => t.stage > currentStage);
-
+  
   // Calculate completion stats
-  const completedCount = unlockedPractices.filter(p => completedToday.has(p.id)).length;
-  const totalCount = unlockedPractices.length;
+  const completedCount = stagePractices.filter(p => completedToday.has(p.id)).length;
+  const totalCount = stagePractices.length;
   const completionPercentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   return (
@@ -476,6 +349,9 @@ export default function ToolsSidebar({
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-zinc-800 uppercase tracking-wider">Daily Rituals</h2>
             <div className="flex items-center gap-2">
+              {isRefreshing && (
+                <Loader2 className="w-4 h-4 animate-spin text-zinc-400" />
+              )}
               <span className={`text-xs font-semibold ${completedCount === totalCount ? 'text-emerald-600' : 'text-amber-600'}`}>
                 {completedCount}/{totalCount}
               </span>
@@ -515,26 +391,13 @@ export default function ToolsSidebar({
             
             {practicesExpanded && (
               <div className="space-y-3">
-                {/* Unlocked practices */}
-                {unlockedPractices.map(practice => (
+                {stagePractices.map(practice => (
                   <PracticeCard
                     key={practice.id}
                     practice={practice}
-                    isUnlocked={true}
                     isCompleted={completedToday.has(practice.id)}
-                    onStart={() => handlePracticeStart(practice.id)}
+                    onStart={() => handleStartPractice(practice.id)}
                     streak={progress?.consecutiveDays}
-                  />
-                ))}
-                
-                {/* Locked practices (show next 1-2) */}
-                {lockedPractices.slice(0, 2).map(practice => (
-                  <PracticeCard
-                    key={practice.id}
-                    practice={practice}
-                    isUnlocked={false}
-                    isCompleted={false}
-                    onStart={() => {}}
                   />
                 ))}
               </div>
@@ -562,23 +425,12 @@ export default function ToolsSidebar({
             
             {toolsExpanded && (
               <div className="space-y-2">
-                {/* Unlocked tools */}
                 {unlockedTools.map(tool => (
                   <ToolCard
                     key={tool.id}
                     tool={tool}
                     isUnlocked={true}
                     onActivate={() => handleToolActivate(tool.id)}
-                  />
-                ))}
-                
-                {/* Locked tools */}
-                {lockedTools.map(tool => (
-                  <ToolCard
-                    key={tool.id}
-                    tool={tool}
-                    isUnlocked={false}
-                    onActivate={() => {}}
                   />
                 ))}
               </div>
@@ -588,22 +440,28 @@ export default function ToolsSidebar({
 
         {/* Footer */}
         <div className="p-4 border-t border-black/5 bg-white/50">
-          <div className="text-center">
+          <div className="flex items-center justify-between">
             <p className="text-xs text-zinc-400">
               Stage {currentStage} • {completionPercentage}% today
             </p>
+            {onProgressUpdate && (
+              <button 
+                onClick={() => onProgressUpdate()}
+                disabled={isRefreshing}
+                className="p-1.5 hover:bg-black/5 rounded-lg transition-colors disabled:opacity-50"
+              >
+                <RotateCcw className={`w-3.5 h-3.5 text-zinc-400 ${isRefreshing ? 'animate-spin' : ''}`} />
+              </button>
+            )}
           </div>
         </div>
       </aside>
 
-      {/* All Modals */}
-      <HRVBModal />
-      <AwarenessRepModal />
-      <SomaticFlowModal />
-      <MicroActionModal />
-      <FlowBlockModal />
-      <CoRegulationModal />
-      <NightlyDebriefModal />
+      {/* All Modals - rendered at root level */}
+      <ResonanceModal onComplete={() => handleModalComplete('hrvb', 'Resonance Breathing')} />
+      <AwarenessRepModal onComplete={() => handleModalComplete('awareness_rep', 'Awareness Rep')} />
+      <CoRegulationModal onComplete={() => handleModalComplete('co_regulation', 'Co-Regulation Practice')} />
+      <NightlyDebriefModal onComplete={() => handleModalComplete('nightly_debrief', 'Nightly Debrief')} />
       <DecenteringModal />
       <MetaReflectionModal />
       <ReframeModal />
