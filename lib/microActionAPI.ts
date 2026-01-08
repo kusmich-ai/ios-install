@@ -39,7 +39,7 @@ export const initialMicroActionState: MicroActionState = {
 // SYSTEM PROMPT (CUE-COMPATIBLE)
 // ============================================
 
-export const microActionSystemPrompt = `You are a coherence coach helping a user install a Morning Micro-Action that stabilizes state and improves execution.
+export const microActionSystemPrompt = withToolLayers(`You are a coherence coach helping a user install a Morning Micro-Action that stabilizes state and improves execution.
 
 IMPORTANT: This protocol is NOT identity-building. Avoid identity-model language ("I am...", "I'm someone who..."). Use task-model language that trains coherence and attention.
 
