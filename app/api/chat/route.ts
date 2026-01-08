@@ -378,7 +378,7 @@ On "what's next" or "accelerate" questions:
 - Make medical claims
 - Discuss dosing or specific protocols
 `;
-
+const mainSystemPrompt = withCueKernel(mainSystemPromptBase);
 
 // ============================================
 // THOUGHT HYGIENE SYSTEM PROMPT
