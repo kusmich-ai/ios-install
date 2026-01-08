@@ -4,6 +4,7 @@
 // Notes:
 // - Keeps existing exported names/types where possible to avoid downstream breakage.
 // - "identityStatement" now functions as a "coherenceStatement" (task-model language).
+import { CUE_KERNEL } from '@/lib/prompts/cueKernel';
 
 export interface MicroActionState {
   isActive: boolean;
