@@ -1,8 +1,6 @@
-// ============================================
 // lib/microActionAPI.ts
-// Micro-Action Identity Installation Protocol API
-// Version 2.0 - Two-Stage Extraction System
-// ============================================
+// Morning Micro-Action (Coherence Constraint) Protocol API
+// Version 3.0 - Cue-Compatible (No Identity Installation) + Two-Stage Extraction
 
 // ============================================
 // TYPES
@@ -12,149 +10,144 @@ export interface MicroActionState {
   isActive: boolean;
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>;
   currentStep: string;
-  extractedIdentity: string | null;
+
+  extractedCoherenceTarget: string | null;
   extractedAction: string | null;
+  extractedAcknowledgment: string | null;
+
   isComplete: boolean;
   sprintStartDate: string | null;
   sprintNumber: number;
 }
 
 export interface MicroActionExtraction {
-  identityStatement: string;
+  coherenceTarget: string;
   microAction: string;
+  acknowledgment: string;
 }
 
 export const initialMicroActionState: MicroActionState = {
   isActive: false,
   conversationHistory: [],
   currentStep: 'discovery',
-  extractedIdentity: null,
+
+  extractedCoherenceTarget: null,
   extractedAction: null,
+  extractedAcknowledgment: null,
+
   isComplete: false,
   sprintStartDate: null,
   sprintNumber: 0
 };
 
 // ============================================
-// SYSTEM PROMPT
+// SYSTEM PROMPT (Cue-Compatible)
 // ============================================
 
-export const microActionSystemPrompt = `You are an identity coach helping a user install a new identity through the Morning Micro-Action protocol. This is a 21-day identity installation process.
+export const microActionSystemPrompt = `You are a coherence coach helping a user set a Morning Micro-Action — a 21-day behavioral constraint that trains stability and aligned action.
+
+This is NOT identity installation. Do not frame it as becoming someone. Do not use “I am…” statements. Do not use affirmation language.
 
 ## YOUR ROLE
-Guide the user through discovering their identity and designing a daily proof action. Be warm but direct - no cheerleading or fluff. Mirror their language. Ask one question at a time.
+Guide the user to choose:
+1) A friction point (where reactivity, avoidance, or drift shows up)
+2) One tiny daily action (<5 minutes) that reduces that friction
+3) A single acknowledgement line after completion (“Evidence logged.”)
 
-## THE PROCESS (follow this sequence naturally)
+Be direct. No cheerleading or fluff. Mirror their language. Ask one question at a time.
 
-### Phase 1: Discovery
-The opening message already asked about misalignment. Your job is to:
-1. Reflect back what they shared and probe deeper to get specific
-2. Ask follow-up questions to understand the root of the friction
-3. Assess if they need a SUBTRACTIVE identity (regulatory - for scattered/stressed) or ADDITIVE identity (expansive - for stable but under-expressed)
+## THE PROCESS (follow naturally)
 
-### Phase 2: Identity Formation  
-4. Help them articulate the inverse quality they want to embody
-5. Help them phrase it as an identity statement: "I am someone who..." or "I'm..."
-6. Ask them to say it (aloud or internally) and notice how it feels in their body
+### Phase 1: Find the friction
+- Reflect what they shared and make it specific.
+- Ask: “Where does the system slip most often — morning, midday, or evening?”
 
-### Phase 3: Refinement (4-C Filter - ONE AT A TIME)
-Walk through each criterion conversationally, waiting for confirmation before moving on:
-7. CONCRETE: "Could someone see evidence of this in 60 seconds?"
-8. COHERENT: "Does this feel like an upgrade of who you already are, not a costume?"
-9. CONTAINABLE: "Can you prove this with one small action each day?"
-10. COMPELLING: "Does saying it light up your chest, not just your head?"
+### Phase 2: Choose the coherence target (non-identity)
+Define the target as a behavior/state constraint, not a self.
+Examples:
+- “Start clean” (no phone first 10 minutes)
+- “Single-tab focus”
+- “Slow the first response”
+- “Body-first for 60 seconds”
 
-### Phase 4: Proof Action Design
-11. Ask: "What's one micro-interaction you could do in under 5 minutes each morning that would prove you are this person?"
-12. Test the action with the ACE criteria (ONE AT A TIME):
-    - ATOMIC: "Could you do this even on a chaotic morning?"
-    - CONGRUENT: "If I saw you doing this, would I recognize the identity you're training?"
-    - EMOTIONALLY CLEAN: "Does this feel like alignment, not obligation?"
+Ask: “What would ‘coherence’ look like in that moment, in one short phrase?”
 
-### Phase 5: Commitment
-13. Present their Identity Contract:
-    "For the next 21 days, I will act as [identity].
-    My daily micro-action is [action].
-    Each completion = proof; each proof = reinforcement."
-14. Ask for their commitment: "Will you commit to this micro action for the next 21 days?"
-15. When they say yes, close with mechanics and encouragement
+### Phase 3: Design the micro-action (behavior only)
+Ask: “What’s one action under 5 minutes each morning that proves coherence in that moment?”
+
+Test with ACE (one at a time):
+- ATOMIC: doable on worst mornings
+- CONGRUENT: directly reduces the identified friction
+- CLEAN: no moral pressure, no self-judgment required
+
+### Phase 4: Contract + commitment
+Present:
+“For 21 days:
+- My coherence target: [target phrase]
+- My morning micro-action: [action]
+- After I do it: I say ‘Evidence logged.’”
+
+Ask: “Commit for 21 days? (yes/no)”
 
 ## IMPORTANT RULES
-- Ask ONE question at a time - never multiple questions in one message
-- Don't announce frameworks ("Now let's check the 4-C filter") - weave them naturally
-- If a response is vague, probe deeper before moving on
-- Mirror their exact language when reflecting back
-- Keep responses to 2-4 sentences max unless presenting the final contract
-- Be genuinely curious, not clinical
+- One question per message.
+- No identity language (“I am…”, “be the kind of person…”, “install identity”, “proof of who you are”).
+- If they drift into meaning/identity: redirect: “No story. What’s the smallest action?”
 
 ## CLOSING AFTER COMMITMENT
-When the user commits (says yes, I commit, etc.), respond naturally with:
-- Restate their finalized identity and micro-action
-- Brief encouragement about the 21-day process
-- Remind them: "Each morning, do your action, then acknowledge: 'I acted as [identity]. Evidence logged.'"
-
-DO NOT include any special markers or tags in your response. Just respond naturally.`;
+Restate target + action + acknowledgement line. Keep it short.`;
 
 // ============================================
 // OPENING MESSAGE
 // ============================================
 
-export const microActionOpeningMessage = `Let's set up your Morning Micro-Action — the identity installation protocol.
+export const microActionOpeningMessage = `Let's set up your Morning Micro-Action — a 21-day coherence constraint.
 
-This is designed to train your mental operating system by anchoring a new identity through one small, daily proof action. Over 21 days, you'll act as a specific identity — not as an affirmation, but as evidence-based training.
+This trains your mental operating system by reducing friction at a specific failure point using one small daily action. No affirmations. Just repeatable evidence.
 
-By day 21, it won't feel like effort. It'll feel like you.
+Let's begin — where does your system slip most often right now?
 
-Let's begin — is there somewhere in your life that feels misaligned with who you are?
-
-It could be internal (thoughts, reactive energy, overwhelm) or external (relationships, work, health). Just name what's present.`;
+It could be internal (reactivity, overwhelm, loops) or external (work, relationships, health). Name the friction.`;
 
 // ============================================
 // COMMITMENT DETECTION (Stage 1 → Stage 2 trigger)
 // ============================================
 
-/**
- * Detects if the user's response indicates they're committing to the sprint.
- * This triggers the extraction phase.
- */
 export function isIdentityCommitmentResponse(
-  userMessage: string, 
+  userMessage: string,
   lastAssistantMessage: string
 ): boolean {
   const userLower = userMessage.toLowerCase().trim();
   const assistantLower = lastAssistantMessage.toLowerCase();
-  
-  // Check if assistant asked for commitment
-  const askedForCommitment = 
+
+  const askedForCommitment =
     assistantLower.includes('commit') ||
     assistantLower.includes('will you') ||
     assistantLower.includes('are you in') ||
     assistantLower.includes('ready to begin') ||
     assistantLower.includes('21 days');
-  
-  // Check if user confirmed
+
   const positiveResponses = [
-    'yes', 'yeah', 'yep', 'yup', 'absolutely', 'definitely', 
+    'yes', 'yeah', 'yep', 'yup', 'absolutely', 'definitely',
     'i do', 'i will', 'i commit', 'committed', 'let\'s do it',
     'let\'s go', 'i\'m in', 'im in', 'count me in', 'for sure',
     'of course', 'sure', 'ok', 'okay', 'ready', 'yes!'
   ];
-  
-  const userConfirmed = positiveResponses.some(response => 
+
+  const userConfirmed = positiveResponses.some(response =>
     userLower === response ||
     userLower.startsWith(response + ' ') ||
     userLower.startsWith(response + '.') ||
     userLower.startsWith(response + ',') ||
     userLower.startsWith(response + '!')
   );
-  
-  // Also check for explicit commitment phrases
-  const explicitCommitment = 
+
+  const explicitCommitment =
     userLower.includes('i commit') ||
     userLower.includes('i will commit') ||
     userLower.includes('i\'m committed') ||
     userLower.includes('im committed');
-  
+
   return (askedForCommitment && userConfirmed) || explicitCommitment;
 }
 
@@ -169,15 +162,13 @@ export function buildAPIMessages(
   const messages: Array<{ role: string; content: string }> = [
     { role: 'system', content: microActionSystemPrompt }
   ];
-  
-  // Add conversation history
+
   for (const msg of conversationHistory) {
     messages.push({ role: msg.role, content: msg.content });
   }
-  
-  // Add new user message
+
   messages.push({ role: 'user', content: newUserMessage });
-  
+
   return messages;
 }
 
@@ -185,33 +176,35 @@ export function buildAPIMessages(
 // EXTRACTION SYSTEM (Stage 2)
 // ============================================
 
-const extractionSystemPrompt = `You are a data extraction system. Your ONLY job is to extract the identity statement and micro-action from a conversation.
+const extractionSystemPrompt = `You are a data extraction system. Output ONLY JSON.
 
-Analyze the conversation and output ONLY a JSON object with this exact format:
+Extract the FINAL confirmed:
+- coherence_target: the short phrase they are training (e.g., "Start clean", "Slow the first response")
+- micro_action: the exact micro-action they committed to
+- acknowledgment: the exact completion line (default "Evidence logged.")
+
+Format:
 {
-  "identity_statement": "The exact identity statement the user committed to (e.g., 'I am someone who is present and engaged')",
-  "micro_action": "The exact micro-action they committed to (e.g., 'Put my phone away during dinner')"
+  "coherence_target": "string or null",
+  "micro_action": "string or null",
+  "acknowledgment": "string or null"
 }
 
-RULES:
-1. Extract the FINAL confirmed identity, not intermediate versions
-2. Extract the FINAL confirmed micro-action
-3. The identity should be in "I am..." or "I'm someone who..." format
-4. The micro-action should be specific and actionable
-5. Output ONLY the JSON object, no other text
-6. If you cannot find clear identity/action, output: {"identity_statement": null, "micro_action": null}`;
+Rules:
+1. Extract FINAL confirmed versions only (not intermediate drafts)
+2. Output ONLY the JSON object (no markdown, no explanation)
+3. If unclear: output nulls`;
 
 export function buildMicroActionExtractionMessages(
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>
 ): Array<{ role: string; content: string }> {
-  // Build conversation transcript
   const transcript = conversationHistory
     .map(msg => `${msg.role.toUpperCase()}: ${msg.content}`)
     .join('\n\n');
-  
+
   return [
     { role: 'system', content: extractionSystemPrompt },
-    { role: 'user', content: `Extract the identity statement and micro-action from this conversation:\n\n${transcript}` }
+    { role: 'user', content: `Extract the fields from this conversation:\n\n${transcript}` }
   ];
 }
 
@@ -219,24 +212,23 @@ export function parseMicroActionExtraction(
   extractionResponse: string
 ): MicroActionExtraction | null {
   try {
-    // Try to find JSON in the response
     const jsonMatch = extractionResponse.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       console.error('[MicroAction] No JSON found in extraction response');
       return null;
     }
-    
+
     const parsed = JSON.parse(jsonMatch[0]);
-    
-    // Validate required fields
-    if (!parsed.identity_statement || !parsed.micro_action) {
+
+    if (!parsed.coherence_target || !parsed.micro_action) {
       console.error('[MicroAction] Missing required fields in extraction');
       return null;
     }
-    
+
     return {
-      identityStatement: parsed.identity_statement,
-      microAction: parsed.micro_action
+      coherenceTarget: parsed.coherence_target,
+      microAction: parsed.micro_action,
+      acknowledgment: parsed.acknowledgment || 'Evidence logged.'
     };
   } catch (error) {
     console.error('[MicroAction] Failed to parse extraction:', error);
@@ -245,42 +237,37 @@ export function parseMicroActionExtraction(
 }
 
 // ============================================
-// LEGACY SUPPORT (for backward compatibility)
+// LEGACY SUPPORT (optional)
 // ============================================
 
 /**
- * @deprecated Use two-stage extraction instead
- * Legacy function to parse inline completion markers
+ * @deprecated Legacy function to parse inline completion markers.
+ * Kept for backward compatibility.
  */
 export function parseCompletionMarker(response: string): { identity: string; action: string } | null {
-  // Try to find [[IDENTITY_COMPLETE]] marker
   const identityMatch = response.match(/\[\[IDENTITY_COMPLETE:([^\]]+)\]\]/);
   const actionMatch = response.match(/\[\[ACTION_COMPLETE:([^\]]+)\]\]/);
-  
+
   if (identityMatch && actionMatch) {
     return {
       identity: identityMatch[1].trim(),
       action: actionMatch[1].trim()
     };
   }
-  
-  // Alternative: look for structured output
+
   const altIdentityMatch = response.match(/IDENTITY:\s*"?([^"\n]+)"?/i);
   const altActionMatch = response.match(/MICRO[_-]?ACTION:\s*"?([^"\n]+)"?/i);
-  
+
   if (altIdentityMatch && altActionMatch) {
     return {
       identity: altIdentityMatch[1].trim(),
       action: altActionMatch[1].trim()
     };
   }
-  
+
   return null;
 }
 
-/**
- * Remove completion markers from response for display
- */
 export function cleanResponseForDisplay(response: string): string {
   return response
     .replace(/\[\[IDENTITY_COMPLETE:[^\]]+\]\]/g, '')
