@@ -19,6 +19,8 @@ import {
 import { checkRateLimit } from '@/lib/security/rateLimit';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { withToolLayers } from '@/lib/prompts/withToolLayers';
+
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -977,59 +979,47 @@ export async function POST(req: Request) {
         maxTokens = 1024;
         break;
 
-      case 'decentering_practice':
-        systemPrompt = decenteringSystemPrompt + patternContext;
-        maxTokens = 1024;
-        break;
+     case 'decentering_practice':
+  systemPrompt = withToolLayers(decenteringSystemPrompt) + patternContext;
+  maxTokens = 1024;
+  break;
 
-      case 'meta_reflection':
-        systemPrompt = metaReflectionSystemPrompt + patternContext;
-        if (additionalContext) {
-          systemPrompt += '\n\n' + additionalContext;
-        }
-        maxTokens = 1024;
-        break;
+ case 'meta_reflection':
+  systemPrompt = withToolLayers(metaReflectionSystemPrompt) + patternContext;
+  if (additionalContext) systemPrompt += '\n\n' + additionalContext;
+  maxTokens = 1024;
+  break;
 
-      case 'reframe':
-        systemPrompt = reframeSystemPrompt + patternContext;
-        if (additionalContext) {
-          systemPrompt += '\n\n' + additionalContext;
-        }
-        maxTokens = 1024;
-        break;
+  case 'reframe':
+  systemPrompt = withToolLayers(reframeSystemPrompt) + patternContext;
+  if (additionalContext) systemPrompt += '\n\n' + additionalContext;
+  maxTokens = 1024;
+  break;
 
       // NEW TOOL CONTEXTS
-      case 'thought_hygiene':
-        systemPrompt = thoughtHygieneSystemPrompt + patternContext;
-        if (additionalContext) {
-          systemPrompt += '\n\n' + additionalContext;
-        }
-        maxTokens = 1024;
-        break;
+    case 'thought_hygiene':
+  systemPrompt = withToolLayers(thoughtHygieneSystemPrompt) + patternContext;
+  if (additionalContext) systemPrompt += '\n\n' + additionalContext;
+  maxTokens = 1024;
+  break;
 
-      case 'worry_loop_dissolver':
-        systemPrompt = worryLoopSystemPrompt + patternContext;
-        if (additionalContext) {
-          systemPrompt += '\n\n' + additionalContext;
-        }
-        maxTokens = 1024;
-        break;
+  case 'worry_loop_dissolver':
+  systemPrompt = withToolLayers(worryLoopSystemPrompt) + patternContext;
+  if (additionalContext) systemPrompt += '\n\n' + additionalContext;
+  maxTokens = 1024;
+  break;
 
-      case 'co_regulation':
-        systemPrompt = coRegulationSystemPrompt + patternContext;
-        if (additionalContext) {
-          systemPrompt += '\n\n' + additionalContext;
-        }
-        maxTokens = 1024;
-        break;
+    case 'co_regulation':
+  systemPrompt = withToolLayers(coRegulationSystemPrompt) + patternContext;
+  if (additionalContext) systemPrompt += '\n\n' + additionalContext;
+  maxTokens = 1024;
+  break;
 
-      case 'nightly_debrief':
-        systemPrompt = nightlyDebriefSystemPrompt + patternContext;
-        if (additionalContext) {
-          systemPrompt += '\n\n' + additionalContext;
-        }
-        maxTokens = 1024;
-        break;
+case 'nightly_debrief':
+  systemPrompt = withToolLayers(nightlyDebriefSystemPrompt) + patternContext;
+  if (additionalContext) systemPrompt += '\n\n' + additionalContext;
+  maxTokens = 1024;
+  break;
 
       default:
         break;
