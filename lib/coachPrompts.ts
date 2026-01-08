@@ -1,6 +1,7 @@
 // lib/coachPrompts.ts
 // Comprehensive coaching system prompts for Nic and Fehren
 // Nic persona extracted from 231 conversations + UNBECOMING content + Interview transcript
+import { withCueKernel } from '@/lib/prompts/withCueKernel';
 
 // ============================================
 // SHARED SECURITY INSTRUCTIONS
@@ -3570,16 +3571,24 @@ export const coaches: Record<CoachId, CoachMetadata> = {
 // HELPER FUNCTIONS
 // ============================================
 
-export function getCoachSystemPrompt(coachId: string): string {
+export function getCoachSystemPrompt(coachId: CoachId): string {
+  let basePrompt: string;
+
   switch (coachId) {
     case 'nic':
-      return nicSystemPrompt;
+      basePrompt = nicSystemPrompt;
+      break;
     case 'fehren':
-      return fehrenSystemPrompt;
+      basePrompt = fehrenSystemPrompt;
+      break;
     default:
-      return nicSystemPrompt; // Default to Nic
+      throw new Error('Invalid coachId');
   }
+
+  // IMPORTANT: Cue kernel runs LAST as meta-runtime
+  return withCueKernel(basePrompt);
 }
+
 
 export function getCoachMetadata(coachId: string): CoachMetadata | null {
   if (coachId in coaches) {
