@@ -3679,9 +3679,9 @@ export function getAllCoaches(): CoachMetadata[] {
 }
 
 export function buildCoachAPIMessages(
-  coachId: CoachId,
+  coachId: CoachId,  
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>,
-  userMessage: string
+  userMessage: string  
 ) {
   const systemPrompt = getCoachSystemPrompt(coachId);
   
