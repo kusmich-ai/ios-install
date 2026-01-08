@@ -3,7 +3,6 @@
 // Notes:
 // - Removes identity-building language.
 // - Keeps types/fields to minimize downstream breakage (identityLink retained but treated as coherenceLink).
-import { CUE_KERNEL } from '@/lib/prompts/cueKernel';
 import { withToolLayers } from '@/lib/prompts/withToolLayers';
 
 
@@ -158,7 +157,7 @@ Wait for explicit commitment.
 - If user drifts into story/excuses: return to constraints and next action
 
 ## TONE & STYLE
-Grounded, clear, systems-coach voice. No hype. Clarity > inspiration.`;
+Grounded, clear, systems-coach voice. No hype. Clarity > inspiration.`);
 
 // ============================================
 // OPENING MESSAGES
