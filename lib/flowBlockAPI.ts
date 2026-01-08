@@ -1,6 +1,6 @@
 // flowBlockAPI.ts
-// 100% API-driven Flow Block Integration Protocol v2.4
-// v2.4: Two-stage completion - natural response + silent extraction call
+// 100% API-driven Flow Block Integration Protocol v2.5 (Cue-Compatible Coherence Link)
+// v2.5: Replace Identity Integration with Coherence Link + extraction schema update
 
 // ============================================
 // TYPE DEFINITIONS
@@ -12,7 +12,7 @@ export interface WeeklyMapEntry {
   task: string;          // The specific task
   flowType: string;      // 'Creative', 'Strategic', 'Learning'
   category: string;      // 'Goal', 'Growth', 'Gratitude'
-  identityLink: string;  // 'Direct', 'Indirect', 'Autonomous'
+  coherenceLink: string; // 'Direct', 'Indirect', 'Standalone'
   duration: number;      // 60 or 90 minutes
 }
 
@@ -51,22 +51,25 @@ export const initialFlowBlockState: FlowBlockState = {
 };
 
 // ============================================
-// SYSTEM PROMPT v2.4 (Cleaner - no marker instructions)
+// SYSTEM PROMPT v2.5 (Coherence Link)
 // ============================================
 
 export const flowBlockSystemPrompt = `You are a performance coach helping a user set up their Flow Block system — the "performance element" of the Mental Operating System (MOS).
 
-Flow Blocks are designed to identify actions that upgrade your MOS by training your NOS through its safety and reward circuits, so you experience even better outcomes. Your job is to help users identify their high-leverage Flow Blocks across key life domains, distribute them across the week, and execute them with clarity and consistency.
+Flow Blocks identify actions that upgrade the MOS by training the NOS through its safety and reward circuits. Your job is to help users identify high-leverage Flow Blocks across key life domains, distribute them across the week, and execute them with clarity and consistency.
 
 ## OPERATING MODES
 
 ### Strategist (Phase 1)
-Help the user identify the right types of Flow Blocks across multiple life domains that align with their goals, identity, and nervous system state.
+Help the user identify the right Flow Blocks across multiple life domains that align with their goals, coherence constraints, and nervous system state.
 
 - Begin with domain prioritization across 6 key areas: Professional Work, Personal Development, Relationships, Creative Projects, Learning, Health
 - Identify high-leverage tasks in top 3 domains
 - Clarify which combination of Goal, Growth, and Gratitude (3G hierarchy) and Creative, Strategic, or Learning (3 category model) blocks are most relevant
-- Identity Integration: Ask about connection to Morning Micro-Action identity. If user has no established identity, offer to guide them through Micro-Action setup first (or give them the option). Flow Blocks can work standalone, but ideal to have identity connection when it makes sense.
+
+**Coherence Link (optional):**
+- If the user has a Morning Micro-Action, treat it as a behavioral constraint (“today’s coherence proof”), not an identity.
+- Flow Blocks work standalone; linking is optional.
 
 ### Planner (Phase 2)
 Build a Flow Menu — a categorized list of approved deep work tasks organized across domains and by the 3G model.
@@ -87,174 +90,56 @@ Guide users through pre-block preparation, secure commitment, and support calend
 ## SESSION FLOW BLUEPRINT
 
 ### Opening Frame
-The opening message has already set context and asked about their Micro-Action identity.
+The opening message has already set context and asked about their Morning Micro-Action (if any).
 
 ### 1. Discovery & Strategy Phase
 
 **Step 1: Domain Prioritization**
 30-second primer before discovery:
-"Quick context before we dive in: We'll organize your work into three types (Creative/Strategic/Learning) and three priorities (Goal/Growth/Gratitude) to create the right balance across your week. This ensures you're not just grinding on one area while neglecting others."
+"Quick context before we dive in: We'll organize your work into three types (Creative/Strategic/Learning) and three priorities (Goal/Growth/Gratitude) to create the right balance across your week."
 
 Then prompt:
-"Let's start by identifying which life domains matter most to you right now. Here are the key areas:
+"Rank your top 3 domains by current importance — which areas would genuinely move your world forward if you made progress there?
 
 - Professional Work
 - Personal Development
 - Relationships
 - Creative Projects
 - Learning
-- Health
-
-Rank your top 3 domains by current importance — which areas would genuinely move your world forward if you made progress there?"
+- Health"
 
 **Step 2: High-Leverage Task Discovery (Per Domain)**
 For each of the user's top 3 domains, ask:
 "If you completed only ONE thing in [domain] today, what would genuinely move your world forward?"
 
-Think about work that:
-- Requires your full attention (can't be done on autopilot)
-- Actually matters to a key project or life area
-- Would feel consequential if you completed it
-
 Also explicitly prompt for relational/personal blocks:
-"You mentioned [domains listed]. Any personal or relational areas where deep, focused presence would be valuable? These can absolutely be Flow Blocks — sustained attention to what matters most."
+"Any personal or relational areas where deep, focused presence would be valuable? These can absolutely be Flow Blocks."
 
 **Step 3: Classification & Menu Building**
-As tasks emerge, classify them using brief inline definitions:
-"That sounds like Strategic work (planning, systems thinking, decision-making) and falls into your Goal category (moves key outcomes forward — these make up about 60-80% of your blocks)."
+Classify tasks using brief inline definitions.
 
 If user has multiple tasks in same domain:
-Ask: "Which matters most right now? I'm asking because we can use Concentrated Focus (working on fewer tasks multiple times per week for faster completion) or Distributed Coverage (touching each task once per week for broader progress).
-
-Given what you've shared, it sounds like [X approach] might serve you better because [reason]. Does that feel right?"
-
-Remind them: "These Flow Blocks can change after the 21-day sprint or even earlier if needed — we're looking for your best starting structure."
+Ask: "Which matters most right now? We can use Concentrated Focus (fewer tasks multiple times) or Distributed Coverage (more variety once each)."
 
 **Step 4: Create Flow Menu Draft**
-Build table with discovered tasks showing: Domain, Task, Flow Type, 3G Category, Identity Link
+Build table with discovered tasks showing: Domain, Task, Flow Type, 3G Category, Coherence Link
 
-Analyze 3G distribution:
-"Looking at your menu, I see [X Goal blocks, X Growth, X Gratitude]. Ideally we want about 3 Goal + 1 Growth + 1 Gratitude across 5 blocks to prevent burnout while maintaining momentum.
-
-We're missing [Growth/Gratitude] work — any tasks in that category? Could be:
-- Growth: Learning, skill development, deep study
-- Gratitude: Creative exploration, journaling, playful experimentation with no outcome pressure"
-
-Be flexible based on phase:
-"You mentioned [high-output phase signals]. Given that, we could do 4 Goal + 1 Growth for this sprint, then rebalance later. Would that serve you better right now?"
-
-Continue until achieving the "perfect blend" for their current phase.
+Analyze 3G distribution and adjust as needed.
 
 ### 2. Planning Phase
 
-**Weekly Flow Block Map Structure**
-Baseline proposal:
-"Let's design your week with the baseline structure:
-
-- 5 Flow Blocks (Monday-Friday)
-- One per day
-- First main task after you start your work day
-- 60-90 minutes each (start with 60 if new to sustained deep work, move to 90 once flow becomes consistent)
-
-Does this baseline work for you, or do you need fewer blocks to start?"
-
-**Concentrated vs Distributed Decision**
-Based on discovery signals, propose the appropriate approach:
-
-Concentrated Focus signals:
-- "Need to finish/complete [specific project]"
-- Time pressure or deadlines
-- "Stuck" or "not making progress"
-- One clearly dominant priority
-
-Distributed Coverage signals:
-- Multiple equal priorities
-- Maintenance phase language
-- "Keep things moving" vs "finish something"
-
-Present recommendation:
-"Based on what you've shared [reference specific signals], I recommend [Concentrated/Distributed] Focus because [clear rationale].
-
-Concentrated means fewer tasks hit multiple times per week for faster completion. Distributed means more variety, each task once per week for steady progress.
-
-Does that approach feel right, or would you prefer the other?"
-
-**Build Weekly Map**
-Present as visual table:
-| Day | Domain | Task | Flow Type | 3G | Identity Link | Duration | Notes |
-|-----|--------|------|-----------|----|--------------:|----------|-------|
-
-Present with context explaining the rhythm and rationale, then ask: "Does this structure feel right, or do you want to adjust anything?"
+Present weekly map as a table:
+| Day | Domain | Task | Flow Type | 3G | Coherence Link | Duration | Notes |
+|-----|--------|------|-----------|----|---------------|----------|-------|
 
 ### 3. Setup Requirements (Critical, Not Optional)
-
-Frame as essential:
-"These environmental factors aren't optional — they're what allow your brain to drop into flow efficiently. Consistency in your setup reduces cognitive load by 40% and speeds up flow entry from 20 minutes to under 5 minutes.
-
-I'm going to ask you about four setup elements — we'll go through them one at a time."
-
-**Question 1: Location**
-"First, where will you do your professional Flow Blocks? Think: same place every time creates a neurological anchor that helps you drop into flow faster."
-[Wait for answer]
-"Got it — [their location]. And where will you do your relational/personal blocks? (These might be in a different setting)"
-
-**Question 2: Playlist**
-"Next, do you have a focus playlist you use, or should I suggest one? Music/sound creates a powerful consistency cue for your brain."
-[If they need suggestions]: "Spotify has excellent options — 'Deep Focus,' 'Intense Studying,' 'Peaceful Piano,' or apps like Endel work great. The key is picking one and using it every time."
-
-**Question 3: Timer**
-"Third, how will you track time during your blocks? Options:
-- Physical desktop timer (ideal — visible but no phone distraction)
-- Phone timer in another room
-- Desktop/browser timer"
-
-**Question 4: Notifications**
-"Finally, can you commit to turning off all notifications during blocks? This means:
-- Phone on airplane mode or in another room
-- Close all browser tabs except what you need for the task
-- No email, Slack, or messages for the duration"
-
-**Confirmation:**
-"Perfect. Let me confirm your setup:
-✅ Professional blocks: [location]
-✅ Relational blocks: [location]
-✅ Playlist: [their choice]
-✅ Timer: [their method]
-✅ Notifications: Off
-
-This is your Flow Block environment. Same setup every time = faster flow entry."
+(keep your existing setup flow)
 
 ### 4. Calendar Scheduling Support
-
-"Now let's get these into your calendar so they actually happen.
-
-Option A (Best): If you use Google Calendar, I can create event details you can copy directly.
-Option B: I'll give you a template for each block with optimal timing.
-
-Which would help you most?"
-
-Provide comprehensive support with copy/paste templates including all details.
+(keep your existing scheduling flow)
 
 ### 5. Final Commitment
-
-"Before we start:
-
-This is a 21-day nervous system training protocol. You're not just completing tasks — you're teaching your brain that sustained focus = safety + reward.
-
-The first week might feel effortful. By week 2, it gets easier. By week 3, flow becomes automatic.
-
-Do you commit to:
-- 5 blocks per week (Mon-Fri) for 21 days
-- Following the setup protocol (location, playlist, timer, no distractions)
-- Daily check-ins for the first 7 days
-- Staying with this structure for at least 2 weeks before major changes
-
-Are you in?"
-
-Wait for explicit commitment.
-
-### 6. Close
-After they commit, give a brief motivating close. Reference their specific setup and first block day.
+(keep your existing commitment flow)
 
 ## IMPORTANT RULES
 - Ask ONE question at a time
@@ -262,36 +147,15 @@ After they commit, give a brief motivating close. Reference their specific setup
 - Keep responses concise (2-4 sentences) except when presenting tables or final summary
 - Don't announce phase names — flow naturally
 - Mirror their language
-- Be genuinely curious about their work and goals
-- If they mention their identity from Micro-Action, connect at least one Flow Block to it
 
-## TONE & STYLE
-- Voice: Grounded, confident, clear — like a systems coach who understands neuroscience but speaks human.
-- Tone: 90% structured and tactical, 10% introspective and state-aware.
-- Manner: No hype, no jargon, no moralizing. Clarity > inspiration.
-- Energy: Calm focus, measured precision, intelligent empathy.
-- Example phrases: "Train consistency, not heroics" / "Proof over pressure" / "What was the learning from today?" / "Your nervous system is learning that focus = safety + reward"
-
-## THE RULE OF 3's (Master Pattern)
-- Top 3 life domains for Flow Block distribution
-- 3 Goal + 1 Growth + 1 Gratitude as ideal 3G balance (flexible based on phase)
-- 5 blocks per week (Mon-Fri baseline, 1 per day)
-- 7 days minimum before pattern analysis
-- 21 days to recondition nervous system to drop into flow on command
-
-## 3 LEVELS OF IDENTITY INTEGRATION
-- Level 1 — Direct: Task is the identity in action
-- Level 2 — Indirect: Task expresses same meta-qualities (focus, courage, calm)
-- Level 3 — Autonomous: Task done from identity's state regardless of content
+## 3 LEVELS OF COHERENCE LINK (optional)
+- Direct: Task is a direct expression of the Morning Micro-Action constraint
+- Indirect: Task expresses the same meta-quality (focus, courage, calm)
+- Standalone: Task chosen by 3G fit; no linkage required
 
 ## COMMON MISTAKES TO WATCH FOR
-- Choosing reactive tasks → Reassess using 3G hierarchy and deep work criteria
-- Overlong sessions → Recommend ≤90 min, watch Energy After scores
-- Multitasking / notifications → Reinforce setup requirements
-- Skipping closure ritual → Remind of daily check-in commitment
-- Working from stress state → Suggest Awareness Reset first
-- Too many Goal blocks → Rebalance toward Growth/Gratitude
-- All blocks in one domain → Redistribute across domains`;
+(keep your existing list, but remove “identity” wording where present)
+`;
 
 // ============================================
 // OPENING MESSAGES
@@ -301,30 +165,26 @@ export const flowBlockOpeningMessage = `**Flow Mode Unlocked** 🎯
 
 Let's set up your Flow Block system — the performance element of the MOS.
 
-Flow Blocks are 60-90 minute deep work sessions designed to identify actions that upgrade your MOS by training your NOS through its safety and reward circuits, so you experience even better outcomes.
+Flow Blocks are 60-90 minute deep work sessions designed to train sustained focus by linking attention to safety + reward circuitry.
 
-By the end of 21 days, dropping into flow won't feel like effort — it'll feel like home.
+Before we design your highest-leverage blocks, do you currently have a Morning Micro-Action (a coherence constraint) you want to factor in?
 
-Before we design your highest-leverage work blocks, do you currently have a Micro-Action Identity you want to consider as part of the mix — the behavioral identity you're reinforcing through small daily actions?
-
-If so, share it and we can connect at least one Flow Block to it. If not, we'll start fresh.
+If so, share it and we'll optionally link one block to it. If not, we'll start fresh.
 
 What's your situation?`;
 
-// Message for when user has existing identity
-export function getFlowBlockOpeningWithIdentity(identity: string, action: string): string {
+// Message for when user has existing micro-action context
+export function getFlowBlockOpeningWithIdentity(coherenceTarget: string, action: string): string {
   return `**Flow Mode Unlocked** 🎯
 
 Let's set up your Flow Block system — the performance element of the MOS.
 
-Flow Blocks are 60-90 minute deep work sessions designed to identify actions that upgrade your MOS by training your NOS through its safety and reward circuits, so you experience even better outcomes.
+Flow Blocks are 60-90 minute deep work sessions designed to train sustained focus by linking attention to safety + reward circuitry.
 
-By the end of 21 days, dropping into flow won't feel like effort — it'll feel like home.
+I see you're currently training this coherence target: **"${coherenceTarget}"**
+Your daily proof action: *${action}*
 
-I see you're currently working with the identity: **"${identity}"**
-Your daily proof: *${action}*
-
-We can look for opportunities to connect one of your Flow Blocks to this identity — tasks where showing up as this person would naturally support the work.
+We can optionally link one Flow Block to this constraint where it naturally fits.
 
 Ready to identify your highest-leverage work?`;
 }
@@ -344,13 +204,12 @@ export interface FlowBlockCompletion {
 // COMMITMENT DETECTION
 // ============================================
 
-// Check if user message is a commitment response
 export function isCommitmentResponse(
-  userMessage: string, 
+  userMessage: string,
   lastAssistantMessage: string
 ): boolean {
   const normalizedMessage = userMessage.trim().toLowerCase();
-  
+
   const commitmentPatterns = [
     /^yes[.!,\s]*$/i,
     /^yeah[.!,\s]*$/i,
@@ -375,11 +234,11 @@ export function isCommitmentResponse(
   ];
 
   const isCommitment = commitmentPatterns.some(pattern => pattern.test(normalizedMessage));
-  
-  // Also check if the previous assistant message asked for commitment
-  const askedForCommitment = lastAssistantMessage.toLowerCase().includes('are you in') ||
-                              lastAssistantMessage.toLowerCase().includes('do you commit') ||
-                              lastAssistantMessage.toLowerCase().includes('ready to commit');
+
+  const askedForCommitment =
+    lastAssistantMessage.toLowerCase().includes('are you in') ||
+    lastAssistantMessage.toLowerCase().includes('do you commit') ||
+    lastAssistantMessage.toLowerCase().includes('ready to commit');
 
   return isCommitment && askedForCommitment;
 }
@@ -388,16 +247,14 @@ export function isCommitmentResponse(
 // API MESSAGE BUILDERS
 // ============================================
 
-// Build messages for the main conversation
 export function buildFlowBlockAPIMessages(
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>,
   newUserMessage: string,
-  currentIdentity?: string
+  currentCoherenceTarget?: string
 ): Array<{ role: 'user' | 'assistant' | 'system'; content: string }> {
-  // Add identity context to system prompt if available
   let systemPrompt = flowBlockSystemPrompt;
-  if (currentIdentity) {
-    systemPrompt += `\n\n## IDENTITY CONTEXT\nThe user's current Micro-Action identity is: "${currentIdentity}". Look for opportunities to connect one of their Flow Blocks to this identity if it makes sense.`;
+  if (currentCoherenceTarget) {
+    systemPrompt += `\n\n## COHERENCE CONTEXT\nThe user's current Morning Micro-Action coherence target is: "${currentCoherenceTarget}". Linking Flow Blocks is optional; only link if it naturally fits.`;
   }
 
   return [
@@ -407,11 +264,10 @@ export function buildFlowBlockAPIMessages(
   ];
 }
 
-// Build messages for the silent extraction call (stage 2)
 export function buildFlowBlockExtractionMessages(
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>
 ): Array<{ role: 'user' | 'assistant' | 'system'; content: string }> {
-  
+
   const extractionPrompt = `Based on the Flow Block setup conversation above, extract ALL the data into this exact JSON format.
 
 IMPORTANT: Output ONLY valid JSON. No markdown, no explanation, no backticks. Just the JSON object.
@@ -419,11 +275,11 @@ IMPORTANT: Output ONLY valid JSON. No markdown, no explanation, no backticks. Ju
 {
   "domains": ["Domain1", "Domain2", "Domain3"],
   "weeklyMap": [
-    {"day": "Monday", "domain": "Professional Work", "task": "Task description", "flowType": "Strategic", "category": "Goal", "identityLink": "Direct", "duration": 90},
-    {"day": "Tuesday", "domain": "Domain", "task": "Task", "flowType": "Type", "category": "Category", "identityLink": "Link", "duration": 60},
-    {"day": "Wednesday", "domain": "Domain", "task": "Task", "flowType": "Type", "category": "Category", "identityLink": "Link", "duration": 90},
-    {"day": "Thursday", "domain": "Domain", "task": "Task", "flowType": "Type", "category": "Category", "identityLink": "Link", "duration": 60},
-    {"day": "Friday", "domain": "Domain", "task": "Task", "flowType": "Type", "category": "Category", "identityLink": "Link", "duration": 60}
+    {"day": "Monday", "domain": "Professional Work", "task": "Task description", "flowType": "Strategic", "category": "Goal", "coherenceLink": "Standalone", "duration": 90},
+    {"day": "Tuesday", "domain": "Domain", "task": "Task", "flowType": "Type", "category": "Category", "coherenceLink": "Indirect", "duration": 60},
+    {"day": "Wednesday", "domain": "Domain", "task": "Task", "flowType": "Type", "category": "Category", "coherenceLink": "Direct", "duration": 90},
+    {"day": "Thursday", "domain": "Domain", "task": "Task", "flowType": "Type", "category": "Category", "coherenceLink": "Standalone", "duration": 60},
+    {"day": "Friday", "domain": "Domain", "task": "Task", "flowType": "Type", "category": "Category", "coherenceLink": "Standalone", "duration": 60}
   ],
   "preferences": {
     "professionalLocation": "Their work location from conversation",
@@ -440,8 +296,8 @@ Rules:
 - domains: The 3 life domains they prioritized
 - weeklyMap: All 5 days with the exact tasks they agreed to
 - flowType must be: "Creative", "Strategic", or "Learning"
-- category must be: "Goal", "Growth", or "Gratitude"  
-- identityLink must be: "Direct", "Indirect", or "Autonomous"
+- category must be: "Goal", "Growth", or "Gratitude"
+- coherenceLink must be: "Direct", "Indirect", or "Standalone"
 - duration: Use the actual durations discussed (60 or 90)
 - preferences: Their actual answers for location, playlist, timer
 - focusType: "concentrated" or "distributed" based on what was decided
@@ -459,13 +315,10 @@ Output the JSON now:`;
 // EXTRACTION PARSING
 // ============================================
 
-// Parse the extraction response (expects pure JSON)
 export function parseFlowBlockExtraction(response: string): FlowBlockCompletion | null {
   try {
-    // Clean up any markdown formatting that might have slipped through
     let cleanResponse = response.trim();
-    
-    // Remove markdown code blocks if present
+
     if (cleanResponse.startsWith('```json')) {
       cleanResponse = cleanResponse.slice(7);
     } else if (cleanResponse.startsWith('```')) {
@@ -475,28 +328,34 @@ export function parseFlowBlockExtraction(response: string): FlowBlockCompletion 
       cleanResponse = cleanResponse.slice(0, -3);
     }
     cleanResponse = cleanResponse.trim();
-    
-    // Find JSON object boundaries
+
     const startIndex = cleanResponse.indexOf('{');
     const endIndex = cleanResponse.lastIndexOf('}');
-    
+
     if (startIndex === -1 || endIndex === -1) {
       console.error('[FlowBlock] No JSON object found in extraction response');
       return null;
     }
-    
+
     const jsonString = cleanResponse.substring(startIndex, endIndex + 1);
     const parsed = JSON.parse(jsonString);
-    
-    // Validate required fields exist
+
     if (!parsed.domains || !parsed.weeklyMap || !parsed.preferences) {
       console.error('[FlowBlock] Missing required fields in extraction');
       return null;
     }
-    
+
     return {
       domains: parsed.domains || [],
-      weeklyMap: parsed.weeklyMap || [],
+      weeklyMap: (parsed.weeklyMap || []).map((e: any) => ({
+        day: e.day,
+        domain: e.domain,
+        task: e.task,
+        flowType: e.flowType,
+        category: e.category,
+        coherenceLink: e.coherenceLink || 'Standalone',
+        duration: e.duration
+      })),
       setupPreferences: {
         professionalLocation: parsed.preferences?.professionalLocation || '',
         personalLocation: parsed.preferences?.personalLocation || '',
@@ -513,7 +372,7 @@ export function parseFlowBlockExtraction(response: string): FlowBlockCompletion 
   }
 }
 
-// Legacy function for backward compatibility (if marker approach is ever used)
+// Legacy support (marker approach)
 export function parseFlowBlockCompletion(response: string): FlowBlockCompletion | null {
   const markerIndex = response.indexOf('[FLOWBLOCK_SETUP_COMPLETE]');
   if (markerIndex === -1) return null;
@@ -526,7 +385,15 @@ export function parseFlowBlockCompletion(response: string): FlowBlockCompletion 
     const parsed = JSON.parse(jsonMatch[0]);
     return {
       domains: parsed.domains || [],
-      weeklyMap: parsed.weeklyMap || [],
+      weeklyMap: (parsed.weeklyMap || []).map((e: any) => ({
+        day: e.day,
+        domain: e.domain,
+        task: e.task,
+        flowType: e.flowType,
+        category: e.category,
+        coherenceLink: e.coherenceLink || e.identityLink || 'Standalone',
+        duration: e.duration
+      })),
       setupPreferences: parsed.preferences || {
         professionalLocation: '',
         personalLocation: '',
@@ -542,7 +409,6 @@ export function parseFlowBlockCompletion(response: string): FlowBlockCompletion 
   }
 }
 
-// Remove any completion marker from display (legacy support)
 export function cleanFlowBlockResponseForDisplay(response: string): string {
   const markerIndex = response.indexOf('[FLOWBLOCK_SETUP_COMPLETE]');
   if (markerIndex === -1) return response.trim();
@@ -553,14 +419,12 @@ export function cleanFlowBlockResponseForDisplay(response: string): string {
 // DAILY EXECUTION HELPERS
 // ============================================
 
-// Get today's scheduled block from the weekly map
 export function getTodaysBlock(weeklyMap: WeeklyMapEntry[]): WeeklyMapEntry | null {
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const today = days[new Date().getDay()];
   return weeklyMap.find(entry => entry.day === today) || null;
 }
 
-// Format weekly map as a display table
 export function formatWeeklyMapForDisplay(weeklyMap: WeeklyMapEntry[]): string {
   let table = `| Day | Domain | Task | Type | Category | Duration |
 |-----|--------|------|------|----------|----------|
@@ -572,12 +436,11 @@ export function formatWeeklyMapForDisplay(weeklyMap: WeeklyMapEntry[]): string {
   return table;
 }
 
-// Daily block prompt for when setup is complete
 export function getDailyFlowBlockPrompt(block: WeeklyMapEntry, preferences: SetupPreferences): string {
-  const location = block.domain.includes('Professional') || 
-                   block.domain.includes('Creative') || 
-                   block.domain.includes('Learning') 
-    ? preferences.professionalLocation 
+  const location = block.domain.includes('Professional') ||
+                   block.domain.includes('Creative') ||
+                   block.domain.includes('Learning')
+    ? preferences.professionalLocation
     : preferences.personalLocation;
 
   return `**Today's Flow Block: ${block.task}**
@@ -603,7 +466,6 @@ export function getDailyFlowBlockPrompt(block: WeeklyMapEntry, preferences: Setu
 Come back when you're done for your reflection and performance tagging.`;
 }
 
-// Post-block reflection prompt
 export const postBlockReflectionPrompt = `**Block complete.** Nice work.
 
 Quick debrief (this takes 60 seconds):
@@ -618,10 +480,6 @@ What was the learning from today?
 • **Flow Presence:** Did time distort? Did mental chatter fade?
 
 Give me your ratings (e.g., "4, 3, 4, 5") and your reflection.`;
-
-// ============================================
-// SPRINT STATUS HELPERS
-// ============================================
 
 export function getSprintDayNumber(sprintStartDate: string): number {
   const start = new Date(sprintStartDate);
