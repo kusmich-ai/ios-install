@@ -1047,7 +1047,7 @@ export async function POST(req: Request) {
       : '';
 
     return NextResponse.json({ 
-      response: responseText,
+      response: cuePrefix + responseText,
       context: context || 'general',
     });
 
