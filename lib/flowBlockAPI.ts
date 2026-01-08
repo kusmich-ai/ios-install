@@ -3,6 +3,7 @@
 // Notes:
 // - Removes identity-building language.
 // - Keeps types/fields to minimize downstream breakage (identityLink retained but treated as coherenceLink).
+import { CUE_KERNEL } from '@/lib/prompts/cueKernel';
 
 export interface WeeklyMapEntry {
   day: string;           // 'Monday', 'Tuesday', etc.
