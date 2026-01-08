@@ -20,6 +20,8 @@ import { checkRateLimit } from '@/lib/security/rateLimit';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { withToolLayers } from '@/lib/prompts/withToolLayers';
+import { CUE_KERNEL } from '@/lib/prompts/cueKernel';
+
 
 
 const anthropic = new Anthropic({
@@ -221,7 +223,7 @@ Your boundaries are: You discuss IOS practices, coaching, and the user's progres
 // ============================================
 // MAIN SYSTEM PROMPT (ENHANCED)
 // ============================================
-const mainSystemPrompt = `${SECURITY_INSTRUCTIONS}
+const mainSystemPrompt = withCueKernel(`${SECURITY_INSTRUCTIONS}
 
 # IOS SYSTEM INSTALLER - CORE IDENTITY
 
@@ -375,7 +377,6 @@ On "what's next" or "accelerate" questions:
 - Mention it before Stage 3 unless user explicitly asks
 - Make medical claims
 - Discuss dosing or specific protocols
-${CUE_KERNEL}
 `;
 
 
@@ -445,7 +446,6 @@ On a scale of 1-5 (1 being still heavily muddied, 5 being clear to move on), how
 - Efficient, not rushed
 - Calm, not detached
 - Supportive without being soft
-${CUE_KERNEL}
 `;
 
 // ============================================
@@ -520,7 +520,6 @@ How are you feeling compared to when we started?"
 - If worry is about something genuinely dangerous or urgent → Help them take real action
 - If this is chronic/pervasive anxiety → Suggest professional support after the session
 - Don't minimize legitimate concerns — help them see clearly, not pretend everything's fine
-${CUE_KERNEL}
 `;
 
 // ============================================
@@ -616,7 +615,6 @@ How did that land for you?"
 - Warmer than your usual voice
 - Invitational, not directive
 - Present, not performative
-${CUE_KERNEL}
 `;
 
 // ============================================
@@ -712,7 +710,6 @@ Say inwardly: 'I see this. I'm learning.' That's enough for tonight."
 - Less witty than usual — this is a soft close to the day
 - Spacious — don't rush any step
 - Acknowledging without amplifying
-${CUE_KERNEL}
 `;
 
 // ============================================
@@ -793,7 +790,6 @@ If user explicitly requests an identity audit, guide through these 6 questions (
 - Simple, first-person language
 
 Remember: The goal is **transparent engagement** — not detachment from life, but freedom within form.
-${CUE_KERNEL}
 `;
 
 // ============================================
@@ -833,9 +829,8 @@ Close with: "Reflection complete — insight integrated — carry awareness forw
 - Keep questions SHORT and SPACIOUS
 - One question at a time — wait for response
 - Never rush the embodiment phase
-- Don't explain awareness — point to it`
-  ${CUE_KERNEL}
-  ;
+- Don't explain awareness — point to it
+`;
 
 // ============================================
 // REFRAME PROTOCOL SYSTEM PROMPT
@@ -872,9 +867,9 @@ Test it: "Say it out loud. Does it land in your body or just your head?"
 
 ## TONE
 - Direct, not harsh. Clear, not cold. Honest, not dismissive.
-- Keep responses SHORT — guide, don't lecture`
-  ${CUE_KERNEL}
-  ;
+- Keep responses SHORT — guide, don't lecture
+`;
+
 
 // ============================================
 // API ROUTE HANDLER
