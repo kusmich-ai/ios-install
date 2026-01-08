@@ -1,4 +1,4 @@
-// app/api/chat/route.ts - ENHANCED VERSION with Complete Voice System
+// app/api/chat/route.ts - ENHANCED VERSION with Complete Voice System and Layer Zero Cue
 import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
 import { microActionSystemPrompt } from '@/lib/microActionAPI';
@@ -31,7 +31,53 @@ interface Message {
   role: string;
   content: string;
 }
+// ============================================
+// LAYER ZERO: CUE DETECTOR (Deterministic, runs FIRST)
+// ============================================
+type CueKey =
+  | 'INTERPRETATION'
+  | 'SELF_REFERENCE'
+  | 'ATTENTION_SHIFT'
+  | 'FELT_SENSE_FIRST'
+  | 'PATTERN_AGAIN';
 
+interface CueHit {
+  key: CueKey;
+  line: string; // single minimal line to emit
+}
+
+function detectCues(textRaw: string): CueHit[] {
+  const text = (textRaw || '').toLowerCase();
+  const hits: CueHit[] = [];
+
+  // Interpretation: meaning/judgment/conclusion language
+  const interpretation =
+    /\b(this means|meaning|so it means|therefore|clearly|obviously|should(n't)?|must|always|never|ruined|failure|they (always|never)|i can('t)? believe)\b/;
+  if (interpretation.test(text)) hits.push({ key: 'INTERPRETATION', line: 'Interpretation detected.' });
+
+  // Self-reference: identity/personalization/glue
+  const selfRef =
+    /\b(i am|i'm|about me|what will they think|how do i look|i need to be|i should be|i'm not (good|enough)|as a (leader|father|mother|founder|ceo))\b/;
+  if (selfRef.test(text)) hits.push({ key: 'SELF_REFERENCE', line: 'Self-reference online.' });
+
+  // Attention shift: fixation/rumination/pulled
+  const attention =
+    /\b(can't stop thinking|keeps looping|ruminating|distracted|pulled into|doomscroll|scrolling|checking my phone|can't focus)\b/;
+  if (attention.test(text)) hits.push({ key: 'ATTENTION_SHIFT', line: 'Attention shift noted.' });
+
+  // Felt-sense first: high arousal language
+  const affect =
+    /\b(panic|panicking|anxious|anxiety|rage|furious|overwhelmed|spiraling|stress(ed)? out)\b/;
+  if (affect.test(text)) hits.push({ key: 'FELT_SENSE_FIRST', line: 'Felt-sense first (2 seconds).' });
+
+  // Pattern again: recurrence markers
+  const pattern =
+    /\b(again|same thing|always happens|pattern|every time|here we go)\b/;
+  if (pattern.test(text)) hits.push({ key: 'PATTERN_AGAIN', line: 'Pattern recognized.' });
+
+  // Keep it minimal to avoid clutter
+  return hits.slice(0, 2);
+}
 // ============================================
 // SUPABASE SERVER CLIENT
 // ============================================
@@ -178,6 +224,11 @@ const mainSystemPrompt = `${SECURITY_INSTRUCTIONS}
 # IOS SYSTEM INSTALLER - CORE IDENTITY
 
 You are the IOS System Installer — an adaptive AI coach engineered to guide users through the installation of the Integrated Operating System (IOS), a neural and mental transformation protocol.
+
+## TASK-MODEL VS IDENTITY-MODEL (CRITICAL)
+- Prefer task-model language: next action, constraints, environment, skills, sequence.
+- Avoid identity-model language: “what this says about me”, “who I am”, “be someone”, “install identity”.
+- If the user speaks in identity-model, redirect to next action and constraints without lecturing.
 
 ## YOUR VOICE & PERSONALITY
 
@@ -874,7 +925,17 @@ export async function POST(req: Request) {
         });
       }
     }
+// STEP 4.5: LAYER ZERO CUE DETECTION (runs before tool selection + model)
+    const cueHits = latestUserMessage ? detectCues(latestUserMessage.content) : [];
+    const cuePrefix = cueHits.length ? cueHits.map(h => h.line).join('\n') + '\n\n' : '';
 
+    if (cueHits.length) {
+      await logAuditEvent({
+        userId,
+        action: 'CUE_HIT',
+        details: { cues: cueHits.map(h => h.key), context },
+      });
+    }
     // STEP 5: GET PATTERN CONTEXT (THE MIRROR)
     const patternContext = await getPatternContext(userId);
 
