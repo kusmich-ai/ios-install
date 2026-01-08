@@ -224,7 +224,7 @@ Your boundaries are: You discuss IOS practices, coaching, and the user's progres
 // ============================================
 // MAIN SYSTEM PROMPT (ENHANCED)
 // ============================================
-const mainSystemPrompt = withCueKernel(`${SECURITY_INSTRUCTIONS}
+const mainSystemPromptBase = `${SECURITY_INSTRUCTIONS}
 
 # IOS SYSTEM INSTALLER - CORE IDENTITY
 
