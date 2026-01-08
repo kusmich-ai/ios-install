@@ -2,6 +2,8 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
 import { getCoachSystemPrompt, CoachId } from '@/lib/coachPrompts';
+import { withCueKernel } from '@/lib/prompts/withCueKernel';
+
 import {
   verifyAuth,
   unauthorizedResponse,
@@ -187,20 +189,25 @@ export async function POST(req: Request) {
     }
 
     // STEP 8: BUILD SYSTEM PROMPT
-    let systemPrompt = getCoachSystemPrompt(coachId);
-    
-    // Add safety protocols
-    systemPrompt = addSafetyToPrompt(systemPrompt);
+let systemPrompt = getCoachSystemPrompt(coachId);
 
-    // Add memory context if available
-    if (memoryContext) {
-      systemPrompt += `\n\n${memoryContext}`;
-    }
+// Add safety protocols
+systemPrompt = addSafetyToPrompt(systemPrompt);
 
-    // If concern was detected but not blocked, add context for AI
-    if (safetyCheck.level === 'concern' && !safetyCheck.blockResponse) {
-      systemPrompt += `\n\n## CURRENT CONTEXT - HANDLE WITH CARE\nThe user's message contains language suggesting possible distress (detected: ${safetyCheck.matchedPhrases.join(', ')}). Check in on their wellbeing before proceeding with coaching. Ask directly if they're having thoughts of hurting themselves. Prioritize their safety over coaching content.`;
-    }
+// Add memory context if available
+if (memoryContext) {
+  systemPrompt += `\n\n${memoryContext}`;
+}
+
+// If concern was detected but not blocked, add context for AI
+if (safetyCheck.level === 'concern' && !safetyCheck.blockResponse) {
+  systemPrompt += `\n\n## CURRENT CONTEXT - HANDLE WITH CARE
+The user's message contains language suggesting possible distress (detected: ${safetyCheck.matchedPhrases.join(', ')}). Check in on their wellbeing before proceeding with coaching. Ask directly if they're having thoughts of hurting themselves. Prioritize their safety over coaching content.`;
+}
+
+// IMPORTANT: Apply cue kernel LAST so it overrides everything above
+systemPrompt = withCueKernel(systemPrompt);
+
 
     // STEP 9: PREPARE MESSAGES
     const conversationMessages: Array<{ role: MessageRole; content: string }> = messages
