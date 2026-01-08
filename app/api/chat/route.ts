@@ -21,6 +21,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { withToolLayers } from '@/lib/prompts/withToolLayers';
 import { CUE_KERNEL } from '@/lib/prompts/cueKernel';
+import { withCueKernel } from '@/lib/prompts/withCueKernel';
 
 
 
