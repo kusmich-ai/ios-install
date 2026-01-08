@@ -3678,10 +3678,10 @@ export function getAllCoaches(): CoachMetadata[] {
   return Object.values(coaches);
 }
 
-export function buildCoachMessages(
-  coachId: string,
-  userMessage: string,
-  conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>
+export function buildCoachAPIMessages(
+  coachId: CoachId,
+  conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>,
+  userMessage: string
 ) {
   const systemPrompt = getCoachSystemPrompt(coachId);
   
