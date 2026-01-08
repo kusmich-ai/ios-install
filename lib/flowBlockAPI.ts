@@ -6,6 +6,7 @@
 import { CUE_KERNEL } from '@/lib/prompts/cueKernel';
 import { withToolLayers } from '@/lib/prompts/withToolLayers';
 
+
 export interface WeeklyMapEntry {
   day: string;           // 'Monday', 'Tuesday', etc.
   domain: string;        // 'Professional Work', 'Creative Projects', etc.
@@ -54,7 +55,7 @@ export const initialFlowBlockState: FlowBlockState = {
 // SYSTEM PROMPT v3.0 (Cue-Compatible)
 // ============================================
 
-export const flowBlockSystemPrompt withToolLayers(`You are a performance coach helping a user set up their Flow Block system — the performance element of the Mental Operating System (MOS).
+export const flowBlockSystemPrompt = withToolLayers(`You are a performance coach helping a user set up their Flow Block system — the performance element of the Mental Operating System (MOS).
 
 Flow Blocks are deep work sessions that train attention stability, reduce reactivity, and improve execution through consistent environmental cues and clean action selection.
 
