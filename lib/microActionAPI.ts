@@ -4,7 +4,6 @@
 // Notes:
 // - Keeps existing exported names/types where possible to avoid downstream breakage.
 // - "identityStatement" now functions as a "coherenceStatement" (task-model language).
-import { CUE_KERNEL } from '@/lib/prompts/cueKernel';
 import { withToolLayers } from '@/lib/prompts/withToolLayers';
 
 
@@ -107,7 +106,7 @@ Each completion = evidence of coherence; each repetition = training."
 - Keep replies 2–4 sentences unless presenting the contract
 - If they drift into story: redirect to sensation/interpretation/action
 
-DO NOT include any markers/tags in responses.`;
+DO NOT include any markers/tags in responses.`);
 
 // ============================================
 // OPENING MESSAGE
