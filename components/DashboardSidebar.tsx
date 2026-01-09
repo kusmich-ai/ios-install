@@ -60,10 +60,12 @@ interface DashboardSidebarProps {
   adherencePercentage?: number;
   consecutiveDays?: number;
   
-  // Identity (Stage 3+)
-  currentIdentity?: string;
+    // Aligned Action (Stage 3+) - renamed from identity
+  coherenceStatement?: string;  // ADD THIS
+  currentIdentity?: string;     // KEEP for backwards compatibility
   microAction?: string;
-  identitySprintDay?: number;
+  sprintDay?: number;           // RENAMED from identitySprintDay
+}
   
   // Handlers
   onStage7Click?: () => void;
