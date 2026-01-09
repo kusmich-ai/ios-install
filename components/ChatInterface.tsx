@@ -2359,7 +2359,7 @@ Which one?`;
             setMicroActionState(prev => ({
               ...prev,
               conversationHistory: fullHistory,
-              extractedIdentity: extracted.identityStatement,
+              extractedCoherenceStatement: extracted.extractedCoherenceStatement,
               extractedAction: extracted.microAction,
               isComplete: true,
               isActive: false,
@@ -3452,14 +3452,14 @@ This isn't judgment — it's data. The resistance is telling you something. Want
             completedSprintInfo: {
               type: 'identity',
               sprintNumber: microActionState.sprintNumber || 1,
-              identity: microActionState.extractedIdentity || '',
+              identity: microActionState.extractedCoherenceStatement || '',
               microAction: microActionState.extractedAction || ''
             },
             awaitingEvolutionInput: false
           });
           
           const message = getIdentitySprintCompleteMessage(
-            microActionState.extractedIdentity || 'your identity',
+            microActionState.extractedCoherenceStatement || 'your coherance statement',
             microActionState.extractedAction || 'your micro-action',
             microActionState.sprintNumber || 1
           );
