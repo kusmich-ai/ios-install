@@ -387,14 +387,19 @@ export default function MobileDashboard({
             </div>
           )}
 
-          {/* Current Identity */}
-          {currentIdentity && (
-            <div className="bg-white rounded-xl p-4 border border-zinc-200/80 shadow-sm">
-              <h3 className="text-sm font-medium text-zinc-700 mb-2">Current Identity</h3>
-              <p className="text-sm text-amber-600 font-medium">{currentIdentity}</p>
-              {microAction && (
-                <p className="text-xs text-zinc-500 mt-1">Daily proof: {microAction}</p>
-              )}
+        {/* MY ALIGNED ACTION (Stage 3+) */}
+{(currentIdentity || coherenceStatement) && (
+  <div className="bg-white rounded-xl p-4 border border-black/[0.04] shadow-sm">
+    <div className="flex items-center gap-2 mb-2">
+      <Zap className="w-4 h-4 text-amber-500" />
+      <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider">My Aligned Action</h3>
+    </div>
+    <p className="text-sm text-zinc-700 leading-relaxed">{coherenceStatement || currentIdentity}</p>
+    {microAction && (
+      <p className="text-xs text-amber-600 font-medium mt-2">
+        Daily practice: {microAction}
+      </p>
+    )}
               {identitySprintDay && (
                 <p className="text-xs text-zinc-400 mt-2">
                   Day {identitySprintDay} of 21
