@@ -1005,6 +1005,10 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   const [unlockFlowState, setUnlockFlowState] = useState<'none' | 'eligible_shown' | 'confirmed' | 'intro_started'>('none');
   const [pendingUnlockStage, setPendingUnlockStage] = useState<number | null>(null);
   const [microActionState, setMicroActionState] = useState<MicroActionState>(initialMicroActionState);
+  const microActionStateRef = useRef(microActionState);
+  useEffect(() => {
+    microActionStateRef.current = microActionState;
+  }, [microActionState]);
   const [awaitingMicroActionStart, setAwaitingMicroActionStart] = useState(false);
   const [sprintRenewalState, setSprintRenewalState] = useState<SprintRenewalState>(initialSprintRenewalState);
   const [flowBlockState, setFlowBlockState] = useState<ExtendedFlowBlockState>(initialExtendedFlowBlockState);
