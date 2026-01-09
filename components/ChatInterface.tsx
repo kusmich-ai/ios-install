@@ -2275,9 +2275,7 @@ Which one?`;
   }, []);
 
   const processMicroActionResponse = useCallback(async (userResponse: string) => {
-    console.log('[MicroAction] processMicroActionResponse called');
-  console.log('[MicroAction] conversationHistory:', microActionState.conversationHistory);
-  console.log('[MicroAction] userResponse:', userResponse);
+
     devLog('[MicroAction]', 'Processing response (API):', userResponse);
     
     setMessages(prev => [...prev, { role: 'user', content: userResponse }]);
