@@ -1286,7 +1286,7 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
           setMicroActionState(prev => ({
             ...prev,
             isComplete: true,
-            extractedIdentity: sprint.identity_statement,
+            extractedCoherenceStatement: sprint.identity_statement,
             extractedAction: sprint.micro_action,
             sprintStartDate: sprint.start_date,
             sprintNumber: sprint.sprint_number || 1
