@@ -168,12 +168,11 @@ export function buildAPIMessages(
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>,
   newUserMessage: string
 ): Array<{ role: string; content: string }> {
-  const messages: Array<{ role: string; content: string }> = [
-    { role: 'system', content: microActionSystemPrompt },
+  // DON'T include system prompt - route.ts handles it based on context
+  return [
     ...conversationHistory.map((msg) => ({ role: msg.role, content: msg.content })),
     { role: 'user', content: newUserMessage },
   ];
-  return messages;
 }
 
 // ============================================
