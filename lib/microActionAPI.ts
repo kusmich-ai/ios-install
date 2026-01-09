@@ -112,7 +112,7 @@ DO NOT include any markers/tags in responses.`);
 // OPENING MESSAGE
 // ============================================
 
-export const microActionOpeningMessage = `Let's set up your Morning Micro-Action — a 21-day coherence installation.
+export const microActionOpeningMessage = `Let's set up your Morning Aligned Action — a 21-day coherence installation.
 
 This is designed to train your nervous system and attention so you can act cleanly under pressure, without getting trapped in story, self-reference, or reactivity.
 
