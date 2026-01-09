@@ -406,19 +406,19 @@ export default function DashboardSidebar({
           </div>
         )}
 
-        {/* ==========================================
-            CURRENT IDENTITY (Stage 3+)
-            ========================================== */}
-        {currentIdentity && (
-          <div className="bg-white rounded-xl p-4 border border-black/[0.04] shadow-sm">
-            <div className="flex items-center gap-2 mb-2">
-              <Zap className="w-4 h-4 text-amber-500" />
-              <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Current Identity</h3>
-            </div>
-            <p className="text-sm text-amber-600 font-semibold">{currentIdentity}</p>
-            {microAction && (
-              <p className="text-xs text-zinc-500 mt-1">Daily proof: {microAction}</p>
-            )}
+     {/* MY ALIGNED ACTION (Stage 3+) */}
+{(currentIdentity || coherenceStatement) && (
+  <div className="bg-white rounded-xl p-4 border border-black/[0.04] shadow-sm">
+    <div className="flex items-center gap-2 mb-2">
+      <Zap className="w-4 h-4 text-amber-500" />
+      <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider">My Aligned Action</h3>
+    </div>
+    <p className="text-sm text-zinc-700 leading-relaxed">{coherenceStatement || currentIdentity}</p>
+    {microAction && (
+      <p className="text-xs text-amber-600 font-medium mt-2">
+        Daily practice: {microAction}
+      </p>
+    )}
             {identitySprintDay && (
               <div className="mt-3 flex items-center gap-2">
                 <div className="flex-1 h-1 bg-black/[0.04] rounded-full overflow-hidden">
