@@ -3589,29 +3589,7 @@ const sendMessage = async (e: React.FormEvent) => {
     // Start the proper micro-action flow
     startMicroActionSetup();
     return; 
-
-    // ============================================
-  // ACTIVE FLOW ROUTING - Send to correct handler
-  // ============================================
-  
-  // Weekly check-in flow
-  if (weeklyCheckInActive) {
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
-    await processWeeklyCheckInResponse(userMessage);
-    return;
-  }
-  
-  // Micro-Action setup flow
-  if (microActionState.isActive) {
-    await processMicroActionResponse(userMessage);
-    return;
-  }
-  
-  // Flow Block setup flow (if you have this)
-  if (flowBlockState?.isActive) {
-    await processFlowBlockResponse(userMessage);
-    return;
-  }
+ }
 
   // ============================================
   // DEFAULT: Send to general AI API
