@@ -3028,12 +3028,24 @@ ${avgDelta >= 0.3 ? '📈 Great progress! Your nervous system is responding to t
         }
       }
     } catch (error) {
-      console.error('Failed to save weekly check-in:', error);
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: "There was an error saving your check-in. Please try again."
-      }]);
-    }
+  console.error('Failed to save weekly check-in:', error);
+  
+  // IMPORTANT: Reset check-in state so user isn't trapped
+  setWeeklyCheckInActive(false);
+  setWeeklyCheckInStep(0);
+  setWeeklyCheckInScores({
+    regulation: null,
+    awareness: null,
+    outlook: null,
+    attention: null,
+    qualitative: null
+  });
+  
+  setMessages(prev => [...prev, {
+    role: 'assistant',
+    content: "There was an error saving your check-in. The check-in has been cancelled - you can try again later by saying 'weekly check-in'. What else can I help you with?"
+  }]);
+}
   };
 
   // ============================================
