@@ -3563,7 +3563,11 @@ const sendMessage = async (e: React.FormEvent) => {
   
   const userMessage = input.trim();
   setInput('');
-
+  
+// DEBUG: Check state at start of sendMessage
+  console.log('[SendMessage] microActionState.isActive:', microActionState.isActive);
+  console.log('[SendMessage] userMessage:', userMessage);
+  
   // ============================================
   // PATTERN DETECTION - Route to specific flows
   // ============================================
