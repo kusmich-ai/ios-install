@@ -3553,16 +3553,47 @@ This isn't judgment — it's data. The resistance is telling you something. Want
     }
   }, [refetchProgress]);
 
+// ============================================
+// SEND MESSAGE
+// ============================================
+
+const sendMessage = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!input.trim() || loading) return;
+  
+  const userMessage = input.trim();
+  setInput('');
+
   // ============================================
-  // SEND MESSAGE
+  // PATTERN DETECTION - Route to specific flows
   // ============================================
   
-  const sendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || loading) return;
+  const userInputLower = userMessage.toLowerCase();
+  
+  // Micro-Action trigger patterns
+  const microActionTriggers = [
+    'micro action', 'micro-action', 'microaction',
+    'run the micro', 'start micro', 'do micro',
+    'morning micro', 'identity installation',
+    'coherence installation', 'run micro', 'setup micro'
+  ];
+  
+  const isMicroActionRequest = microActionTriggers.some(trigger => 
+    userInputLower.includes(trigger)
+  );
+  
+  if (isMicroActionRequest && !microActionState.isActive) {
+    // Add user message to chat
+    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     
-    const userMessage = input.trim();
-    setInput('');
+    // Start the proper micro-action flow
+    startMicroActionSetup();
+    return; // Don't send to general API
+  }
+
+  // ============================================
+  // (Rest of your existing sendMessage code continues below...)
+  // ============================================
     
     // 0. Stage 7 Flow (highest priority when active)
     if (stage7FlowState !== 'none' && stage7FlowState !== 'complete') {
