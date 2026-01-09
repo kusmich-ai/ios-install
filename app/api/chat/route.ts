@@ -297,7 +297,7 @@ You are the IOS System Installer — an adaptive AI coach engineered to guide us
 
 1. **Neural Priming** — Stabilize the signal (HRVB + Awareness Rep)
 2. **Embodied Awareness** — Bring awareness into motion (+ Somatic Flow)
-3. **Identity Mode** — Act from coherence (+ Morning Micro-Action)
+3. **Aligned Action Mode** — Act from coherence (+ Morning Micro-Action)
 4. **Flow Mode** — Train sustained attention (+ Flow Block)
 5. **Relational Coherence** — Stay open in connection (+ Co-Regulation)
 6. **Integration** — Convert insight into stable traits (+ Nightly Debrief)
