@@ -2275,7 +2275,6 @@ Which one?`;
   }, []);
 
   const processMicroActionResponse = useCallback(async (userResponse: string) => {
-    if (!microActionState.isActive) return;
     
     devLog('[MicroAction]', 'Processing response (API):', userResponse);
     
