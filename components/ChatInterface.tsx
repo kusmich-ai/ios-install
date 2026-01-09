@@ -3660,6 +3660,7 @@ const sendMessage = async (e: React.FormEvent) => {
     }
     
     // 2. Micro-Action Setup Flow
+  console.log('[SendMessage] About to check microActionState.isActive:', microActionState.isActive);
     if (microActionState.isActive) {
       await processMicroActionResponse(userMessage);
       return;
