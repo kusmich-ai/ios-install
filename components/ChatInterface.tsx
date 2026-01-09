@@ -3686,7 +3686,7 @@ const sendMessage = async (e: React.FormEvent) => {
         setAwaitingMicroActionStart(false);
         setMessages(prev => [...prev, { 
           role: 'assistant', 
-          content: "No problem. You can set up your identity and micro-action anytime by clicking the ⚡ icon or saying 'set up my identity'." 
+          content: "No problem. You can set up your aligned micro-action anytime by clicking the ⚡ icon or saying 'set up my aligned action'." 
         }]);
       }
       return;
