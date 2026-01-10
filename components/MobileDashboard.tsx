@@ -1,23 +1,33 @@
 // components/MobileDashboard.tsx
+// Mobile dashboard drawer with luxury cream styling (matches DashboardSidebar)
 'use client';
 
 import { useState } from 'react';
-import { Menu, X, Sparkles } from 'lucide-react';
+import Link from 'next/link';
+import { Menu, X, User, TrendingUp, TrendingDown, Zap, Sparkles } from 'lucide-react';
 import AwakenWithFiveCard from './AwakenWithFiveCard';
 
+// ============================================
+// TYPES
+// ============================================
+
 interface UnlockProgress {
-  adherenceMet: boolean;
-  daysMet: boolean;
-  deltaMet: boolean;
-  qualitativeMet: boolean;
-  requiredAdherence: number;
-  requiredDays: number;
-  requiredDelta: number;
+  adherenceMet?: boolean;
+  daysMet?: boolean;
+  deltaMet?: boolean;
+  qualitativeMet?: boolean;
+  adherence?: number;
+  deltaAverage?: number;
+  daysComplete?: number;
+  requiredAdherence?: number;
+  requiredDays?: number;
+  requiredDelta?: number;
 }
 
 interface MobileDashboardProps {
-  userName: string;
+  userName?: string;
   currentStage: number;
+  
   // Baseline data
   baselineRewiredIndex: number;
   baselineDomainScores: {
@@ -26,7 +36,8 @@ interface MobileDashboardProps {
     outlook: number;
     attention: number;
   };
-  // Current data (from progress)
+  
+  // Current progress
   currentDomainScores?: {
     regulation: number;
     awareness: number;
@@ -34,30 +45,37 @@ interface MobileDashboardProps {
     attention: number;
   };
   domainDeltas?: {
-    regulation: number;
-    awareness: number;
-    outlook: number;
-    attention: number;
-    average: number;
+    regulation?: number;
+    awareness?: number;
+    outlook?: number;
+    attention?: number;
+    average?: number;
   };
-  // Unlock progress
   unlockProgress?: UnlockProgress;
   unlockEligible?: boolean;
   adherencePercentage?: number;
   consecutiveDays?: number;
-  // Identity
+  
+  // Aligned Action (Stage 3+) - with backwards compatibility
+  coherenceStatement?: string;
   currentIdentity?: string;
   microAction?: string;
+  sprintDay?: number;
   identitySprintDay?: number;
-  onStage7Unlock?: () => void;
+  
+  // Handlers
+  onStage7Click?: () => void;
 }
 
-// Get stage name from number
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
 function getStageName(stage: number): string {
   const names: { [key: number]: string } = {
     1: 'Neural Priming',
     2: 'Embodied Awareness',
-    3: 'Identity Mode',
+    3: 'Aligned Action Mode',
     4: 'Flow Mode',
     5: 'Relational Coherence',
     6: 'Integration',
@@ -66,7 +84,6 @@ function getStageName(stage: number): string {
   return names[stage] || `Stage ${stage}`;
 }
 
-// Get status tier based on REwired Index
 function getStatusTier(index: number): string {
   if (index <= 20) return 'System Offline';
   if (index <= 40) return 'Baseline Mode';
@@ -75,14 +92,33 @@ function getStatusTier(index: number): string {
   return 'Integrated';
 }
 
-// Get status color based on REwired Index (adjusted for light background)
 function getStatusColor(index: number): string {
-  if (index <= 20) return 'text-red-600';
-  if (index <= 40) return 'text-yellow-600';
-  if (index <= 60) return 'text-blue-600';
-  if (index <= 80) return 'text-green-600';
-  return 'text-purple-600';
+  if (index <= 20) return 'text-red-500';
+  if (index <= 40) return 'text-amber-500';
+  if (index <= 60) return 'text-blue-500';
+  if (index <= 80) return 'text-emerald-500';
+  return 'text-purple-500';
 }
+
+function getProgressBarColor(index: number): string {
+  if (index <= 20) return 'bg-red-500';
+  if (index <= 40) return 'bg-amber-500';
+  if (index <= 60) return 'bg-blue-500';
+  if (index <= 80) return 'bg-emerald-500';
+  return 'bg-purple-500';
+}
+
+// Monochromatic amber shades for domains (luxury design)
+const DOMAIN_COLORS = {
+  regulation: { bar: 'bg-amber-600', text: 'text-amber-600' },
+  awareness: { bar: 'bg-amber-500', text: 'text-amber-500' },
+  outlook: { bar: 'bg-amber-400', text: 'text-amber-400' },
+  attention: { bar: 'bg-amber-300', text: 'text-amber-500' },
+};
+
+// ============================================
+// COMPONENT
+// ============================================
 
 export default function MobileDashboard({
   userName,
@@ -95,22 +131,27 @@ export default function MobileDashboard({
   unlockEligible,
   adherencePercentage = 0,
   consecutiveDays = 0,
+  coherenceStatement,
   currentIdentity,
   microAction,
+  sprintDay,
   identitySprintDay,
-  onStage7Unlock 
+  onStage7Click,
 }: MobileDashboardProps) {
   const [isOpen, setIsOpen] = useState(false);
 
-  const stageProgress = ((currentStage - 1) / 6) * 100;
-
-  // Use current scores if available, otherwise baseline
-  const displayScores = currentDomainScores || baselineDomainScores;
+  // Use sprintDay with fallback to identitySprintDay for backwards compatibility
+  const displaySprintDay = sprintDay ?? identitySprintDay;
   
+  // Use coherenceStatement with fallback to currentIdentity for backwards compatibility
+  const displayStatement = coherenceStatement ?? currentIdentity;
+
   // Calculate current REwired Index
-  const currentRewiredIndex = Math.round(
-    (displayScores.regulation + displayScores.awareness + displayScores.outlook + displayScores.attention) / 4 * 20
-  );
+  const currentReg = currentDomainScores?.regulation ?? baselineDomainScores.regulation;
+  const currentAware = currentDomainScores?.awareness ?? baselineDomainScores.awareness;
+  const currentOut = currentDomainScores?.outlook ?? baselineDomainScores.outlook;
+  const currentAtt = currentDomainScores?.attention ?? baselineDomainScores.attention;
+  const currentRewiredIndex = Math.round((currentReg + currentAware + currentOut + currentAtt) / 4 * 20);
   const rewiredDelta = currentRewiredIndex - baselineRewiredIndex;
 
   return (
@@ -141,236 +182,187 @@ export default function MobileDashboard({
         {/* Close Button */}
         <button
           onClick={() => setIsOpen(false)}
-          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-zinc-100 transition-colors"
+          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center text-zinc-500 hover:text-zinc-800 transition-colors"
           aria-label="Close dashboard"
         >
-          <X className="w-5 h-5 text-zinc-500" />
+          <X className="w-5 h-5" />
         </button>
 
-        {/* Dashboard Content */}
-        <div className="p-4 pt-6 overflow-y-auto h-full space-y-4">
-          {/* Header */}
-          <div className="mb-2">
-            <h1 className="text-xl font-bold text-zinc-800 mb-1">IOS System Installer</h1>
-            <p className="text-xs text-zinc-500 mb-2">Neural & Mental Operating System</p>
-            <p className="text-sm font-medium text-zinc-800">{userName ? `Hey, ${userName}` : 'Welcome'}</p>
-            <p className="text-xs text-zinc-500 mt-1">
-              Stage {currentStage}: {getStageName(currentStage)}
-            </p>
-            <a 
+        {/* Drawer Content */}
+        <div className="h-full overflow-y-auto p-5 space-y-4">
+          
+          {/* ==========================================
+              USER INFO HEADER
+              ========================================== */}
+          <div className="border-b border-black/5 pb-4 pt-2">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-100 to-amber-50 flex items-center justify-center">
+                <User className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <h2 className="text-base font-semibold text-zinc-800">
+                  {userName ? `Hey, ${userName}` : 'Welcome'}
+                </h2>
+                <p className="text-xs text-zinc-500">
+                  Stage {currentStage}: {getStageName(currentStage)}
+                </p>
+              </div>
+            </div>
+            
+            <Link 
               href="/profile/patterns"
-              className="inline-flex items-center gap-2 mt-3 px-3 py-1.5 bg-gradient-to-r from-amber-50 to-amber-100/50 hover:from-amber-100 hover:to-amber-100 text-amber-700 rounded-lg text-xs font-medium transition-colors border border-amber-200/60"
+              onClick={() => setIsOpen(false)}
+              className="inline-flex items-center gap-2 mt-2 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg text-xs font-medium transition-colors border border-amber-200/50"
             >
-              <Sparkles className="w-3 h-3" />
+              <Sparkles className="w-3.5 h-3.5" />
               Pattern Profile & Transformation Map
-            </a>
+            </Link>
           </div>
 
-          {/* REwired Index - Current with Delta */}
+          {/* ==========================================
+              REWIRED INDEX
+              ========================================== */}
           <div className="bg-white rounded-xl p-4 border border-zinc-200/80 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-zinc-500">REwired Index</span>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">REwired Index</span>
               <div className="flex items-center gap-2">
                 <span className={`text-2xl font-bold ${getStatusColor(currentRewiredIndex)}`}>
                   {currentRewiredIndex}
                 </span>
                 {rewiredDelta !== 0 && (
-                  <span className={`text-sm font-medium ${rewiredDelta > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                  <span className={`text-sm font-semibold flex items-center gap-0.5 ${rewiredDelta > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                    {rewiredDelta > 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
                     {rewiredDelta > 0 ? '+' : ''}{rewiredDelta}
                   </span>
                 )}
               </div>
             </div>
-            <div className="w-full rounded-full h-2 bg-zinc-100">
+            
+            {/* Progress bar */}
+            <div className="h-2 bg-zinc-100 rounded-full overflow-hidden mb-2">
               <div 
-                className={`h-2 rounded-full transition-all ${
-                  currentRewiredIndex <= 20 ? 'bg-red-500' :
-                  currentRewiredIndex <= 40 ? 'bg-yellow-500' :
-                  currentRewiredIndex <= 60 ? 'bg-blue-500' :
-                  currentRewiredIndex <= 80 ? 'bg-green-500' :
-                  'bg-purple-500'
-                }`}
-                style={{ width: `${currentRewiredIndex}%` }}
+                className={`h-full transition-all ${getProgressBarColor(currentRewiredIndex)}`}
+                style={{ width: `${Math.min(currentRewiredIndex, 100)}%` }}
               />
             </div>
-            <p className="text-xs text-zinc-400 mt-1">{getStatusTier(currentRewiredIndex)}</p>
+            
+            <p className="text-xs text-zinc-500">
+              Status: <span className={`font-medium ${getStatusColor(currentRewiredIndex)}`}>{getStatusTier(currentRewiredIndex)}</span>
+            </p>
           </div>
 
-          {/* Domain Scores with Deltas */}
-          <div className="bg-white rounded-xl p-4 border border-zinc-200/80 shadow-sm space-y-3">
-            <h3 className="text-sm font-medium text-zinc-700 mb-2">Domain Scores</h3>
-
-            {/* Regulation */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-zinc-500">Regulation</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-emerald-600">
-                    {displayScores.regulation.toFixed(1)}/5
+          {/* ==========================================
+              DOMAIN SCORES
+              ========================================== */}
+          <div className="bg-white rounded-xl p-4 border border-zinc-200/80 shadow-sm">
+            <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">Domain Scores</h3>
+            <div className="space-y-3">
+              {[
+                { key: 'regulation', label: 'Regulation', value: currentReg, delta: domainDeltas?.regulation },
+                { key: 'awareness', label: 'Awareness', value: currentAware, delta: domainDeltas?.awareness },
+                { key: 'outlook', label: 'Outlook', value: currentOut, delta: domainDeltas?.outlook },
+                { key: 'attention', label: 'Attention', value: currentAtt, delta: domainDeltas?.attention },
+              ].map(({ key, label, value, delta }) => (
+                <div key={key} className="flex items-center gap-3">
+                  <span className={`text-xs w-20 ${DOMAIN_COLORS[key as keyof typeof DOMAIN_COLORS].text}`}>
+                    {label}
                   </span>
-                  {domainDeltas?.regulation !== undefined && domainDeltas.regulation !== 0 && (
-                    <span className={`text-xs font-medium ${domainDeltas.regulation > 0 ? 'text-green-600' : 'text-red-500'}`}>
-                      {domainDeltas.regulation > 0 ? '↑' : '↓'}{Math.abs(domainDeltas.regulation).toFixed(1)}
+                  <div className="flex-1 h-1.5 bg-zinc-100 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full transition-all ${DOMAIN_COLORS[key as keyof typeof DOMAIN_COLORS].bar}`}
+                      style={{ width: `${(value / 5) * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-zinc-600 w-8 text-right font-medium">{value.toFixed(1)}</span>
+                  {delta !== undefined && delta !== 0 && (
+                    <span className={`text-xs w-10 text-right font-medium ${delta > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                      {delta > 0 ? '+' : ''}{delta.toFixed(1)}
                     </span>
                   )}
                 </div>
-              </div>
-              <div className="w-full rounded-full h-1.5 bg-zinc-100">
-                <div
-                  className="h-1.5 rounded-full transition-all bg-emerald-500"
-                  style={{ width: `${(displayScores.regulation / 5) * 100}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Awareness */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-zinc-500">Awareness</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-blue-600">
-                    {displayScores.awareness.toFixed(1)}/5
-                  </span>
-                  {domainDeltas?.awareness !== undefined && domainDeltas.awareness !== 0 && (
-                    <span className={`text-xs font-medium ${domainDeltas.awareness > 0 ? 'text-green-600' : 'text-red-500'}`}>
-                      {domainDeltas.awareness > 0 ? '↑' : '↓'}{Math.abs(domainDeltas.awareness).toFixed(1)}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className="w-full rounded-full h-1.5 bg-zinc-100">
-                <div
-                  className="h-1.5 rounded-full transition-all bg-blue-500"
-                  style={{ width: `${(displayScores.awareness / 5) * 100}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Outlook */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-zinc-500">Outlook</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-amber-600">
-                    {displayScores.outlook.toFixed(1)}/5
-                  </span>
-                  {domainDeltas?.outlook !== undefined && domainDeltas.outlook !== 0 && (
-                    <span className={`text-xs font-medium ${domainDeltas.outlook > 0 ? 'text-green-600' : 'text-red-500'}`}>
-                      {domainDeltas.outlook > 0 ? '↑' : '↓'}{Math.abs(domainDeltas.outlook).toFixed(1)}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className="w-full rounded-full h-1.5 bg-zinc-100">
-                <div
-                  className="h-1.5 rounded-full transition-all bg-amber-500"
-                  style={{ width: `${(displayScores.outlook / 5) * 100}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Attention */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-zinc-500">Attention</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-purple-600">
-                    {displayScores.attention.toFixed(1)}/5
-                  </span>
-                  {domainDeltas?.attention !== undefined && domainDeltas.attention !== 0 && (
-                    <span className={`text-xs font-medium ${domainDeltas.attention > 0 ? 'text-green-600' : 'text-red-500'}`}>
-                      {domainDeltas.attention > 0 ? '↑' : '↓'}{Math.abs(domainDeltas.attention).toFixed(1)}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className="w-full rounded-full h-1.5 bg-zinc-100">
-                <div
-                  className="h-1.5 rounded-full transition-all bg-purple-500"
-                  style={{ width: `${(displayScores.attention / 5) * 100}%` }}
-                />
-              </div>
+              ))}
             </div>
           </div>
 
-          {/* Stage 7 Unlock Button - Shows when eligible at Stage 6 */}
-          {currentStage === 6 && unlockEligible && onStage7Unlock && (
-            <div className="bg-gradient-to-r from-purple-50 to-amber-50 border border-purple-200/60 rounded-xl p-4">
-              <h3 className="text-sm font-medium text-purple-700 mb-2">🔓 Final Stage Available</h3>
-              <p className="text-xs text-zinc-600 mb-3">
+          {/* ==========================================
+              STAGE 7 UNLOCK BUTTON
+              ========================================== */}
+          {currentStage === 6 && unlockEligible && onStage7Click && (
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300/50 rounded-xl p-4 shadow-sm">
+              <h3 className="text-sm font-medium text-amber-800 mb-2">🔓 Final Stage Available</h3>
+              <p className="text-xs text-amber-700/80 mb-3">
                 You've demonstrated mastery at Stage 6. Ready to explore what's beyond?
               </p>
               <button
                 onClick={() => {
-                  onStage7Unlock();
+                  onStage7Click();
                   setIsOpen(false);
                 }}
-                className="w-full px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold rounded-xl transition-all shadow-sm shadow-amber-500/20"
+                className="w-full px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-xl transition-all shadow-md hover:shadow-lg"
               >
-                Unlock Stage 7?
+                Unlock Stage 7
               </button>
             </div>
           )}
 
-          {/* Unlock Progress */}
-          {unlockProgress && !unlockEligible && (
+          {/* ==========================================
+              UNLOCK PROGRESS
+              ========================================== */}
+          {unlockProgress && currentStage < 7 && (
             <div className="bg-white rounded-xl p-4 border border-zinc-200/80 shadow-sm">
-              <h3 className="text-sm font-medium text-zinc-700 mb-3">
-                Stage {currentStage + 1} Unlock Progress
-              </h3>
-              
+              <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">Unlock Progress</h3>
               <div className="space-y-2">
-                {/* Adherence Progress */}
+                {/* Adherence */}
                 <div className="flex items-center gap-2">
-                  <span className={`text-xs w-14 ${unlockProgress.adherenceMet ? 'text-green-600' : 'text-zinc-500'}`}>
+                  <span className={`text-xs w-16 ${unlockProgress.adherenceMet ? 'text-green-600' : 'text-zinc-500'}`}>
                     {unlockProgress.adherenceMet ? '✓' : ''} Adherence
                   </span>
                   <div className="flex-1 h-1.5 bg-zinc-100 rounded-full overflow-hidden">
                     <div 
-                      className={`h-full transition-all ${unlockProgress.adherenceMet ? 'bg-green-500' : 'bg-amber-500'}`}
-                      style={{ width: unlockProgress.adherenceMet ? '100%' : `${Math.min(100, adherencePercentage / unlockProgress.requiredAdherence * 100)}%` }}
+                      className={`h-full transition-all ${unlockProgress.adherenceMet ? 'bg-green-500' : 'bg-zinc-300'}`}
+                      style={{ width: `${Math.min((adherencePercentage / (unlockProgress.requiredAdherence || 80)) * 100, 100)}%` }}
                     />
                   </div>
-                  <span className="text-xs text-zinc-400 w-10 text-right">
-                    {unlockProgress.adherenceMet ? '✓' : `${adherencePercentage}%`}
+                  <span className="text-xs text-zinc-400 w-12 text-right">
+                    {adherencePercentage}%
                   </span>
                 </div>
                 
-                {/* Days Progress */}
+                {/* Days */}
                 <div className="flex items-center gap-2">
-                  <span className={`text-xs w-14 ${unlockProgress.daysMet ? 'text-green-600' : 'text-zinc-500'}`}>
+                  <span className={`text-xs w-16 ${unlockProgress.daysMet ? 'text-green-600' : 'text-zinc-500'}`}>
                     {unlockProgress.daysMet ? '✓' : ''} Days
                   </span>
                   <div className="flex-1 h-1.5 bg-zinc-100 rounded-full overflow-hidden">
                     <div 
-                      className={`h-full transition-all ${unlockProgress.daysMet ? 'bg-green-500' : 'bg-amber-500'}`}
-                      style={{ width: unlockProgress.daysMet ? '100%' : `${Math.min(100, consecutiveDays / unlockProgress.requiredDays * 100)}%` }}
+                      className={`h-full transition-all ${unlockProgress.daysMet ? 'bg-green-500' : 'bg-zinc-300'}`}
+                      style={{ width: `${Math.min((consecutiveDays / (unlockProgress.requiredDays || 14)) * 100, 100)}%` }}
                     />
                   </div>
-                  <span className="text-xs text-zinc-400 w-10 text-right">
-                    {unlockProgress.daysMet ? '✓' : `${consecutiveDays}/${unlockProgress.requiredDays}`}
+                  <span className="text-xs text-zinc-400 w-12 text-right">
+                    {consecutiveDays}/{unlockProgress.requiredDays || 14}
                   </span>
                 </div>
                 
-                {/* Delta Progress */}
+                {/* Delta */}
                 <div className="flex items-center gap-2">
-                  <span className={`text-xs w-14 ${unlockProgress.deltaMet ? 'text-green-600' : 'text-zinc-500'}`}>
+                  <span className={`text-xs w-16 ${unlockProgress.deltaMet ? 'text-green-600' : 'text-zinc-500'}`}>
                     {unlockProgress.deltaMet ? '✓' : ''} Growth
                   </span>
                   <div className="flex-1 h-1.5 bg-zinc-100 rounded-full overflow-hidden">
                     <div 
-                      className={`h-full transition-all ${unlockProgress.deltaMet ? 'bg-green-500' : 'bg-amber-500'}`}
-                      style={{ width: unlockProgress.deltaMet ? '100%' : `${Math.min(100, Math.max(0, ((domainDeltas?.average || 0) / unlockProgress.requiredDelta) * 100))}%` }}
+                      className={`h-full transition-all ${unlockProgress.deltaMet ? 'bg-green-500' : 'bg-zinc-300'}`}
+                      style={{ width: unlockProgress.deltaMet ? '100%' : '50%' }}
                     />
                   </div>
-                  <span className="text-xs text-zinc-400 w-10 text-right">
-                    {unlockProgress.deltaMet ? '✓' : `+${(domainDeltas?.average || 0).toFixed(1)}`}
+                  <span className="text-xs text-zinc-400 w-12 text-right">
+                    {domainDeltas?.average !== undefined ? `+${domainDeltas.average.toFixed(1)}` : '—'}
                   </span>
                 </div>
                 
-                {/* Weekly Check-in */}
+                {/* Qualitative */}
                 <div className="flex items-center gap-2">
-                  <span className={`text-xs w-14 ${unlockProgress.qualitativeMet ? 'text-green-600' : 'text-zinc-500'}`}>
+                  <span className={`text-xs w-16 ${unlockProgress.qualitativeMet ? 'text-green-600' : 'text-zinc-500'}`}>
                     {unlockProgress.qualitativeMet ? '✓' : ''} Check-in
                   </span>
                   <div className="flex-1 h-1.5 bg-zinc-100 rounded-full overflow-hidden">
@@ -379,7 +371,7 @@ export default function MobileDashboard({
                       style={{ width: unlockProgress.qualitativeMet ? '100%' : '0%' }}
                     />
                   </div>
-                  <span className="text-xs text-zinc-400 w-10 text-right">
+                  <span className="text-xs text-zinc-400 w-12 text-right">
                     {unlockProgress.qualitativeMet ? '✓' : '—'}
                   </span>
                 </div>
@@ -387,29 +379,36 @@ export default function MobileDashboard({
             </div>
           )}
 
-        {/* MY ALIGNED ACTION (Stage 3+) */}
-{(currentIdentity || coherenceStatement) && (
-  <div className="bg-white rounded-xl p-4 border border-black/[0.04] shadow-sm">
-    <div className="flex items-center gap-2 mb-2">
-      <Zap className="w-4 h-4 text-amber-500" />
-      <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider">My Aligned Action</h3>
-    </div>
-    <p className="text-sm text-zinc-700 leading-relaxed">{coherenceStatement || currentIdentity}</p>
-    {microAction && (
-      <p className="text-xs text-amber-600 font-medium mt-2">
-        Daily practice: {microAction}
-      </p>
-    )}
-              {identitySprintDay && (
+          {/* ==========================================
+              MY ALIGNED ACTION (Stage 3+)
+              ========================================== */}
+          {(displayStatement || microAction) && (
+            <div className="bg-white rounded-xl p-4 border border-zinc-200/80 shadow-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <Zap className="w-4 h-4 text-amber-500" />
+                <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider">My Aligned Action</h3>
+              </div>
+              {displayStatement && (
+                <p className="text-sm text-zinc-700 leading-relaxed">{displayStatement}</p>
+              )}
+              {microAction && (
+                <p className="text-xs text-amber-600 font-medium mt-2">
+                  Daily practice: {microAction}
+                </p>
+              )}
+              {displaySprintDay && (
                 <p className="text-xs text-zinc-400 mt-2">
-                  Day {identitySprintDay} of 21
+                  Day {displaySprintDay} of 21
                 </p>
               )}
             </div>
           )}
 
-          {/* Awaken with 5 CTA */}
+          {/* ==========================================
+              AWAKEN WITH 5 CTA
+              ========================================== */}
           <AwakenWithFiveCard />
+          
         </div>
       </div>
     </>
