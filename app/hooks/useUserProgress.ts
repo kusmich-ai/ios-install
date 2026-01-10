@@ -283,7 +283,7 @@ export function useUserProgress() {
       const unlockedTools = STAGE_TOOLS[progressData.current_stage] || [];
 
       // Build daily practices list based on stage
-      const completedIds = new Set((todayLogs || []).map(log => log.practice_id));
+      const completedIds = new Set((todayLogs || []).map((log: { practice_id: string }) => log.practice_id));
       const dailyPractices = buildDailyPractices(progressData.current_stage, completedIds);
 
       // Get latest qualitative rating
