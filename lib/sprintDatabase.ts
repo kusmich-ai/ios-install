@@ -56,7 +56,7 @@ export interface ActiveSprints {
  * - Creates new sprint with incremented sprint number
  * 
  * Table: identity_sprints
- * Columns: coherence_statement, action, start_date, completion_status
+ * Columns: identity_statement, micro_action, start_date, completion_status
  */
 export async function startNewMicroActionSprint(
   userId: string,
@@ -106,8 +106,8 @@ export async function startNewMicroActionSprint(
       .insert({
         user_id: userId,
         sprint_number: nextSprintNumber,
-        coherence_statement: coherenceStatement,
-        action: microAction,
+        identity_statement: coherenceStatement,  // DB column name
+        micro_action: microAction,               // DB column name
         start_date: today,
         completion_status: 'active',
         created_at: new Date().toISOString(),
@@ -394,9 +394,9 @@ export async function loadActiveSprintsForUser(userId: string): Promise<ActiveSp
       isActive: true,
       sprintNumber: microActionSprint.sprint_number,
       dayOfSprint: microActionDayOfSprint,
-      coherenceStatement: microActionSprint.coherence_statement,
-      identityStatement: microActionSprint.coherence_statement, // Alias for backwards compat
-      microAction: microActionSprint.action,
+      coherenceStatement: microActionSprint.identity_statement,   // DB column: identity_statement
+      identityStatement: microActionSprint.identity_statement,    // Alias for backwards compat
+      microAction: microActionSprint.micro_action,                // DB column: micro_action
       startDate: microActionSprint.start_date
     } : null,
     flowBlock: flowBlockSprint ? {
@@ -445,8 +445,8 @@ export async function continueMicroActionSprint(
     }
     
     // Use existing values if not provided
-    const newCoherenceStatement = coherenceStatement || currentSprint.coherence_statement;
-    const newMicroAction = microAction || currentSprint.action;
+    const newCoherenceStatement = coherenceStatement || currentSprint.identity_statement;
+    const newMicroAction = microAction || currentSprint.micro_action;
     
     // Start a new sprint (this will mark current as completed)
     return startNewMicroActionSprint(userId, newCoherenceStatement, newMicroAction);
