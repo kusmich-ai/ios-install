@@ -413,7 +413,106 @@ export async function loadActiveSprintsForUser(userId: string): Promise<ActiveSp
 }
 
 // ============================================
-// SPRINT RENEWAL FUNCTIONS
+// SPRINT CONTINUATION FUNCTIONS
+// ============================================
+
+/**
+ * Continue/renew an existing Micro-Action sprint with the same or updated values
+ * Used when a user wants to extend their current sprint for another 21 days
+ */
+export async function continueMicroActionSprint(
+  userId: string,
+  coherenceStatement?: string,
+  microAction?: string
+): Promise<MicroActionSprintResult> {
+  const supabase = createClient();
+  
+  try {
+    // Get current active sprint
+    const currentSprint = await getCurrentMicroActionSprint(userId);
+    
+    if (!currentSprint) {
+      // No active sprint to continue - start a new one if values provided
+      if (coherenceStatement && microAction) {
+        return startNewMicroActionSprint(userId, coherenceStatement, microAction);
+      }
+      return {
+        success: false,
+        sprintNumber: 0,
+        startDate: '',
+        error: 'No active sprint to continue and no new values provided'
+      };
+    }
+    
+    // Use existing values if not provided
+    const newCoherenceStatement = coherenceStatement || currentSprint.coherence_statement;
+    const newMicroAction = microAction || currentSprint.action;
+    
+    // Start a new sprint (this will mark current as completed)
+    return startNewMicroActionSprint(userId, newCoherenceStatement, newMicroAction);
+    
+  } catch (error) {
+    console.error('[SprintDB] continueMicroActionSprint failed:', error);
+    return {
+      success: false,
+      sprintNumber: 0,
+      startDate: '',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}
+
+/**
+ * Continue/renew an existing Flow Block sprint with the same or updated values
+ */
+export async function continueFlowBlockSprint(
+  userId: string,
+  weeklyMap?: any,
+  preferences?: any,
+  domains?: string[],
+  focusType?: 'concentrated' | 'distributed'
+): Promise<FlowBlockSprintResult> {
+  const supabase = createClient();
+  
+  try {
+    // Get current active sprint
+    const currentSprint = await getCurrentFlowBlockSprint(userId);
+    
+    if (!currentSprint) {
+      // No active sprint to continue
+      if (weeklyMap && preferences && domains && focusType) {
+        return startNewFlowBlockSprint(userId, weeklyMap, preferences, domains, focusType);
+      }
+      return {
+        success: false,
+        sprintNumber: 0,
+        startDate: '',
+        error: 'No active sprint to continue and no new values provided'
+      };
+    }
+    
+    // Use existing values if not provided
+    const newWeeklyMap = weeklyMap || currentSprint.weekly_map;
+    const newPreferences = preferences || currentSprint.preferences;
+    const newDomains = domains || currentSprint.domains;
+    const newFocusType = focusType || currentSprint.focus_type;
+    
+    // Start a new sprint (this will mark current as completed)
+    return startNewFlowBlockSprint(userId, newWeeklyMap, newPreferences, newDomains, newFocusType);
+    
+  } catch (error) {
+    console.error('[SprintDB] continueFlowBlockSprint failed:', error);
+    return {
+      success: false,
+      sprintNumber: 0,
+      startDate: '',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}
+
+// ============================================
+// SPRINT RENEWAL CHECK FUNCTIONS
 // ============================================
 
 /**
