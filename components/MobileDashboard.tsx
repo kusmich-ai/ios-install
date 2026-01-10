@@ -64,7 +64,7 @@ interface MobileDashboardProps {
   identitySprintDay?: number;
   
   // Handlers
-  onStage7Click?: () => void;
+  onStage7Unlock?: () => void;
 }
 
 // ============================================
@@ -136,7 +136,7 @@ export default function MobileDashboard({
   microAction,
   sprintDay,
   identitySprintDay,
-  onStage7Click,
+  onStage7Unlock,
 }: MobileDashboardProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -287,7 +287,7 @@ export default function MobileDashboard({
           {/* ==========================================
               STAGE 7 UNLOCK BUTTON
               ========================================== */}
-          {currentStage === 6 && unlockEligible && onStage7Click && (
+          {currentStage === 6 && unlockEligible && onStage7Unlock && (
             <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300/50 rounded-xl p-4 shadow-sm">
               <h3 className="text-sm font-medium text-amber-800 mb-2">🔓 Final Stage Available</h3>
               <p className="text-xs text-amber-700/80 mb-3">
@@ -295,7 +295,7 @@ export default function MobileDashboard({
               </p>
               <button
                 onClick={() => {
-                  onStage7Click();
+                  onStage7Unlock();
                   setIsOpen(false);
                 }}
                 className="w-full px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-xl transition-all shadow-md hover:shadow-lg"
