@@ -2427,23 +2427,27 @@ Which one?`;
     setLoading(false);
   }, [microActionState, user?.id, refetchProgress]);
 
-  const updateUserProgressCoherence = async (coherenceStatement: string, microAction: string) => {
-    try {
-      const supabase = createClient();
-      await supabase
-        .from('user_progress')
-        .update({ 
-          coherence_statement: coherenceStatement,
-          micro_action: microAction,
-          sprint_start: new Date().toISOString()
-        })
-        .eq('user_id', user.id);
-      
+const updateUserProgressCoherence = async (coherenceStatement: string, microAction: string) => {
+  try {
+    const supabase = createClient();
+    const { error } = await supabase
+      .from('user_progress')
+      .update({ 
+        current_identity: coherenceStatement,
+        micro_action: microAction,
+        identity_sprint_start: new Date().toISOString().split('T')[0]
+      })
+      .eq('user_id', user.id);
+    
+    if (error) {
+      console.error('[MicroAction] Supabase error:', error);
+    } else {
       devLog('[MicroAction]', 'Updated user_progress with coherence statement');
-    } catch (error) {
-      console.error('[MicroAction] Failed to update user_progress:', error);
     }
-  };
+  } catch (error) {
+    console.error('[MicroAction] Failed to update user_progress:', error);
+  }
+};
 
   const cancelMicroActionSetup = useCallback(() => {
     devLog('[MicroAction]', 'Setup cancelled');
