@@ -52,7 +52,11 @@ const startNewFlowBlockSprint = async (
   _setupPreferences: any, 
   _domains: string[], 
   _focusType: 'concentrated' | 'distributed'
-): Promise<{ success: boolean }> => ({ success: true });
+): Promise<{ success: boolean; startDate: string; sprintNumber: number }> => ({ 
+  success: true, 
+  startDate: new Date().toISOString(), 
+  sprintNumber: 1 
+});
 const getCurrentFlowBlockSprint = async (_userId: string): Promise<{
   sprint_number: number;
   weekly_map: any;
