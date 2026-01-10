@@ -45,10 +45,16 @@ import {
 } from '@/lib/sprintDatabase';
 
 // Stub functions for FlowBlock sprint operations (not yet implemented in sprintDatabase)
-const startNewFlowBlockSprint = async (_userId: string, _data: any) => ({ success: true });
-const getCurrentFlowBlockSprint = async (_userId: string) => null;
-const continueFlowBlockSprint = async (_userId: string) => ({ success: true });
-const completeFlowBlockSprint = async (_userId: string) => ({ success: true });
+// These return properly typed objects to avoid TypeScript errors
+const startNewFlowBlockSprint = async (_userId: string, _data: any): Promise<{ success: boolean }> => ({ success: true });
+const getCurrentFlowBlockSprint = async (_userId: string): Promise<{
+  sprint_number: number;
+  weekly_map: any;
+  domains: string[];
+  focus_type: string;
+} | null> => null;
+const continueFlowBlockSprint = async (_userId: string): Promise<{ success: boolean }> => ({ success: true });
+const completeFlowBlockSprint = async (_userId: string): Promise<{ success: boolean }> => ({ success: true });
 
 // Sprint Renewal utilities
 import {
