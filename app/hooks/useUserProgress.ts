@@ -1,11 +1,17 @@
 // app/hooks/useUserProgress.ts
+// Updated to read coherence_statement from identity_sprints table
 'use client';
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase-client';
 
+// ============================================
+// TYPES
+// ============================================
+
 export interface UserProgress {
   currentStage: number;
-  stageStartDate: string;
+  stageStartDate: string | null;
   adherencePercentage: number;
   consecutiveDays: number;
   rewiredIndex: number;
@@ -26,26 +32,29 @@ export interface UserProgress {
   };
   unlockedTools: string[];
   dailyPractices: {
-    [key: string]: {
-      completed: boolean;
-      time?: string;
-    };
-  };
+    id: string;
+    name: string;
+    completed: boolean;
+  }[];
   unlockEligible: boolean;
-  // Track the date this data is for
   dataDate: string;
-  // Micro-Action Identity fields
-  currentIdentity: string | null;
+  
+  // Aligned Action Sprint fields (updated from Identity)
+  coherenceStatement: string | null;  // NEW - primary field
+  currentIdentity: string | null;     // KEEP for backwards compatibility
   microAction: string | null;
+  sprintDay: number | null;           // NEW - primary field
+  identitySprintDay: number | null;   // KEEP for backwards compatibility
   identitySprintNumber: number | null;
   identitySprintStart: string | null;
-  identitySprintDay: number | null;
+  
   // Flow Block fields
   hasFlowBlockConfig: boolean;
   flowBlockSprintNumber: number | null;
   flowBlockSprintStart: string | null;
   flowBlockSprintDay: number | null;
-  // Progress tracking for unlock visualization
+  
+  // Progress tracking
   daysInStage: number;
   unlockProgress: {
     adherenceMet: boolean;
@@ -58,28 +67,71 @@ export interface UserProgress {
   };
 }
 
-interface PracticeLog {
-  practice_type: string;
-  completed: boolean;
-  completed_at?: string;
-  practice_date?: string;
-}
+// ============================================
+// CONSTANTS
+// ============================================
 
-// Helper to get local date string in YYYY-MM-DD format
+const UNLOCK_THRESHOLDS: { [stage: number]: { adherence: number; days: number; delta: number; qualitative: number } } = {
+  1: { adherence: 80, days: 14, delta: 0.3, qualitative: 3 },
+  2: { adherence: 80, days: 14, delta: 0.5, qualitative: 3 },
+  3: { adherence: 80, days: 14, delta: 0.5, qualitative: 3 },
+  4: { adherence: 80, days: 14, delta: 0.6, qualitative: 3 },
+  5: { adherence: 85, days: 14, delta: 0.7, qualitative: 3 },
+  6: { adherence: 85, days: 14, delta: 0.7, qualitative: 3 }
+};
+
+// Stage-specific tools
+const STAGE_TOOLS: { [stage: number]: string[] } = {
+  1: ['decentering'],
+  2: ['decentering', 'meta_reflection'],
+  3: ['decentering', 'meta_reflection', 'reframe'],
+  4: ['decentering', 'meta_reflection', 'reframe', 'thought_hygiene'],
+  5: ['decentering', 'meta_reflection', 'reframe', 'thought_hygiene'],
+  6: ['decentering', 'meta_reflection', 'reframe', 'thought_hygiene'],
+  7: ['decentering', 'meta_reflection', 'reframe', 'thought_hygiene']
+};
+
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
 function getLocalDateString(): string {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
 
-// Unlock thresholds per stage
-const UNLOCK_THRESHOLDS: { [key: number]: { adherence: number; days: number; delta: number; qualitative: number } } = {
-  1: { adherence: 80, days: 14, delta: 0.3, qualitative: 3 },
-  2: { adherence: 80, days: 14, delta: 0.5, qualitative: 3 },
-  3: { adherence: 80, days: 14, delta: 0.5, qualitative: 3 },
-  4: { adherence: 80, days: 14, delta: 0.6, qualitative: 3 },
-  5: { adherence: 80, days: 14, delta: 0.7, qualitative: 3 },
-  6: { adherence: 80, days: 14, delta: 0.7, qualitative: 3 }
-};
+function getTierFromIndex(index: number): string {
+  if (index <= 20) return 'System Offline';
+  if (index <= 40) return 'Baseline Mode';
+  if (index <= 60) return 'Operational';
+  if (index <= 80) return 'Optimized';
+  return 'Integrated';
+}
+
+function checkBasicUnlockEligibility(
+  stage: number,
+  adherence: number,
+  daysInStage: number,
+  avgDelta: number,
+  qualitativeRating: number | null,
+  avgScore: number
+): boolean {
+  const threshold = UNLOCK_THRESHOLDS[stage];
+  if (!threshold) return false;
+  
+  const COMPETENCE_THRESHOLD = 4.0;
+  
+  const adherenceMet = adherence >= threshold.adherence;
+  const daysMet = daysInStage >= threshold.days;
+  const deltaMet = avgDelta >= threshold.delta || avgScore >= COMPETENCE_THRESHOLD;
+  const qualMet = qualitativeRating !== null && qualitativeRating >= threshold.qualitative;
+  
+  return adherenceMet && daysMet && deltaMet && qualMet;
+}
+
+// ============================================
+// HOOK
+// ============================================
 
 export function useUserProgress() {
   const [progress, setProgress] = useState<UserProgress | null>(null);
@@ -87,40 +139,33 @@ export function useUserProgress() {
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   
-  // Track the last fetch time and date for cache-busting
-  const lastFetchTime = useRef<number>(0);
-  const lastFetchDate = useRef<string>('');
-  
   const supabase = createClient();
+  const lastFetchDate = useRef<string | null>(null);
+  const lastFetchTime = useRef<number>(0);
 
-  const fetchProgress = useCallback(async (forceRefresh: boolean = false) => {
+  const fetchProgress = useCallback(async (forceRefresh = false) => {
+    const today = getLocalDateString();
+    
+    // Skip if we already have today's data (unless forcing refresh)
+    if (!forceRefresh && progress?.dataDate === today) {
+      return;
+    }
+
+    if (!forceRefresh) {
+      setLoading(true);
+    } else {
+      setIsRefreshing(true);
+    }
+
     try {
-      // Prevent rapid re-fetches (debounce) unless forced
-      const now = Date.now();
-      if (!forceRefresh && now - lastFetchTime.current < 1000) {
-        console.log('[useUserProgress] Debounced - too soon since last fetch');
-        return;
-      }
-      lastFetchTime.current = now;
+      // Get authenticated user
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
       
-      // If not initial load, show refreshing state instead of full loading
-      if (progress) {
-        setIsRefreshing(true);
-      } else {
-        setLoading(true);
-      }
-      setError(null);
-      
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        setError('No user logged in');
-        setLoading(false);
-        setIsRefreshing(false);
-        return;
+      if (authError || !user) {
+        throw new Error('User not authenticated');
       }
 
-      // Fetch from user_progress table
+      // Fetch user progress
       const { data: progressData, error: progressError } = await supabase
         .from('user_progress')
         .select('*')
@@ -128,203 +173,125 @@ export function useUserProgress() {
         .single();
 
       if (progressError) {
-        console.error('Error fetching progress:', progressError);
-        setError(progressError.message);
-        setLoading(false);
-        setIsRefreshing(false);
-        return;
-      }
-
-      // Fetch today's practice logs - use LOCAL date, not UTC
-      const today = getLocalDateString();
-      
-      console.log('[useUserProgress] Fetching practices for date:', today);
-      
-      const { data: practicesData, error: practicesError } = await supabase
-        .from('practice_logs')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('practice_date', today);
-
-      if (practicesError) {
-        console.error('Error fetching practices:', practicesError);
-      }
-
-      // Transform practice logs into dailyPractices format
-      const dailyPractices: UserProgress['dailyPractices'] = {};
-      if (practicesData) {
-        console.log('[useUserProgress] Found practices:', practicesData.length, practicesData);
-        (practicesData as PracticeLog[]).forEach((practice: PracticeLog) => {
-          console.log('[useUserProgress] Mapping practice:', practice.practice_type, practice.completed);
-          dailyPractices[practice.practice_type] = {
-            completed: practice.completed,
-            time: practice.completed_at
-          };
-        });
-        console.log('[useUserProgress] Final dailyPractices:', dailyPractices);
+        throw progressError;
       }
 
       // Fetch baseline data
-      const { data: baselineData, error: baselineError } = await supabase
-        .from('baseline_assessments')
-        .select('*')
+      const { data: baselineData } = await supabase
+        .from('user_data')
+        .select('baseline_domain_scores, baseline_rewired_index')
         .eq('user_id', user.id)
         .single();
 
-      if (baselineError && baselineError.code !== 'PGRST116') {
-        console.error('Error fetching baseline:', baselineError);
-      }
-
-      // Fetch active Flow Block sprint to check if setup is complete
-      const { data: flowBlockSprint } = await supabase
-        .from('flow_block_sprints')
-        .select('id, sprint_number, start_date')
+      // Fetch latest weekly delta
+      const { data: latestDelta } = await supabase
+        .from('weekly_deltas')
+        .select('delta_regulation, delta_awareness, delta_outlook, delta_attention, qualitative_rating')
         .eq('user_id', user.id)
-        .eq('completion_status', 'active')
-        .maybeSingle();
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
 
-      // Calculate sprint day (1-21) if active sprint exists
-      let flowBlockSprintDay: number | null = null;
-      if (flowBlockSprint?.start_date) {
-        const sprintStart = new Date(flowBlockSprint.start_date);
-        sprintStart.setHours(0, 0, 0, 0);
-        const nowDate = new Date();
-        nowDate.setHours(0, 0, 0, 0);
-        const diffTime = nowDate.getTime() - sprintStart.getTime();
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-        flowBlockSprintDay = Math.max(1, Math.min(diffDays, 21));
-      }
+      // Fetch today's practice logs
+      const { data: todayLogs } = await supabase
+        .from('practice_logs')
+        .select('practice_id')
+        .eq('user_id', user.id)
+        .eq('practice_date', today);
 
-      // Fetch active identity sprint
+      // ============================================
+      // FETCH ACTIVE IDENTITY SPRINT
+      // Updated to read coherence_statement column
+      // ============================================
       const { data: identitySprint } = await supabase
         .from('identity_sprints')
-        .select('id, sprint_number, start_date, identity_statement, micro_action')
-        .eq('user_id', user.id)
-        .eq('completion_status', 'active')
-        .maybeSingle();
-
-      // Calculate identity sprint day
-      let identitySprintDay: number | null = null;
-      if (identitySprint?.start_date) {
-        const sprintStart = new Date(identitySprint.start_date);
-        sprintStart.setHours(0, 0, 0, 0);
-        const nowDate = new Date();
-        nowDate.setHours(0, 0, 0, 0);
-        const diffTime = nowDate.getTime() - sprintStart.getTime();
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-        identitySprintDay = Math.max(1, Math.min(diffDays, 21));
-      }
-
-      // Fetch latest 2 weekly deltas to calculate week-over-week change
-      // ONLY include check-ins from current stage (after stage_start_date)
-      const stageStartForFilter = progressData.stage_start_date || '1970-01-01';
-      
-      const { data: weeklyDeltas } = await supabase
-        .from('weekly_deltas')
         .select('*')
         .eq('user_id', user.id)
-        .gte('week_of', stageStartForFilter)  // Only check-ins from current stage
-        .order('week_of', { ascending: false })
-        .limit(2);
+        .eq('completion_status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
 
-      const latestDelta = weeklyDeltas?.[0] || null;
-      const previousDelta = weeklyDeltas?.[1] || null;
+      // Fetch active Flow Block sprint
+      const { data: flowBlockSprint } = await supabase
+        .from('flow_block_sprints')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('completion_status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
 
-      // Calculate domain scores (use latest delta if available, otherwise baseline)
-      let domainScores = {
-        regulation: 0,
-        awareness: 0,
-        outlook: 0,
-        attention: 0
+      // Calculate sprint days
+      const calculateSprintDay = (startDate: string | null): number | null => {
+        if (!startDate) return null;
+        const start = new Date(startDate);
+        const now = new Date();
+        const diffTime = now.getTime() - start.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        return Math.min(Math.max(diffDays, 1), 21);
       };
 
-      if (latestDelta) {
-        domainScores = {
-          regulation: latestDelta.regulation_score || 0,
-          awareness: latestDelta.awareness_score || 0,
-          outlook: latestDelta.outlook_score || 0,
-          attention: latestDelta.attention_score || 0
-        };
-      } else if (baselineData) {
-        domainScores = {
-          regulation: baselineData.calm_core_score || 0,
-          awareness: baselineData.observer_index_score || 0,
-          outlook: baselineData.vitality_index_score || 0,
-          attention: ((baselineData.focus_diagnostic_score || 0) + (baselineData.presence_test_score || 0)) / 2
-        };
-      }
+      const identitySprintDay = calculateSprintDay(identitySprint?.start_date);
+      const flowBlockSprintDay = calculateSprintDay(flowBlockSprint?.start_date);
 
-      // Calculate REwired Index (average of 4 domains × 20 to get 0-100)
+      // Calculate domain scores and deltas
+      const baselineScores = baselineData?.baseline_domain_scores || {
+        regulation: 2.5,
+        awareness: 2.5,
+        outlook: 2.5,
+        attention: 2.5
+      };
+
+      const domainScores = {
+        regulation: latestDelta?.delta_regulation !== undefined 
+          ? baselineScores.regulation + (latestDelta.delta_regulation || 0)
+          : baselineScores.regulation,
+        awareness: latestDelta?.delta_awareness !== undefined
+          ? baselineScores.awareness + (latestDelta.delta_awareness || 0)
+          : baselineScores.awareness,
+        outlook: latestDelta?.delta_outlook !== undefined
+          ? baselineScores.outlook + (latestDelta.delta_outlook || 0)
+          : baselineScores.outlook,
+        attention: latestDelta?.delta_attention !== undefined
+          ? baselineScores.attention + (latestDelta.delta_attention || 0)
+          : baselineScores.attention
+      };
+
+      const domainDeltas = {
+        regulation: latestDelta?.delta_regulation || 0,
+        awareness: latestDelta?.delta_awareness || 0,
+        outlook: latestDelta?.delta_outlook || 0,
+        attention: latestDelta?.delta_attention || 0,
+        average: latestDelta
+          ? ((latestDelta.delta_regulation || 0) + 
+             (latestDelta.delta_awareness || 0) + 
+             (latestDelta.delta_outlook || 0) + 
+             (latestDelta.delta_attention || 0)) / 4
+          : 0
+      };
+
+      // Calculate REwired Index
       const avgScore = (domainScores.regulation + domainScores.awareness + 
-                        domainScores.outlook + domainScores.attention) / 4;
+                       domainScores.outlook + domainScores.attention) / 4;
       const rewiredIndex = Math.round(avgScore * 20);
+      const baselineRewiredIndex = baselineData?.baseline_rewired_index || 50;
+      const rewiredDelta = rewiredIndex - baselineRewiredIndex;
+      const tier = getTierFromIndex(rewiredIndex);
 
-      // Determine tier
-      let tier = 'Baseline Mode';
-      if (rewiredIndex >= 81) tier = 'Integrated';
-      else if (rewiredIndex >= 61) tier = 'Optimized';
-      else if (rewiredIndex >= 41) tier = 'Operational';
-      else if (rewiredIndex >= 21) tier = 'Baseline Mode';
-      else tier = 'System Offline';
+      // Get unlocked tools for current stage
+      const unlockedTools = STAGE_TOOLS[progressData.current_stage] || [];
 
-      // Calculate week-over-week deltas
-      let domainDeltas = {
-        regulation: 0,
-        awareness: 0,
-        outlook: 0,
-        attention: 0,
-        average: 0
-      };
+      // Build daily practices list based on stage
+      const completedIds = new Set((todayLogs || []).map(log => log.practice_id));
+      const dailyPractices = buildDailyPractices(progressData.current_stage, completedIds);
 
-      if (latestDelta && previousDelta) {
-        domainDeltas = {
-          regulation: (latestDelta.regulation_score || 0) - (previousDelta.regulation_score || 0),
-          awareness: (latestDelta.awareness_score || 0) - (previousDelta.awareness_score || 0),
-          outlook: (latestDelta.outlook_score || 0) - (previousDelta.outlook_score || 0),
-          attention: (latestDelta.attention_score || 0) - (previousDelta.attention_score || 0),
-          average: 0
-        };
-      } else if (latestDelta && baselineData) {
-        domainDeltas = {
-          regulation: (latestDelta.regulation_score || 0) - (baselineData.calm_core_score || 0),
-          awareness: (latestDelta.awareness_score || 0) - (baselineData.observer_index_score || 0),
-          outlook: (latestDelta.outlook_score || 0) - (baselineData.vitality_index_score || 0),
-          attention: (latestDelta.attention_score || 0) - (((baselineData.focus_diagnostic_score || 0) + (baselineData.presence_test_score || 0)) / 2),
-          average: 0
-        };
-      } else {
-        domainDeltas = {
-          regulation: progressData.regulation_delta || 0,
-          awareness: progressData.awareness_delta || 0,
-          outlook: progressData.outlook_delta || 0,
-          attention: progressData.attention_delta || 0,
-          average: 0
-        };
-      }
-      domainDeltas.average = (domainDeltas.regulation + domainDeltas.awareness + 
-                              domainDeltas.outlook + domainDeltas.attention) / 4;
-
-      // Calculate REwired delta from baseline
-      let rewiredDelta = 0;
-      if (baselineData) {
-        const baselineAvg = (
-          (baselineData.calm_core_score || 0) +
-          (baselineData.observer_index_score || 0) +
-          (baselineData.vitality_index_score || 0) +
-          (((baselineData.focus_diagnostic_score || 0) + (baselineData.presence_test_score || 0)) / 2)
-        ) / 4;
-        const baselineRewired = Math.round(baselineAvg * 20);
-        rewiredDelta = rewiredIndex - baselineRewired;
-      }
-
-      // Determine unlocked tools based on stage
-      const unlockedTools = getUnlockedTools(progressData.current_stage);
-
-      // Get latest qualitative rating from weekly check-in
+      // Get latest qualitative rating
       const latestQualitativeRating = latestDelta?.qualitative_rating || null;
 
-      // Calculate days in current stage
-      const stageStartDate = progressData.stage_start_date ? new Date(progressData.stage_start_date) : new Date();
+      // Calculate days in stage
+      const stageStartDate = progressData.stage_start_date 
+        ? new Date(progressData.stage_start_date) : new Date();
       const todayDate = new Date();
       const daysInStage = Math.floor((todayDate.getTime() - stageStartDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
@@ -354,7 +321,7 @@ export function useUserProgress() {
       const unlockEligible = checkBasicUnlockEligibility(
         progressData.current_stage,
         progressData.adherence_percentage,
-        daysInStage, // Use calculated daysInStage, not consecutiveDays
+        daysInStage,
         domainDeltas.average,
         latestQualitativeRating,
         avgScore
@@ -362,7 +329,12 @@ export function useUserProgress() {
 
       // Update last fetch date
       lastFetchDate.current = today;
+      lastFetchTime.current = Date.now();
 
+      // ============================================
+      // BUILD PROGRESS OBJECT
+      // Key change: Read coherence_statement, provide both new and old field names
+      // ============================================
       const newProgress: UserProgress = {
         currentStage: progressData.current_stage,
         stageStartDate: progressData.stage_start_date,
@@ -377,17 +349,26 @@ export function useUserProgress() {
         dailyPractices,
         unlockEligible,
         dataDate: today,
-        // Identity Sprint fields
-        currentIdentity: identitySprint?.identity_statement || null,
-        microAction: identitySprint?.micro_action || null,
+        
+        // ============================================
+        // ALIGNED ACTION SPRINT FIELDS - UPDATED
+        // Primary: coherence_statement column
+        // Fallback: identity_statement for backwards compat
+        // ============================================
+        coherenceStatement: identitySprint?.coherence_statement || identitySprint?.identity_statement || null,
+        currentIdentity: identitySprint?.coherence_statement || identitySprint?.identity_statement || null, // Backwards compat
+        microAction: identitySprint?.action || identitySprint?.micro_action || null,
+        sprintDay: identitySprintDay,
+        identitySprintDay: identitySprintDay, // Backwards compat
         identitySprintNumber: identitySprint?.sprint_number || null,
         identitySprintStart: identitySprint?.start_date || null,
-        identitySprintDay: identitySprintDay,
+        
         // Flow Block fields
-        hasFlowBlockConfig: !!flowBlockSprint,
+        hasFlowBlockConfig: !flowBlockSprint,
         flowBlockSprintNumber: flowBlockSprint?.sprint_number || null,
         flowBlockSprintStart: flowBlockSprint?.start_date || null,
         flowBlockSprintDay: flowBlockSprintDay,
+        
         // Progress tracking fields
         daysInStage,
         unlockProgress
@@ -395,11 +376,11 @@ export function useUserProgress() {
 
       console.log('[useUserProgress] Setting progress:', {
         date: today,
-        dailyPractices,
+        coherenceStatement: newProgress.coherenceStatement,
+        currentIdentity: newProgress.currentIdentity,
+        microAction: newProgress.microAction,
+        sprintDay: newProgress.sprintDay,
         adherence: newProgress.adherencePercentage,
-        consecutiveDays: newProgress.consecutiveDays,
-        daysInStage: newProgress.daysInStage,
-        unlockProgress: newProgress.unlockProgress,
         unlockEligible: newProgress.unlockEligible
       });
 
@@ -472,42 +453,45 @@ export function useUserProgress() {
   };
 }
 
-// Helper function to determine unlocked tools based on stage
-function getUnlockedTools(stage: number): string[] {
-  const tools: string[] = ['decentering'];
-  if (stage >= 2) tools.push('meta_reflection');
-  if (stage >= 3) tools.push('reframe');
-  if (stage >= 4) tools.push('thought_hygiene');
-  return tools;
-}
+// ============================================
+// HELPER: Build daily practices based on stage
+// ============================================
 
-// Unlock eligibility check with hybrid approach
-function checkBasicUnlockEligibility(
-  stage: number,
-  adherence: number,
-  daysInStage: number,
-  avgDelta: number,
-  qualitativeRating: number | null,
-  currentAvgScore: number
-): boolean {
-  // Stage 7 is the final stage - no automatic unlock beyond it
-  if (stage >= 7) return false;
-
-  const threshold = UNLOCK_THRESHOLDS[stage];
-  if (!threshold) return false;
-
-  // Qualitative rating required
-  const meetsQualitative = qualitativeRating !== null && qualitativeRating >= threshold.qualitative;
+function buildDailyPractices(stage: number, completedIds: Set<string>) {
+  const practices: { id: string; name: string; completed: boolean }[] = [];
   
-  // Hybrid: either improvement OR existing competence
-  const COMPETENCE_THRESHOLD = 4.0;
-  const meetsTransformation = avgDelta >= threshold.delta;
-  const alreadyCompetent = currentAvgScore >= COMPETENCE_THRESHOLD;
-
-  return (
-    adherence >= threshold.adherence &&
-    daysInStage >= threshold.days &&
-    (meetsTransformation || alreadyCompetent) &&
-    meetsQualitative
+  // Stage 1+: HRVB + Awareness Rep
+  practices.push(
+    { id: 'hrvb', name: 'Resonance Breathing', completed: completedIds.has('hrvb') },
+    { id: 'awareness_rep', name: 'Awareness Rep', completed: completedIds.has('awareness_rep') }
   );
+  
+  // Stage 2+: Somatic Flow
+  if (stage >= 2) {
+    practices.push({ id: 'somatic_flow', name: 'Somatic Flow', completed: completedIds.has('somatic_flow') });
+  }
+  
+  // Stage 3+: Morning Micro-Action
+  if (stage >= 3) {
+    practices.push({ id: 'micro_action', name: 'Morning Aligned Action', completed: completedIds.has('micro_action') });
+  }
+  
+  // Stage 4+: Flow Block
+  if (stage >= 4) {
+    practices.push({ id: 'flow_block', name: 'Flow Block', completed: completedIds.has('flow_block') });
+  }
+  
+  // Stage 5+: Co-Regulation
+  if (stage >= 5) {
+    practices.push({ id: 'co_regulation', name: 'Co-Regulation', completed: completedIds.has('co_regulation') });
+  }
+  
+  // Stage 6+: Nightly Debrief
+  if (stage >= 6) {
+    practices.push({ id: 'nightly_debrief', name: 'Nightly Debrief', completed: completedIds.has('nightly_debrief') });
+  }
+  
+  return practices;
 }
+
+export default useUserProgress;
