@@ -46,7 +46,13 @@ import {
 
 // Stub functions for FlowBlock sprint operations (not yet implemented in sprintDatabase)
 // These return properly typed objects to avoid TypeScript errors
-const startNewFlowBlockSprint = async (_userId: string, _data: any): Promise<{ success: boolean }> => ({ success: true });
+const startNewFlowBlockSprint = async (
+  _userId: string, 
+  _weeklyMap: any, 
+  _setupPreferences: any, 
+  _domains: string[], 
+  _focusType: 'concentrated' | 'distributed'
+): Promise<{ success: boolean }> => ({ success: true });
 const getCurrentFlowBlockSprint = async (_userId: string): Promise<{
   sprint_number: number;
   weekly_map: any;
