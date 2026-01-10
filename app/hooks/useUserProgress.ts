@@ -1,5 +1,5 @@
 // app/hooks/useUserProgress.ts
-// Updated to read coherence_statement from identity_sprints table
+// Updated to read identity_statement from identity_sprints table (displayed as aligned action in UI)
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -201,7 +201,7 @@ export function useUserProgress() {
 
       // ============================================
       // FETCH ACTIVE IDENTITY SPRINT
-      // Updated to read coherence_statement column
+      // Reads from identity_sprints table
       // ============================================
       const { data: identitySprint } = await supabase
         .from('identity_sprints')
@@ -333,7 +333,7 @@ export function useUserProgress() {
 
       // ============================================
       // BUILD PROGRESS OBJECT
-      // Key change: Read coherence_statement, provide both new and old field names
+      // Maps DB column 'identity_statement' to UI field 'coherenceStatement'
       // ============================================
       const newProgress: UserProgress = {
         currentStage: progressData.current_stage,
@@ -351,13 +351,13 @@ export function useUserProgress() {
         dataDate: today,
         
         // ============================================
-        // ALIGNED ACTION SPRINT FIELDS - UPDATED
-        // Primary: coherence_statement column
-        // Fallback: identity_statement for backwards compat
+        // ALIGNED ACTION SPRINT FIELDS
+        // Database columns: identity_statement, micro_action
+        // UI displays as: coherenceStatement (aligned action)
         // ============================================
-        coherenceStatement: identitySprint?.coherence_statement || identitySprint?.identity_statement || null,
-        currentIdentity: identitySprint?.coherence_statement || identitySprint?.identity_statement || null, // Backwards compat
-        microAction: identitySprint?.action || identitySprint?.micro_action || null,
+        coherenceStatement: identitySprint?.identity_statement || null,  // DB column: identity_statement
+        currentIdentity: identitySprint?.identity_statement || null,     // Backwards compat alias
+        microAction: identitySprint?.micro_action || null,               // DB column: micro_action
         sprintDay: identitySprintDay,
         identitySprintDay: identitySprintDay, // Backwards compat
         identitySprintNumber: identitySprint?.sprint_number || null,
