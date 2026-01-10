@@ -60,12 +60,12 @@ interface DashboardSidebarProps {
   adherencePercentage?: number;
   consecutiveDays?: number;
   
-    // Aligned Action (Stage 3+) - renamed from identity
-  coherenceStatement?: string;  // ADD THIS
-  currentIdentity?: string;     // KEEP for backwards compatibility
+  // Aligned Action (Stage 3+) - with backwards compatibility
+  coherenceStatement?: string;
+  currentIdentity?: string;
   microAction?: string;
-  sprintDay?: number;           // RENAMED from identitySprintDay
-}
+  sprintDay?: number;
+  identitySprintDay?: number;
   
   // Handlers
   onStage7Click?: () => void;
@@ -79,7 +79,7 @@ function getStageName(stage: number): string {
   const names: { [key: number]: string } = {
     1: 'Neural Priming',
     2: 'Embodied Awareness',
-    3: 'Identity Mode',
+    3: 'Aligned Action Mode',
     4: 'Flow Mode',
     5: 'Relational Coherence',
     6: 'Integration',
@@ -135,11 +135,19 @@ export default function DashboardSidebar({
   unlockEligible,
   adherencePercentage = 0,
   consecutiveDays = 0,
+  coherenceStatement,
   currentIdentity,
   microAction,
+  sprintDay,
   identitySprintDay,
   onStage7Click,
 }: DashboardSidebarProps) {
+  
+  // Use sprintDay with fallback to identitySprintDay for backwards compatibility
+  const displaySprintDay = sprintDay ?? identitySprintDay;
+  
+  // Use coherenceStatement with fallback to currentIdentity for backwards compatibility
+  const displayStatement = coherenceStatement ?? currentIdentity;
   
   // Calculate current REwired Index
   const currentReg = currentDomainScores?.regulation ?? baselineDomainScores.regulation;
@@ -408,29 +416,29 @@ export default function DashboardSidebar({
           </div>
         )}
 
-     {/* MY ALIGNED ACTION (Stage 3+) */}
-{(currentIdentity || coherenceStatement) && (
-  <div className="bg-white rounded-xl p-4 border border-black/[0.04] shadow-sm">
-    <div className="flex items-center gap-2 mb-2">
-      <Zap className="w-4 h-4 text-amber-500" />
-      <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider">My Aligned Action</h3>
-    </div>
-    <p className="text-sm text-zinc-700 leading-relaxed">{coherenceStatement || currentIdentity}</p>
-    {microAction && (
-      <p className="text-xs text-amber-600 font-medium mt-2">
-        Daily practice: {microAction}
-      </p>
-    )}
-            {identitySprintDay && (
+        {/* MY ALIGNED ACTION (Stage 3+) */}
+        {displayStatement && (
+          <div className="bg-white rounded-xl p-4 border border-black/[0.04] shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <Zap className="w-4 h-4 text-amber-500" />
+              <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider">My Aligned Action</h3>
+            </div>
+            <p className="text-sm text-zinc-700 leading-relaxed">{displayStatement}</p>
+            {microAction && (
+              <p className="text-xs text-amber-600 font-medium mt-2">
+                Daily practice: {microAction}
+              </p>
+            )}
+            {displaySprintDay && (
               <div className="mt-3 flex items-center gap-2">
                 <div className="flex-1 h-1 bg-black/[0.04] rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-amber-500 rounded-full transition-all"
-                    style={{ width: `${(identitySprintDay / 21) * 100}%` }}
+                    style={{ width: `${(displaySprintDay / 21) * 100}%` }}
                   />
                 </div>
                 <span className="text-xs text-zinc-400 font-medium">
-                  Day {identitySprintDay}/21
+                  Day {displaySprintDay}/21
                 </span>
               </div>
             )}
