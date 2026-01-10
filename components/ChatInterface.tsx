@@ -51,7 +51,7 @@ const getCurrentFlowBlockSprint = async (_userId: string): Promise<{
   sprint_number: number;
   weekly_map: any;
   domains: string[];
-  focus_type: string;
+  focus_type: 'concentrated' | 'distributed';
 } | null> => null;
 const continueFlowBlockSprint = async (_userId: string): Promise<{ success: boolean }> => ({ success: true });
 const completeFlowBlockSprint = async (_userId: string): Promise<{ success: boolean }> => ({ success: true });
