@@ -178,7 +178,7 @@ function getStageName(stage: number): string {
   const names: { [key: number]: string } = {
     1: 'Neural Priming',
     2: 'Embodied Awareness',
-    3: 'Identity Mode',
+    3: 'Aligned Action Mode',
     4: 'Flow Mode',
     5: 'Relational Coherence',
     6: 'Integration',
@@ -307,7 +307,7 @@ const stagePracticeIds: { [key: number]: string[] } = {
 const stageQualitativeQuestions: { [key: number]: string } = {
   1: "How easily can you return to calm when stressed?",
   2: "Does awareness stay present during movement?",
-  3: "Is your chosen identity feeling more automatic?",
+  3: "Is your aligned action feeling more automatic?",
   4: "Can you drop into focused flow reliably?",
   5: "Do you stay regulated in difficult conversations?",
   6: "Is awareness stable across all life contexts?",
@@ -1111,6 +1111,9 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
       daysInStage = Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
     }
     
+    // Support both old and new field names
+    const sprintStart = extendedProgress?.sprintStart ?? extendedProgress?.identitySprintStart;
+    
     return {
       userName,
       currentStage: progress?.currentStage || 1,
@@ -1129,13 +1132,13 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
       outlookDelta: extendedProgress?.latestOutlookDelta || 0,
       attentionDelta: extendedProgress?.latestAttentionDelta || 0,
       avgDelta: extendedProgress?.latestAvgDelta || 0,
-      currentIdentity: extendedProgress?.currentIdentity || '',
+      currentIdentity: extendedProgress?.coherenceStatement ?? extendedProgress?.currentIdentity ?? '',
       microAction: extendedProgress?.microAction || '',
-      identityDayInCycle: extendedProgress?.identitySprintStart 
-        ? Math.floor((Date.now() - new Date(extendedProgress.identitySprintStart).getTime()) / (1000 * 60 * 60 * 24)) + 1
+      identityDayInCycle: sprintStart 
+        ? Math.floor((Date.now() - new Date(sprintStart).getTime()) / (1000 * 60 * 60 * 24)) + 1
         : 0,
-      identityDaysRemaining: extendedProgress?.identitySprintStart
-        ? Math.max(0, 21 - Math.floor((Date.now() - new Date(extendedProgress.identitySprintStart).getTime()) / (1000 * 60 * 60 * 24)))
+      identityDaysRemaining: sprintStart
+        ? Math.max(0, 21 - Math.floor((Date.now() - new Date(sprintStart).getTime()) / (1000 * 60 * 60 * 24)))
         : 21,
       isMobile,
       toolsReference: isMobile ? 'the lightning bolt icon' : 'the Daily Ritual tools on the right'
@@ -1156,6 +1159,10 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
       daysInStage = Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
     }
     
+    // Support both old and new field names
+    const sprintStart = extendedProgress?.sprintStart ?? extendedProgress?.identitySprintStart;
+    const coherenceStatement = extendedProgress?.coherenceStatement ?? extendedProgress?.currentIdentity;
+    
     return {
       currentStage: progress?.currentStage || 1,
       daysInStage,
@@ -1163,9 +1170,9 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
       consecutiveDays: extendedProgress?.consecutiveDays || 0,
       practicesCompletedToday,
       stageIntroCompleted: extendedProgress?.ritualIntroCompleted || introStep >= 4,
-      hasIdentitySet: !!(extendedProgress?.currentIdentity),
-      identityDayInCycle: extendedProgress?.identitySprintStart 
-        ? Math.floor((Date.now() - new Date(extendedProgress.identitySprintStart).getTime()) / (1000 * 60 * 60 * 24)) + 1
+      hasIdentitySet: !!coherenceStatement,
+      identityDayInCycle: sprintStart 
+        ? Math.floor((Date.now() - new Date(sprintStart).getTime()) / (1000 * 60 * 60 * 24)) + 1
         : undefined,
       flowBlockSetupCompleted: extendedProgress?.flowBlockSetupCompleted || flowBlockState.isComplete,
       toolsIntroduced: extendedProgress?.toolsIntroduced || [],
@@ -1286,8 +1293,8 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
           setMicroActionState(prev => ({
             ...prev,
             isComplete: true,
-            extractedCoherenceStatement: sprint.identity_statement,
-            extractedAction: sprint.micro_action,
+            extractedIdentity: sprint.coherence_statement,
+            extractedAction: sprint.action,
             sprintStartDate: sprint.start_date,
             sprintNumber: sprint.sprint_number || 1
           }));
@@ -1309,14 +1316,15 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
     
     const extendedProgress = progress as any;
     
-    const identitySprintDay = extendedProgress?.identitySprintDay;
-    const currentIdentity = extendedProgress?.currentIdentity;
+    // Support both old and new field names for backwards compatibility
+    const sprintDay = extendedProgress?.sprintDay ?? extendedProgress?.identitySprintDay;
+    const currentCoherence = extendedProgress?.coherenceStatement ?? extendedProgress?.currentIdentity;
     const currentMicroAction = extendedProgress?.microAction;
     
-    if (isIdentitySprintComplete(identitySprintDay) && currentIdentity) {
+    if (isIdentitySprintComplete(sprintDay) && currentCoherence) {
       hasCheckedSprintCompletion.current = true;
       
-      devLog('[SprintRenewal]', 'Identity sprint complete, Day:', identitySprintDay);
+      devLog('[SprintRenewal]', 'Aligned action sprint complete, Day:', sprintDay);
       
       setSprintRenewalState({
         isActive: true,
@@ -1324,8 +1332,8 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
         selectedOption: null,
         completedSprintInfo: {
           type: 'identity',
-          sprintNumber: extendedProgress?.identitySprintNumber || 1,
-          identity: currentIdentity,
+          sprintNumber: extendedProgress?.sprintNumber ?? extendedProgress?.identitySprintNumber ?? 1,
+          identity: currentCoherence,
           microAction: currentMicroAction
         },
         awaitingEvolutionInput: false
@@ -1333,9 +1341,9 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
       
       setTimeout(() => {
         const message = getIdentitySprintCompleteMessage(
-          currentIdentity,
+          currentCoherence,
           currentMicroAction || 'your daily proof',
-          extendedProgress?.identitySprintNumber || 1
+          extendedProgress?.sprintNumber ?? extendedProgress?.identitySprintNumber ?? 1
         );
         setMessages(prev => [...prev, { role: 'assistant', content: message }]);
       }, 1500);
@@ -2354,12 +2362,12 @@ Which one?`;
             
             devLog('[MicroAction]', 'Sprint saved:', sprintResult);
             
-            await updateUserProgressIdentity(extracted.identityStatement, extracted.microAction);
+            await updateUserProgressCoherence(extracted.identityStatement, extracted.microAction);
             
             setMicroActionState(prev => ({
               ...prev,
               conversationHistory: fullHistory,
-              extractedCoherenceStatement: extracted.extractedCoherenceStatement,
+              extractedIdentity: extracted.identityStatement,
               extractedAction: extracted.microAction,
               isComplete: true,
               isActive: false,
@@ -2401,19 +2409,19 @@ Which one?`;
     setLoading(false);
   }, [microActionState, user?.id, refetchProgress]);
 
-  const updateUserProgressIdentity = async (identity: string, microAction: string) => {
+  const updateUserProgressCoherence = async (coherenceStatement: string, microAction: string) => {
     try {
       const supabase = createClient();
       await supabase
         .from('user_progress')
         .update({ 
-          current_identity: identity,
+          coherence_statement: coherenceStatement,
           micro_action: microAction,
-          identity_sprint_start: new Date().toISOString()
+          sprint_start: new Date().toISOString()
         })
         .eq('user_id', user.id);
       
-      devLog('[MicroAction]', 'Updated user_progress with identity');
+      devLog('[MicroAction]', 'Updated user_progress with coherence statement');
     } catch (error) {
       console.error('[MicroAction] Failed to update user_progress:', error);
     }
@@ -2436,7 +2444,7 @@ Which one?`;
       
       if (result.success) {
         const message = getIdentityContinueMessage(
-          info?.identity || 'your identity',
+          info?.identity || 'your coherence statement',
           info?.microAction || 'your micro-action'
         );
         
@@ -2455,7 +2463,7 @@ Which one?`;
       }
       
     } else if (option === 'evolve') {
-      const message = getIdentityEvolvePrompt(info?.identity || 'your previous identity');
+      const message = getIdentityEvolvePrompt(info?.identity || 'your previous coherence statement');
       
       setTimeout(() => {
         setMessages(prev => [...prev, { role: 'assistant', content: message }]);
@@ -2542,13 +2550,13 @@ Which one?`;
 
   const handleEvolutionInput = async (userInput: string) => {
     if (sprintRenewalState.renewalType === 'identity') {
-      const previousIdentity = sprintRenewalState.completedSprintInfo?.identity || 'previous identity';
+      const previousCoherence = sprintRenewalState.completedSprintInfo?.identity || 'previous coherence statement';
       
       await completeMicroActionSprint(user.id);
       
       setSprintRenewalState(initialSprintRenewalState);
       
-      const evolutionContext = `The user is evolving their identity from "${previousIdentity}". They want to evolve it to: "${userInput}". Help them refine the evolved identity statement and design a new micro-action that proves this evolved identity. Use the 4-C filter naturally (Concrete, Coherent, Challenging, Chunked) but don't announce it. Then help them design the ACE micro-action (Atomic, Congruent, Emotionally Clean).`;
+      const evolutionContext = `The user is evolving their coherence statement from "${previousCoherence}". They want to evolve it to: "${userInput}". Help them refine the evolved coherence statement and design a new micro-action that proves this evolved commitment. Use the 4-C filter naturally (Concrete, Coherent, Challenging, Chunked) but don't announce it. Then help them design the ACE micro-action (Atomic, Congruent, Emotionally Clean).`;
       
       setMicroActionState(prev => ({
         ...prev,
@@ -2588,7 +2596,7 @@ Which one?`;
         console.error('[SprintRenewal] Evolution API error:', error);
         setMessages(prev => [...prev, {
           role: 'assistant',
-          content: "Let's continue refining your evolved identity. What would the new identity statement be? Try phrasing it as 'I am someone who...'"
+          content: "Let's continue refining your evolved coherence statement. What would the new statement be? Try phrasing it as 'For the next 21 days, I will...'"
         }]);
       }
       
@@ -3452,14 +3460,14 @@ This isn't judgment — it's data. The resistance is telling you something. Want
             completedSprintInfo: {
               type: 'identity',
               sprintNumber: microActionState.sprintNumber || 1,
-              identity: microActionState.extractedCoherenceStatement || '',
+              identity: microActionState.extractedIdentity || '',
               microAction: microActionState.extractedAction || ''
             },
             awaitingEvolutionInput: false
           });
           
           const message = getIdentitySprintCompleteMessage(
-            microActionState.extractedCoherenceStatement || 'your coherance statement',
+            microActionState.extractedIdentity || 'your coherence statement',
             microActionState.extractedAction || 'your micro-action',
             microActionState.sprintNumber || 1
           );
@@ -3574,12 +3582,13 @@ const sendMessage = async (e: React.FormEvent) => {
   
   const userInputLower = userMessage.toLowerCase();
   
-  // Micro-Action trigger patterns
+  // Micro-Action trigger patterns - UPDATED to include "aligned action"
   const microActionTriggers = [
     'micro action', 'micro-action', 'microaction',
     'run the micro', 'start micro', 'do micro',
-    'morning micro', 'identity installation',
-    'coherence installation', 'run micro', 'setup micro'
+    'morning micro', 'aligned action',
+    'coherence installation', 'run micro', 'setup micro',
+    'morning aligned'
   ];
   
   const isMicroActionRequest = microActionTriggers.some(trigger => 
@@ -3687,7 +3696,7 @@ const sendMessage = async (e: React.FormEvent) => {
         setAwaitingMicroActionStart(false);
         setMessages(prev => [...prev, { 
           role: 'assistant', 
-          content: "No problem. You can set up your aligned micro-action anytime by clicking the ⚡ icon or saying 'set up my aligned action'." 
+          content: "No problem. You can set up your aligned action anytime by clicking the ⚡ icon or saying 'run micro action'." 
         }]);
       }
       return;
@@ -3732,7 +3741,7 @@ const sendMessage = async (e: React.FormEvent) => {
           setTimeout(() => {
             setMessages(prev => [...prev, {
               role: 'assistant',
-              content: "I didn't catch that. Would you like to **Continue** (same identity), **Evolve** (stretch it forward), or **Pivot** (new direction)?"
+              content: "I didn't catch that. Would you like to **Continue** (same statement), **Evolve** (stretch it forward), or **Pivot** (new direction)?"
             }]);
             setLoading(false);
           }, 300);
@@ -3844,7 +3853,7 @@ const sendMessage = async (e: React.FormEvent) => {
       return;
     }
     
-    if (lowerMessage.includes('set up') && (lowerMessage.includes('identity') || lowerMessage.includes('micro'))) {
+    if (lowerMessage.includes('set up') && (lowerMessage.includes('identity') || lowerMessage.includes('micro') || lowerMessage.includes('aligned'))) {
       setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
       startMicroActionSetup();
       return;
@@ -3968,9 +3977,11 @@ const sendMessage = async (e: React.FormEvent) => {
           unlockEligible={progress?.unlockEligible}
           adherencePercentage={progress?.adherencePercentage || 0}
           consecutiveDays={progress?.consecutiveDays || 0}
-          currentIdentity={progress?.currentIdentity ?? undefined}
+          coherenceStatement={(progress as any)?.coherenceStatement ?? (progress as any)?.currentIdentity ?? undefined}
+          currentIdentity={(progress as any)?.currentIdentity ?? undefined}
           microAction={(progress as any)?.microAction ?? undefined}
-          identitySprintDay={progress?.identitySprintDay ?? undefined}
+          sprintDay={(progress as any)?.sprintDay ?? (progress as any)?.identitySprintDay ?? undefined}
+          identitySprintDay={(progress as any)?.identitySprintDay ?? undefined}
           onStage7Click={startStage7Introduction}
         />
       )}
@@ -4346,9 +4357,11 @@ const sendMessage = async (e: React.FormEvent) => {
           unlockEligible={progress?.unlockEligible}
           adherencePercentage={progress?.adherencePercentage || 0}
           consecutiveDays={progress?.consecutiveDays || 0}
-          currentIdentity={progress?.currentIdentity ?? undefined}
+          coherenceStatement={(progress as any)?.coherenceStatement ?? (progress as any)?.currentIdentity ?? undefined}
+          currentIdentity={(progress as any)?.currentIdentity ?? undefined}
           microAction={(progress as any)?.microAction ?? undefined}
-          identitySprintDay={progress?.identitySprintDay ?? undefined}
+          sprintDay={(progress as any)?.sprintDay ?? (progress as any)?.identitySprintDay ?? undefined}
+          identitySprintDay={(progress as any)?.identitySprintDay ?? undefined}
           onStage7Unlock={startStage7Introduction}
         />
       )}
