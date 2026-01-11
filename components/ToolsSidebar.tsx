@@ -103,13 +103,13 @@ export default function ToolsSidebar({
   const currentStagePractices = getStagePractices(progress.currentStage);
   const unlockedTools = getUnlockedOnDemandTools(progress.currentStage);
 
-  // UNCHANGED: getPracticeStatus
-  const getPracticeStatus = (practiceId: string): 'completed' | 'pending' | 'locked' => {
-    const mappedId = PRACTICE_ID_MAP[practiceId] || practiceId;
-    const practiceData = progress.dailyPractices[practiceId] || progress.dailyPractices[mappedId];
-    if (practiceData?.completed) return 'completed';
-    return 'pending';
-  };
+  
+const getPracticeStatus = (practiceId: string): 'completed' | 'pending' | 'locked' => {
+  const mappedId = PRACTICE_ID_MAP[practiceId] || practiceId;
+  const practiceData = progress.dailyPractices?.find(p => p.id === practiceId || p.id === mappedId);
+  if (practiceData?.completed) return 'completed';
+  return 'pending';
+};
 
   // REMOVED: getStatusIcon - no longer using emoji status icons
 
