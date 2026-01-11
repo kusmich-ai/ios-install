@@ -1483,7 +1483,8 @@ Keep going - the real rewiring happens in weeks 2-4.`
     const currentHour = new Date().getHours();
     if (currentHour < 18) return;
     
-    const debriefStatus = progress.dailyPractices['nightly_debrief'];
+   // CORRECT (searching array):
+const debriefStatus = progress.dailyPractices?.find(p => p.id === 'nightly_debrief');
     if (debriefStatus?.completed) return;
     
     if (sprintRenewalState.isActive || weeklyCheckInActive || unlockFlowState !== 'none') return;
