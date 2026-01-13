@@ -1270,7 +1270,7 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
     if (!isMobile && textareaRef.current && !loading) {
       setTimeout(() => textareaRef.current?.focus(), 100);
     }
-  }, [messages, loading, isMobile]);
+  }, [messages, loading, isMobile, streamingMessage]);
 
   useEffect(() => {
     if (textareaRef.current) {
