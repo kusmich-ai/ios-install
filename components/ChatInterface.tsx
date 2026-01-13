@@ -3510,8 +3510,7 @@ This isn't judgment — it's data. The resistance is telling you something. Want
     
     devLog('[ChatInterface]', 'Practice clicked:', { practiceId, normalizedId, practiceName });
     
-    await postAssistantMessage(\`Starting **${practiceName}**...\n\nThe practice window will open. Complete it and I'll log your progress.` 
-    }]);
+   await postAssistantMessage(`Starting **${practiceName}**...\n\nThe practice window will open. Complete it and I'll log your progress.`);
 
   // ============================================
   // TOOL CLICK HANDLER
