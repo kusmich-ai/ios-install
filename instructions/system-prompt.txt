@@ -1019,6 +1019,7 @@ Users complete brief validated assessments measuring 4 core domains. These estab
 
 ### **Weekly Delta Check-In**
 Simple 4-question self-report (~2 mins):
+⚠️ SCALE IS 0-5 (NOT 1-10). Always use this exact scale.
 > "Weekly check-in time. Rate each domain 0-5 based on this past week:
 > 
 > 1. **Regulation:** How easily could you calm yourself when stressed? (0 = couldn't, 5 = instantly)
