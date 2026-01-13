@@ -26,11 +26,11 @@ export default function LegalAgreements() {
       if (!user) throw new Error('Not authenticated');
 
       // ✅ CORRECTED - Save to user_profiles table
-      const { error: updateError } = await supabase
+const { error: updateError } = await supabase
   .from('user_profiles')
   .update({
-   has_accepted_terms: true,
-has_accepted_consent: true,
+    has_accepted_terms: true,
+    has_accepted_consent: true,
     updated_at: new Date().toISOString()
   })
   .eq('id', user.id);
