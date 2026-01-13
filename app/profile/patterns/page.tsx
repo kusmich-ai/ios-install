@@ -373,7 +373,6 @@ export default function PatternProfilePage() {
       return renderNoRoadmapPrompt();
     }
 
-   const { milestones: unsortedMilestones, destination } = mirrorData.transformation_roadmap;
 const { milestones: unsortedMilestones, destination } = profile.transformation_roadmap;
 
     return (
