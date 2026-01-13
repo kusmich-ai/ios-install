@@ -296,7 +296,7 @@ const { data: todayLogs } = await supabase
       const unlockedTools = STAGE_TOOLS[progressData.current_stage] || [];
 
       // Build daily practices list based on stage
-      const completedIds = new Set<string>((todayLogs || []).map((log: { practice_id: string }) => log.practice_id));
+      const completedIds = new Set<string>((todayLogs || []).map((log: { practice_type: string }) => log.practice_type));
       const dailyPractices = buildDailyPractices(progressData.current_stage, completedIds);
 
       // Get latest qualitative rating
