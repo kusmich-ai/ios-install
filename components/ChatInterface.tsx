@@ -546,8 +546,31 @@ Okay, back to wrapping up. Ready to get started?`;
 
 async function getFirstTimeOpeningMessage(baselineData: BaselineData, userName: string): Promise<string> {
   const tier = getStatusTier(baselineData.rewiredIndex);
-  const tierInterpretation = tierInterpretations[tier] || tierInterpretations['Operational'];
   const rituals = stageRituals[1] || stageRituals[1];
+  
+  // Get dynamic interpretation from API
+  let tierInterpretation = tierInterpretations[tier] || tierInterpretations['Operational'];
+  
+  try {
+    const response = await fetch('/api/ios/interpret-baseline', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        rewiredIndex: baselineData.rewiredIndex,
+        tier,
+        domainScores: baselineData.domainScores,
+        userName
+      })
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      tierInterpretation = data.interpretation;
+    }
+  } catch (error) {
+    console.error('Failed to get dynamic interpretation:', error);
+    // Falls back to static tierInterpretation
+  }
   
   return `Hey${userName ? `, ${userName}` : ''}. Welcome to the IOS.
 
