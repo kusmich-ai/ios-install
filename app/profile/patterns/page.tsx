@@ -374,7 +374,7 @@ export default function PatternProfilePage() {
     }
 
    const { milestones: unsortedMilestones, destination } = mirrorData.transformation_roadmap;
-const milestones = [...unsortedMilestones].sort((a, b) => a.number - b.number);
+const { milestones: unsortedMilestones, destination } = profile.transformation_roadmap;
 
     return (
       <div className="space-y-6">
