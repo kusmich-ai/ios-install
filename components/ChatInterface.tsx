@@ -1017,6 +1017,8 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState<boolean>(true);
+  const [streamingMessage, setStreamingMessage] = useState<string>('');
+  const [isStreaming, setIsStreaming] = useState<boolean>(false);
   const [openingType, setOpeningType] = useState<'first_time' | 'same_day' | 'new_day'>('first_time');
   const [introStep, setIntroStep] = useState<number>(0);
   const [practicesCompletedToday, setPracticesCompletedToday] = useState<string[]>([]);
