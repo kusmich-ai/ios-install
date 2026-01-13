@@ -186,6 +186,17 @@ const baselineRewiredIndex = baselineMap['ios:baseline:rewired_index']
   ? JSON.parse(baselineMap['ios:baseline:rewired_index'])
   : 50;
 
+      // Fetch user progress
+      const { data: progressData, error: progressError } = await supabase
+        .from('user_progress')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (progressError) {
+        throw progressError;
+      }
+      
       // Fetch latest weekly delta
       const { data: latestDelta } = await supabase
         .from('weekly_deltas')
