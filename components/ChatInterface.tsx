@@ -1413,14 +1413,14 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
         awaitingEvolutionInput: false
       });
       
-      setTimeout(() => {
-        const message = getIdentitySprintCompleteMessage(
-          currentCoherence,
-          currentMicroAction || 'your daily proof',
-          extendedProgress?.sprintNumber ?? extendedProgress?.identitySprintNumber ?? 1
-        );
-        await postAssistantMessage(message);
-      }, 1500);
+      setTimeout(async () => {
+  const message = getIdentitySprintCompleteMessage(
+    currentCoherence,
+    currentMicroAction || 'your daily proof',
+    extendedProgress?.sprintNumber ?? extendedProgress?.identitySprintNumber ?? 1
+  );
+  await postAssistantMessage(message);
+}, 1500);
       
       return;
     }
@@ -1450,13 +1450,13 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
           awaitingEvolutionInput: false
         });
         
-        setTimeout(() => {
-          const message = getFlowBlockSprintCompleteMessage(
-            sprint?.domains || [],
-            sprint?.sprint_number || 1
-          );
-          await postAssistantMessage(message);
-        }, 1500);
+        setTimeout(async () => {
+  const message = getFlowBlockSprintCompleteMessage(
+    sprint?.domains || [],
+    sprint?.sprint_number || 1
+  );
+  await postAssistantMessage(message);
+}, 1500);
       };
       
       loadFlowBlockDetails();
@@ -1496,9 +1496,9 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
       
       const message = unlockMessages[nextStage] || `🔓 **Congratulations!** You're eligible to unlock Stage ${nextStage}.`;
       
-      setTimeout(() => {
-        await postAssistantMessage(message);
-      }, 1500);
+      setTimeout(async () => {
+  await postAssistantMessage(message);
+}, 1500);
     }
   }, [progress, progressLoading, sprintRenewalState.isActive, weeklyCheckInActive]);
 
@@ -1515,8 +1515,8 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
     if (consecutiveDays === 7 && !extendedProgress?.shownWeekMilestone) {
       hasCheckedWeeklyMilestone.current = true;
       
-      setTimeout(() => {
-      await postAssistantMessage(\`**7-Day Milestone!** 🎯
+      setTimeout(async () => {
+await postAssistantMessage(`**7-Day Milestone!** 🎯
 
 You've completed a full week of consistent practice. Your nervous system is starting to recognize the new pattern.
 
