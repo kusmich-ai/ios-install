@@ -173,7 +173,7 @@ const { data: baselineRows } = await supabase
   .in('key', ['ios:baseline:domain_scores', 'ios:baseline:rewired_index']);
 
 // Parse the key-value data
-const baselineMap = (baselineRows || []).reduce((acc, row) => {
+const baselineMap = (baselineRows || []).reduce((acc: Record<string, string>, row) => {
   acc[row.key] = row.value;
   return acc;
 }, {} as Record<string, string>);
