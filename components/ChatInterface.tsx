@@ -1516,12 +1516,11 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
       hasCheckedWeeklyMilestone.current = true;
       
       setTimeout(async () => {
-await postAssistantMessage(`**7-Day Milestone!** 🎯
+        await postAssistantMessage(`**7-Day Milestone!** 🎯
 
 You've completed a full week of consistent practice. Your nervous system is starting to recognize the new pattern.
 
-Keep going - the real rewiring happens in weeks 2-4.`
-        }]);
+Keep going - the real rewiring happens in weeks 2-4.`);
       }, 2000);
     }
   }, [progress, progressLoading]);
