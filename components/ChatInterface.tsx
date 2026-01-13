@@ -4405,7 +4405,7 @@ const sendMessage = async (e: React.FormEvent) => {
                         ? "Or type a question..." 
                         : "Type your message..."
                 }
-                disabled={loading}
+                disabled={loading || isStreaming}
                 rows={1}
                className="flex-1 bg-[#1a1a1a] border border-white/[0.08] rounded-xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/30 disabled:opacity-50 resize-none min-h-[52px] max-h-[200px] transition-colors"
               />
