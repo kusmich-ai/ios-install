@@ -1228,9 +1228,6 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
   // ============================================
   // TYPEWRITER EFFECT FOR TEMPLATE MESSAGES
   // ============================================
-  // ============================================
-  // TYPEWRITER EFFECT FOR TEMPLATE MESSAGES
-  // ============================================
   const streamTemplateMessage = useCallback(async (
     message: string, 
     onComplete?: () => void
