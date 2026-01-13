@@ -29,8 +29,8 @@ export default function LegalAgreements() {
       const { error: updateError } = await supabase
   .from('user_profiles')
   .update({
-    has_accepted_tos: true,
-    has_accepted_consent: true,
+   has_accepted_terms: true,
+has_accepted_consent: true,
     updated_at: new Date().toISOString()
   })
   .eq('id', user.id);
