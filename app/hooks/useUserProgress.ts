@@ -165,23 +165,26 @@ export function useUserProgress() {
         throw new Error('User not authenticated');
       }
 
-      // Fetch user progress
-      const { data: progressData, error: progressError } = await supabase
-        .from('user_progress')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
+      // Fetch baseline data from key-value store
+const { data: baselineRows } = await supabase
+  .from('user_data')
+  .select('key, value')
+  .eq('user_id', user.id)
+  .in('key', ['ios:baseline:domain_scores', 'ios:baseline:rewired_index']);
 
-      if (progressError) {
-        throw progressError;
-      }
+// Parse the key-value data
+const baselineMap = (baselineRows || []).reduce((acc, row) => {
+  acc[row.key] = row.value;
+  return acc;
+}, {} as Record<string, string>);
 
-      // Fetch baseline data
-      const { data: baselineData } = await supabase
-        .from('user_data')
-        .select('baseline_domain_scores, baseline_rewired_index')
-        .eq('user_id', user.id)
-        .single();
+const baselineDomainScores = baselineMap['ios:baseline:domain_scores'] 
+  ? JSON.parse(baselineMap['ios:baseline:domain_scores'])
+  : { regulation: 2.5, awareness: 2.5, outlook: 2.5, attention: 2.5 };
+
+const baselineRewiredIndex = baselineMap['ios:baseline:rewired_index']
+  ? JSON.parse(baselineMap['ios:baseline:rewired_index'])
+  : 50;
 
       // Fetch latest weekly delta
       const { data: latestDelta } = await supabase
