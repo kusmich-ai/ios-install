@@ -636,14 +636,14 @@ const IOSBaselineAssessment = ({ user }) => {
       
       // 3. Initialize user progress
       console.log('📝 Initializing user progress...');
-      const { error: progressError } = await supabase
-        .from('user_progress')
-        .upsert({
-          user_id: userId,
-          current_stage: 1,
-          stage_start_date: resultsData.timestamp,
-          system_initialized: true
-        });
+     const { error: progressError } = await supabase
+  .from('user_progress')
+  .upsert({
+    user_id: userId,
+    current_stage: 1,
+    stage_start_date: resultsData.timestamp,
+    system_initialized: true
+  }, { onConflict: 'user_id' });
       
       if (progressError) {
         console.error('❌ Error storing in user_progress:', progressError);
