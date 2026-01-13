@@ -4099,17 +4099,21 @@ const sendMessage = async (e: React.FormEvent) => {
               </div>
             ))}
             
-            {loading && (
-              <div className="flex justify-start">
-                <div className="bg-[#1a1a1a] border border-white/[0.06] rounded-2xl px-6 py-4">
-                  <div className="flex gap-2">
-                    <div className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce" />
-                    <div className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <div className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* Enhanced Loading Indicator */}
+{loading && (
+  <div className="flex justify-start">
+    <div className="bg-gray-800 border border-gray-700 rounded-2xl px-6 py-4">
+      <div className="flex items-center gap-3">
+        <div className="flex gap-1.5">
+          <div className="w-2 h-2 bg-[#ff9e19] rounded-full animate-bounce" />
+          <div className="w-2 h-2 bg-[#ff9e19] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+          <div className="w-2 h-2 bg-[#ff9e19] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+        </div>
+        <span className="text-gray-500 text-sm">Processing...</span>
+      </div>
+    </div>
+  </div>
+)}
             
             {/* Quick Reply Button for Intro Flow */}
             {currentQuickReply && !loading && (
