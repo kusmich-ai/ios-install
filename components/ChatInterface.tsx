@@ -1422,7 +1422,7 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
           currentMicroAction || 'your daily proof',
           extendedProgress?.sprintNumber ?? extendedProgress?.identitySprintNumber ?? 1
         );
-        setMessages(prev => [...prev, { role: 'assistant', content: message }]);
+        await postAssistantMessage(message);
       }, 1500);
       
       return;
@@ -1458,7 +1458,7 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
             sprint?.domains || [],
             sprint?.sprint_number || 1
           );
-          setMessages(prev => [...prev, { role: 'assistant', content: message }]);
+          await postAssistantMessage(message);
         }, 1500);
       };
       
@@ -1500,7 +1500,7 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
       const message = unlockMessages[nextStage] || `🔓 **Congratulations!** You're eligible to unlock Stage ${nextStage}.`;
       
       setTimeout(() => {
-        setMessages(prev => [...prev, { role: 'assistant', content: message }]);
+        await postAssistantMessage(message);
       }, 1500);
     }
   }, [progress, progressLoading, sprintRenewalState.isActive, weeklyCheckInActive]);
@@ -1519,9 +1519,7 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
       hasCheckedWeeklyMilestone.current = true;
       
       setTimeout(() => {
-        setMessages(prev => [...prev, { 
-          role: 'assistant', 
-          content: `**7-Day Milestone!** 🎯
+      await postAssistantMessage(\`**7-Day Milestone!** 🎯
 
 You've completed a full week of consistent practice. Your nervous system is starting to recognize the new pattern.
 
@@ -1722,7 +1720,7 @@ Ready to continue your transformation?`
     if (newStageTemplates && 'intro' in newStageTemplates && typeof newStageTemplates.intro === 'string') {
       const templateContext = buildTemplateContext();
       const processedMessage = processTemplate(newStageTemplates.intro, templateContext);
-      setMessages(prev => [...prev, { role: 'assistant', content: processedMessage }]);
+      await postAssistantMessage(processedMessage);
     }
     
     if (pendingUnlockStage === 3) {
@@ -2531,7 +2529,7 @@ const updateUserProgressCoherence = async (coherenceStatement: string, microActi
         );
         
         setTimeout(() => {
-          setMessages(prev => [...prev, { role: 'assistant', content: message }]);
+          await postAssistantMessage(message);
         }, 300);
         
         setSprintRenewalState(initialSprintRenewalState);
@@ -2548,7 +2546,7 @@ const updateUserProgressCoherence = async (coherenceStatement: string, microActi
       const message = getIdentityEvolvePrompt(info?.identity || 'your previous coherence statement');
       
       setTimeout(() => {
-        setMessages(prev => [...prev, { role: 'assistant', content: message }]);
+        await postAssistantMessage(message);
       }, 300);
       
       setSprintRenewalState(prev => ({
@@ -2561,7 +2559,7 @@ const updateUserProgressCoherence = async (coherenceStatement: string, microActi
       const message = getIdentityPivotMessage();
       
       setTimeout(() => {
-        setMessages(prev => [...prev, { role: 'assistant', content: message }]);
+        await postAssistantMessage(message);
       }, 300);
       
       await completeMicroActionSprint(user.id);
@@ -2585,7 +2583,7 @@ const updateUserProgressCoherence = async (coherenceStatement: string, microActi
         const message = getFlowBlockContinueMessage();
         
         setTimeout(() => {
-          setMessages(prev => [...prev, { role: 'assistant', content: message }]);
+          await postAssistantMessage(message);
         }, 300);
         
         setSprintRenewalState(initialSprintRenewalState);
@@ -2602,7 +2600,7 @@ const updateUserProgressCoherence = async (coherenceStatement: string, microActi
       const message = getFlowBlockEvolvePrompt();
       
       setTimeout(() => {
-        setMessages(prev => [...prev, { role: 'assistant', content: message }]);
+        await postAssistantMessage(message);
       }, 300);
       
       setSprintRenewalState(prev => ({
@@ -2615,7 +2613,7 @@ const updateUserProgressCoherence = async (coherenceStatement: string, microActi
       const message = getFlowBlockPivotMessage();
       
       setTimeout(() => {
-        setMessages(prev => [...prev, { role: 'assistant', content: message }]);
+        await postAssistantMessage(message);
       }, 300);
       
       await completeFlowBlockSprint(user.id);
@@ -2748,10 +2746,7 @@ const updateUserProgressCoherence = async (coherenceStatement: string, microActi
       ]
     }));
     
-    setMessages(prev => [...prev, {
-      role: 'assistant',
-      content: flowBlockOpeningMessage
-    }]);
+    await postAssistantMessage(flowBlockOpeningMessage);
   }, []);
 
   const processFlowBlockResponse = useCallback(async (userResponse: string) => {
@@ -3107,7 +3102,7 @@ ${avgDelta >= 0.3 ? '📈 Great progress! Your nervous system is responding to t
                 getUserName()
               );
               
-              setMessages(prev => [...prev, { role: 'assistant', content: regressionMsg }]);
+              await postAssistantMessage(regressionMsg);
               
               setRegressionIntervention({
                 isActive: true,
@@ -3504,7 +3499,7 @@ This isn't judgment — it's data. The resistance is telling you something. Want
     }
     
     setTimeout(() => {
-      setMessages(prev => [...prev, { role: 'assistant', content: responseMessage }]);
+      await postAssistantMessage(responseMessage);
       setLoading(false);
     }, 500);
   };
@@ -3519,9 +3514,7 @@ This isn't judgment — it's data. The resistance is telling you something. Want
     
     devLog('[ChatInterface]', 'Practice clicked:', { practiceId, normalizedId, practiceName });
     
-    setMessages(prev => [...prev, { 
-      role: 'assistant', 
-      content: `Starting **${practiceName}**...\n\nThe practice window will open. Complete it and I'll log your progress.` 
+    await postAssistantMessage(\`Starting **${practiceName}**...\n\nThe practice window will open. Complete it and I'll log your progress.` 
     }]);
   }, []);
 
@@ -3553,7 +3546,7 @@ This isn't judgment — it's data. The resistance is telling you something. Want
             microActionState.extractedAction || 'your micro-action',
             microActionState.sprintNumber || 1
           );
-          setMessages(prev => [...prev, { role: 'assistant', content: message }]);
+          await postAssistantMessage(message);
         } else {
           startMicroActionSetup();
         }
@@ -3563,14 +3556,10 @@ This isn't judgment — it's data. The resistance is telling you something. Want
         if (flowBlockState.isComplete) {
           const todaysBlock = getTodaysBlock(flowBlockState.extractedWeeklyMap || []);
           if (todaysBlock) {
-            setMessages(prev => [...prev, { 
-              role: 'assistant', 
-              content: `**Today's Flow Block:**\n\n${todaysBlock.task} (${todaysBlock.domain})\n\n${todaysBlock.duration} minutes, ${todaysBlock.flowType} work.\n\nReady to start?`
+            await postAssistantMessage(\`**Today's Flow Block:**\n\n${todaysBlock.task} (${todaysBlock.domain})\n\n${todaysBlock.duration} minutes, ${todaysBlock.flowType} work.\n\nReady to start?`
             }]);
           } else {
-            setMessages(prev => [...prev, { 
-              role: 'assistant', 
-              content: "No Flow Block scheduled for today. Would you like to update your weekly schedule?"
+            await postAssistantMessage("No Flow Block scheduled for today. Would you like to update your weekly schedule?"
             }]);
           }
         } else {
@@ -3715,7 +3704,7 @@ const sendMessage = async (e: React.FormEvent) => {
     
     // 0.5 Missed Days Intervention Flow (2-29 days)
     if (missedDaysIntervention?.isActive) {
-      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+      await postAssistantMessage(response);
       setLoading(true);
       
       const response = await handleMissedDaysResponse(userMessage);
@@ -3729,7 +3718,7 @@ const sendMessage = async (e: React.FormEvent) => {
     
     // 0.6 Regression Intervention Flow
     if (regressionIntervention?.isActive) {
-      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+      await postAssistantMessage(response);
       setLoading(true);
       
       const response = await handleRegressionResponse(userMessage);
@@ -3743,7 +3732,7 @@ const sendMessage = async (e: React.FormEvent) => {
     
     // 1. Weekly Check-In Flow
     if (weeklyCheckInActive) {
-      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+      await postAssistantMessage(response);
       setLoading(true);
       await processWeeklyCheckInResponse(userMessage);
       setLoading(false);
