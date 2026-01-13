@@ -2524,7 +2524,7 @@ const updateUserProgressCoherence = async (coherenceStatement: string, microActi
           info?.microAction || 'your micro-action'
         );
         
-        setTimeout(() => {
+        setTimeout(async () => {
           await postAssistantMessage(message);
         }, 300);
         
@@ -2541,7 +2541,7 @@ const updateUserProgressCoherence = async (coherenceStatement: string, microActi
     } else if (option === 'evolve') {
       const message = getIdentityEvolvePrompt(info?.identity || 'your previous coherence statement');
       
-      setTimeout(() => {
+      setTimeout(async () => {
         await postAssistantMessage(message);
       }, 300);
       
@@ -2554,7 +2554,7 @@ const updateUserProgressCoherence = async (coherenceStatement: string, microActi
     } else if (option === 'pivot') {
       const message = getIdentityPivotMessage();
       
-      setTimeout(() => {
+      setTimeout(async () => {
         await postAssistantMessage(message);
       }, 300);
       
@@ -2578,7 +2578,7 @@ const updateUserProgressCoherence = async (coherenceStatement: string, microActi
       if (result.success) {
         const message = getFlowBlockContinueMessage();
         
-        setTimeout(() => {
+        setTimeout(async () => {
           await postAssistantMessage(message);
         }, 300);
         
@@ -2595,7 +2595,7 @@ const updateUserProgressCoherence = async (coherenceStatement: string, microActi
     } else if (option === 'evolve') {
       const message = getFlowBlockEvolvePrompt();
       
-      setTimeout(() => {
+      setTimeout(async () => {
         await postAssistantMessage(message);
       }, 300);
       
@@ -2608,7 +2608,7 @@ const updateUserProgressCoherence = async (coherenceStatement: string, microActi
     } else if (option === 'pivot') {
       const message = getFlowBlockPivotMessage();
       
-      setTimeout(() => {
+      setTimeout(async () => {
         await postAssistantMessage(message);
       }, 300);
       
@@ -3089,7 +3089,7 @@ ${avgDelta >= 0.3 ? '📈 Great progress! Your nervous system is responding to t
             else if (negativeDelta) reason = 'negative_delta';
             
             // Delay the regression message so user can see their weekly results first
-            setTimeout(() => {
+            setTimeout(async () => {
               const regressionMsg = getRegressionMessage(
                 currentStage,
                 adherence,
@@ -3494,7 +3494,7 @@ This isn't judgment — it's data. The resistance is telling you something. Want
       responseMessage = "What would you like to explore?";
     }
     
-    setTimeout(() => {
+    setTimeout(async () => {
       await postAssistantMessage(responseMessage);
       setLoading(false);
     }, 500);
@@ -3504,7 +3504,7 @@ This isn't judgment — it's data. The resistance is telling you something. Want
   // PRACTICE CLICK HANDLER
   // ============================================
   
-  const handlePracticeClick = useCallback((practiceId: string) => {
+  const handlePracticeClick = useCallback(async (practiceId: string) => {
     const normalizedId = normalizePracticeId(practiceId);
     const practiceName = practiceIdToName[normalizedId] || practiceId;
     
@@ -3512,7 +3512,6 @@ This isn't judgment — it's data. The resistance is telling you something. Want
     
     await postAssistantMessage(\`Starting **${practiceName}**...\n\nThe practice window will open. Complete it and I'll log your progress.` 
     }]);
-  }, []);
 
   // ============================================
   // TOOL CLICK HANDLER
