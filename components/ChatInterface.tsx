@@ -3510,13 +3510,14 @@ This isn't judgment — it's data. The resistance is telling you something. Want
     
     devLog('[ChatInterface]', 'Practice clicked:', { practiceId, normalizedId, practiceName });
     
-   await postAssistantMessage(`Starting **${practiceName}**...\n\nThe practice window will open. Complete it and I'll log your progress.`);
+    await postAssistantMessage(`Starting **${practiceName}**...\n\nThe practice window will open. Complete it and I'll log your progress.`);
+  }, []);
 
   // ============================================
   // TOOL CLICK HANDLER
   // ============================================
   
-  const handleToolClick = useCallback((toolId: string) => {
+  const handleToolClick = useCallback(async (toolId: string) => {
     devLog('[ChatInterface]', 'Tool clicked:', toolId);
     
     switch (toolId) {
@@ -3550,11 +3551,9 @@ This isn't judgment — it's data. The resistance is telling you something. Want
         if (flowBlockState.isComplete) {
           const todaysBlock = getTodaysBlock(flowBlockState.extractedWeeklyMap || []);
           if (todaysBlock) {
-            await postAssistantMessage(\`**Today's Flow Block:**\n\n${todaysBlock.task} (${todaysBlock.domain})\n\n${todaysBlock.duration} minutes, ${todaysBlock.flowType} work.\n\nReady to start?`
-            }]);
+            await postAssistantMessage(`**Today's Flow Block:**\n\n${todaysBlock.task} (${todaysBlock.domain})\n\n${todaysBlock.duration} minutes, ${todaysBlock.flowType} work.\n\nReady to start?`);
           } else {
-            await postAssistantMessage("No Flow Block scheduled for today. Would you like to update your weekly schedule?"
-            }]);
+            await postAssistantMessage("No Flow Block scheduled for today. Would you like to update your weekly schedule?");
           }
         } else {
           startFlowBlockSetup();
