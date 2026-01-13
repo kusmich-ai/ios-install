@@ -207,11 +207,11 @@ const baselineRewiredIndex = baselineMap['ios:baseline:rewired_index']
         .single();
 
       // Fetch today's practice logs
-      const { data: todayLogs } = await supabase
-        .from('practice_logs')
-        .select('practice_id')
-        .eq('user_id', user.id)
-        .eq('practice_date', today);
+const { data: todayLogs } = await supabase
+  .from('practice_logs')
+  .select('practice_type')
+  .eq('user_id', user.id)
+  .eq('practice_date', today);
 
       // ============================================
       // FETCH ACTIVE IDENTITY SPRINT
