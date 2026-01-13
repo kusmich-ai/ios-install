@@ -185,6 +185,8 @@ function renderMarkdown(text: string): string {
     .replace(/^[•\-]\s+(.*)$/gm, '<div class="ml-4">• $1</div>')
     // Progress indicators like "Stage: X" or "Score: Y"
     .replace(/^(Stage|Score|Status|Adherence|Days|Index):\s*(.*)$/gm, '<div><span class="text-gray-400">$1:</span> <span class="font-medium">$2</span></div>')
+    // Links: [text](url)
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-[#ff9e19] underline hover:text-[#ffb347]">$1</a>')
     // Clean up multiple consecutive line breaks
     .replace(/\n{3,}/g, '\n\n')
     // Line breaks
