@@ -239,7 +239,7 @@ const baselineRewiredIndex = baselineMap['ios:baseline:rewired_index']
       const flowBlockSprintDay = calculateSprintDay(flowBlockSprint?.start_date);
 
       // Calculate domain scores and deltas
-      const baselineScores = baselineData?.baseline_domain_scores || {
+      const baselineScores = baselineDomainScores || {
         regulation: 2.5,
         awareness: 2.5,
         outlook: 2.5,
@@ -278,7 +278,6 @@ const baselineRewiredIndex = baselineMap['ios:baseline:rewired_index']
       const avgScore = (domainScores.regulation + domainScores.awareness + 
                        domainScores.outlook + domainScores.attention) / 4;
       const rewiredIndex = Math.round(avgScore * 20);
-      const baselineRewiredIndex = baselineData?.baseline_rewired_index || 50;
       const rewiredDelta = rewiredIndex - baselineRewiredIndex;
       const tier = getTierFromIndex(rewiredIndex);
 
