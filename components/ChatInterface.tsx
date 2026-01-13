@@ -3510,8 +3510,7 @@ This isn't judgment — it's data. The resistance is telling you something. Want
     
     devLog('[ChatInterface]', 'Practice clicked:', { practiceId, normalizedId, practiceName });
     
-    await postAssistantMessage(`Starting **${practiceName}**...\n\nThe practice window will open. Complete it and I'll log your progress.`);
-  }, []);
+await postAssistantMessage(`Starting **${practiceName}**...\n\nThe practice window will open. Complete it and I'll log your progress.`);
 
   // ============================================
   // TOOL CLICK HANDLER
@@ -3697,13 +3696,13 @@ const sendMessage = async (e: React.FormEvent) => {
     
     // 0.5 Missed Days Intervention Flow (2-29 days)
     if (missedDaysIntervention?.isActive) {
-      await postAssistantMessage(response);
+      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
       setLoading(true);
       
       const response = await handleMissedDaysResponse(userMessage);
       
-      setTimeout(() => {
-        setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+      setTimeout(async () => {
+        await postAssistantMessage(response);
         setLoading(false);
       }, 500);
       return;
@@ -3711,13 +3710,13 @@ const sendMessage = async (e: React.FormEvent) => {
     
     // 0.6 Regression Intervention Flow
     if (regressionIntervention?.isActive) {
-      await postAssistantMessage(response);
+      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
       setLoading(true);
       
       const response = await handleRegressionResponse(userMessage);
       
-      setTimeout(() => {
-        setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+      setTimeout(async () => {
+        await postAssistantMessage(response);
         setLoading(false);
       }, 500);
       return;
@@ -3725,7 +3724,7 @@ const sendMessage = async (e: React.FormEvent) => {
     
     // 1. Weekly Check-In Flow
     if (weeklyCheckInActive) {
-      await postAssistantMessage(response);
+      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
       setLoading(true);
       await processWeeklyCheckInResponse(userMessage);
       setLoading(false);
