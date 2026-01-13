@@ -1228,45 +1228,25 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
   // ============================================
   // TYPEWRITER EFFECT FOR TEMPLATE MESSAGES
   // ============================================
+  // ============================================
+  // TYPEWRITER EFFECT FOR TEMPLATE MESSAGES
+  // ============================================
   const streamTemplateMessage = useCallback(async (
     message: string, 
     onComplete?: () => void
   ): Promise<void> => {
     setIsStreaming(true);
     setStreamingMessage('');
-
-    // ============================================
-  // POST ASSISTANT MESSAGE (with streaming option)
-  // ============================================
-  const postAssistantMessage = useCallback(async (
-    message: string, 
-    options?: { 
-      stream?: boolean;
-      onComplete?: () => void;
-    }
-  ): Promise<void> => {
-    const shouldStream = options?.stream ?? true; // Default to streaming
-    
-    if (shouldStream && !loading) {
-      await streamTemplateMessage(message, options?.onComplete);
-    } else {
-      // Instant post (for API responses that are already streamed, or during loading)
-      setMessages(prev => [...prev, { role: 'assistant', content: message }]);
-      if (options?.onComplete) options.onComplete();
-    }
-  }, [loading, streamTemplateMessage]);
     
     // Split into words for natural feel (character-by-character is too slow)
     const words = message.split(' ');
     let currentText = '';
     
     for (let i = 0; i < words.length; i++) {
-      // Check if component unmounted or new message started
       currentText += (i === 0 ? '' : ' ') + words[i];
       setStreamingMessage(currentText);
       
       // Variable delay: 15-40ms per word for natural rhythm
-      // Slightly longer pause after punctuation
       const word = words[i];
       const hasPunctuation = /[.!?,;:]$/.test(word);
       const delay = hasPunctuation ? 40 + Math.random() * 30 : 15 + Math.random() * 25;
@@ -1281,6 +1261,26 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
     
     if (onComplete) onComplete();
   }, []);
+
+  // ============================================
+  // POST ASSISTANT MESSAGE (with streaming option)
+  // ============================================
+  const postAssistantMessage = useCallback(async (
+    message: string, 
+    options?: { 
+      stream?: boolean;
+      onComplete?: () => void;
+    }
+  ): Promise<void> => {
+    const shouldStream = options?.stream ?? true;
+    
+    if (shouldStream && !loading && !isStreaming) {
+      await streamTemplateMessage(message, options?.onComplete);
+    } else {
+      setMessages(prev => [...prev, { role: 'assistant', content: message }]);
+      if (options?.onComplete) options.onComplete();
+    }
+  }, [loading, isStreaming, streamTemplateMessage]);
   
   // ============================================
   // EFFECTS - Scroll and Textarea
