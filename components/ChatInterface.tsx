@@ -4411,7 +4411,7 @@ const sendMessage = async (e: React.FormEvent) => {
               />
               <button
                 type="submit"
-                disabled={!input.trim() || loading}
+                disabled={!input.trim() || loading || isStreaming}
                 className="px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-xl font-semibold hover:from-amber-600 hover:to-amber-700 disabled:opacity-50 transition-all shadow-sm shadow-amber-500/20"
               >
                 Send
