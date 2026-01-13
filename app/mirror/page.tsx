@@ -1,6 +1,7 @@
 // ============================================
 // app/mirror/page.tsx
 // ENHANCED VERSION - With Transformation Roadmap
+// Combined Prompt/Paste UX
 // ============================================
 
 'use client';
@@ -78,7 +79,7 @@ interface MirrorData {
   transformation_roadmap: TransformationRoadmap;
 }
 
-type MirrorStep = 'intro' | 'prompt' | 'analyze' | 'results';
+type MirrorStep = 'intro' | 'prompt' | 'results';
 
 export default function MirrorPage() {
   const router = useRouter();
@@ -287,28 +288,28 @@ export default function MirrorPage() {
   );
 
   // ============================================
-  // RENDER: PROMPT STEP
+  // RENDER: PROMPT STEP (Combined with Paste)
   // ============================================
   const renderPrompt = () => (
     <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4">
       <div className="max-w-3xl w-full">
+        {/* Progress indicator */}
         <div className="flex items-center justify-center gap-2 mb-8">
           <div className="w-3 h-3 rounded-full bg-[#ff9e19]" />
-          <div className="w-12 h-0.5 bg-[#1a1a1a]" />
-          <div className="w-3 h-3 rounded-full bg-[#1a1a1a]" />
           <div className="w-12 h-0.5 bg-[#1a1a1a]" />
           <div className="w-3 h-3 rounded-full bg-[#1a1a1a]" />
         </div>
 
         <div className="text-center mb-8">
           <h2 className="text-2xl font-bold text-white mb-2">
-            Step 1: Get Your Analysis
+            Mirror Exercise
           </h2>
           <p className="text-gray-400">
-            Copy this prompt to ChatGPT, then paste the response back here.
+            Copy the prompt below to ChatGPT, then paste its response back here.
           </p>
         </div>
 
+        {/* Instructions */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
           {Object.entries(MIRROR_INSTRUCTIONS).map(([key, instruction], i) => (
             <div key={key} className="bg-[#111111] rounded-lg p-4 text-center">
@@ -318,9 +319,10 @@ export default function MirrorPage() {
           ))}
         </div>
 
+        {/* Step 1: Prompt to Copy */}
         <div className="bg-[#111111] rounded-xl border border-[#1a1a1a] p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-gray-400 text-sm">Analysis Prompt</span>
+            <span className="text-white font-medium">Step 1: Copy this prompt to ChatGPT</span>
             <button
               onClick={copyPrompt}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
@@ -332,75 +334,47 @@ export default function MirrorPage() {
               {copied ? '✓ Copied!' : 'Copy Prompt'}
             </button>
           </div>
-          <div className="bg-[#0a0a0a] rounded-lg p-4 max-h-64 overflow-y-auto">
+          <div className="bg-[#0a0a0a] rounded-lg p-4 max-h-48 overflow-y-auto">
             <pre className="text-gray-300 text-sm whitespace-pre-wrap font-mono">
               {MIRROR_GPT_PROMPT}
             </pre>
           </div>
         </div>
 
-        <div className="flex justify-center">
-          <button
-            onClick={() => setStep('analyze')}
-            className="px-8 py-4 bg-[#ff9e19] text-black font-semibold rounded-lg hover:bg-[#ffb347] transition-colors"
-          >
-            I've Copied the Prompt →
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
-  // ============================================
-  // RENDER: ANALYZE STEP
-  // ============================================
-  const renderAnalyze = () => (
-    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4">
-      <div className="max-w-3xl w-full">
-        <div className="flex items-center justify-center gap-2 mb-8">
-          <div className="w-3 h-3 rounded-full bg-[#ff9e19]" />
-          <div className="w-12 h-0.5 bg-[#ff9e19]" />
-          <div className="w-3 h-3 rounded-full bg-[#ff9e19]" />
-          <div className="w-12 h-0.5 bg-[#1a1a1a]" />
-          <div className="w-3 h-3 rounded-full bg-[#1a1a1a]" />
-        </div>
-
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-white mb-2">
-            Step 2: Paste ChatGPT's Response
-          </h2>
-          <p className="text-gray-400">
-            Copy the entire response from ChatGPT and paste it below.
-          </p>
-        </div>
-
+        {/* Step 2: Paste Response */}
         <div className="bg-[#111111] rounded-xl border border-[#1a1a1a] p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-white font-medium">Step 2: Paste ChatGPT's response</span>
+            {gptOutput.length > 0 && gptOutput.length < 500 && (
+              <span className="text-yellow-500 text-sm">
+                Response seems short
+              </span>
+            )}
+          </div>
           <textarea
             value={gptOutput}
             onChange={(e) => setGptOutput(e.target.value)}
             placeholder="Paste ChatGPT's full response here..."
-            className="w-full h-64 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-4 text-gray-300 text-sm font-mono resize-none focus:outline-none focus:border-[#ff9e19]/50"
+            className="w-full h-48 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-4 text-gray-300 text-sm font-mono resize-none focus:outline-none focus:border-[#ff9e19]/50"
             disabled={isProcessing}
           />
-          
-          <div className="flex justify-between items-center mt-2">
-            <span className="text-gray-600 text-sm">
-              {gptOutput.length > 0 && `${gptOutput.length.toLocaleString()} characters`}
-            </span>
-            {gptOutput.length > 0 && gptOutput.length < 500 && (
-              <span className="text-yellow-500 text-sm">
-                Response seems short - make sure you copied everything
+          {gptOutput.length > 0 && (
+            <div className="text-right mt-2">
+              <span className="text-gray-600 text-sm">
+                {gptOutput.length.toLocaleString()} characters
               </span>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
+        {/* Error Message */}
         {error && (
           <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-4 mb-6">
             <p className="text-red-400">{error}</p>
           </div>
         )}
 
+        {/* Processing Indicator */}
         {isProcessing && (
           <div className="bg-[#111111] rounded-xl border border-[#1a1a1a] p-6 mb-6">
             <div className="flex items-center justify-center gap-4">
@@ -410,9 +384,10 @@ export default function MirrorPage() {
           </div>
         )}
 
+        {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <button
-            onClick={() => setStep('prompt')}
+            onClick={() => setStep('intro')}
             disabled={isProcessing}
             className="px-6 py-3 bg-transparent text-gray-500 font-medium rounded-lg hover:text-gray-300 transition-colors disabled:opacity-50"
           >
@@ -646,8 +621,6 @@ export default function MirrorPage() {
             <div className="w-3 h-3 rounded-full bg-[#ff9e19]" />
             <div className="w-12 h-0.5 bg-[#ff9e19]" />
             <div className="w-3 h-3 rounded-full bg-[#ff9e19]" />
-            <div className="w-12 h-0.5 bg-[#ff9e19]" />
-            <div className="w-3 h-3 rounded-full bg-[#ff9e19]" />
           </div>
 
           {/* Header */}
@@ -738,7 +711,6 @@ export default function MirrorPage() {
     <>
       {step === 'intro' && renderIntro()}
       {step === 'prompt' && renderPrompt()}
-      {step === 'analyze' && renderAnalyze()}
       {step === 'results' && renderResults()}
     </>
   );
