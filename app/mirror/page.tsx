@@ -411,7 +411,8 @@ export default function MirrorPage() {
   const renderTransformationRoadmap = () => {
     if (!mirrorData?.transformation_roadmap) return null;
 
-    const { milestones, destination } = mirrorData.transformation_roadmap;
+    const { milestones: unsortedMilestones, destination } = mirrorData.transformation_roadmap;
+const milestones = [...unsortedMilestones].sort((a, b) => a.number - b.number);
 
     return (
       <div className="space-y-6">
