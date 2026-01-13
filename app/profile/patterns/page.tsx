@@ -373,7 +373,7 @@ export default function PatternProfilePage() {
       return renderNoRoadmapPrompt();
     }
 const { milestones: unsortedMilestones, destination } = profile.transformation_roadmap;
-const milestones = [...unsortedMilestones].sort((a, b) => a.number - b.number);
+const milestones = [...unsortedMilestones].sort((a, b) => a.stage - b.stage);
 
     return (
       <div className="space-y-6">
