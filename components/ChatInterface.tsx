@@ -4114,6 +4114,19 @@ const sendMessage = async (e: React.FormEvent) => {
     </div>
   </div>
 )}
+            {/* Streaming Message (Typewriter Effect) */}
+{isStreaming && streamingMessage && (
+  <div className="flex justify-start">
+    <div className="max-w-[85%] rounded-2xl px-6 py-4 bg-gray-800 text-gray-100 border border-gray-700">
+      <div 
+        className="leading-relaxed prose prose-invert prose-sm max-w-none"
+        dangerouslySetInnerHTML={{ __html: renderMarkdown(streamingMessage) }}
+      />
+      {/* Blinking cursor */}
+      <span className="inline-block w-0.5 h-4 bg-[#ff9e19] ml-0.5 animate-pulse" />
+    </div>
+  </div>
+)}
             
             {/* Quick Reply Button for Intro Flow */}
             {currentQuickReply && !loading && (
