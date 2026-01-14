@@ -557,23 +557,26 @@ const getPracticeStatus = (practiceId: string): 'completed' | 'pending' => {
       )}
 
       {/* FAB Button - RESTYLED */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={`
-          fixed bottom-20 right-4 w-14 h-14 rounded-full shadow-xl flex items-center justify-center z-30
-          transition-all duration-300
-          ${isOpen 
-            ? 'bg-zinc-800 rotate-45' 
-            : 'bg-gradient-to-br from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 shadow-amber-500/30'
-          }
-        `}
-      >
-        {isOpen ? (
-          <X className="w-6 h-6 text-white" />
-        ) : (
-          <Zap className="w-6 h-6 text-white" />
-        )}
-      </button>
+<button
+  onClick={() => setIsOpen(!isOpen)}
+  className={`
+    fixed bottom-20 right-4 h-14 rounded-full shadow-xl flex items-center justify-center z-30
+    transition-all duration-300
+    ${isOpen 
+      ? 'bg-zinc-800 w-14' 
+      : 'bg-gradient-to-br from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 shadow-amber-500/30 px-5 gap-2'
+    }
+  `}
+>
+  {isOpen ? (
+    <X className="w-6 h-6 text-white" />
+  ) : (
+    <>
+      <Zap className="w-5 h-5 text-white" />
+      <span className="text-sm font-semibold text-white">Rituals</span>
+    </>
+  )}
+</button>
     </>
   );
 }
