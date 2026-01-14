@@ -25,15 +25,14 @@ export default function LegalAgreements() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // ✅ CORRECTED - Save to user_profiles table
-const { error: updateError } = await supabase
-  .from('user_profiles')
-  .update({
-    has_accepted_terms: true,
-    has_accepted_consent: true,
-    updated_at: new Date().toISOString()
-  })
-  .eq('id', user.id);
+      const { error: updateError } = await supabase
+        .from('user_profiles')
+        .update({
+          has_accepted_terms: true,
+          has_accepted_consent: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
 
       if (updateError) {
         console.error('Database update error:', updateError);
@@ -41,8 +40,6 @@ const { error: updateError } = await supabase
       }
 
       console.log('✅ Legal agreements saved successfully!');
-
-      // Proceed to baseline assessment
       router.push('/assessment');
     } catch (err) {
       console.error('Error accepting agreements:', err);
@@ -65,6 +62,25 @@ const { error: updateError } = await supabase
           </p>
         </div>
 
+        {/* Progress Indicator */}
+        <div className="flex items-center justify-center gap-2 mb-4">
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+            tosAccepted ? 'bg-green-500 text-white' : 'bg-[#ff9e19] text-white'
+          }`}>
+            {tosAccepted ? '✓' : '1'}
+          </div>
+          <div className={`w-16 h-1 ${tosAccepted ? 'bg-green-500' : 'bg-slate-600'}`} />
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+            consentAccepted ? 'bg-green-500 text-white' : tosAccepted ? 'bg-[#ff9e19] text-white' : 'bg-slate-600 text-slate-400'
+          }`}>
+            {consentAccepted ? '✓' : '2'}
+          </div>
+        </div>
+        
+        <p className="text-center text-slate-400 text-sm mb-6">
+          Step {tosAccepted ? '2' : '1'} of 2: {activeTab === 'tos' ? 'Terms of Service' : 'Informed Consent'}
+        </p>
+
         {/* Tab Navigation */}
         <div className="flex gap-2 mb-6">
           <button
@@ -72,7 +88,9 @@ const { error: updateError } = await supabase
             className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all ${
               activeTab === 'tos'
                 ? 'bg-[#ff9e19] text-white'
-                : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                : tosAccepted 
+                  ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
             }`}
           >
             Terms of Service
@@ -83,7 +101,9 @@ const { error: updateError } = await supabase
             className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all ${
               activeTab === 'consent'
                 ? 'bg-[#ff9e19] text-white'
-                : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                : consentAccepted 
+                  ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
             }`}
           >
             Informed Consent
@@ -101,30 +121,43 @@ const { error: updateError } = await supabase
         {/* Acceptance Checkboxes */}
         <div className="bg-slate-800 rounded-lg p-6 mb-6">
           <div className="space-y-4">
-            <label className="flex items-start gap-3 cursor-pointer group">
-              <input
-                type="checkbox"
-                checked={tosAccepted}
-                onChange={(e) => setTosAccepted(e.target.checked)}
-                className="mt-1 w-5 h-5 rounded border-slate-600 text-[#ff9e19] focus:ring-[#ff9e19] focus:ring-offset-slate-800"
-              />
-              <span className="text-slate-300 group-hover:text-white transition-colors">
-                I have read and agree to the <strong>Terms of Service</strong>. I understand this is NOT medical or mental health treatment and that I am responsible for consulting appropriate professionals regarding any health conditions.
-              </span>
-            </label>
-
-            <label className="flex items-start gap-3 cursor-pointer group">
-              <input
-                type="checkbox"
-                checked={consentAccepted}
-                onChange={(e) => setConsentAccepted(e.target.checked)}
-                className="mt-1 w-5 h-5 rounded border-slate-600 text-[#ff9e19] focus:ring-[#ff9e19] focus:ring-offset-slate-800"
-              />
-              <span className="text-slate-300 group-hover:text-white transition-colors">
-                I have read and agree to the <strong>Informed Consent & Assumption of Risk Agreement</strong>. I acknowledge and voluntarily assume all risks described, and I agree to seek professional help for any medical or psychiatric concerns.
-              </span>
-            </label>
+            {activeTab === 'tos' ? (
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={tosAccepted}
+                  onChange={(e) => {
+                    setTosAccepted(e.target.checked);
+                    if (e.target.checked && !consentAccepted) {
+                      setTimeout(() => setActiveTab('consent'), 300);
+                    }
+                  }}
+                  className="mt-1 w-5 h-5 rounded border-slate-600 text-[#ff9e19] focus:ring-[#ff9e19] focus:ring-offset-slate-800"
+                />
+                <span className="text-slate-300 group-hover:text-white transition-colors">
+                  I have read and agree to the <strong>Terms of Service</strong>. I understand this is NOT medical or mental health treatment and that I am responsible for consulting appropriate professionals regarding any health conditions.
+                </span>
+              </label>
+            ) : (
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={consentAccepted}
+                  onChange={(e) => setConsentAccepted(e.target.checked)}
+                  className="mt-1 w-5 h-5 rounded border-slate-600 text-[#ff9e19] focus:ring-[#ff9e19] focus:ring-offset-slate-800"
+                />
+                <span className="text-slate-300 group-hover:text-white transition-colors">
+                  I have read and agree to the <strong>Informed Consent & Assumption of Risk Agreement</strong>. I acknowledge and voluntarily assume all risks described, and I agree to seek professional help for any medical or psychiatric concerns.
+                </span>
+              </label>
+            )}
           </div>
+          
+          {tosAccepted && !consentAccepted && activeTab === 'consent' && (
+            <p className="text-amber-400 text-sm mt-4">
+              ☝️ Please read and accept the Informed Consent above to continue
+            </p>
+          )}
         </div>
 
         {/* Error Message */}
@@ -218,12 +251,9 @@ function TermsOfService() {
         <li>AI responses are not medical, therapeutic, or professional advice</li>
       </ul>
 
-      {/* Rest of Terms of Service content - keeping it exactly as provided */}
       <h2>3. ELIGIBILITY & USER REQUIREMENTS</h2>
       <h3>3.1 Age Requirement</h3>
       <p>You must be at least 18 years old to use this System. By accessing the System, you represent and warrant that you are 18 years of age or older.</p>
-
-      {/* ... (keeping all your original content) ... */}
 
       <h2>CONTACT INFORMATION</h2>
       <p>
@@ -794,7 +824,7 @@ function InformedConsent() {
         <li>I understand I can discontinue participation at any time</li>
       </ul>
 
-     <div className="bg-green-50 border-l-4 border-green-400 p-4 my-6">
+      <div className="bg-green-50 border-l-4 border-green-400 p-4 my-6">
         <p className="font-bold text-green-800">ELECTRONIC CONSENT</p>
         <p className="text-green-800 text-sm mt-2">
           Your acceptance via checkbox and button click constitutes your legally binding electronic signature on this Informed Consent & Assumption of Risk Agreement. This electronic acceptance is equivalent to a handwritten signature and will be recorded with a timestamp for our records.
