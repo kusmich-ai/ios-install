@@ -132,8 +132,11 @@ export default function SignUp() {
             <p className="font-semibold text-white text-lg">
               {email}
             </p>
-            <p className="text-sm">
+         <p className="text-sm">
               Click the link in the email to verify your account, then sign in to continue.
+            </p>
+            <p className="text-sm text-yellow-500 mt-2">
+              ⏱ Note: The email may take up to 5 minutes to arrive.
             </p>
           </div>
 
@@ -150,8 +153,8 @@ export default function SignUp() {
             </Link>
           </div>
 
-          <p className="text-sm text-gray-500 pt-4">
-            Didn't receive the email? Check your spam folder.
+        <p className="text-sm text-gray-500 pt-4">
+            Didn't receive the email? Check your spam folder or wait a few minutes and try again.
           </p>
         </div>
       </div>
