@@ -180,13 +180,13 @@ export default function LegalAgreements() {
             disabled={!canProceed || isSubmitting}
             className="flex-1 py-4 px-6 bg-[#ff9e19] hover:bg-[#ff8800] disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-all"
           >
-            {isSubmitting ? 'Processing...' : 'Accept & Continue to Baseline'}
+            {isSubmitting ? 'Processing...' : 'Accept & Continue'}
           </button>
         </div>
 
         {/* Helper Text */}
         <p className="text-center text-slate-400 text-sm mt-6">
-          Both agreements must be accepted to proceed. Your acceptance will be recorded with a timestamp.
+          Both agreements must be accepted to proceed. Next, you'll complete a quick assessment to establish your starting point.
         </p>
       </div>
     </div>
@@ -661,11 +661,11 @@ function InformedConsent() {
       <h3>4.1 Honest Disclosure</h3>
       <p className="font-bold">You agree to:</p>
       <ul>
-        <li>☐ Provide accurate information during all screenings and assessments</li>
-        <li>☐ Disclose all relevant medical and psychiatric conditions</li>
-        <li>☐ Disclose all medications you are taking</li>
-        <li>☐ Update your information if your health status changes</li>
-        <li>☐ Not withhold information that might affect your safety</li>
+        <li>Provide accurate information during all screenings and assessments</li>
+        <li>Disclose all relevant medical and psychiatric conditions</li>
+        <li>Disclose all medications you are taking</li>
+        <li>Update your information if your health status changes</li>
+        <li>Not withhold information that might affect your safety</li>
       </ul>
       
       <p className="font-bold">Providing false information may result in:</p>
@@ -678,11 +678,11 @@ function InformedConsent() {
       <h3>4.2 Active Monitoring</h3>
       <p className="font-bold">You agree to:</p>
       <ul>
-        <li>☐ Monitor yourself for adverse effects during and after practices</li>
-        <li>☐ Track any changes in physical or mental health symptoms</li>
-        <li>☐ Discontinue practices that cause distress or harm</li>
-        <li>☐ Seek professional evaluation if concerning symptoms emerge</li>
-        <li>☐ Not ignore warning signs or "push through" harmful experiences</li>
+        <li>Monitor yourself for adverse effects during and after practices</li>
+        <li>Track any changes in physical or mental health symptoms</li>
+        <li>Discontinue practices that cause distress or harm</li>
+        <li>Seek professional evaluation if concerning symptoms emerge</li>
+        <li>Not ignore warning signs or "push through" harmful experiences</li>
       </ul>
 
       <div className="bg-red-50 border-l-4 border-red-400 p-4 my-4">
@@ -701,19 +701,19 @@ function InformedConsent() {
       <h3>4.3 Professional Consultation</h3>
       <p className="font-bold">You agree to:</p>
       <ul>
-        <li>☐ Consult appropriate professionals before starting (if applicable)</li>
-        <li>☐ Maintain ongoing professional care if you have medical/psychiatric conditions</li>
-        <li>☐ Not discontinue professional treatment based on System progress</li>
-        <li>☐ Inform your healthcare providers that you are using this System</li>
+        <li>Consult appropriate professionals before starting (if applicable)</li>
+        <li>Maintain ongoing professional care if you have medical/psychiatric conditions</li>
+        <li>Not discontinue professional treatment based on System progress</li>
+        <li>Inform your healthcare providers that you are using this System</li>
       </ul>
 
       <h3>4.4 Appropriate Use</h3>
       <p className="font-bold">You agree to:</p>
       <ul>
-        <li>☐ Follow all safety guidelines provided</li>
-        <li>☐ Progress through stages at appropriate pace (not rushing)</li>
-        <li>☐ Not use the System as substitute for needed professional care</li>
-        <li>☐ Seek crisis resources immediately if needed (not relying on System)</li>
+        <li>Follow all safety guidelines provided</li>
+        <li>Progress through stages at appropriate pace (not rushing)</li>
+        <li>Not use the System as substitute for needed professional care</li>
+        <li>Seek crisis resources immediately if needed (not relying on System)</li>
       </ul>
 
       <h2>SECTION 5: LIMITATIONS & BOUNDARIES</h2>
@@ -767,21 +767,21 @@ function InformedConsent() {
       <h3>7.1 Freedom to Discontinue</h3>
       <p className="font-bold">You understand that:</p>
       <ul>
-        <li>☐ Participation is completely voluntary</li>
-        <li>☐ You may discontinue use at any time without penalty</li>
-        <li>☐ You may skip any practices that feel inappropriate for you</li>
-        <li>☐ You may proceed at your own pace</li>
-        <li>☐ No one will pressure you to continue if you wish to stop</li>
+        <li>Participation is completely voluntary</li>
+        <li>You may discontinue use at any time without penalty</li>
+        <li>You may skip any practices that feel inappropriate for you</li>
+        <li>You may proceed at your own pace</li>
+        <li>No one will pressure you to continue if you wish to stop</li>
       </ul>
 
       <h3>7.2 No Coercion</h3>
       <p className="font-bold">You affirm that:</p>
       <ul>
-        <li>☐ You are participating of your own free will</li>
-        <li>☐ No one has coerced or pressured you to use this System</li>
-        <li>☐ You have had adequate time to consider this decision</li>
-        <li>☐ You have had opportunity to ask questions</li>
-        <li>☐ You have had opportunity to consult with professionals or advisors</li>
+        <li>You are participating of your own free will</li>
+        <li>No one has coerced or pressured you to use this System</li>
+        <li>You have had adequate time to consider this decision</li>
+        <li>You have had opportunity to ask questions</li>
+        <li>You have had opportunity to consult with professionals or advisors</li>
       </ul>
 
       <h2>SECTION 8: ACKNOWLEDGMENT OF ALTERNATIVES</h2>
