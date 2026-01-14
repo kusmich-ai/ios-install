@@ -448,8 +448,8 @@ const milestones = [...unsortedMilestones].sort((a, b) => a.stage - b.stage);
                     ) : status === 'current' ? (
                       <MapPin className="w-5 h-5 text-white" />
                     ) : (
-                      <span className="text-zinc-500 font-bold">{milestone.number}</span>
-                    )}
+  <span className="text-zinc-500 font-bold">{index + 1}</span>
+)}
                   </div>
                 </div>
 
