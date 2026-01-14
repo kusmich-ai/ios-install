@@ -4043,7 +4043,7 @@ const sendMessage = async (e: React.FormEvent) => {
   
   if (isInitializing || progressLoading) {
     return (
-  <div className="flex h-screen bg-[#1a1a1a]">
+  <div className="flex h-[100dvh] bg-[#1a1a1a]">
         <div className="flex-1 flex items-center justify-center">
           <div className="text-gray-400">Loading your IOS...</div>
         </div>
@@ -4052,7 +4052,7 @@ const sendMessage = async (e: React.FormEvent) => {
   }
 
   return (
-    <div className="flex h-screen bg-[#1a1a1a]">
+    <div className="flex h-[100dvh] bg-[#1a1a1a]">
       {/* Left Sidebar - Dashboard (Desktop Only) */}
       {!isMobile && (
         <DashboardSidebar
