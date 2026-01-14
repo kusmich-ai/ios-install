@@ -158,12 +158,13 @@ export default function MobileDashboard({
     <>
       {/* Hamburger Button - Fixed top left on mobile */}
       <button
-        onClick={() => setIsOpen(true)}
-        className="fixed top-4 left-4 z-30 w-10 h-10 bg-white border border-amber-200/60 rounded-lg flex items-center justify-center hover:border-amber-400 hover:shadow-md transition-all md:hidden shadow-sm"
-        aria-label="Open dashboard"
-      >
-        <Menu className="w-5 h-5 text-zinc-700" />
-      </button>
+  onClick={() => setIsOpen(true)}
+  className="fixed top-4 left-4 z-30 h-10 px-3 bg-white border border-amber-200/60 rounded-lg flex items-center gap-1.5 hover:border-amber-400 hover:shadow-md transition-all md:hidden shadow-sm"
+  aria-label="Open dashboard"
+>
+  <Menu className="w-5 h-5 text-zinc-700" />
+  <span className="text-xs font-medium text-zinc-600">Dashboard</span>
+</button>
 
       {/* Overlay */}
       {isOpen && (
