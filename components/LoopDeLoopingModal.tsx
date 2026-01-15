@@ -11,25 +11,25 @@ import { createClient } from '@/lib/supabase-client';
 
 type LoopMechanism = 'prediction' | 'evaluation' | 'protection' | null;
 
-type SessionPhase = 
+type SessionPhase =
   | 'mechanism_identification'
   | 'physiological_interrupt'
   | 'de_identification'
   | 'precision_inquiry'
   // Prediction dissolution steps
-  | 'prediction_step_1'  // "The system is trying to control the uncontrollable"
-  | 'prediction_step_2'  // "Outcome is undefined..."
-  | 'prediction_step_3'  // "There is no future event here..."
+  | 'prediction_step_1'
+  | 'prediction_step_2'
+  | 'prediction_step_3'
   // Evaluation dissolution steps
-  | 'evaluation_step_1'  // Source verification (a or b)
-  | 'evaluation_step_2'  // "The meaning is manufactured..."
-  | 'evaluation_step_3'  // Alternative meaning
-  | 'evaluation_step_4'  // "There is no objective meaning here..."
+  | 'evaluation_step_1'
+  | 'evaluation_step_2'
+  | 'evaluation_step_3'
+  | 'evaluation_step_4'
   // Protection dissolution steps
-  | 'protection_step_1'  // Present-moment verification (yes/no)
-  | 'protection_step_2'  // "No verified threat exists..."
-  | 'protection_step_3'  // "Vigilance cannot create safety..."
-  | 'protection_step_4'  // "There is no threat here..."
+  | 'protection_step_1'
+  | 'protection_step_2'
+  | 'protection_step_3'
+  | 'protection_step_4'
   // Final
   | 'final_reset'
   | 'complete';
@@ -41,12 +41,17 @@ interface LoopDeLoopingSession {
   mechanism: LoopMechanism;
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>;
   sessionStartTime: Date | null;
+
   // Stored claims for reference
   predictionClaim: string | null;
   meaningClaim: string | null;
   threatClaim: string | null;
+
   // For evaluation loop
   meaningSourceAnswer: 'a' | 'b' | null;
+
+  // NEW: store Signal for continuity (optional but aligns with opening format)
+  signal: string | null;
 }
 
 const initialSession: LoopDeLoopingSession = {
@@ -59,7 +64,8 @@ const initialSession: LoopDeLoopingSession = {
   predictionClaim: null,
   meaningClaim: null,
   threatClaim: null,
-  meaningSourceAnswer: null
+  meaningSourceAnswer: null,
+  signal: null
 };
 
 // ============================================
@@ -340,34 +346,44 @@ const dissociationMessage = `Let's pause the cognitive work and ground first.
 
 Take your time. Type **"grounded"** when you feel more present.`;
 
-
 // ============================================
 // HELPER FUNCTIONS
 // ============================================
 
+function extractSignalFromInput(input: string): string | null {
+  const match = input.match(/signal\s*:\s*([^\n\r]+)/i);
+  if (!match) return null;
+  const value = match[1]?.trim();
+  return value && value.length > 0 ? value : null;
+}
+
 function parseMechanismFromInput(input: string): LoopMechanism {
-  const lower = input.toLowerCase().trim();
-  
-  if (lower === '1' || lower.includes('prediction') || lower.includes('future') || 
-      lower.includes('what if') || lower.includes('might happen') || lower.includes('worried that')) {
-    return 'prediction';
-  }
-  if (lower === '2' || lower.includes('evaluation') || lower.includes('meaning') || 
-      lower.includes('means') || lower.includes('they think') || lower.includes('says about')) {
-    return 'evaluation';
-  }
-  if (lower === '3' || lower.includes('protection') || lower.includes('threat') || 
-      lower.includes('danger') || lower.includes('unsafe') || lower.includes('wrong') ||
-      lower.includes('vigilant') || lower.includes('scanning')) {
-    return 'protection';
-  }
-  
+  const lower = input.toLowerCase();
+
+  // explicit "mechanism: 1/2/3"
+  const m = lower.match(/mechanism\s*:\s*([123])/);
+  if (m?.[1] === '1') return 'prediction';
+  if (m?.[1] === '2') return 'evaluation';
+  if (m?.[1] === '3') return 'protection';
+
+  // fallback: first standalone digit 1/2/3
+  const d = lower.match(/\b([123])\b/);
+  if (d?.[1] === '1') return 'prediction';
+  if (d?.[1] === '2') return 'evaluation';
+  if (d?.[1] === '3') return 'protection';
+
+  // keyword fallback
+  if (lower.includes('prediction') || lower.includes('what if') || lower.includes('future')) return 'prediction';
+  if (lower.includes('evaluation') || lower.includes('meaning') || lower.includes('they think')) return 'evaluation';
+  if (lower.includes('protection') || lower.includes('threat') || lower.includes('unsafe') || lower.includes('scanning')) return 'protection';
+
   return null;
 }
 
 function isConfirmation(input: string): boolean {
   const lower = input.toLowerCase().trim();
-  const confirmWords = ['done', 'confirmed', 'confirm', 'complete', 'completed', 'yes', 'ok', 'okay', 'finished', 'did it', 'said it', 'grounded'];
+  // NOTE: "yes" is intentionally NOT included (it breaks protection logic)
+  const confirmWords = ['done', 'confirmed', 'confirm', 'complete', 'completed', 'ok', 'okay', 'finished', 'did it', 'said it', 'grounded'];
   return confirmWords.some(word => lower.includes(word));
 }
 
@@ -404,15 +420,18 @@ function detectDissociationSignals(input: string): boolean {
 }
 
 function hasSensoryFormat(input: string): boolean {
-  const lower = input.toLowerCase();
-  return (lower.includes('seeing') || lower.includes('see')) && 
-         (lower.includes('hearing') || lower.includes('hear')) && 
-         (lower.includes('feeling') || lower.includes('feel'));
+  // More strict than before: require Seeing + Hearing + Feeling present (in any case), ideally in the expected format
+  const normalized = input.toLowerCase();
+  const hasSeeing = normalized.includes('seeing');
+  const hasHearing = normalized.includes('hearing');
+  const hasFeeling = normalized.includes('feeling');
+  return hasSeeing && hasHearing && hasFeeling;
 }
 
 function extractSessionData(session: LoopDeLoopingSession) {
   return {
     mechanism: session.mechanism,
+    signal: session.signal,
     predictionClaim: session.predictionClaim,
     meaningClaim: session.meaningClaim,
     threatClaim: session.threatClaim,
@@ -459,7 +478,8 @@ function getPhaseProgress(phase: SessionPhase, mechanism: LoopMechanism): { curr
     'complete': { order: 10, label: 'Complete' }
   };
 
-  const totalSteps = mechanism === 'prediction' ? 8 : 9; // Prediction has 3 dissolution steps, others have 4
+  // Fix total step mismatch: complete order is 10, so total should be 10 for all mechanisms
+  const totalSteps = 10;
   const current = phases[phase]?.order || 1;
   const label = phases[phase]?.label || 'Processing';
 
@@ -512,7 +532,7 @@ function LoopDeLoopingModalComponent({ isOpen, onClose, userId }: LoopDeLoopingM
 
   const initializeSession = async () => {
     let isFirstTime = true;
-    
+
     if (userId) {
       try {
         const supabase = createClient();
@@ -521,7 +541,7 @@ function LoopDeLoopingModalComponent({ isOpen, onClose, userId }: LoopDeLoopingM
           .select('id', { count: 'exact', head: true })
           .eq('user_id', userId)
           .eq('tool_type', 'loop_delooping');
-        
+
         isFirstTime = (count || 0) === 0;
       } catch (error) {
         console.error('[LoopDeLooping] Error checking first time:', error);
@@ -529,7 +549,7 @@ function LoopDeLoopingModalComponent({ isOpen, onClose, userId }: LoopDeLoopingM
     }
 
     const openingMessage = isFirstTime ? firstTimeMessage : returningMessage;
-    
+
     setSession({
       ...initialSession,
       isActive: true,
@@ -537,7 +557,7 @@ function LoopDeLoopingModalComponent({ isOpen, onClose, userId }: LoopDeLoopingM
       sessionStartTime: new Date(),
       conversationHistory: [{ role: 'assistant', content: openingMessage }]
     });
-    
+
     setMessages([{ role: 'assistant', content: openingMessage }]);
   };
 
@@ -551,7 +571,7 @@ function LoopDeLoopingModalComponent({ isOpen, onClose, userId }: LoopDeLoopingM
 
   const handleSend = async () => {
     if (!input.trim() || loading) return;
-    
+
     const userMessage = input.trim();
     setInput('');
     setLoading(true);
@@ -578,13 +598,17 @@ function LoopDeLoopingModalComponent({ isOpen, onClose, userId }: LoopDeLoopingM
     // Process based on current phase
     let response = '';
     let nextPhase: SessionPhase = session.phase;
-    const updatedSession = { ...session };
+    const updatedSession: LoopDeLoopingSession = { ...session };
 
     switch (session.phase) {
       // ==========================================
       // MECHANISM IDENTIFICATION
       // ==========================================
       case 'mechanism_identification': {
+        // Store Signal if present (opening asks for it)
+        const signal = extractSignalFromInput(userMessage);
+        if (signal) updatedSession.signal = signal;
+
         const mechanism = parseMechanismFromInput(userMessage);
         if (mechanism) {
           updatedSession.mechanism = mechanism;
@@ -593,12 +617,14 @@ function LoopDeLoopingModalComponent({ isOpen, onClose, userId }: LoopDeLoopingM
         } else {
           response = `I need the mechanism number to proceed.
 
-Is the loop focused on:
+Reply in this format:
+**Signal:** ___
+**Mechanism:** 1 / 2 / 3
+
+Mechanisms:
 **1** — what *might happen* (future outcomes)
 **2** — what something *means* (interpretation)
-**3** — a general sense of *threat* (danger without clear cause)
-
-Just give me the number: 1, 2, or 3.`;
+**3** — a sense of *threat* (danger without clear cause)`;
         }
         break;
       }
@@ -611,7 +637,7 @@ Just give me the number: 1, 2, or 3.`;
           nextPhase = 'de_identification';
           response = deIdentificationInstruction;
         } else {
-          response = `The breathing step is non-negotiable. Loops are sustained by autonomic arousal — we must interrupt that first.
+          response = `The breathing step is required first.
 
 **Inhale 6 seconds. Exhale 6 seconds. 2 minutes. Nose only.**
 
@@ -634,9 +660,10 @@ Type **"done"** when complete.`;
             response = protectionInquiry;
           }
         } else {
+          // Fix: show the correct (updated) de-identification sentence
           response = `Say the sentence exactly as written:
 
-**"A worry is being experienced. I cannot verify that it belongs to a me."**
+**"Signal is present. A worry-story is being generated. I will treat it as an Interpretation, not a fact."**
 
 Then type **"confirm"**.`;
         }
@@ -700,9 +727,10 @@ Type **"confirm"** when done.`;
           nextPhase = 'final_reset';
           response = finalResetInstruction;
         } else {
+          // Fix: show the correct (updated) prediction step 3 sentence
           response = `Say the sentence exactly:
 
-**"There is no future event here. Only a thought appearing now."**
+**"No future event is verifiable right now. This is a prediction appearing now."**
 
 Type **"confirm"** when done.`;
         }
@@ -735,9 +763,10 @@ Type **"confirm"** when done.`;
           nextPhase = 'evaluation_step_3';
           response = evaluationStep3;
         } else {
+          // Fix: show the correct (updated) evaluation step 2 sentence
           response = `Say the sentence exactly:
 
-**"The meaning is manufactured. I cannot verify it as true."**
+**"The added meaning is unverifiable. This is an Interpretation, not a fact."**
 
 Type **"confirm"** when done.`;
         }
@@ -745,8 +774,7 @@ Type **"confirm"** when done.`;
       }
 
       case 'evaluation_step_3': {
-        // User provides alternative meaning - store it and continue
-        if (userMessage.length > 5) { // Basic check that they provided something
+        if (userMessage.length > 5) {
           nextPhase = 'evaluation_step_4';
           response = getEvaluationStep4(userMessage);
         } else {
@@ -779,7 +807,8 @@ Type **"confirm"** when done.`;
           nextPhase = 'protection_step_2';
           response = protectionStep2_no;
         } else if (isYes(userMessage)) {
-          // They claim threat is present - clarify
+          // Fix: ensure phase advances (already present in your pasted file, kept)
+          nextPhase = 'protection_step_2';
           response = protectionStep2_yes;
         } else {
           response = `Is this threat present in your immediate physical environment right now?
@@ -792,21 +821,21 @@ Answer **yes** or **no**.`;
       }
 
       case 'protection_step_2': {
+        // Fix: do NOT treat "yes" as confirmation; isConfirmation no longer includes "yes"
         if (isConfirmation(userMessage) || isNo(userMessage)) {
-          // If they answered "no" to the follow-up about actual danger, continue
           nextPhase = 'protection_step_3';
           response = protectionStep3;
         } else if (isYes(userMessage)) {
-          // Actual immediate danger - end protocol
           response = `If there's actual immediate danger, take action to ensure your safety first.
 
 This protocol is for perceived/anticipated threats, not real emergencies.
 
 Close this session and address the real situation. Return when you're safe.`;
         } else {
+          // Fix: show the correct (updated) protection step 2 sentence
           response = `Say the sentence exactly:
 
-**"No verified threat exists in this moment."**
+**"No immediate threat is verified in this moment."**
 
 Type **"confirm"** when done.`;
         }
@@ -832,9 +861,10 @@ Type **"confirm"** when done.`;
           nextPhase = 'final_reset';
           response = finalResetInstruction;
         } else {
+          // Fix: show the correct (updated) protection step 4 sentence
           response = `Say the sentence exactly:
 
-**"There is no threat here. Only sensation appearing now."**
+**"No immediate threat is verified in this moment. Only sensation is present."**
 
 Type **"confirm"** when done.`;
         }
@@ -862,11 +892,7 @@ Pure sensory data. No interpretation, no story.`;
       // COMPLETE
       // ==========================================
       case 'complete': {
-        response = `Session complete. The loop mechanism has been dissolved.
-
-If you're experiencing a new loop, we can run the protocol again — just tell me the mechanism number (1, 2, or 3).
-
-Otherwise, you're free to close this session.`;
+        response = completionMessage;
         break;
       }
     }
@@ -878,7 +904,7 @@ Otherwise, you're free to close this session.`;
       { role: 'user', content: userMessage },
       { role: 'assistant', content: response }
     ];
-    
+
     setSession(updatedSession);
     setMessages(prev => [
       ...prev,
@@ -893,9 +919,9 @@ Otherwise, you're free to close this session.`;
     if (session.sessionStartTime) {
       durationSeconds = Math.floor((Date.now() - session.sessionStartTime.getTime()) / 1000);
     }
-    
+
     const sessionData = extractSessionData(session);
-    
+
     if (userId) {
       try {
         const supabase = createClient();
@@ -911,7 +937,7 @@ Otherwise, you're free to close this session.`;
         console.error('[LoopDeLooping] Failed to save session:', error);
       }
     }
-    
+
     setSession(initialSession);
     setMessages([]);
     setInput('');
@@ -936,7 +962,7 @@ Otherwise, you're free to close this session.`;
   // Dynamic placeholder based on phase
   const getPlaceholder = (): string => {
     switch (session.phase) {
-      case 'mechanism_identification': return "Enter 1, 2, or 3...";
+      case 'mechanism_identification': return "Signal: ___. Mechanism: 1/2/3";
       case 'physiological_interrupt': return "Type 'done' when breathing complete...";
       case 'de_identification': return "Type 'confirm' when done...";
       case 'precision_inquiry': return "One sentence only...";
@@ -944,7 +970,7 @@ Otherwise, you're free to close this session.`;
       case 'evaluation_step_3': return "One alternative meaning...";
       case 'protection_step_1': return "Type 'yes' or 'no'...";
       case 'final_reset': return "Seeing ___. Hearing ___. Feeling ___.";
-      default: 
+      default:
         if (session.phase.includes('step')) return "Type 'confirm' when done...";
         return "Type your response...";
     }
@@ -953,18 +979,18 @@ Otherwise, you're free to close this session.`;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div 
+      <div
         className="absolute inset-0 bg-black/70 backdrop-blur-md"
         onClick={handleClose}
       />
-      
+
       {/* Modal */}
       <div className="relative w-full max-w-2xl h-[85vh] bg-gradient-to-b from-gray-900 to-[#0a0a0a] rounded-2xl border border-gray-700/50 flex flex-col overflow-hidden shadow-2xl shadow-black/50">
-        
+
         {/* Header */}
         <div className="relative px-6 py-5 border-b border-gray-700/50">
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#ff9e19]/50 to-transparent" />
-          
+
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-[#ff9e19]/20 flex items-center justify-center">
@@ -973,7 +999,7 @@ Otherwise, you're free to close this session.`;
               <div>
                 <h2 className="text-lg font-semibold text-white">Loop De-Looping</h2>
                 <p className="text-sm text-gray-400">
-                  {session.mechanism 
+                  {session.mechanism
                     ? `${session.mechanism.charAt(0).toUpperCase() + session.mechanism.slice(1)} Loop → ${progress.label}`
                     : 'Mechanism-based dissolution'
                   }
@@ -1003,7 +1029,7 @@ Otherwise, you're free to close this session.`;
             <div className="mt-4">
               <div className="flex items-center gap-2">
                 <div className="flex-1 h-1.5 bg-gray-700 rounded-full overflow-hidden">
-                  <div 
+                  <div
                     className="h-full bg-[#ff9e19] rounded-full transition-all duration-500"
                     style={{ width: `${(progress.current / progress.total) * 100}%` }}
                   />
@@ -1015,7 +1041,7 @@ Otherwise, you're free to close this session.`;
             </div>
           )}
         </div>
-        
+
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {messages.map((msg, idx) => (
@@ -1024,16 +1050,15 @@ Otherwise, you're free to close this session.`;
               className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-[85%] rounded-2xl px-5 py-3 ${
-                  msg.role === 'user'
-                    ? 'bg-[#ff9e19] text-white'
-                    : 'bg-gray-800/80 text-gray-100 border border-gray-700/50'
-                }`}
+                className={`max-w-[85%] rounded-2xl px-5 py-3 ${msg.role === 'user'
+                  ? 'bg-[#ff9e19] text-white'
+                  : 'bg-gray-800/80 text-gray-100 border border-gray-700/50'
+                  }`}
               >
                 {msg.role === 'user' ? (
                   <div className="whitespace-pre-wrap leading-relaxed">{msg.content}</div>
                 ) : (
-                  <div 
+                  <div
                     className="leading-relaxed prose prose-invert prose-sm max-w-none"
                     dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
                   />
@@ -1041,7 +1066,7 @@ Otherwise, you're free to close this session.`;
               </div>
             </div>
           ))}
-          
+
           {loading && (
             <div className="flex justify-start">
               <div className="bg-gray-800/80 border border-gray-700/50 rounded-2xl px-5 py-3">
@@ -1053,10 +1078,10 @@ Otherwise, you're free to close this session.`;
               </div>
             </div>
           )}
-          
+
           <div ref={messagesEndRef} />
         </div>
-        
+
         {/* Input */}
         <div className="border-t border-gray-700/50 p-4 bg-gray-900/50">
           <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex gap-3">
@@ -1084,7 +1109,7 @@ Otherwise, you're free to close this session.`;
             </button>
           </form>
           <p className="text-xs text-gray-500 mt-2 text-center">
-            {session.phase === 'complete' 
+            {session.phase === 'complete'
               ? 'Session complete • Click "End Session" to close'
               : 'Press Enter to send • Follow each step exactly'
             }
@@ -1113,8 +1138,8 @@ export function useLoopDeLooping() {
   }, []);
 
   const Modal = useCallback(() => (
-    <LoopDeLoopingModalComponent 
-      isOpen={isOpen} 
+    <LoopDeLoopingModalComponent
+      isOpen={isOpen}
       onClose={close}
       userId={userId}
     />
