@@ -480,7 +480,16 @@ You've proven your nervous system can maintain coherence. Now we bring awareness
 
 **ON-DEMAND TOOL NOW AVAILABLE:**
 
-**Meta-Reflection** — A weekly practice (typically Sundays) to examine how awareness moved through your week. Not what happened, but how you perceived and interpreted it. This deepens self-inquiry and integrates insights over time.
+**Meta-Reflection**
+A 10–15 minute weekly session to observe how perception formed and to capture a usable kernel in the format: Signal → Interpretation → Action.
+
+*When to use it:*
+- Weekly (I'll prompt you on Sundays, or run it on your own day)
+- After a significant event or emotional spike
+- When the same pattern keeps repeating across the week
+- When you want to convert experience into a clear next step (or deliberate non-action)
+
+*How it works:* You select one moment. You start with Signal (what you can verify in the body), then name the Interpretation that was added, then choose an Action within 24 hours (or deliberate non-action). You end by re-contacting the body to lock in the kernel.
 
 Access it anytime via the {{toolbarReference}} under "On-Demand Tools."
 
