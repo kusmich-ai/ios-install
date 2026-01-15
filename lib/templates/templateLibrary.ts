@@ -354,7 +354,7 @@ You will initiate this with the {{toolbarReference}} daily every morning.
 Make sense?`
       },
 
-      wrapUp: `That's your **Stage 1 morning ritual**. {{morningTime}}. Every day.
+     wrapUp: `That's your **Stage 1 morning ritual**. {{morningTime}}. Every day.
 
 **Same sequence:**
 1. Wake up
@@ -366,15 +366,36 @@ Your {{toolbarReference}} will let you know if you have completed them for the d
 
 ---
 
-**ON-DEMAND TOOL AVAILABLE:**
+**ON-DEMAND TOOLS NOW AVAILABLE:**
 
-**Decentering Practice** — For when you feel identified with thoughts, emotions, or roles. This practice helps you recognize that you are the awareness noticing these things, not the things themselves.
+**Decentering Practice**
+A short (2–5 minute) guided practice that helps you relate differently to thoughts, emotions, and roles — without trying to change or fix them.
 
-Use it when you catch yourself saying "I AM anxious" instead of "I notice anxiety" — or when you feel trapped in a role. Takes 2-5 minutes.
+*When to use it:*
+- When an emotion feels fused with identity ("I am anxious")
+- When you feel stuck in a role (the responsible one, the fixer, the failure)
+- When thoughts feel unquestionable or automatic
+- When you're caught in a mental loop and need perspective
 
-Access it via your {{toolbarReference}} under "On-Demand Tools."
+*How it works:* You'll be guided through simple questions that help you notice what is being felt, what meaning the mind is adding, and what remains when those are observed. The aim isn't to get rid of thoughts or emotions — it's to experience them with more space, clarity, and choice.
 
 ---
+
+**Worry Loop Dissolver**
+A structured 3–5 minute protocol to collapse worry loops (rumination, catastrophizing, anticipatory anxiety) so thinking becomes clear again.
+
+*When to use it:*
+- When the same worry keeps replaying
+- When the mind is projecting worst-case future outcomes
+- When you're stuck analyzing what something "means" or what someone "thinks"
+- When the nervous system feels on alert without a clear, present threat
+- When you can't stop mentally rehearsing scenarios
+
+*How it works:* You start with a verifiable Signal (a present body sensation or emotion), identify the active loop mechanism, then run a short sequence that removes the fuel sustaining the loop and anchors attention back to present sensory data.
+
+---
+
+Access both tools anytime via your {{toolbarReference}} under "On-Demand Tools."
 
 **Starting tomorrow morning** — do both rituals, then come back and let me know how it went.
 
