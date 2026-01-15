@@ -317,39 +317,39 @@ Ready to learn each ritual?`,
         hrvb: `**RITUAL 1: RESONANCE BREATHING — 5 MINS**
 
 **What it does:**
-Stimulates your vagus nerve, increases heart rate variability, raises RMSSD. Translation: trains your nervous system to shift from stress to calm coherence on command.
+Stimulates your vagus nerve, increases heart rate variability, raises RMSSD. Translation: trains your nervous system to shift from stress to coherence on command.
 
 **When:** First thing after waking, before anything else.
 
 **How:**
-Sit up in bed or in a chair. Spine long, shoulders relaxed.
+Wake up. Sit up in bed or on a chair. Spine long, shoulders relaxed.
 We're using a 4-second inhale, 6-second exhale rhythm — this hits your resonance frequency and maximizes vagal tone.
 
-**Here is a guided video:** [Resonance Breathing Video](https://www.unbecoming.app/breathe)
+**Here is a guided video to preview if needed so you can get familiar:** [Resonance Breathing Video](https://www.unbecoming.app/breathe)
 
-When ready, you can also initiate this with the {{toolbarReference}}.
+When ready, every morning you will initiate this with the {{toolbarReference}}.
 
 That's ritual one. Make sense?`,
 
         awareness_rep: `**RITUAL 2: AWARENESS REP — 2 MINS**
 
 **What it does:**
-Strengthens meta-awareness circuitry (insula-PCC connectivity). Trains your brain to notice when you're lost in thought and return to present awareness.
+Strengthens meta-awareness circuitry (insula-PCC connectivity). Trains your brain to notice when you're caught up in an identity or label and return to present awareness.
 
 **When:** Right after Resonance Breathing, while still seated.
 
 **How:**
-A decentering practice that notices whatever is here — sounds, sensations, thoughts — and helps separate you from those things.
+This decentering practice notices whatever is here — sounds, sensations, thoughts — and helps separate you from those things.
 
 You're not trying to change anything or "get somewhere." Just notice that you're noticing.
 
 When you drift into thought (you will), notice that too, and return.
 
-That's the practice. Recognizing you're the observer.
+That's the practice. Recognizing you're not the things you experience.
 
-**This audio will guide you through the process when ready:** [Awareness Rep Audio](https://www.unbecoming.app/awareness)
+**This previous audio will guide you through the process when ready:** [Awareness Rep Audio](https://www.unbecoming.app/awareness)
 
-You can also initiate this with the {{toolbarReference}}.
+You will initiate this with the {{toolbarReference}} daily every morning.
 
 Make sense?`
       },
