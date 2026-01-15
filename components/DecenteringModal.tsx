@@ -126,7 +126,7 @@ const firstTimeMessage = `**Decentering Practice** — a 2–3 minute inquiry to
 - When thoughts feel like facts
 - When emotion and story feel fused
 
-The goal isn’t to escape roles — it’s to relate to them with less grip and more choice.
+The goal isn't to escape roles — it's to relate to them with less grip and more choice.
 
 Take one slow breath.
 
@@ -170,9 +170,35 @@ function extractSessionData(history: Array<{ role: 'user' | 'assistant'; content
   return { themes: themes.slice(0, 5) };
 }
 
-// Simple markdown renderer
+// FIX #3: Helper to get mode-specific system prompt
+function getDecenteringPrompt(mode: DecenteringSession['sessionMode']): string {
+  if (mode === 'identity_audit') {
+    return `${decenteringSystemPrompt}
+
+MODE: IDENTITY_AUDIT
+Follow the IDENTITY AUDIT MODE questions strictly, one at a time. Do not skip steps or combine questions.`;
+  }
+  return `${decenteringSystemPrompt}
+
+MODE: STANDARD
+Follow the standard session structure conversationally.`;
+}
+
+// FIX #4: HTML escaping to prevent XSS
+function escapeHtml(input: string): string {
+  return input
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+// FIX #4: Safe markdown renderer with HTML escaping
 function renderMarkdown(text: string): string {
-  return text
+  const safe = escapeHtml(text);
+
+  return safe
     .replace(/\*\*(.*?)\*\*/g, '<strong class="text-[#ff9e19]">$1</strong>')
     .replace(/\*([^*\n]+)\*/g, '<em>$1</em>')
     .replace(/^[•\-]\s+(.*)$/gm, '<div class="ml-4">• $1</div>')
@@ -261,27 +287,39 @@ function DecenteringModalComponent({ isOpen, onClose, userId }: DecenteringModal
     const userMessage = input.trim();
     setInput('');
     
-    // Check for identity audit request
+    // FIX #2: Check for identity audit request AND update conversationHistory
     if (isIdentityAuditRequest(userMessage)) {
-      setSession(prev => ({ ...prev, sessionMode: 'identity_audit' }));
+      setSession(prev => ({
+        ...prev,
+        sessionMode: 'identity_audit',
+        conversationHistory: [
+          ...prev.conversationHistory,
+          { role: 'user', content: userMessage },
+          { role: 'assistant', content: identityAuditMessage },
+        ],
+      }));
+
       setMessages(prev => [
-        ...prev, 
+        ...prev,
         { role: 'user', content: userMessage },
-        { role: 'assistant', content: identityAuditMessage }
+        { role: 'assistant', content: identityAuditMessage },
       ]);
+
       return;
     }
     
-    // Add user message
+    // Add user message to UI immediately
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setLoading(true);
     
     try {
+      // FIX #1 & #3: Include system prompt with mode in API call
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: [
+            { role: 'system', content: getDecenteringPrompt(session.sessionMode) },
             ...session.conversationHistory,
             { role: 'user', content: userMessage }
           ],
