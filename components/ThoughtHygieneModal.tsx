@@ -19,11 +19,6 @@ interface ThoughtHygieneSession {
   clarityRating: number | null;
 }
 
-interface PastSession {
-  clarity_rating: number | null;
-  created_at: string;
-}
-
 const initialSession: ThoughtHygieneSession = {
   isActive: false,
   isFirstTime: true,
@@ -38,41 +33,54 @@ const initialSession: ThoughtHygieneSession = {
 // STEP MESSAGES
 // ============================================
 
-const firstTimeFraming = `**Quick heads-up:** This process will surface loops that were already running in the background consuming bandwidth. That might feel like it's making things worse at first — but we're just making the invisible visible so you can acknowledge it and free up mental space.
+const ACK_TOKEN = 'acknowledged';
 
-By the end, your mind will have permission to release these loops from active processing.
+const firstTimeFraming = `**Thought Hygiene** — a short offload to reduce cognitive load.
 
-`;
+This is not problem-solving and not meaning-making.
+It’s about making active mental loops visible so they no longer need to be held in working memory.
 
-const dumpPrompt = `Ok, time to free up some mind space and clear your mental cache.
+Nothing here needs to be resolved right now.`;
 
-**What's still running in the background of your mind that's taking up mental bandwidth?**
+const dumpPrompt = `Start with Signal first.
 
-Type everything out as bullets — tasks, conversations, worries, whatever's looping.
+**Signal:** What tells you your mind is loaded right now?
+(one word or short phrase — e.g. "tight head", "pressure", "scattered")
 
-Don't overthink it. Don't go digging. Whatever floats to the surface, just dump it here.`;
+Now externalize content.
 
-const acknowledgePrompt = `Got it. You've surfaced what's been running in the background.
+**What items are still being mentally rehearsed or held open?**
 
-By externalizing these loops, your mind now knows they exist and can stop cycling on them unconsciously. If you'd like, copy and paste them somewhere (task list, journal, notes app) and come back to them when you're ready.
+List them as bullets.
+Tasks, conversations, reminders, worries — no explanation needed.
+Just list what’s present.`;
 
-By acknowledging and externalizing these, your mind can release them from active processing for now.
+const acknowledgePrompt = `Good. The content has been externalized.
 
-**Type "free" to acknowledge.**`;
+You are not solving or resolving these items now.
+You are choosing deliberate non-action on them for this period.
 
-const resetPrompt = `Good. Mental bandwidth freed.
+If helpful, store them elsewhere (notes, task list).
 
-Take 3 slow breaths — feel them fully.
+To acknowledge the offload, type **"${ACK_TOKEN}"**.`;
 
-Notice your feet on the floor and a sensation in your body (warmth, calm, tingling, etc).
+const resetPrompt = `Reset attention.
 
-Then say inwardly: *"Done for now."*
+Take 3 slow breaths.
+Feel your feet or one body sensation.
 
-**When you've completed this, type "done" or "ready."**`;
+**Signal:** Name one sensation you can verify right now.
+**Action:** Deliberate non-action on the listed items until your next check-in.
 
-const ratingPrompt = `Mental cache cleared — loops released. Ready for next focus block.
+When complete, type **"done"**.`;
 
-**On a scale of 1-5** (1 being still heavily muddied, 5 being clear to move on), how clear does your mind feel now?`;
+const ratingPrompt = `Check clarity.
+
+On a scale of **1–5**:
+1 = attention still fragmented  
+5 = attention available for next task  
+
+Reply with the number only.`;
 
 // ============================================
 // HELPER FUNCTIONS
@@ -80,23 +88,25 @@ const ratingPrompt = `Mental cache cleared — loops released. Ready for next fo
 
 function getCompletionMessage(rating: number, sessionsToday: number): string {
   let message = '';
-  
+
   if (rating >= 4) {
-    message = `Excellent. Mental cache successfully cleared. You're ready for your next focus block.`;
+    message = `Good. Attention is available for the next task.`;
   } else if (rating === 3) {
-    message = `Good progress. Some residue remains, but you've freed up significant bandwidth.`;
+    message = `Partial clearance. Attention is improved but not fully available.`;
   } else {
-    message = `Your clarity is still at ${rating}/5. This suggests something deeper needs attention. I'd recommend running the **Reframe Protocol** to work through what's actually stuck.`;
+    message = `Clarity is ${rating}/5. Consider running **Reframe Protocol** on the dominant Interpretation driving the load.`;
   }
-  
+
   if (sessionsToday >= 3) {
-    message += `\n\n*You've cleared ${sessionsToday} times today. Might be worth exploring if something deeper needs attention via the Reframe Protocol.*`;
+    message += `\n\n*You’ve run this ${sessionsToday} times today. If the load keeps returning, the next move is usually Interpretation work (Reframe Protocol).*`;
   }
-  
+
   return message;
 }
 
-// Simple markdown renderer
+// Minimal markdown renderer.
+// NOTE: Safe for static assistant strings. If you ever render dynamic model output here,
+// escape HTML first or remove dangerouslySetInnerHTML.
 function renderMarkdown(text: string): string {
   return text
     .replace(/\*\*(.*?)\*\*/g, '<strong class="text-emerald-400">$1</strong>')
@@ -123,76 +133,66 @@ function ThoughtHygieneModalComponent({ isOpen, onClose, userId }: ThoughtHygien
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Scroll to bottom when messages update
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Focus input when modal opens
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [isOpen]);
 
-  // Refocus input after step changes
   useEffect(() => {
     if (isOpen && session.step !== 'complete') {
       inputRef.current?.focus();
     }
   }, [session.step, isOpen]);
 
-  // Initialize session when modal opens
   useEffect(() => {
     if (isOpen && messages.length === 0) {
       initializeSession();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   const initializeSession = async () => {
     let isFirstTime = true;
     let todayCount = 0;
-    
+
     if (userId) {
       try {
         const supabase = createClient();
-        
-        // Check if first time
+
         const { count } = await supabase
           .from('tool_sessions')
           .select('id', { count: 'exact', head: true })
           .eq('user_id', userId)
           .eq('tool_type', 'thought_hygiene');
-        
+
         isFirstTime = (count || 0) === 0;
-        
-        // Count sessions today
+
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        
+
         const { count: todaySessionCount } = await supabase
           .from('tool_sessions')
           .select('id', { count: 'exact', head: true })
           .eq('user_id', userId)
           .eq('tool_type', 'thought_hygiene')
           .gte('created_at', today.toISOString());
-        
+
         todayCount = todaySessionCount || 0;
         setSessionsToday(todayCount);
-        
       } catch (error) {
         console.error('[ThoughtHygiene] Error initializing:', error);
       }
     }
 
-    // Build opening message
-    let openingMessage = '';
-    if (isFirstTime) {
-      openingMessage = firstTimeFraming + dumpPrompt;
-    } else {
-      openingMessage = dumpPrompt;
-    }
-    
+    const openingMessage = isFirstTime
+      ? `${firstTimeFraming}\n\n${dumpPrompt}`
+      : dumpPrompt;
+
     setSession({
       isActive: true,
       isFirstTime,
@@ -202,25 +202,60 @@ function ThoughtHygieneModalComponent({ isOpen, onClose, userId }: ThoughtHygien
       dumpContent: null,
       clarityRating: null
     });
-    
+
     setMessages([{ role: 'assistant', content: openingMessage }]);
+  };
+
+  const saveSession = async (rating: number, startTime: Date | null) => {
+    if (!userId) return;
+
+    let durationSeconds = 0;
+    if (startTime) {
+      durationSeconds = Math.floor((Date.now() - startTime.getTime()) / 1000);
+    }
+
+    try {
+      const supabase = createClient();
+      await supabase.from('tool_sessions').insert({
+        user_id: userId,
+        tool_type: 'thought_hygiene',
+        session_mode: 'standard',
+        duration_seconds: durationSeconds,
+        session_data: {
+          clarity_rating: rating,
+          sessions_today: sessionsToday + 1
+        },
+        recurring_themes: [] // privacy: do not store dump content
+      });
+    } catch (error) {
+      console.error('[ThoughtHygiene] Failed to save session:', error);
+    }
   };
 
   const handleSend = async () => {
     if (!input.trim()) return;
-    
+
     const userMessage = input.trim();
     setInput('');
-    
-    // Add user message
+
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
-    
-    // Process based on current step
+
     const lowerMessage = userMessage.toLowerCase();
-    
+
+    const appendAssistant = (assistantText: string) => {
+      setMessages(prev => [...prev, { role: 'assistant', content: assistantText }]);
+      setSession(prev => ({
+        ...prev,
+        conversationHistory: [
+          ...prev.conversationHistory,
+          { role: 'user', content: userMessage },
+          { role: 'assistant', content: assistantText }
+        ]
+      }));
+    };
+
     switch (session.step) {
-      case 'dump':
-        // User has dumped their thoughts, move to acknowledge
+      case 'dump': {
         setSession(prev => ({
           ...prev,
           step: 'acknowledge',
@@ -233,13 +268,15 @@ function ThoughtHygieneModalComponent({ isOpen, onClose, userId }: ThoughtHygien
         }));
         setMessages(prev => [...prev, { role: 'assistant', content: acknowledgePrompt }]);
         break;
-        
-      case 'acknowledge':
-        // Check for acknowledgment (free, freed, done, ok, got it, etc.)
-        const isAcknowledged = ['free', 'freed', 'done', 'ok', 'okay', 'got it', 'noted', 'yes', 'yep'].some(
-          word => lowerMessage.includes(word)
-        );
-        
+      }
+
+      case 'acknowledge': {
+        const isAcknowledged =
+          lowerMessage.includes(ACK_TOKEN) ||
+          ['free', 'freed', 'ack', 'acknowledge', 'ok', 'okay', 'got it', 'noted', 'yes', 'yep'].some(w =>
+            lowerMessage.includes(w)
+          );
+
         if (isAcknowledged) {
           setSession(prev => ({
             ...prev,
@@ -252,18 +289,14 @@ function ThoughtHygieneModalComponent({ isOpen, onClose, userId }: ThoughtHygien
           }));
           setMessages(prev => [...prev, { role: 'assistant', content: resetPrompt }]);
         } else {
-          // Gentle redirect
-          const redirectMessage = `Just type "free" to acknowledge and release these loops.`;
-          setMessages(prev => [...prev, { role: 'assistant', content: redirectMessage }]);
+          appendAssistant(`Type **"${ACK_TOKEN}"** to acknowledge the offload.`);
         }
         break;
-        
-      case 'reset':
-        // Check for completion signal
-        const isComplete = ['done', 'ready', 'complete', 'finished', 'ok', 'okay'].some(
-          word => lowerMessage.includes(word)
-        );
-        
+      }
+
+      case 'reset': {
+        const isComplete = ['done', 'ready', 'complete', 'finished', 'ok', 'okay'].some(w => lowerMessage.includes(w));
+
         if (isComplete) {
           setSession(prev => ({
             ...prev,
@@ -276,18 +309,17 @@ function ThoughtHygieneModalComponent({ isOpen, onClose, userId }: ThoughtHygien
           }));
           setMessages(prev => [...prev, { role: 'assistant', content: ratingPrompt }]);
         } else {
-          const redirectMessage = `Take those 3 breaths, feel your feet on the ground, then type "done" when ready.`;
-          setMessages(prev => [...prev, { role: 'assistant', content: redirectMessage }]);
+          appendAssistant(`Do the 3 breaths + feet/bodysense, then type **"done"**.`);
         }
         break;
-        
-      case 'rating':
-        // Parse rating
-        const ratingMatch = userMessage.match(/[1-5]/);
+      }
+
+      case 'rating': {
+        const ratingMatch = userMessage.match(/^[1-5]$/) || userMessage.match(/[1-5]/);
         if (ratingMatch) {
-          const rating = parseInt(ratingMatch[0]);
+          const rating = parseInt(ratingMatch[0], 10);
           const completionMessage = getCompletionMessage(rating, sessionsToday + 1);
-          
+
           setSession(prev => ({
             ...prev,
             step: 'complete',
@@ -299,56 +331,22 @@ function ThoughtHygieneModalComponent({ isOpen, onClose, userId }: ThoughtHygien
             ]
           }));
           setMessages(prev => [...prev, { role: 'assistant', content: completionMessage }]);
-          
-          // Save session to database
-          saveSession(rating);
+
+          void saveSession(rating, session.sessionStartTime);
         } else {
-          const redirectMessage = `Just give me a number from 1-5. How clear does your mind feel?`;
-          setMessages(prev => [...prev, { role: 'assistant', content: redirectMessage }]);
+          appendAssistant(`Reply with a number **1–5** only.`);
         }
         break;
-        
-      case 'complete':
-        // Session is done, any further input just acknowledges
-        const closeMessage = `Session complete. Click "End Session" when you're ready to continue.`;
-        setMessages(prev => [...prev, { role: 'assistant', content: closeMessage }]);
-        break;
-    }
-  };
+      }
 
-  const saveSession = async (rating: number) => {
-    if (!userId) return;
-    
-    let durationSeconds = 0;
-    if (session.sessionStartTime) {
-      durationSeconds = Math.floor((Date.now() - session.sessionStartTime.getTime()) / 1000);
-    }
-    
-    try {
-      const supabase = createClient();
-      await supabase.from('tool_sessions').insert({
-        user_id: userId,
-        tool_type: 'thought_hygiene',
-        session_mode: 'standard',
-        duration_seconds: durationSeconds,
-        session_data: { 
-          clarity_rating: rating,
-          sessions_today: sessionsToday + 1
-        },
-        recurring_themes: [] // We don't store dump content for privacy
-      });
-    } catch (error) {
-      console.error('[ThoughtHygiene] Failed to save session:', error);
+      case 'complete': {
+        appendAssistant(`Session complete. Click **End Session** to close.`);
+        break;
+      }
     }
   };
 
   const handleEndSession = () => {
-    // If we haven't saved yet and have a rating, save
-    if (session.clarityRating && session.step === 'complete') {
-      // Already saved in the rating step
-    }
-    
-    // Reset and close
     setSession(initialSession);
     setMessages([]);
     setInput('');
@@ -366,20 +364,12 @@ function ThoughtHygieneModalComponent({ isOpen, onClose, userId }: ThoughtHygien
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop with blur */}
-      <div 
-        className="absolute inset-0 bg-black/70 backdrop-blur-md"
-        onClick={handleClose}
-      />
-      
-      {/* Modal */}
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={handleClose} />
+
       <div className="relative w-full max-w-2xl h-[85vh] bg-gradient-to-b from-gray-900 to-[#0a0a0a] rounded-2xl border border-gray-700/50 flex flex-col overflow-hidden shadow-2xl shadow-black/50">
-        
-        {/* Header with accent */}
         <div className="relative px-6 py-5 border-b border-gray-700/50">
-          {/* Accent glow - green/emerald for thought hygiene */}
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent" />
-          
+
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
@@ -387,7 +377,7 @@ function ThoughtHygieneModalComponent({ isOpen, onClose, userId }: ThoughtHygien
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-white">Thought Hygiene</h2>
-                <p className="text-sm text-gray-400">2-3 minute mental cache clear</p>
+                <p className="text-sm text-gray-400">2–3 minute mental cache clear</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -408,14 +398,10 @@ function ThoughtHygieneModalComponent({ isOpen, onClose, userId }: ThoughtHygien
             </div>
           </div>
         </div>
-        
-        {/* Messages */}
+
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {messages.map((msg, idx) => (
-            <div
-              key={idx}
-              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
+            <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div
                 className={`max-w-[85%] rounded-2xl px-5 py-3 ${
                   msg.role === 'user'
@@ -426,7 +412,7 @@ function ThoughtHygieneModalComponent({ isOpen, onClose, userId }: ThoughtHygien
                 {msg.role === 'user' ? (
                   <div className="whitespace-pre-wrap leading-relaxed">{msg.content}</div>
                 ) : (
-                  <div 
+                  <div
                     className="leading-relaxed prose prose-invert prose-sm max-w-none"
                     dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
                   />
@@ -434,29 +420,38 @@ function ThoughtHygieneModalComponent({ isOpen, onClose, userId }: ThoughtHygien
               </div>
             </div>
           ))}
-          
+
           <div ref={messagesEndRef} />
         </div>
-        
-        {/* Input area */}
+
         <div className="border-t border-gray-700/50 p-4 bg-gray-900/50">
-          <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex gap-3">
+          <form
+            onSubmit={e => {
+              e.preventDefault();
+              void handleSend();
+            }}
+            className="flex gap-3"
+          >
             <textarea
               ref={inputRef}
               value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
-                  handleSend();
+                  void handleSend();
                 }
               }}
               placeholder={
-                session.step === 'dump' ? "List what's on your mind..." :
-                session.step === 'acknowledge' ? 'Type "free" to acknowledge...' :
-                session.step === 'reset' ? 'Type "done" when ready...' :
-                session.step === 'rating' ? 'Rate 1-5...' :
-                'Type your response...'
+                session.step === 'dump'
+                  ? "List what's on your mind..."
+                  : session.step === 'acknowledge'
+                  ? `Type "${ACK_TOKEN}" to acknowledge...`
+                  : session.step === 'reset'
+                  ? 'Type "done" when ready...'
+                  : session.step === 'rating'
+                  ? 'Rate 1–5...'
+                  : 'Type your response...'
               }
               rows={session.step === 'dump' ? 4 : 1}
               className="flex-1 bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 resize-none min-h-[48px] max-h-[200px] transition-all"
@@ -469,11 +464,12 @@ function ThoughtHygieneModalComponent({ isOpen, onClose, userId }: ThoughtHygien
               Send
             </button>
           </form>
+
           <p className="text-xs text-gray-500 mt-2 text-center">
             {session.step === 'dump' && 'Shift+Enter for new line • Enter to send'}
-            {session.step === 'acknowledge' && 'Type "free" to acknowledge your loops'}
+            {session.step === 'acknowledge' && `Type "${ACK_TOKEN}" to acknowledge the offload`}
             {session.step === 'reset' && 'Take 3 breaths, then type "done"'}
-            {session.step === 'rating' && 'Rate your mental clarity 1-5'}
+            {session.step === 'rating' && 'Rate your mental clarity 1–5'}
             {session.step === 'complete' && 'Session complete • Click "End Session" to close'}
           </p>
         </div>
@@ -499,13 +495,10 @@ export function useThoughtHygiene() {
     setIsOpen(false);
   }, []);
 
-  const Modal = useCallback(() => (
-    <ThoughtHygieneModalComponent 
-      isOpen={isOpen} 
-      onClose={close}
-      userId={userId}
-    />
-  ), [isOpen, close, userId]);
+  const Modal = useCallback(
+    () => <ThoughtHygieneModalComponent isOpen={isOpen} onClose={close} userId={userId} />,
+    [isOpen, close, userId]
+  );
 
   return { open, close, isOpen, Modal };
 }
