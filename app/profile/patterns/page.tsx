@@ -1,7 +1,7 @@
 // ============================================
 // app/profile/patterns/page.tsx
 // Pattern Profile Page - ENHANCED with Visual Timeline
-// Luxury styling update
+// NOW SHOWS ALL 7 STAGES (highlighted + supporting)
 // ============================================
 
 'use client';
@@ -85,6 +85,9 @@ const STAGE_INFO: Record<number, { name: string; icon: string; color: string }> 
   6: { name: 'Integration', icon: '🌙', color: '#4f46e5' },         // indigo-600
   7: { name: 'Accelerated Expansion', icon: '🚀', color: '#b45309' } // amber-700
 };
+
+// All 7 stages in order
+const ALL_STAGES = [1, 2, 3, 4, 5, 6, 7];
 
 export default function PatternProfilePage() {
   const router = useRouter();
@@ -236,10 +239,10 @@ export default function PatternProfilePage() {
     });
   };
 
-  // Get milestone status based on current stage
-  const getMilestoneStatus = (milestoneStage: number): 'completed' | 'current' | 'upcoming' => {
-    if (milestoneStage < currentStage) return 'completed';
-    if (milestoneStage === currentStage) return 'current';
+  // Get stage status based on current stage
+  const getStageStatus = (stage: number): 'completed' | 'current' | 'upcoming' => {
+    if (stage < currentStage) return 'completed';
+    if (stage === currentStage) return 'current';
     return 'upcoming';
   };
 
@@ -366,14 +369,20 @@ export default function PatternProfilePage() {
   );
 
   // ============================================
-  // RENDER: VISUAL TIMELINE ROADMAP
+  // RENDER: VISUAL TIMELINE ROADMAP (ALL 7 STAGES)
   // ============================================
   const renderTransformationRoadmap = () => {
     if (!profile?.transformation_roadmap) {
       return renderNoRoadmapPrompt();
     }
-const { milestones: unsortedMilestones, destination } = profile.transformation_roadmap;
-const milestones = [...unsortedMilestones].sort((a, b) => a.stage - b.stage);
+
+    const { milestones, destination } = profile.transformation_roadmap;
+    
+    // Create a map of stage -> milestone for quick lookup
+    const milestoneByStage: Record<number, Milestone> = {};
+    milestones.forEach(m => {
+      milestoneByStage[m.stage] = m;
+    });
 
     return (
       <div className="space-y-6">
@@ -408,7 +417,7 @@ const milestones = [...unsortedMilestones].sort((a, b) => a.stage - b.stage);
           </div>
         )}
 
-        {/* Visual Timeline */}
+        {/* Visual Timeline - ALL 7 STAGES */}
         <div className="relative">
           {/* Timeline line */}
           <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-amber-500 via-amber-500/30 to-zinc-800" />
@@ -424,142 +433,205 @@ const milestones = [...unsortedMilestones].sort((a, b) => a.stage - b.stage);
             </div>
           </div>
 
-          {/* Milestones */}
-          {milestones.map((milestone, index) => {
-            const status = getMilestoneStatus(milestone.stage);
-            const isExpanded = expandedMilestone === index;
-            const stageInfo = STAGE_INFO[milestone.stage] || { name: 'Unknown', icon: '❓', color: '#666' };
+          {/* ALL 7 STAGES */}
+          {ALL_STAGES.map((stageNum) => {
+            const status = getStageStatus(stageNum);
+            const stageInfo = STAGE_INFO[stageNum];
+            const milestone = milestoneByStage[stageNum];
+            const hasMilestone = !!milestone;
+            const isExpanded = expandedMilestone === stageNum;
             
+            // MILESTONE STAGE (highlighted, expandable)
+            if (hasMilestone) {
+              return (
+                <div key={stageNum} className="relative mb-6">
+                  {/* Timeline node */}
+                  <div className="absolute left-1 top-6 z-10">
+                    <div 
+                      className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
+                        status === 'completed' 
+                          ? 'bg-emerald-600 border-emerald-600' 
+                          : status === 'current'
+                            ? 'bg-gradient-to-br from-amber-500 to-amber-600 border-amber-500 ring-4 ring-amber-500/20'
+                            : 'bg-[#222222] border-zinc-600'
+                      }`}
+                    >
+                      {status === 'completed' ? (
+                        <Check className="w-5 h-5 text-white" />
+                      ) : status === 'current' ? (
+                        <MapPin className="w-5 h-5 text-white" />
+                      ) : (
+                        <span className="text-zinc-400 font-bold">{stageNum}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Milestone Card */}
+                  <div className={`ml-16 rounded-xl border overflow-hidden transition-all ${
+                    status === 'completed'
+                      ? 'bg-emerald-500/5 border-emerald-500/20'
+                      : status === 'current'
+                        ? 'bg-amber-500/10 border-amber-500/30 shadow-lg shadow-amber-500/5'
+                        : 'bg-[#222222] border-white/[0.08]'
+                  }`}>
+                    {/* Card Header - Clickable */}
+                    <button
+                      onClick={() => setExpandedMilestone(isExpanded ? null : stageNum)}
+                      className="w-full p-4 flex items-center justify-between hover:bg-white/[0.02] transition-colors"
+                    >
+                      <div className="flex items-center gap-4">
+                        {/* Stage Badge */}
+                        <div 
+                          className="px-3 py-1 rounded-full text-xs font-bold"
+                          style={{ 
+                            backgroundColor: `${stageInfo.color}20`,
+                            color: stageInfo.color
+                          }}
+                        >
+                          {stageInfo.icon} Stage {stageNum}
+                        </div>
+                        
+                        <div className="text-left">
+                          <h3 className={`font-bold ${
+                            status === 'completed' ? 'text-emerald-400' :
+                            status === 'current' ? 'text-amber-500' : 'text-white'
+                          }`}>
+                            {milestone.title}
+                          </h3>
+                          <p className="text-zinc-500 text-sm">
+                            {milestone.timeframe} • {stageInfo.name}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-3">
+                        {status === 'completed' && (
+                          <span className="text-emerald-400 text-xs font-medium">COMPLETE</span>
+                        )}
+                        {status === 'current' && (
+                          <span className="text-amber-500 text-xs font-medium animate-pulse">IN PROGRESS</span>
+                        )}
+                        <span className={`text-zinc-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
+                          ▼
+                        </span>
+                      </div>
+                    </button>
+
+                    {/* Expanded Content */}
+                    {isExpanded && (
+                      <div className="border-t border-white/[0.06] p-6 space-y-6">
+                        {/* What's Broken */}
+                        <div>
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="text-rose-400">✗</span>
+                            <span className="text-rose-400 font-medium text-sm uppercase tracking-wide">What's Broken</span>
+                          </div>
+                          <p className="text-zinc-300 leading-relaxed">
+                            {milestone.whats_broken}
+                          </p>
+                        </div>
+
+                        {/* What Changes */}
+                        <div>
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="text-emerald-400">✓</span>
+                            <span className="text-emerald-400 font-medium text-sm uppercase tracking-wide">What Changes</span>
+                          </div>
+                          <ul className="space-y-2">
+                            {milestone.what_changes.map((change, i) => (
+                              <li key={i} className="flex items-start gap-3">
+                                <span className="text-amber-500 mt-1">→</span>
+                                <span className="text-zinc-300">{change}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        {/* The Shift */}
+                        <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/[0.04]">
+                          <div className="text-zinc-500 text-xs uppercase tracking-wide mb-2">The Shift</div>
+                          <p className="text-white font-medium italic">
+                            {milestone.the_shift}
+                          </p>
+                        </div>
+
+                        {/* Patterns Addressed */}
+                        {milestone.patterns_addressed && milestone.patterns_addressed.length > 0 && (
+                          <div>
+                            <div className="text-zinc-500 text-xs uppercase tracking-wide mb-2">Patterns Addressed</div>
+                            <div className="flex flex-wrap gap-2">
+                              {milestone.patterns_addressed.map((pattern, i) => (
+                                <span 
+                                  key={i}
+                                  className="text-xs bg-amber-500/10 text-amber-500 px-3 py-1 rounded-full border border-amber-500/20"
+                                >
+                                  {pattern}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            }
+            
+            // SUPPORTING STAGE (dimmed, not expandable)
             return (
-              <div key={index} className="relative mb-6">
-                {/* Timeline node */}
-                <div className="absolute left-1 top-6 z-10">
+              <div key={stageNum} className="relative mb-4">
+                {/* Timeline node - smaller, dimmed */}
+                <div className="absolute left-1.5 top-3 z-10">
                   <div 
-                    className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
+                    className={`w-7 h-7 rounded-full flex items-center justify-center border transition-all ${
                       status === 'completed' 
-                        ? 'bg-emerald-600 border-emerald-600' 
+                        ? 'bg-emerald-600/50 border-emerald-600/50' 
                         : status === 'current'
-                          ? 'bg-gradient-to-br from-amber-500 to-amber-600 border-amber-500 ring-4 ring-amber-500/20'
-                          : 'bg-[#222222] border-zinc-700'
+                          ? 'bg-amber-500/50 border-amber-500/50'
+                          : 'bg-[#1a1a1a] border-zinc-700'
                     }`}
                   >
                     {status === 'completed' ? (
-                      <Check className="w-5 h-5 text-white" />
-                    ) : status === 'current' ? (
-                      <MapPin className="w-5 h-5 text-white" />
+                      <Check className="w-3.5 h-3.5 text-white/70" />
                     ) : (
-  <span className="text-zinc-500 font-bold">{index + 1}</span>
-)}
+                      <span className="text-zinc-600 text-xs font-medium">{stageNum}</span>
+                    )}
                   </div>
                 </div>
 
-                {/* Milestone Card */}
-                <div className={`ml-16 rounded-xl border overflow-hidden transition-all ${
+                {/* Supporting Stage Row - compact, dimmed */}
+                <div className={`ml-16 rounded-lg border py-3 px-4 transition-all ${
                   status === 'completed'
-                    ? 'bg-emerald-500/5 border-emerald-500/20'
+                    ? 'bg-emerald-500/5 border-emerald-500/10'
                     : status === 'current'
-                      ? 'bg-amber-500/10 border-amber-500/30 shadow-lg shadow-amber-500/5'
-                      : 'bg-[#222222] border-white/[0.06]'
+                      ? 'bg-amber-500/5 border-amber-500/20'
+                      : 'bg-[#1a1a1a] border-zinc-800/50'
                 }`}>
-                  {/* Card Header - Clickable */}
-                  <button
-                    onClick={() => setExpandedMilestone(isExpanded ? null : index)}
-                    className="w-full p-4 flex items-center justify-between hover:bg-white/[0.02] transition-colors"
-                  >
-                    <div className="flex items-center gap-4">
-                      {/* Stage Badge */}
-                      <div 
-                        className="px-3 py-1 rounded-full text-xs font-bold"
-                        style={{ 
-                          backgroundColor: `${stageInfo.color}15`,
-                          color: stageInfo.color
-                        }}
-                      >
-                        {stageInfo.icon} Stage {milestone.stage}
-                      </div>
-                      
-                      <div className="text-left">
-                        <h3 className={`font-bold ${
-                          status === 'completed' ? 'text-emerald-400' :
-                          status === 'current' ? 'text-amber-500' : 'text-white'
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {/* Stage indicator */}
+                      <span className="text-lg opacity-50">{stageInfo.icon}</span>
+                      <div>
+                        <p className={`text-sm font-medium ${
+                          status === 'completed' ? 'text-emerald-400/70' :
+                          status === 'current' ? 'text-amber-500/70' : 'text-zinc-500'
                         }`}>
-                          {milestone.title}
-                        </h3>
-                        <p className="text-zinc-500 text-sm">
-                          {milestone.timeframe} • {milestone.stage_name}
+                          Stage {stageNum}: {stageInfo.name}
+                        </p>
+                        <p className="text-xs text-zinc-600">
+                          Foundation stage
                         </p>
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-3">
-                      {status === 'completed' && (
-                        <span className="text-emerald-400 text-xs font-medium">COMPLETE</span>
-                      )}
-                      {status === 'current' && (
-                        <span className="text-amber-500 text-xs font-medium">IN PROGRESS</span>
-                      )}
-                      <span className={`text-zinc-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
-                        ▼
-                      </span>
-                    </div>
-                  </button>
-
-                  {/* Expanded Content */}
-                  {isExpanded && (
-                    <div className="border-t border-white/[0.06] p-6 space-y-6">
-                      {/* What's Broken */}
-                      <div>
-                        <div className="flex items-center gap-2 mb-3">
-                          <span className="text-rose-400">✗</span>
-                          <span className="text-rose-400 font-medium text-sm uppercase tracking-wide">What's Broken</span>
-                        </div>
-                        <p className="text-zinc-300 leading-relaxed">
-                          {milestone.whats_broken}
-                        </p>
-                      </div>
-
-                      {/* What Changes */}
-                      <div>
-                        <div className="flex items-center gap-2 mb-3">
-                          <span className="text-emerald-400">✓</span>
-                          <span className="text-emerald-400 font-medium text-sm uppercase tracking-wide">What Changes</span>
-                        </div>
-                        <ul className="space-y-2">
-                          {milestone.what_changes.map((change, i) => (
-                            <li key={i} className="flex items-start gap-3">
-                              <span className="text-amber-500 mt-1">→</span>
-                              <span className="text-zinc-300">{change}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      {/* The Shift */}
-                      <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/[0.04]">
-                        <div className="text-zinc-500 text-xs uppercase tracking-wide mb-2">The Shift</div>
-                        <p className="text-white font-medium italic">
-                          {milestone.the_shift}
-                        </p>
-                      </div>
-
-                      {/* Patterns Addressed */}
-                      {milestone.patterns_addressed && milestone.patterns_addressed.length > 0 && (
-                        <div>
-                          <div className="text-zinc-500 text-xs uppercase tracking-wide mb-2">Patterns Addressed</div>
-                          <div className="flex flex-wrap gap-2">
-                            {milestone.patterns_addressed.map((pattern, i) => (
-                              <span 
-                                key={i}
-                                className="text-xs bg-amber-500/10 text-amber-500 px-3 py-1 rounded-full border border-amber-500/20"
-                              >
-                                {pattern}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                    {status === 'completed' && (
+                      <span className="text-emerald-400/60 text-xs">✓</span>
+                    )}
+                    {status === 'current' && (
+                      <span className="text-amber-500/60 text-xs">IN PROGRESS</span>
+                    )}
+                  </div>
                 </div>
               </div>
             );
@@ -593,29 +665,46 @@ const milestones = [...unsortedMilestones].sort((a, b) => a.stage - b.stage);
           </div>
         )}
 
-        {/* Progress Summary */}
+        {/* Progress Summary - shows all 7 stages */}
         <div className="bg-[#222222] rounded-xl border border-white/[0.06] p-6">
           <h4 className="text-white font-semibold mb-4">Your Journey Progress</h4>
-          <div className="flex items-center gap-2 mb-4">
-            {milestones.map((m, i) => {
-              const status = getMilestoneStatus(m.stage);
+          <div className="flex items-center gap-1 mb-4">
+            {ALL_STAGES.map((stageNum) => {
+              const status = getStageStatus(stageNum);
+              const hasMilestone = !!milestoneByStage[stageNum];
               return (
-                <div key={i} className="flex-1 flex items-center">
+                <div key={stageNum} className="flex-1 flex items-center">
                   <div 
-                    className={`h-2 flex-1 rounded-full ${
-                      status === 'completed' ? 'bg-emerald-500' :
-                      status === 'current' ? 'bg-amber-500' : 'bg-zinc-800'
+                    className={`h-2 flex-1 rounded-full transition-all ${
+                      status === 'completed' 
+                        ? hasMilestone ? 'bg-emerald-500' : 'bg-emerald-500/50'
+                        : status === 'current' 
+                          ? hasMilestone ? 'bg-amber-500' : 'bg-amber-500/50'
+                          : hasMilestone ? 'bg-zinc-700' : 'bg-zinc-800'
                     }`}
+                    title={`Stage ${stageNum}: ${STAGE_INFO[stageNum].name}${hasMilestone ? ' (Key Milestone)' : ''}`}
                   />
-                  {i < milestones.length - 1 && <div className="w-1" />}
+                  {stageNum < 7 && <div className="w-0.5" />}
                 </div>
               );
             })}
           </div>
           <div className="flex justify-between text-xs text-zinc-500">
             <span>Start</span>
-            <span>Stage {currentStage} of {Math.max(...milestones.map(m => m.stage))}</span>
+            <span>Stage {currentStage} of 7</span>
             <span>Destination</span>
+          </div>
+          
+          {/* Legend */}
+          <div className="flex items-center gap-6 mt-4 pt-4 border-t border-zinc-800">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-amber-500" />
+              <span className="text-zinc-500 text-xs">Key Milestone</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-zinc-700" />
+              <span className="text-zinc-500 text-xs">Foundation Stage</span>
+            </div>
           </div>
         </div>
       </div>
