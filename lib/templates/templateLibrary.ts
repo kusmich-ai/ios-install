@@ -626,63 +626,71 @@ You've embodied awareness. Now we anchor it into who you are.
 
 **NEW RITUAL UNLOCKING:**
 
-**Morning Micro-Action** — One small daily proof of your chosen identity. Not affirmations. Not aspirations. Evidence-based identity training. Each completion rewires the neural pathways that define who you are.
+**Morning Aligned Action** — One small action taken without narrative or self-definition. Not to become someone - but to notice when identity is no longer required.
 
-We'll run the Identity Installation Protocol together to set your 21-day identity and design your daily proof action.
+We’ll run the Identity Installation Protocol to define a 21-day action and track what remains consistent without interpretation.
 
 ---
 
 **ON-DEMAND TOOL NOW AVAILABLE:**
 
-**Reframe Protocol** — For when triggers arise. This tool helps you identify the story you're telling yourself about an event and consciously replace it with an interpretation that restores agency, calm, and clarity.
+**Reframe Protocol**
+A ~2-minute interpretation audit that separates what actually happened from what the mind added, then selects a clean next step.
 
-When you feel a strong emotional charge — frustration, stress, judgment — that's your cue to use it. Takes 2-5 minutes.
+*When to use it:*
+- When a reaction feels disproportionate to the event
+- When meaning-making shows up ("this means…", "they always…", "I'll never…")
+- When blame, mind-reading, catastrophizing, or certainty creeps in
+- When you want clarity instead of rumination
 
-Access it anytime via the {{toolbarReference}} under "On-Demand Tools."
+*How it works:* You'll move through a simple sequence: Signal → Interpretation → Action. We identify the verifiable signal, make the interpretation explicit, test it, and choose one concrete next step (or deliberate non-action). The result is clarity and agency—not forced positivity.
+
+Use it whenever an interpretation is amplifying the signal. Access it via {{toolbarReference}} → On-Demand Tools.
 
 ---
 
-Ready to run the Identity Installation Protocol?`
+Ready to run the Action Coherence Protocol?`
     }
   },
 
-  // STAGE 3: Identity Mode
+  // STAGE 3: Algined Action Mode
   3: {
     ritualIntro: {
-      intro: `Welcome to **Stage 3: Identity Mode**.
+      intro: `Welcome to **Stage 3: Aligned Action Mode**.
 
-**Tagline:** *Act from coherence.*
+**Tagline:** *Action without interpretation. Behaviour without a story.*
 
-You've stabilized and embodied awareness. Now we install your new self-concept through behavioral proof.
+Awareness is now consistent enough to guide action directly. This stage uses action to reveal coherence, not to define who you are.
 
-**New practice unlocking:** Morning Micro-Action
+**New practice unlocking:** Action Coherence Protocol
 
 Your updated morning ritual:
 ${getRitualListForStage(3)}
 
 **Total: ${getMorningRitualTime(3)}**
 
-But first, we need to identify WHO you're becoming.
+Before we begin, we’ll identify a consistent action and observe what stabilizes without interpretation.
 
-Ready to run the Identity Installation Protocol?`,
+Ready to run the Action Coherence Protocol?`,
 
       practices: {
-        micro_action: `**NEW RITUAL: MORNING MICRO-ACTION — 2-3 MINS**
+        micro_action: `**NEW RITUAL: Action Coherence Protocol — 2 MINS**
 
 **What it does:**
-Reinforces your chosen self-schema through embodied proof. Each day, you complete one small action that proves you ARE this person — not that you're trying to become them.
+Removes reliance on self-concept by acting without narrative. Each completed action demonstrates functionality without interpretation.
 
 **When:** After Awareness Rep, as the final morning practice.
 
 **How:**
-1. We identify your 21-day identity together
-2. We design one micro-action that proves it
-3. Each morning, you complete the action
-4. Each completion = evidence = neural reinforcement
+1. We define a 21-day action experiment
+2. We choose one minimal, repeatable behaviour
+3. Each morning, you execute it cleanly
+4. Consistency replaces identity inference
 
-By day 21, it won't feel like effort. It'll feel like you.
+By day 21, the action no longer requires effort or justification.
+It simply occurs.
 
-**First:** We need to run the Identity Installation Protocol to set your identity and micro-action.
+**First:** We’ll run the Action Coherence Protocol to define the action and remove narrative from its execution.
 
 Ready to begin?`
       },
