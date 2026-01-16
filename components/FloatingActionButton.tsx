@@ -539,13 +539,18 @@ const getPracticeStatus = (practiceId: string): 'completed' | 'pending' => {
                           <ToolIcon className="w-4 h-4" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <span className="text-sm font-medium text-zinc-700 group-hover:text-zinc-900 block">
-                            {tool.name}
-                          </span>
-                          <div className="text-xs text-zinc-500 mt-0.5">
-                            {tool.description}
-                          </div>
-                        </div>
+  <span className="text-sm font-medium text-zinc-700 group-hover:text-zinc-900 block">
+    {tool.name}
+  </span>
+  <div className="text-xs text-zinc-500 mt-0.5">
+    {tool.description}
+  </div>
+  {tool.when && (
+    <div className="text-xs text-amber-600/70 mt-1 italic">
+      {tool.when}
+    </div>
+  )}
+</div>
                       </div>
                     </button>
                   );
