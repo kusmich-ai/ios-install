@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useIsMobile } from '@/app/hooks/useIsMobile';
 import { useUserProgress } from '@/app/hooks/useUserProgress';
 import { useSubscription, useSubscriptionActions } from '@/app/hooks/useSubscription';
+import { stageTemplates } from '@/lib/templates/templateLibrary';
 import ToolsSidebar from '@/components/ToolsSidebar';
 import { PaywallModal } from '@/components/PaywallModal';
 import FloatingActionButton from '@/components/FloatingActionButton';
@@ -339,75 +340,6 @@ const weeklyDomainQuestions = {
   awareness: "**Awareness:** How quickly did you notice when lost in thought? (0 = never noticed, 5 = immediately)",
   outlook: "**Outlook:** How open and positive did you feel toward life? (0 = closed/negative, 5 = open/positive)",
   attention: "**Attention:** How focused were you on what truly matters? (0 = scattered, 5 = laser-focused)"
-};
-
-// ============================================
-// RITUAL INTRODUCTION TEMPLATES (Stage 1)
-// ============================================
-
-const ritualIntroTemplates = {
-  ritual1Intro: `Perfect. Let's walk through each one.
-
----
-
-**RITUAL 1: RESONANCE BREATHING - 5 MINS**
-
-**What it does:**
-Stimulates your vagus nerve, increases heart rate variability, raises RMSSD. Translation: trains your nervous system to shift from stress to calm coherence on command.
-
-**When:** First thing after waking, before anything else.
-
-**How:**
-Sit up in bed or in a chair. Spine long, shoulders relaxed.
-We're using a 4-second inhale, 6-second exhale rhythm — this hits your resonance frequency and maximizes vagal tone.
-
-**Here is a guided video:** [Resonance Breathing Video](https://www.unbecoming.app/breathe)
-
-When ready, you can also initiate this with the Daily Ritual tools on the right (desktop) or with the lightning icon (mobile).
-
-That's ritual one. Make sense?`,
-
-  ritual2Intro: `Great.
-
----
-
-**RITUAL 2: AWARENESS REP - 2 MINS**
-
-**What it does:**
-Strengthens meta-awareness circuitry (insula-PCC connectivity). Trains your brain to notice when you're lost in thought and return to present awareness.
-
-**When:** Right after Resonance Breathing, while still seated.
-
-**How:**
-A decentering practice that notices whatever is here — sounds, sensations, thoughts — and helps separate you from those things.
-
-You're not trying to change anything or "get somewhere." Just notice that you're noticing.
-
-When you drift into thought (you will), notice that too, and return.
-
-That's the practice. Recognizing you're the observer.
-
-**This audio will guide you through the process when ready:** [Awareness Rep Audio](https://www.unbecoming.app/awareness)
-
-You can also initiate this with the Daily Ritual tools on the right (desktop) or with the lightning icon (mobile).
-
-Make sense?`,
-
-  wrapUp: `Great!
-
-That's your **Stage 1 morning ritual**. 7 minutes. Every day.
-
-**Same sequence:**
-1. Wake up
-2. Resonance Breathing - 5 mins
-3. Awareness Rep - 2 mins
-4. Then check in with me
-
-Your toolbar will let you know if you have completed them for the day and your progress.
-
-**Starting tomorrow morning** — do both rituals, then come back and let me know how it went.
-
-See you then. Your nervous system is about to start learning.`
 };
 
 // ============================================
