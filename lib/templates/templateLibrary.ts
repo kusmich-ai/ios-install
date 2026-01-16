@@ -1335,16 +1335,15 @@ export const toolTemplates = {
   decentering: {
     unlockIntro: `**Decentering Practice** — Now Available
 
-This practice trains you to recognize thoughts, emotions, and identities as objects within awareness — not as "you."
+A short (2–5 minute) guided practice that helps you relate differently to thoughts, emotions, and roles — without trying to change or fix them.
 
 Use it when:
-- Feeling identified with a role or label
-- Stuck in thought loops
-- Intense emotional fusion
+- An emotion feels fused with identity ("I am anxious")
+- You feel stuck in a role (the responsible one, the fixer, the failure)
+- Thoughts feel unquestionable or automatic
+- You're caught in a mental loop and need perspective
 
-**Duration:** 2-5 minutes
-
-Say "start decentering" or click the tool in {{toolbarReference}} when you need it.`,
+Access it via {{toolbarReference}} under "On-Demand Tools."`,
 
     startPrompt: `Let's run a **Decentering Practice**.
 
@@ -1353,67 +1352,86 @@ Take one slow breath. Notice what's happening in your body right now.
 What's most present in your mind — a thought, feeling, story, or role?`
   },
 
-  reframe: {
-    unlockIntro: `**Reframe Protocol** — Now Available
+  worry_loop_dissolver: {
+    unlockIntro: `**Worry Loop Dissolver** — Now Available
 
-This is your cognitive debugging tool. Use it when triggered — when something happens and your mind spins a story that doesn't serve you.
-
-Use it when:
-- Emotional charge from an event
-- Catastrophizing or absolutist thinking
-- Stuck in interpretation loops
-
-**Duration:** 5-10 minutes
-
-Say "run reframe" or click the tool in {{toolbarReference}} when triggered.`,
-
-    startPrompt: `Let's run the **Reframe Protocol**.
-
-First — what happened? Just the facts. No interpretation yet.
-
-Describe the event in one or two sentences.`
-  },
-
-  thought_hygiene: {
-    unlockIntro: `**Thought Hygiene** — Now Available
-
-This is your mental cache clearer. Use it when your mind feels cluttered — too many open loops running in the background.
+A structured 3–5 minute protocol to collapse worry loops (rumination, catastrophizing, anticipatory anxiety) so thinking becomes clear again.
 
 Use it when:
-- After intense cognitive work (Flow Blocks)
-- Mind feels "full" or scattered
-- Can't focus because too much is running
+- The same worry keeps replaying
+- The mind is projecting worst-case future outcomes
+- You're stuck analyzing what something "means" or what someone "thinks"
+- The nervous system feels on alert without a clear, present threat
+- You can't stop mentally rehearsing scenarios
 
-**Duration:** 2-3 minutes
+Access it via {{toolbarReference}} under "On-Demand Tools."`,
 
-Say "run thought hygiene" or click the tool in {{toolbarReference}} when you need to clear the clutter.`,
+    startPrompt: `Let's run the **Worry Loop Dissolver**.
 
-    startPrompt: `Time to clear your mental cache.
+First, let's identify the signal. What sensation or emotion is present in your body right now?
 
-What's still running in the background of your mind — taking up bandwidth? Tasks, conversations, worries, whatever's looping.
-
-Don't overthink it. Don't dig. Just dump what's floating to the surface as bullets.`
+Don't analyze — just notice and name it.`
   },
 
   meta_reflection: {
     unlockIntro: `**Meta-Reflection** — Now Available
 
-This is your weekly integration practice. Use it to process the week's experiences and extract the learning.
+A 10–15 minute weekly session to observe how perception formed and to capture a usable kernel in the format: Signal → Interpretation → Action.
 
 Best used:
-- Sunday evenings
-- After significant life events
-- When patterns need examination
+- Weekly (I'll prompt you on Sundays, or run it on your own day)
+- After a significant event or emotional spike
+- When the same pattern keeps repeating across the week
+- When you want to convert experience into a clear next step
 
-**Duration:** 5-10 minutes
-
-Say "run meta-reflection" or click the tool in {{toolbarReference}} for your weekly integration.`,
+Access it via {{toolbarReference}} under "On-Demand Tools."`,
 
     startPrompt: `Let's run your **Meta-Reflection**.
 
 Sit quietly. Breathe slowly. Say to yourself: "I'm not reviewing life to judge it — I'm studying how awareness moved through it."
 
-Ready?`
+Ready? Select one moment from this week that had emotional charge.`
+  },
+
+  reframe: {
+    unlockIntro: `**Reframe Protocol** — Now Available
+
+A ~2-minute interpretation audit that separates what actually happened from what the mind added, then selects a clean next step.
+
+Use it when:
+- A reaction feels disproportionate to the event
+- Meaning-making shows up ("this means…", "they always…", "I'll never…")
+- Blame, mind-reading, catastrophizing, or certainty creeps in
+- You want clarity instead of rumination
+
+Access it via {{toolbarReference}} under "On-Demand Tools."`,
+
+    startPrompt: `Let's run the **Reframe Protocol**.
+
+First — what's the Signal? What verifiable sensation or emotion is present in your body right now?
+
+Don't interpret yet — just notice and name it.`
+  },
+
+  thought_hygiene: {
+    unlockIntro: `**Thought Hygiene** — Now Available
+
+A 2–3 minute attention reset to reduce cognitive load by clearing active mental loops.
+
+Use it when:
+- After a Flow Block (recommended)
+- Attention feels scattered or overloaded
+- After high-stimulation inputs (meetings, calls, messages, media)
+- Background thoughts are consuming bandwidth
+- Focus feels unavailable despite effort
+
+Access it via {{toolbarReference}} under "On-Demand Tools."`,
+
+    startPrompt: `Time to clear your mental cache.
+
+What's still running in the background of your mind — taking up bandwidth? Tasks, conversations, worries, whatever's looping.
+
+Don't overthink it. Don't dig. Just dump what's floating to the surface.`
   }
 };
 
