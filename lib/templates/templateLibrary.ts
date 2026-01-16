@@ -153,30 +153,29 @@ These movements mobilize the vagus nerve along the spine, enhance cerebrospinal 
   micro_action: {
     startPrompt: `Time for your **Morning Micro-Action**.
 
-Your current identity: **{{currentIdentity}}**
-Your daily proof: **{{microAction}}**
+Today’s action: **{{microAction}}**
 
-This isn't about the action itself — it's about accumulating evidence that you ARE this person. Each completion rewires your self-concept.
+Treat this as execution only. No evaluation. No story about what it means.
 
-Do your micro-action now. When complete, click "Done" in the {{toolbarReference}}.`,
+Complete the action, then click **“Done”** in the {{toolbarReference}}.`,
 
     completionResponse: `Morning Micro-Action logged. ✓
 
 Identity: {{currentIdentity}}
 Evidence: logged.
 
-Day {{identityDayInCycle}} of 21. You're not chasing perfection — you're training consistency. By week 3, this will feel like just who you are.
+Day {{identityDayInCycle}} of 21. You're not chasing perfection — you're training consistency. 
 
 {{nextPracticePrompt}}`,
 
     // Special: When identity needs to be set (new sprint or first time)
-    identityNeeded: `Time to set your **21-day identity**.
+    identityNeeded: `Time to set your **21-day micro action**.
 
-Before we can do your Morning Micro-Action, we need to identify who you're becoming and design the proof.
+Before starting your Morning Micro-Action, we’ll choose one clear action to run consistently for the next 21 days.
 
-This is a 5-minute process that will shape the next 21 days. Ready to begin?
+This takes about 5 minutes and removes guesswork from your mornings. Ready to begin?
 
-Type "yes" to start the Identity Installation Protocol.`
+Type "yes" to start the Action Coherence Protocol.`
   },
 
   // FLOW BLOCK (Stage 4+)
@@ -717,36 +716,35 @@ Starting tomorrow — full sequence + your micro-action. You're now training ide
     dailyPrompts: {
       firstDay: `{{greeting}}{{userName}}.
 
-**Stage 3: Identity Mode** — Day 1
+**Stage 3: Aligned Action Mode** — Day 1
 
-Your identity is set: **{{currentIdentity}}**
-Your daily proof: **{{microAction}}**
+Your daily action: **{{microAction}}**
 
 ${getRitualListForStage(3)}
 
 **Total: ${getMorningRitualTime(3)}**
 
-Ready to become who you already are?`,
+Ready to act without identity?`,
 
       standard: `{{greeting}}{{userName}}.
 
-**Stage 3: Identity Mode** — Day {{daysInStage}}
-**Identity:** {{currentIdentity}} (Day {{identityDayInCycle}}/21)
+**Stage 3: Aligned Action Mode** — Day {{daysInStage}}
+**Action:** {{currentIdentity}} (Day {{identityDayInCycle}}/21)
 **Adherence:** {{adherence}}%{{streakMessage}}
 
 **Today's rituals:**
 ${getRitualListForStage(3)}
 
-Ready to prove who you are?`,
+Ready to act without a story?`,
 
       allComplete: `All practices complete for today. ✓
 
-Identity: {{currentIdentity}}
+Action: {{currentIdentity}}
 Evidence: logged.
 
 **Current status:**
 - Day {{daysInStage}} of Stage 3
-- Identity Day {{identityDayInCycle}} of 21
+- Action Day {{identityDayInCycle}} of 21
 - {{adherence}}% adherence
 
 You're not chasing perfection — you're training consistency.`
@@ -760,7 +758,7 @@ You've proven consistency and transformation:
 - +{{avgDelta}} average delta improvement ✓
 - {{consecutiveDays}} day streak ✓
 
-**Identity proof installed.** You now act from awareness, not toward it.
+**Coherant Action installed.** You now act from awareness, not toward it.
 
 Before we unlock **Stage 4: Flow Mode**, quick reflection:
 
