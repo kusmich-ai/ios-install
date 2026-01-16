@@ -328,37 +328,44 @@ export const ON_DEMAND_TOOLS = [
     name: 'Decentering Practice',
     shortName: 'Decenter',
     icon: '💭',
-    description: 'Recognize thoughts as objects in awareness',
+    description: 'Helps you relate differently to thoughts, emotions, and roles — without trying to change or fix them.',
+    when: 'When you notice yourself getting caught up in a thought, emotion, role',
     unlockedAt: 1
   },
-{
-  id: 'worry_loop_dissolver',
-  name: 'Worry Loop Dissolver',
-  description: 'Dissolve worry or anxiety loops',
-  icon: '🔄',
-  unlockedAt: 1  // <-- Use unlockedAt, not unlocksAtStage
-},
+  {
+    id: 'worry_loop_dissolver',
+    name: 'Worry Loop Dissolver',
+    shortName: 'Loop',
+    icon: '🔄',
+    description: 'Collapse worry loops (rumination, catastrophizing, anticipatory anxiety) so thinking becomes clear again.',
+    when: 'When the same concern keeps re-forming as a story',
+    unlockedAt: 1
+  },
   {
     id: 'meta_reflection',
     name: 'Meta-Reflection',
     shortName: 'Meta',
     icon: '📊',
-    description: 'Weekly system check-in',
+    description: 'Helps you look back and see where you got caught in stories about events.',
+    when: 'When reflecting on the week or after a meaningful shift',
     unlockedAt: 2
   },
-{
-  id: 'reframe',
-  name: 'Reframe Protocol',
-  description: 'Update the story of a recent negative experience',
-  icon: '🔀',
-  unlockedAt: 3  
-},
+  {
+    id: 'reframe',
+    name: 'Reframe Protocol',
+    shortName: 'Reframe',
+    icon: '🔀',
+    description: '2-minute interpretation audit that separates what actually happened from what the mind added.',
+    when: 'When a situation feels sticky, charged, or personal',
+    unlockedAt: 3
+  },
   {
     id: 'thought_hygiene',
     name: 'Thought Hygiene',
     shortName: 'Hygiene',
     icon: '🧠',
-    description: 'Clear mental cache',
+    description: 'For clearing cognitive residue after heavy mental load.',
+    when: 'When the mind feels busy after effort or focus blocks',
     unlockedAt: 4
   }
 ];
