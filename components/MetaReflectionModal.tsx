@@ -5,6 +5,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { createClient } from '@/lib/supabase-client';
 import { getPatternSummary } from '@/lib/resistanceTracking';
+import { toolUniversalFrame } from '@/lib/toolFraming';
 
 // ============================================
 // TYPES
@@ -38,10 +39,12 @@ const initialSession: MetaReflectionSession = {
 
 const firstTimeMessage = `**Meta-Reflection** — a 10–15 minute inquiry into how perception formed during recent experiences.
 
-This is not about judging or problem-solving. It’s about observing the sequence:
+${toolUniversalFrame}
+
+This is not about judging or problem-solving. It's about observing the sequence:
 Signal → Interpretation → Action.
 
-We’ll move through: Frame → Observe → Inquiry → Capture → Embody.
+We'll move through: Frame → Observe → Inquiry → Capture → Embody.
 
 Start with one slow breath.
 
@@ -80,14 +83,11 @@ function escapeHtml(input: string): string {
 }
 
 function extractCueKernelBlock(text: string): string | null {
-  // Accept both single-line and multi-line variants, in any order of whitespace.
-  // Requires all three labels present.
   const hasSignal = /(^|\n)\s*signal\s*:\s*.+/i.test(text);
   const hasInterpretation = /(^|\n)\s*interpretation\s*:\s*.+/i.test(text);
   const hasAction = /(^|\n)\s*action\s*:\s*.+/i.test(text);
   if (!hasSignal || !hasInterpretation || !hasAction) return null;
 
-  // Extract the last occurrence of each line to form a normalized 3-line kernel.
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
 
   const lastLine = (label: 'Signal' | 'Interpretation' | 'Action') => {
@@ -108,13 +108,11 @@ function extractCueKernelBlock(text: string): string | null {
 }
 
 function extractKernelStatement(history: Array<{ role: 'user' | 'assistant'; content: string }>): string | null {
-  // Primary: last CUE-KERNEL block (Signal/Interpretation/Action) from either user or assistant.
   for (let idx = history.length - 1; idx >= 0; idx--) {
     const block = extractCueKernelBlock(history[idx].content);
     if (block) return block;
   }
 
-  // Fallback (legacy): short first-person present-tense insight from user messages.
   const userMessages = history.filter(m => m.role === 'user').map(m => m.content);
   for (let i = userMessages.length - 1; i >= Math.max(0, userMessages.length - 3); i--) {
     const msg = userMessages[i];
@@ -213,7 +211,6 @@ function formatPastKernelsContext(kernels: PastKernel[]): string {
   return context;
 }
 
-// Simple markdown renderer (now HTML-escaped before markup)
 function renderMarkdown(text: string): string {
   const safe = escapeHtml(text);
   return safe
@@ -249,12 +246,10 @@ function MetaReflectionModalComponent({ isOpen, onClose, userId, isWeeklyPrompt 
     return () => { isMountedRef.current = false; };
   }, []);
 
-  // Scroll to bottom when messages update
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Focus input when modal opens
   useEffect(() => {
     if (isOpen) {
       const t = setTimeout(() => inputRef.current?.focus(), 100);
@@ -262,12 +257,10 @@ function MetaReflectionModalComponent({ isOpen, onClose, userId, isWeeklyPrompt 
     }
   }, [isOpen]);
 
-  // Refocus input after loading completes
   useEffect(() => {
     if (!loading && isOpen) inputRef.current?.focus();
   }, [loading, isOpen]);
 
-  // Initialize session when modal opens
   useEffect(() => {
     if (isOpen && messages.length === 0) {
       initializeSession();
@@ -315,6 +308,7 @@ function MetaReflectionModalComponent({ isOpen, onClose, userId, isWeeklyPrompt 
       }
     }
 
+    // Step 2.2: Universal frame in first-time message only
     let openingMessage: string;
     if (isFirstTime) openingMessage = firstTimeMessage;
     else if (isWeeklyPrompt) openingMessage = returningMessage;
@@ -435,6 +429,12 @@ function MetaReflectionModalComponent({ isOpen, onClose, userId, isWeeklyPrompt 
 
     const kernel = session.kernelStatement || extractKernelStatement(session.conversationHistory);
     const themes = extractThemes(session.conversationHistory);
+    
+    // Detect capacity signals
+    const userMessages = session.conversationHistory.filter(m => m.role === 'user').map(m => m.content.toLowerCase());
+    const allText = userMessages.join(' ');
+    const wasSignalNamed = ['feel', 'feeling', 'notice', 'sense', 'body', 'sensation', 'tight', 'open'].some(k => allText.includes(k));
+    const wasInterpretationIdentified = ['thought', 'story', 'belief', 'meaning', 'interpretation', 'pattern'].some(k => allText.includes(k));
 
     if (userId) {
       try {
@@ -446,7 +446,11 @@ function MetaReflectionModalComponent({ isOpen, onClose, userId, isWeeklyPrompt 
           duration_seconds: durationSeconds,
           session_data: {
             kernel: kernel,
-            themes: themes
+            themes: themes,
+            // Capacity signals (not success/fail)
+            was_signal_named: wasSignalNamed,
+            was_interpretation_identified: wasInterpretationIdentified,
+            action_selected: kernel !== null
           },
           recurring_themes: themes
         });
@@ -480,14 +484,10 @@ function MetaReflectionModalComponent({ isOpen, onClose, userId, isWeeklyPrompt 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop with blur */}
       <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={handleClose} />
 
-      {/* Modal */}
       <div className="relative w-full max-w-2xl h-[85vh] bg-gradient-to-b from-gray-900 to-[#0a0a0a] rounded-2xl border border-gray-700/50 flex flex-col overflow-hidden shadow-2xl shadow-black/50">
-        {/* Header with accent */}
         <div className="relative px-6 py-5 border-b border-gray-700/50">
-          {/* Accent glow - purple/indigo for reflection */}
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent" />
 
           <div className="flex items-center justify-between">
@@ -519,7 +519,6 @@ function MetaReflectionModalComponent({ isOpen, onClose, userId, isWeeklyPrompt 
           </div>
         </div>
 
-        {/* Messages */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {messages.map((msg, idx) => (
             <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -563,7 +562,6 @@ function MetaReflectionModalComponent({ isOpen, onClose, userId, isWeeklyPrompt 
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input area */}
         <div className="border-t border-gray-700/50 p-4 bg-gray-900/50">
           <form
             onSubmit={(e) => {
@@ -669,7 +667,7 @@ export async function isWeeklyReflectionDue(userId: string): Promise<boolean> {
     const lastSession = new Date(data.created_at);
     const now = new Date();
     const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
+    startOfWeek.setDate(now.getDate() - now.getDay());
     startOfWeek.setHours(0, 0, 0, 0);
 
     return lastSession < startOfWeek;
@@ -678,7 +676,6 @@ export async function isWeeklyReflectionDue(userId: string): Promise<boolean> {
   }
 }
 
-// Legacy export name for backwards compatibility
 export const isMetaReflectionDue = isWeeklyReflectionDue;
 
 export default MetaReflectionModalComponent;
