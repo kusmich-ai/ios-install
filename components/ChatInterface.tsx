@@ -851,6 +851,10 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
     previousStage: number;
   } | null>(null);
 
+  // Stage Attribution Modal State (show-once unlock modals)
+  const [showAttributionModal, setShowAttributionModal] = useState(false);
+  const [attributionStage, setAttributionStage] = useState<StageId | null>(null);
+
   // ============================================
   // ALL useRef DECLARATIONS (must be after useState, in consistent order)
   // ============================================
@@ -1413,6 +1417,19 @@ When you're ready to learn more, click the "Unlock Stage 7?" button in your dash
           await refetchProgress();
         }
         
+        // Check if we need to show attribution modal first (show-once logic)
+        const attrFlagKey = `stage_${pendingUnlockStage}_attribution_seen` as keyof typeof progress;
+        const alreadySeen = progress?.[attrFlagKey] === true;
+        
+        if (!alreadySeen && pendingUnlockStage >= 1 && pendingUnlockStage <= 6) {
+          // Show attribution modal first
+          setAttributionStage(pendingUnlockStage as StageId);
+          setShowAttributionModal(true);
+          // Don't proceed yet - wait for modal continue
+          return;
+        }
+        
+        // If already seen, continue with normal flow
         setUnlockFlowState('confirmed');
         
         const stageName = getStageName(pendingUnlockStage);
@@ -1439,6 +1456,48 @@ Your new practices are now available.`
         content: "No problem. Take your time. You can unlock when you're ready - just ask or wait for the next check." 
       }]);
     }
+  };
+
+  // ============================================
+  // HANDLE ATTRIBUTION MODAL CONTINUE (show-once logic)
+  // ============================================
+  
+  const handleAttributionContinue = async () => {
+    if (!attributionStage || !user) return;
+    
+    // Mark as seen in database
+    try {
+      const supabase = createClient();
+      const flagKey = `stage_${attributionStage}_attribution_seen`;
+      
+      await supabase
+        .from('user_progress')
+        .update({ [flagKey]: true })
+        .eq('user_id', user.id);
+      
+      // Update local progress state if available
+      if (refetchProgress) {
+        await refetchProgress();
+      }
+    } catch (err) {
+      console.error('Failed to save attribution seen flag:', err);
+      // Continue anyway - not critical
+    }
+    
+    // Close modal
+    setShowAttributionModal(false);
+    
+    // Now show the confirmation message and proceed
+    const stageName = getStageName(attributionStage);
+    setMessages(prev => [...prev, { 
+      role: 'assistant', 
+      content: `**Stage ${attributionStage}: ${stageName} unlocked!** 🔓
+
+Your new practices are now available.`
+    }]);
+    
+    setUnlockFlowState('confirmed');
+    setAttributionStage(null);
   };
 
   // ============================================
@@ -4217,6 +4276,19 @@ const sendMessage = async (e: React.FormEvent) => {
         onClose={() => setShowPaywall(false)}
         onUpgrade={handleUpgrade}
       />
+
+      {/* Stage Attribution Modal (show-once unlock celebration) */}
+      {attributionStage && (
+        <StageAttributionModal
+          stage={attributionStage}
+          isOpen={showAttributionModal}
+          onClose={() => {
+            setShowAttributionModal(false);
+            setAttributionStage(null);
+          }}
+          onContinue={handleAttributionContinue}
+        />
+      )}
     </div>
   );
 }
