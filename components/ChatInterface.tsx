@@ -1119,8 +1119,8 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
         : 21,
       isMobile,
       toolsReference: isMobile ? 'the lightning bolt icon' : 'the Daily Ritual tools on the right',
-  toolbarReference: isMobile ? 'the lightning bolt icon' : 'the Daily Ritual tools on the right',  // ADD THIS
-};
+      toolbarReference: isMobile ? 'the lightning bolt icon' : 'the Daily Ritual tools on the right'
+    };
   }, [user, baselineData, progress, isMobile]);
   
   // ============================================
@@ -3377,45 +3377,36 @@ This isn't judgment — it's data. The resistance is telling you something. Want
     setLoading(true);
     
     let responseMessage: string;
+    const templateContext = buildTemplateContext();
     
-   const handleQuickReply = async (currentStep: number) => {
-  const reply = introQuickReplies[currentStep];
-  if (!reply) return;
-  
-  setMessages(prev => [...prev, { role: 'user', content: reply.text }]);
-  setLoading(true);
-  
-  let responseMessage: string;
-  const templateContext = buildTemplateContext();  // ADD THIS
-  
-  if (currentStep === 0) {
-    responseMessage = processTemplate(stageTemplates[1].ritualIntro.practices.hrvb, templateContext);
-    setIntroStep(1);
-  } else if (currentStep === 1) {
-    responseMessage = processTemplate(stageTemplates[1].ritualIntro.practices.awareness_rep, templateContext);
-    setIntroStep(2);
-  } else if (currentStep === 2) {
-    responseMessage = processTemplate(stageTemplates[1].ritualIntro.wrapUp, templateContext);
-    setIntroStep(3);
-    
-    try {
-      const supabase = createClient();
-      await supabase
-        .from('user_progress')
-        .update({ ritual_intro_completed: true })
-        .eq('user_id', user.id);
-    } catch (err) {
-      console.error('Failed to mark intro complete:', err);
+    if (currentStep === 0) {
+      responseMessage = processTemplate(stageTemplates[1].ritualIntro.practices.hrvb, templateContext);
+      setIntroStep(1);
+    } else if (currentStep === 1) {
+      responseMessage = processTemplate(stageTemplates[1].ritualIntro.practices.awareness_rep, templateContext);
+      setIntroStep(2);
+    } else if (currentStep === 2) {
+      responseMessage = processTemplate(stageTemplates[1].ritualIntro.wrapUp, templateContext);
+      setIntroStep(3);
+      
+      try {
+        const supabase = createClient();
+        await supabase
+          .from('user_progress')
+          .update({ ritual_intro_completed: true })
+          .eq('user_id', user.id);
+      } catch (err) {
+        console.error('Failed to mark intro complete:', err);
+      }
+    } else {
+      responseMessage = "What would you like to explore?";
     }
-  } else {
-    responseMessage = "What would you like to explore?";
-  }
-  
-  setTimeout(async () => {
-    await postAssistantMessage(responseMessage);
-    setLoading(false);
-  }, 500);
-};
+    
+    setTimeout(async () => {
+      await postAssistantMessage(responseMessage);
+      setLoading(false);
+    }, 500);
+  };
 
   // ============================================
   // PRACTICE CLICK HANDLER
