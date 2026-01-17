@@ -65,6 +65,14 @@ export interface UserProgress {
     requiredDays: number;
     requiredDelta: number;
   };
+  
+// Stage attribution "seen" flags
+  stage_1_attribution_seen: boolean;
+  stage_2_attribution_seen: boolean;
+  stage_3_attribution_seen: boolean;
+  stage_4_attribution_seen: boolean;
+  stage_5_attribution_seen: boolean;
+  stage_6_attribution_seen: boolean;
 }
 
 // ============================================
