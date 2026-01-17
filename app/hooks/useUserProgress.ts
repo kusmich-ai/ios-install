@@ -1,5 +1,6 @@
 // app/hooks/useUserProgress.ts
 // Updated to read identity_statement from identity_sprints table (displayed as aligned action in UI)
+// Includes stage attribution "seen" flags for show-once unlock modals
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -66,7 +67,7 @@ export interface UserProgress {
     requiredDelta: number;
   };
   
-// Stage attribution "seen" flags
+  // Stage attribution "seen" flags (for show-once unlock modals)
   stage_1_attribution_seen: boolean;
   stage_2_attribution_seen: boolean;
   stage_3_attribution_seen: boolean;
@@ -174,25 +175,25 @@ export function useUserProgress() {
       }
 
       // Fetch baseline data from key-value store
-const { data: baselineRows } = await supabase
-  .from('user_data')
-  .select('key, value')
-  .eq('user_id', user.id)
-  .in('key', ['ios:baseline:domain_scores', 'ios:baseline:rewired_index']);
+      const { data: baselineRows } = await supabase
+        .from('user_data')
+        .select('key, value')
+        .eq('user_id', user.id)
+        .in('key', ['ios:baseline:domain_scores', 'ios:baseline:rewired_index']);
 
-// Parse the key-value data
-const baselineMap = (baselineRows || []).reduce((acc: Record<string, string>, row: { key: string; value: string }) => {
-  acc[row.key] = row.value;
-  return acc;
-}, {} as Record<string, string>);
+      // Parse the key-value data
+      const baselineMap = (baselineRows || []).reduce((acc: Record<string, string>, row: { key: string; value: string }) => {
+        acc[row.key] = row.value;
+        return acc;
+      }, {} as Record<string, string>);
 
-const baselineDomainScores = baselineMap['ios:baseline:domain_scores'] 
-  ? JSON.parse(baselineMap['ios:baseline:domain_scores'])
-  : { regulation: 2.5, awareness: 2.5, outlook: 2.5, attention: 2.5 };
+      const baselineDomainScores = baselineMap['ios:baseline:domain_scores'] 
+        ? JSON.parse(baselineMap['ios:baseline:domain_scores'])
+        : { regulation: 2.5, awareness: 2.5, outlook: 2.5, attention: 2.5 };
 
-const baselineRewiredIndex = baselineMap['ios:baseline:rewired_index']
-  ? JSON.parse(baselineMap['ios:baseline:rewired_index'])
-  : 50;
+      const baselineRewiredIndex = baselineMap['ios:baseline:rewired_index']
+        ? JSON.parse(baselineMap['ios:baseline:rewired_index'])
+        : 50;
 
       // Fetch user progress
       const { data: progressData, error: progressError } = await supabase
@@ -215,11 +216,11 @@ const baselineRewiredIndex = baselineMap['ios:baseline:rewired_index']
         .single();
 
       // Fetch today's practice logs
-const { data: todayLogs } = await supabase
-  .from('practice_logs')
-  .select('practice_type')
-  .eq('user_id', user.id)
-  .eq('practice_date', today);
+      const { data: todayLogs } = await supabase
+        .from('practice_logs')
+        .select('practice_type')
+        .eq('user_id', user.id)
+        .eq('practice_date', today);
 
       // ============================================
       // FETCH ACTIVE IDENTITY SPRINT
@@ -376,11 +377,11 @@ const { data: todayLogs } = await supabase
         // Database columns: identity_statement, micro_action
         // UI displays as: coherenceStatement (aligned action)
         // ============================================
-        coherenceStatement: identitySprint?.identity_statement || null,  // DB column: identity_statement
-        currentIdentity: identitySprint?.identity_statement || null,     // Backwards compat alias
-        microAction: identitySprint?.micro_action || null,               // DB column: micro_action
+        coherenceStatement: identitySprint?.identity_statement || null,
+        currentIdentity: identitySprint?.identity_statement || null,
+        microAction: identitySprint?.micro_action || null,
         sprintDay: identitySprintDay,
-        identitySprintDay: identitySprintDay, // Backwards compat
+        identitySprintDay: identitySprintDay,
         identitySprintNumber: identitySprint?.sprint_number || null,
         identitySprintStart: identitySprint?.start_date || null,
         
@@ -392,7 +393,15 @@ const { data: todayLogs } = await supabase
         
         // Progress tracking fields
         daysInStage,
-        unlockProgress
+        unlockProgress,
+        
+        // Stage attribution "seen" flags (from user_progress table)
+        stage_1_attribution_seen: progressData.stage_1_attribution_seen ?? false,
+        stage_2_attribution_seen: progressData.stage_2_attribution_seen ?? false,
+        stage_3_attribution_seen: progressData.stage_3_attribution_seen ?? false,
+        stage_4_attribution_seen: progressData.stage_4_attribution_seen ?? false,
+        stage_5_attribution_seen: progressData.stage_5_attribution_seen ?? false,
+        stage_6_attribution_seen: progressData.stage_6_attribution_seen ?? false,
       };
 
       console.log('[useUserProgress] Setting progress:', {
