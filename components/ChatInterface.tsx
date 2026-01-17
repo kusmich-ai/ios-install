@@ -14,8 +14,7 @@ import Link from 'next/link';
 import AwakenWithFiveCard from './AwakenWithFiveCard';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import { Zap, Heart } from 'lucide-react';
-import StageAttributionModal from '@/components/StageAttributionModal';
-import { stageAttribution, StageId } from '@/lib/attributioncopy';
+import StageAttributionModal, { StageId } from '@/components/StageAttributionModal';
 
 // ============================================
 // TEMPLATE SYSTEM IMPORTS
