@@ -3763,38 +3763,39 @@ const sendMessage = async (e: React.FormEvent) => {
         word => userMessage.toLowerCase().includes(word)
       );
       
-      if (isAffirmative) {
-        let responseMessage: string;
-        
-        if (introStep === 0) {
-          responseMessage = stageTemplates[1].ritualIntro.practices.hrvb;
-          setIntroStep(1);
-        } else if (introStep === 1) {
-          responseMessage = stageTemplates[1].ritualIntro.practices.awareness_rep;
-          setIntroStep(2);
-        } else if (introStep === 2) {
-          responseMessage = stageTemplates[1].ritualIntro.wrapUp;
-          setIntroStep(3);
-          
-          try {
-            const supabase = createClient();
-            await supabase
-              .from('user_progress')
-              .update({ ritual_intro_completed: true })
-              .eq('user_id', user.id);
-          } catch (err) {
-            console.error('Failed to mark intro complete:', err);
-          }
-        } else {
-          responseMessage = "What would you like to explore?";
-        }
-        
-        setTimeout(() => {
-          setMessages(prev => [...prev, { role: 'assistant', content: responseMessage }]);
-          setLoading(false);
-        }, 500);
-        return;
-      }
+     if (isAffirmative) {
+  let responseMessage: string;
+  const templateContext = buildTemplateContext();
+  
+  if (introStep === 0) {
+    responseMessage = processTemplate(stageTemplates[1].ritualIntro.practices.hrvb, templateContext);
+    setIntroStep(1);
+  } else if (introStep === 1) {
+    responseMessage = processTemplate(stageTemplates[1].ritualIntro.practices.awareness_rep, templateContext);
+    setIntroStep(2);
+  } else if (introStep === 2) {
+    responseMessage = processTemplate(stageTemplates[1].ritualIntro.wrapUp, templateContext);
+    setIntroStep(3);
+    
+    try {
+      const supabase = createClient();
+      await supabase
+        .from('user_progress')
+        .update({ ritual_intro_completed: true })
+        .eq('user_id', user.id);
+    } catch (err) {
+      console.error('Failed to mark intro complete:', err);
+    }
+  } else {
+    responseMessage = "What would you like to explore?";
+  }
+  
+  setTimeout(() => {
+    setMessages(prev => [...prev, { role: 'assistant', content: responseMessage }]);
+    setLoading(false);
+  }, 500);
+  return;
+}
       
       try {
         const response = await fetch('/api/chat', {
