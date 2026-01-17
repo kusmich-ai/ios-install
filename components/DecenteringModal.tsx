@@ -80,20 +80,6 @@ function extractSessionData(history: Array<{ role: 'user' | 'assistant'; content
   return { themes: themes.slice(0, 5) };
 }
 
-// FIX #3: Helper to get mode-specific system prompt
-function getDecenteringPrompt(mode: DecenteringSession['sessionMode']): string {
-  if (mode === 'identity_audit') {
-    return `${decenteringSystemPrompt}
-
-MODE: IDENTITY_AUDIT
-Follow the IDENTITY AUDIT MODE questions strictly, one at a time. Do not skip steps or combine questions.`;
-  }
-  return `${decenteringSystemPrompt}
-
-MODE: STANDARD
-Follow the standard session structure conversationally.`;
-}
-
 // FIX #4: HTML escaping to prevent XSS
 function escapeHtml(input: string): string {
   return input
