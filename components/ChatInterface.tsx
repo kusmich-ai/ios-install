@@ -3429,13 +3429,13 @@ This isn't judgment — it's data. The resistance is telling you something. Want
     let responseMessage: string;
     
     if (currentStep === 0) {
-      responseMessage = ritualIntroTemplates.ritual1Intro;
+      responseMessage = stageTemplates[1].ritualIntro.practices.hrvb;
       setIntroStep(1);
     } else if (currentStep === 1) {
-      responseMessage = ritualIntroTemplates.ritual2Intro;
+      responseMessage = stageTemplates[1].ritualIntro.practices.awareness_rep;
       setIntroStep(2);
     } else if (currentStep === 2) {
-      responseMessage = ritualIntroTemplates.wrapUp;
+      responseMessage = stageTemplates[1].ritualIntro.wrapUp;
       setIntroStep(3);
       
       try {
@@ -3800,13 +3800,13 @@ const sendMessage = async (e: React.FormEvent) => {
         let responseMessage: string;
         
         if (introStep === 0) {
-          responseMessage = ritualIntroTemplates.ritual1Intro;
+          responseMessage = stageTemplates[1].ritualIntro.practices.hrvb;
           setIntroStep(1);
         } else if (introStep === 1) {
-          responseMessage = ritualIntroTemplates.ritual2Intro;
+          responseMessage = stageTemplates[1].ritualIntro.practices.awareness_rep;
           setIntroStep(2);
         } else if (introStep === 2) {
-          responseMessage = ritualIntroTemplates.wrapUp;
+          responseMessage = stageTemplates[1].ritualIntro.wrapUp;
           setIntroStep(3);
           
           try {
