@@ -20,13 +20,7 @@ import { Zap, Heart } from 'lucide-react';
 // ============================================
 import {
   processTemplate,
-  selectTemplate,
   templateLibrary,
-  getPracticesForStage,
-  getNextPractice,
-  areAllPracticesComplete,
-  getPracticeById,
-  isToolUnlocked,
   type TemplateContext,
   type SelectionContext,
   // Voice library
