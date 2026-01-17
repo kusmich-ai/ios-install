@@ -3346,6 +3346,7 @@ await postAssistantMessage(`Starting **${practiceName}**...\n\nThe practice wind
   // ============================================
   
   const handlePracticeCompleted = useCallback((practiceId: string) => {
+    const normalizedId = normalizePracticeId(practiceId);
     const practiceName = getPracticeName(practiceId);
     
     devLog('[ChatInterface]', 'Practice completed callback:', { practiceId, practiceName });
