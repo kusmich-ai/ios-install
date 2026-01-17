@@ -30,6 +30,19 @@ import {
   breakthroughTemplates,
   resistanceTemplates
 } from '@/lib/templates';
+
+// ============================================
+// STAGE CONFIG IMPORTS
+// ============================================
+import {
+  getStageName,
+  getStatusTier,
+  getStatusColor,
+  getStagePracticeIds,
+  normalizePracticeId,
+  getPracticeName,
+  TIER_INTERPRETATIONS
+} from '@/app/config/stages';
 import { 
   startNewMicroActionSprint, 
   getCurrentMicroActionSprint,
@@ -188,37 +201,7 @@ function renderMarkdown(text: string): string {
     .replace(/\n/g, '<br />');
 }
 
-// Get stage name from number
-function getStageName(stage: number): string {
-  const names: { [key: number]: string } = {
-    1: 'Neural Priming',
-    2: 'Embodied Awareness',
-    3: 'Aligned Action Mode',
-    4: 'Flow Mode',
-    5: 'Relational Coherence',
-    6: 'Integration',
-    7: 'Accelerated Expansion'
-  };
-  return names[stage] || `Stage ${stage}`;
-}
-
-// Get status tier based on REwired Index
-function getStatusTier(index: number): string {
-  if (index <= 20) return 'System Offline';
-  if (index <= 40) return 'Baseline Mode';
-  if (index <= 60) return 'Operational';
-  if (index <= 80) return 'Optimized';
-  return 'Integrated';
-}
-
-// Get status color based on REwired Index
-function getStatusColor(index: number): string {
-  if (index <= 20) return 'text-red-400';
-  if (index <= 40) return 'text-yellow-400';
-  if (index <= 60) return 'text-blue-400';
-  if (index <= 80) return 'text-green-400';
-  return 'text-purple-400';
-}
+// getStageName, getStatusTier, getStatusColor now imported from @/app/config/stages
 
 // ============================================
 // OPENING MESSAGE GENERATORS
@@ -242,14 +225,7 @@ interface ProgressData {
   stage_start_date?: string;
 }
 
-// Tier interpretations
-const tierInterpretations: { [key: string]: string } = {
-  'System Offline': "Uh oh! Your nervous system is in survival mode. You're operating on fumes. The IOS will teach you how to downshift into recovery.",
-  'Baseline Mode': "You're functioning, but not optimized. Regulation is inconsistent, awareness is fragmented. The IOS will build your foundation.",
-  'Operational': "You have some coherence, but it's not stable. The IOS will solidify what's working and upgrade what isn't.",
-  'Optimized': "You're performing well. The IOS will take you from good to exceptional — making flow states and clarity your default.",
-  'Integrated': "You're already operating at a high level. The IOS will help you sustain and expand this capacity across all domains."
-};
+// TIER_INTERPRETATIONS now imported from @/app/config/stages
 
 // Stage rituals - using "Resonance Breathing" consistently
 const stageRituals: { [key: number]: { list: string; total: string } } = {
@@ -304,16 +280,7 @@ const stageRituals: { [key: number]: { list: string; total: string } } = {
   }
 };
 
-// Required practice IDs by stage (for checking completion)
-const stagePracticeIds: { [key: number]: string[] } = {
-  1: ['hrvb', 'awareness_rep'],
-  2: ['hrvb', 'somatic_flow', 'awareness_rep'],
-  3: ['hrvb', 'somatic_flow', 'awareness_rep', 'micro_action'],
-  4: ['hrvb', 'somatic_flow', 'awareness_rep', 'micro_action', 'flow_block'],
-  5: ['hrvb', 'somatic_flow', 'awareness_rep', 'micro_action', 'flow_block', 'co_regulation'],
-  6: ['hrvb', 'somatic_flow', 'awareness_rep', 'micro_action', 'flow_block', 'co_regulation', 'nightly_debrief'],
-  7: ['hrvb', 'somatic_flow', 'awareness_rep', 'micro_action', 'flow_block', 'co_regulation', 'nightly_debrief']
-};
+// stagePracticeIds now replaced by getStagePracticeIds() from @/app/config/stages
 
 // ============================================
 // WEEKLY CHECK-IN CONSTANTS
@@ -477,7 +444,7 @@ async function getFirstTimeOpeningMessage(baselineData: BaselineData, userName: 
   const rituals = stageRituals[1] || stageRituals[1];
   
   // Get dynamic interpretation from API
-  let tierInterpretation = tierInterpretations[tier] || tierInterpretations['Operational'];
+  let tierInterpretation = TIER_INTERPRETATIONS[tier] || TIER_INTERPRETATIONS['Operational'];
   
   try {
     const response = await fetch('/api/ios/interpret-baseline', {
@@ -527,7 +494,7 @@ function getSameDayReturnMessage(
   practicesCompletedToday: string[]
 ): string {
   const adherence = progressData?.adherence_percentage || 0;
-  const requiredPractices = stagePracticeIds[currentStage] || stagePracticeIds[1];
+  const requiredPractices = getStagePracticeIds(currentStage);
   const completedCount = practicesCompletedToday.filter(p => requiredPractices.includes(p)).length;
   const totalRequired = requiredPractices.length;
   
@@ -921,29 +888,8 @@ function getResistanceTemplateMessage(pattern: { type: string; subType?: string;
   return '';
 }
 
-// ============================================
-// PRACTICE NAME MAPPING
-// ============================================
-
-const practiceIdToName: { [key: string]: string } = {
-  'hrvb': 'Resonance Breathing',
-  'resonance_breathing': 'Resonance Breathing',
-  'awareness_rep': 'Awareness Rep',
-  'somatic_flow': 'Somatic Flow',
-  'micro_action': 'Morning Micro-Action',
-  'flow_block': 'Flow Block',
-  'co_regulation': 'Co-Regulation Practice',
-  'nightly_debrief': 'Nightly Debrief'
-};
-
-// Normalize practice ID (handle variations)
-function normalizePracticeId(id: string): string {
-  const normalized = id.toLowerCase().replace(/[\s-]/g, '_');
-  if (normalized === 'resonance_breathing' || normalized === 'hrvb_breathing') {
-    return 'hrvb';
-  }
-  return normalized;
-}
+// practiceIdToName and normalizePracticeId now imported from @/app/config/stages
+// Use getPracticeName() instead of practiceIdToName[normalizedId]
 
 // ============================================
 // MAIN COMPONENT
@@ -3423,10 +3369,9 @@ This isn't judgment — it's data. The resistance is telling you something. Want
   // ============================================
   
   const handlePracticeClick = useCallback(async (practiceId: string) => {
-    const normalizedId = normalizePracticeId(practiceId);
-    const practiceName = practiceIdToName[normalizedId] || practiceId;
+    const practiceName = getPracticeName(practiceId);
     
-    devLog('[ChatInterface]', 'Practice clicked:', { practiceId, normalizedId, practiceName });
+    devLog('[ChatInterface]', 'Practice clicked:', { practiceId, practiceName });
     
 await postAssistantMessage(`Starting **${practiceName}**...\n\nThe practice window will open. Complete it and I'll log your progress.`);
   }, []);
@@ -3524,10 +3469,9 @@ await postAssistantMessage(`Starting **${practiceName}**...\n\nThe practice wind
   // ============================================
   
   const handlePracticeCompleted = useCallback((practiceId: string) => {
-    const normalizedId = normalizePracticeId(practiceId);
-    const practiceName = practiceIdToName[normalizedId] || practiceId;
+    const practiceName = getPracticeName(practiceId);
     
-    devLog('[ChatInterface]', 'Practice completed callback:', { practiceId, normalizedId, practiceName });
+    devLog('[ChatInterface]', 'Practice completed callback:', { practiceId, practiceName });
     
     setMessages(prev => [...prev, { 
       role: 'assistant', 
