@@ -370,11 +370,153 @@ export const ON_DEMAND_TOOLS = [
   }
 ];
 
+// ============================================
+// STAGE HELPER FUNCTIONS
+// ============================================
+
+/**
+ * Get practices for a specific stage
+ */
 export function getStagePractices(stageNumber: number): Practice[] {
   const stage = STAGES.find(s => s.number === stageNumber);
   return stage?.practices || [];
 }
 
+/**
+ * Get on-demand tools unlocked at or before a specific stage
+ */
 export function getUnlockedOnDemandTools(stageNumber: number) {
   return ON_DEMAND_TOOLS.filter(tool => tool.unlockedAt <= stageNumber);
+}
+
+/**
+ * Get stage name by number
+ */
+export function getStageName(stageNumber: number): string {
+  const stage = STAGES.find(s => s.number === stageNumber);
+  return stage?.name || `Stage ${stageNumber}`;
+}
+
+/**
+ * Get stage tagline by number
+ */
+export function getStageTagline(stageNumber: number): string {
+  const stage = STAGES.find(s => s.number === stageNumber);
+  return stage?.tagline || '';
+}
+
+/**
+ * Get array of practice IDs for a stage (simple string array)
+ */
+export function getStagePracticeIds(stageNumber: number): string[] {
+  const stage = STAGES.find(s => s.number === stageNumber);
+  return stage?.practices.map(p => p.id) || [];
+}
+
+/**
+ * Normalize practice ID (handle variations like 'resonance_breathing' -> 'hrvb')
+ */
+export function normalizePracticeId(id: string): string {
+  const normalized = id.toLowerCase().replace(/[\s-]/g, '_');
+  if (normalized === 'resonance_breathing' || normalized === 'hrvb_breathing') {
+    return 'hrvb';
+  }
+  return normalized;
+}
+
+/**
+ * Get practice display name from ID
+ */
+export function getPracticeName(id: string): string {
+  const normalizedId = normalizePracticeId(id);
+  
+  // Search all stages for the practice
+  for (const stage of STAGES) {
+    const practice = stage.practices.find(p => p.id === normalizedId);
+    if (practice) return practice.name;
+  }
+  
+  return id; // Fallback to original ID
+}
+
+/**
+ * Get practice by ID
+ */
+export function getPracticeById(id: string): Practice | undefined {
+  const normalizedId = normalizePracticeId(id);
+  
+  for (const stage of STAGES) {
+    const practice = stage.practices.find(p => p.id === normalizedId);
+    if (practice) return practice;
+  }
+  
+  return undefined;
+}
+
+/**
+ * Get stage by number
+ */
+export function getStageByNumber(stageNumber: number): Stage | undefined {
+  return STAGES.find(s => s.number === stageNumber);
+}
+
+/**
+ * Get unlock criteria for a stage
+ */
+export function getStageUnlockCriteria(stageNumber: number) {
+  const stage = STAGES.find(s => s.number === stageNumber);
+  return stage?.unlockCriteria;
+}
+
+// ============================================
+// REWIRED INDEX TIERS
+// ============================================
+
+export const STATUS_TIERS = {
+  SYSTEM_OFFLINE: { name: 'System Offline', min: 0, max: 20, color: 'text-red-400' },
+  BASELINE_MODE: { name: 'Baseline Mode', min: 21, max: 40, color: 'text-orange-400' },
+  OPERATIONAL: { name: 'Operational', min: 41, max: 60, color: 'text-yellow-400' },
+  OPTIMIZED: { name: 'Optimized', min: 61, max: 80, color: 'text-green-400' },
+  INTEGRATED: { name: 'Integrated', min: 81, max: 100, color: 'text-emerald-400' }
+};
+
+/**
+ * Get status tier name based on REwired Index
+ */
+export function getStatusTier(index: number): string {
+  if (index <= 20) return 'System Offline';
+  if (index <= 40) return 'Baseline Mode';
+  if (index <= 60) return 'Operational';
+  if (index <= 80) return 'Optimized';
+  return 'Integrated';
+}
+
+/**
+ * Get status tier color class based on REwired Index
+ */
+export function getStatusColor(index: number): string {
+  if (index <= 20) return 'text-red-400';
+  if (index <= 40) return 'text-orange-400';
+  if (index <= 60) return 'text-yellow-400';
+  if (index <= 80) return 'text-green-400';
+  return 'text-emerald-400';
+}
+
+// ============================================
+// TIER INTERPRETATIONS (for baseline results)
+// ============================================
+
+export const TIER_INTERPRETATIONS: { [key: string]: string } = {
+  'System Offline': "Uh oh! Your nervous system is in survival mode. You're operating on fumes. The IOS will teach you how to downshift into recovery.",
+  'Baseline Mode': "You're functioning, but not optimized. Regulation is inconsistent, awareness is fragmented. The IOS will build your foundation.",
+  'Operational': "You have some coherence, but it's not stable. The IOS will solidify what's working and upgrade what isn't.",
+  'Optimized': "You're performing well. The IOS will take you from good to exceptional — making flow states and clarity your default.",
+  'Integrated': "You're already operating at a high level. The IOS will help you sustain and expand this capacity across all domains."
+};
+
+/**
+ * Get tier interpretation text based on tier name
+ */
+export function getTierInterpretation(tier: string): string {
+  return TIER_INTERPRETATIONS[tier] || TIER_INTERPRETATIONS['Operational'];
 }
