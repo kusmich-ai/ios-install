@@ -4,6 +4,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { createClient } from '@/lib/supabase-client';
+import { toolUniversalFrame, lowResultFrame } from '@/lib/toolFraming';
 
 // ============================================
 // TYPES
@@ -39,6 +40,8 @@ const initialSession: ReframeSession = {
 // ============================================
 
 const firstTimeMessage = `**Reframe Protocol** — ~2 minutes to separate Signal from Interpretation and choose a clean next step.
+
+${toolUniversalFrame}
 
 Signal/events are often unavoidable; Interpretation is often adjustable.
 
@@ -236,6 +239,7 @@ function ReframeModalComponent({ isOpen, onClose, userId, isTriggered = false }:
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [pastSessions, setPastSessions] = useState<PastSession[]>([]);
+  const [sessionsToday, setSessionsToday] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -268,6 +272,7 @@ function ReframeModalComponent({ isOpen, onClose, userId, isTriggered = false }:
   const initializeSession = async () => {
     let isFirstTime = true;
     let sessions: PastSession[] = [];
+    let todayCount = 0;
     
     if (userId) {
       try {
@@ -281,6 +286,20 @@ function ReframeModalComponent({ isOpen, onClose, userId, isTriggered = false }:
           .eq('tool_type', 'reframe');
         
         isFirstTime = (count || 0) === 0;
+        
+        // Count sessions today
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const { count: todaySessionCount } = await supabase
+          .from('tool_sessions')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .eq('tool_type', 'reframe')
+          .gte('created_at', today.toISOString());
+        
+        todayCount = todaySessionCount || 0;
+        setSessionsToday(todayCount);
         
         // Fetch past sessions for context
         const { data: pastData } = await supabase
@@ -331,6 +350,11 @@ function ReframeModalComponent({ isOpen, onClose, userId, isTriggered = false }:
       if (topTheme && topTheme[1] >= 3) {
         openingMessage += `\n\n*I notice "${topTheme[0]}" has come up ${topTheme[1]} times in your reframes. Let's see if it shows up today.*`;
       }
+    }
+    
+    // Step 2.3: Add low-result frame if 3+ sessions today
+    if (todayCount >= 3) {
+      openingMessage += `\n\n*${lowResultFrame}*`;
     }
     
     setSession({
@@ -420,7 +444,7 @@ function ReframeModalComponent({ isOpen, onClose, userId, isTriggered = false }:
     const story = session.identifiedStory || extractStory(session.conversationHistory);
     const themes = extractThemes(session.conversationHistory);
     
-    // Save to database
+    // Step 2.4: Save with capacity signals (not success/fail)
     if (userId) {
       try {
         const supabase = createClient();
@@ -432,7 +456,11 @@ function ReframeModalComponent({ isOpen, onClose, userId, isTriggered = false }:
           session_data: { 
             anchor: anchor,
             story: story,
-            themes: themes
+            themes: themes,
+            // Capacity signals (not success/fail)
+            was_signal_named: anchor !== null || story !== null,
+            was_interpretation_identified: story !== null,
+            action_selected: anchor !== null
           },
           recurring_themes: themes
         });
