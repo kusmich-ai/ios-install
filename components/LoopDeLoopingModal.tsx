@@ -4,6 +4,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { createClient } from '@/lib/supabase-client';
+import { toolUniversalFrame, lowResultFrame } from '@/lib/toolFraming';
 
 // ============================================
 // TYPES
@@ -50,7 +51,7 @@ interface LoopDeLoopingSession {
   // For evaluation loop
   meaningSourceAnswer: 'a' | 'b' | null;
 
-  // NEW: store Signal for continuity (optional but aligns with opening format)
+  // Store Signal for continuity
   signal: string | null;
 }
 
@@ -73,6 +74,8 @@ const initialSession: LoopDeLoopingSession = {
 // ============================================
 
 const firstTimeMessage = `**Loop De-Looping Protocol** — a 3-5 minute process to dissolve worry loops, rumination cycles, and anticipatory anxiety spirals.
+
+${toolUniversalFrame}
 
 This doesn't solve the problem — it dissolves the loop *mechanism* so you can think clearly again.
 
@@ -160,7 +163,7 @@ Fill in the blank with the specific threat the nervous system is monitoring for.
 One sentence only. No justification, no elaboration.`;
 
 // ============================================
-// PREDICTION DISSOLUTION MESSAGES (CUE-KERNEL ALIGNED)
+// PREDICTION DISSOLUTION MESSAGES
 // ============================================
 
 const getPredictionStep1 = (claim: string) => `The mind is predicting: *"${claim}"*
@@ -193,7 +196,7 @@ Say this sentence exactly:
 Type **"confirm"** when done.`;
 
 // ============================================
-// EVALUATION DISSOLUTION MESSAGES (CUE-KERNEL ALIGNED)
+// EVALUATION DISSOLUTION MESSAGES
 // ============================================
 
 const getEvaluationStep1 = (claim: string) => `The mind is claiming this means: *"${claim}"*
@@ -241,7 +244,7 @@ Final dissolution step. Say this sentence exactly:
 Type **"confirm"** when done.`;
 
 // ============================================
-// PROTECTION DISSOLUTION MESSAGES (CUE-KERNEL ALIGNED)
+// PROTECTION DISSOLUTION MESSAGES
 // ============================================
 
 const getProtectionStep1 = (claim: string) => `The system is scanning for: *"${claim}"*
@@ -290,7 +293,7 @@ Say this sentence exactly:
 Type **"confirm"** when done.`;
 
 // ============================================
-// FINAL RESET (CUE-KERNEL ALIGNED)
+// FINAL RESET
 // ============================================
 
 const finalResetInstruction = `**Loop collapse acknowledged.**
@@ -307,7 +310,6 @@ State them in this format:
 
 No interpretation. No story. Pure sensory data.`;
 
-// Required kernel close format
 const completionMessage = `**Final reset verified.**
 
 Signal: Use what you just reported (Seeing / Hearing / Feeling).
@@ -321,7 +323,7 @@ If a new loop reactivates, return and restart with:
 **Mechanism:** 1 / 2 / 3`;
 
 // ============================================
-// SAFETY MESSAGES (UNCHANGED)
+// SAFETY MESSAGES
 // ============================================
 
 const crisisMessage = `I'm noticing signs that this may be more than a worry loop.
@@ -360,19 +362,16 @@ function extractSignalFromInput(input: string): string | null {
 function parseMechanismFromInput(input: string): LoopMechanism {
   const lower = input.toLowerCase();
 
-  // explicit "mechanism: 1/2/3"
   const m = lower.match(/mechanism\s*:\s*([123])/);
   if (m?.[1] === '1') return 'prediction';
   if (m?.[1] === '2') return 'evaluation';
   if (m?.[1] === '3') return 'protection';
 
-  // fallback: first standalone digit 1/2/3
   const d = lower.match(/\b([123])\b/);
   if (d?.[1] === '1') return 'prediction';
   if (d?.[1] === '2') return 'evaluation';
   if (d?.[1] === '3') return 'protection';
 
-  // keyword fallback
   if (lower.includes('prediction') || lower.includes('what if') || lower.includes('future')) return 'prediction';
   if (lower.includes('evaluation') || lower.includes('meaning') || lower.includes('they think')) return 'evaluation';
   if (lower.includes('protection') || lower.includes('threat') || lower.includes('unsafe') || lower.includes('scanning')) return 'protection';
@@ -382,7 +381,6 @@ function parseMechanismFromInput(input: string): LoopMechanism {
 
 function isConfirmation(input: string): boolean {
   const lower = input.toLowerCase().trim();
-  // NOTE: "yes" is intentionally NOT included (it breaks protection logic)
   const confirmWords = ['done', 'confirmed', 'confirm', 'complete', 'completed', 'ok', 'okay', 'finished', 'did it', 'said it', 'grounded'];
   return confirmWords.some(word => lower.includes(word));
 }
@@ -420,7 +418,6 @@ function detectDissociationSignals(input: string): boolean {
 }
 
 function hasSensoryFormat(input: string): boolean {
-  // More strict than before: require Seeing + Hearing + Feeling present (in any case), ideally in the expected format
   const normalized = input.toLowerCase();
   const hasSeeing = normalized.includes('seeing');
   const hasHearing = normalized.includes('hearing');
@@ -436,11 +433,14 @@ function extractSessionData(session: LoopDeLoopingSession) {
     meaningClaim: session.meaningClaim,
     threatClaim: session.threatClaim,
     completedPhase: session.phase,
-    completed: session.phase === 'complete'
+    completed: session.phase === 'complete',
+    // Capacity signals (not success/fail)
+    was_signal_named: session.signal !== null,
+    was_interpretation_identified: session.predictionClaim !== null || session.meaningClaim !== null || session.threatClaim !== null,
+    action_selected: session.phase === 'complete'
   };
 }
 
-// Simple markdown renderer
 function renderMarkdown(text: string): string {
   return text
     .replace(/\*\*(.*?)\*\*/g, '<strong class="text-[#ff9e19]">$1</strong>')
@@ -459,26 +459,21 @@ function getPhaseProgress(phase: SessionPhase, mechanism: LoopMechanism): { curr
     'physiological_interrupt': { order: 2, label: 'Breathing Reset' },
     'de_identification': { order: 3, label: 'De-Identification' },
     'precision_inquiry': { order: 4, label: 'Precision Inquiry' },
-    // Prediction
     'prediction_step_1': { order: 5, label: 'Dissolution 1/3' },
     'prediction_step_2': { order: 6, label: 'Dissolution 2/3' },
     'prediction_step_3': { order: 7, label: 'Dissolution 3/3' },
-    // Evaluation
     'evaluation_step_1': { order: 5, label: 'Dissolution 1/4' },
     'evaluation_step_2': { order: 6, label: 'Dissolution 2/4' },
     'evaluation_step_3': { order: 7, label: 'Dissolution 3/4' },
     'evaluation_step_4': { order: 8, label: 'Dissolution 4/4' },
-    // Protection
     'protection_step_1': { order: 5, label: 'Dissolution 1/4' },
     'protection_step_2': { order: 6, label: 'Dissolution 2/4' },
     'protection_step_3': { order: 7, label: 'Dissolution 3/4' },
     'protection_step_4': { order: 8, label: 'Dissolution 4/4' },
-    // Final
     'final_reset': { order: 9, label: 'Sensory Reset' },
     'complete': { order: 10, label: 'Complete' }
   };
 
-  // Fix total step mismatch: complete order is 10, so total should be 10 for all mechanisms
   const totalSteps = 10;
   const current = phases[phase]?.order || 1;
   const label = phases[phase]?.label || 'Processing';
@@ -501,29 +496,26 @@ function LoopDeLoopingModalComponent({ isOpen, onClose, userId }: LoopDeLoopingM
   const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [sessionsToday, setSessionsToday] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Scroll to bottom when messages update
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Focus input when modal opens
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [isOpen]);
 
-  // Refocus input after loading completes
   useEffect(() => {
     if (!loading && isOpen) {
       inputRef.current?.focus();
     }
   }, [loading, isOpen]);
 
-  // Initialize session when modal opens
   useEffect(() => {
     if (isOpen && messages.length === 0) {
       initializeSession();
@@ -532,6 +524,7 @@ function LoopDeLoopingModalComponent({ isOpen, onClose, userId }: LoopDeLoopingM
 
   const initializeSession = async () => {
     let isFirstTime = true;
+    let todayCount = 0;
 
     if (userId) {
       try {
@@ -543,12 +536,31 @@ function LoopDeLoopingModalComponent({ isOpen, onClose, userId }: LoopDeLoopingM
           .eq('tool_type', 'loop_delooping');
 
         isFirstTime = (count || 0) === 0;
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const { count: todaySessionCount } = await supabase
+          .from('tool_sessions')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .eq('tool_type', 'loop_delooping')
+          .gte('created_at', today.toISOString());
+        
+        todayCount = todaySessionCount || 0;
+        setSessionsToday(todayCount);
       } catch (error) {
         console.error('[LoopDeLooping] Error checking first time:', error);
       }
     }
 
-    const openingMessage = isFirstTime ? firstTimeMessage : returningMessage;
+    // Step 2.2: Universal frame in first-time message only
+    let openingMessage = isFirstTime ? firstTimeMessage : returningMessage;
+    
+    // Step 2.3: Add low-result frame if 3+ sessions today
+    if (todayCount >= 3) {
+      openingMessage += `\n\n*${lowResultFrame}*`;
+    }
 
     setSession({
       ...initialSession,
@@ -576,7 +588,6 @@ function LoopDeLoopingModalComponent({ isOpen, onClose, userId }: LoopDeLoopingM
     setInput('');
     setLoading(true);
 
-    // Safety checks first
     if (detectCrisisSignals(userMessage)) {
       addMessages([
         { role: 'user', content: userMessage },
@@ -595,17 +606,12 @@ function LoopDeLoopingModalComponent({ isOpen, onClose, userId }: LoopDeLoopingM
       return;
     }
 
-    // Process based on current phase
     let response = '';
     let nextPhase: SessionPhase = session.phase;
     const updatedSession: LoopDeLoopingSession = { ...session };
 
     switch (session.phase) {
-      // ==========================================
-      // MECHANISM IDENTIFICATION
-      // ==========================================
       case 'mechanism_identification': {
-        // Store Signal if present (opening asks for it)
         const signal = extractSignalFromInput(userMessage);
         if (signal) updatedSession.signal = signal;
 
@@ -629,9 +635,6 @@ Mechanisms:
         break;
       }
 
-      // ==========================================
-      // PHYSIOLOGICAL INTERRUPT
-      // ==========================================
       case 'physiological_interrupt': {
         if (isConfirmation(userMessage)) {
           nextPhase = 'de_identification';
@@ -646,9 +649,6 @@ Type **"done"** when complete.`;
         break;
       }
 
-      // ==========================================
-      // DE-IDENTIFICATION
-      // ==========================================
       case 'de_identification': {
         if (isConfirmation(userMessage)) {
           nextPhase = 'precision_inquiry';
@@ -660,7 +660,6 @@ Type **"done"** when complete.`;
             response = protectionInquiry;
           }
         } else {
-          // Fix: show the correct (updated) de-identification sentence
           response = `Say the sentence exactly as written:
 
 **"Signal is present. A worry-story is being generated. I will treat it as an Interpretation, not a fact."**
@@ -670,11 +669,7 @@ Then type **"confirm"**.`;
         break;
       }
 
-      // ==========================================
-      // PRECISION INQUIRY
-      // ==========================================
       case 'precision_inquiry': {
-        // Store the claim and move to dissolution
         if (session.mechanism === 'prediction') {
           updatedSession.predictionClaim = userMessage;
           nextPhase = 'prediction_step_1';
@@ -691,9 +686,6 @@ Then type **"confirm"**.`;
         break;
       }
 
-      // ==========================================
-      // PREDICTION DISSOLUTION
-      // ==========================================
       case 'prediction_step_1': {
         if (isConfirmation(userMessage)) {
           nextPhase = 'prediction_step_2';
@@ -727,7 +719,6 @@ Type **"confirm"** when done.`;
           nextPhase = 'final_reset';
           response = finalResetInstruction;
         } else {
-          // Fix: show the correct (updated) prediction step 3 sentence
           response = `Say the sentence exactly:
 
 **"No future event is verifiable right now. This is a prediction appearing now."**
@@ -737,9 +728,6 @@ Type **"confirm"** when done.`;
         break;
       }
 
-      // ==========================================
-      // EVALUATION DISSOLUTION
-      // ==========================================
       case 'evaluation_step_1': {
         if (isAnswerA(userMessage)) {
           updatedSession.meaningSourceAnswer = 'a';
@@ -763,7 +751,6 @@ Type **"confirm"** when done.`;
           nextPhase = 'evaluation_step_3';
           response = evaluationStep3;
         } else {
-          // Fix: show the correct (updated) evaluation step 2 sentence
           response = `Say the sentence exactly:
 
 **"The added meaning is unverifiable. This is an Interpretation, not a fact."**
@@ -799,15 +786,11 @@ Type **"confirm"** when done.`;
         break;
       }
 
-      // ==========================================
-      // PROTECTION DISSOLUTION
-      // ==========================================
       case 'protection_step_1': {
         if (isNo(userMessage)) {
           nextPhase = 'protection_step_2';
           response = protectionStep2_no;
         } else if (isYes(userMessage)) {
-          // Fix: ensure phase advances (already present in your pasted file, kept)
           nextPhase = 'protection_step_2';
           response = protectionStep2_yes;
         } else {
@@ -821,7 +804,6 @@ Answer **yes** or **no**.`;
       }
 
       case 'protection_step_2': {
-        // Fix: do NOT treat "yes" as confirmation; isConfirmation no longer includes "yes"
         if (isConfirmation(userMessage) || isNo(userMessage)) {
           nextPhase = 'protection_step_3';
           response = protectionStep3;
@@ -832,7 +814,6 @@ This protocol is for perceived/anticipated threats, not real emergencies.
 
 Close this session and address the real situation. Return when you're safe.`;
         } else {
-          // Fix: show the correct (updated) protection step 2 sentence
           response = `Say the sentence exactly:
 
 **"No immediate threat is verified in this moment."**
@@ -861,7 +842,6 @@ Type **"confirm"** when done.`;
           nextPhase = 'final_reset';
           response = finalResetInstruction;
         } else {
-          // Fix: show the correct (updated) protection step 4 sentence
           response = `Say the sentence exactly:
 
 **"No immediate threat is verified in this moment. Only sensation is present."**
@@ -871,9 +851,6 @@ Type **"confirm"** when done.`;
         break;
       }
 
-      // ==========================================
-      // FINAL RESET
-      // ==========================================
       case 'final_reset': {
         if (hasSensoryFormat(userMessage)) {
           nextPhase = 'complete';
@@ -888,16 +865,12 @@ Pure sensory data. No interpretation, no story.`;
         break;
       }
 
-      // ==========================================
-      // COMPLETE
-      // ==========================================
       case 'complete': {
         response = completionMessage;
         break;
       }
     }
 
-    // Update session state
     updatedSession.phase = nextPhase;
     updatedSession.conversationHistory = [
       ...session.conversationHistory,
@@ -959,7 +932,6 @@ Pure sensory data. No interpretation, no story.`;
 
   const progress = getPhaseProgress(session.phase, session.mechanism);
 
-  // Dynamic placeholder based on phase
   const getPlaceholder = (): string => {
     switch (session.phase) {
       case 'mechanism_identification': return "Signal: ___. Mechanism: 1/2/3";
@@ -978,16 +950,13 @@ Pure sensory data. No interpretation, no story.`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/70 backdrop-blur-md"
         onClick={handleClose}
       />
 
-      {/* Modal */}
       <div className="relative w-full max-w-2xl h-[85vh] bg-gradient-to-b from-gray-900 to-[#0a0a0a] rounded-2xl border border-gray-700/50 flex flex-col overflow-hidden shadow-2xl shadow-black/50">
 
-        {/* Header */}
         <div className="relative px-6 py-5 border-b border-gray-700/50">
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#ff9e19]/50 to-transparent" />
 
@@ -1024,7 +993,6 @@ Pure sensory data. No interpretation, no story.`;
             </div>
           </div>
 
-          {/* Progress Bar */}
           {session.isActive && session.mechanism && (
             <div className="mt-4">
               <div className="flex items-center gap-2">
@@ -1042,7 +1010,6 @@ Pure sensory data. No interpretation, no story.`;
           )}
         </div>
 
-        {/* Messages */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {messages.map((msg, idx) => (
             <div
@@ -1082,7 +1049,6 @@ Pure sensory data. No interpretation, no story.`;
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input */}
         <div className="border-t border-gray-700/50 p-4 bg-gray-900/50">
           <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex gap-3">
             <textarea
