@@ -1118,8 +1118,9 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
         ? Math.max(0, 21 - Math.floor((Date.now() - new Date(sprintStart).getTime()) / (1000 * 60 * 60 * 24)))
         : 21,
       isMobile,
-      toolsReference: isMobile ? 'the lightning bolt icon' : 'the Daily Ritual tools on the right'
-    };
+      toolsReference: isMobile ? 'the lightning bolt icon' : 'the Daily Ritual tools on the right',
+  toolbarReference: isMobile ? 'the lightning bolt icon' : 'the Daily Ritual tools on the right',  // ADD THIS
+};
   }, [user, baselineData, progress, isMobile]);
   
   // ============================================
