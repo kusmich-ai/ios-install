@@ -1470,9 +1470,9 @@ const unlockMessages: { [key: number]: string } = {
       
       const message = unlockMessages[nextStage] || `🔓 **Congratulations!** You're eligible to unlock Stage ${nextStage}.`;
       
-      setTimeout(async () => {
-  await postAssistantMessage(message);
-}, 1500);
+  setTimeout(async () => {
+        await postAssistantMessage(message);
+      }, 1500);
     }
   }, [progress, progressLoading, sprintRenewalState.isActive, weeklyCheckInActive]);
 
