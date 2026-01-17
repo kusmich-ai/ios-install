@@ -4,6 +4,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { createClient } from '@/lib/supabase-client';
+import { toolUniversalFrame } from '@/lib/toolFraming';
 
 // ============================================
 // TYPES
@@ -30,6 +31,8 @@ const initialSession: DecenteringSession = {
 // ============================================
 
 const firstTimeMessage = `**Decentering Practice** — a 2–3 minute inquiry to help you notice thoughts, emotions, and roles as experiences, rather than as definitions of you.
+
+${toolUniversalFrame}
 
 **When to use this:**
 - When you feel stuck in a role or self-description
@@ -77,7 +80,15 @@ function extractSessionData(history: Array<{ role: 'user' | 'assistant'; content
     if (allText.includes(theme)) themes.push(theme);
   }
   
-  return { themes: themes.slice(0, 5) };
+  // Detect capacity signals
+  const wasSignalNamed = ['feel', 'feeling', 'notice', 'sense', 'body', 'sensation'].some(k => allText.includes(k));
+  const wasInterpretationIdentified = ['thought', 'story', 'belief', 'assume', 'meaning'].some(k => allText.includes(k));
+  
+  return { 
+    themes: themes.slice(0, 5),
+    wasSignalNamed,
+    wasInterpretationIdentified
+  };
 }
 
 // FIX #4: HTML escaping to prevent XSS
@@ -164,6 +175,7 @@ function DecenteringModalComponent({ isOpen, onClose, userId }: DecenteringModal
       }
     }
 
+    // Step 2.2: Universal frame in first-time message only
     const openingMessage = isFirstTime ? firstTimeMessage : returningMessage;
     
     setSession({
@@ -259,10 +271,10 @@ function DecenteringModalComponent({ isOpen, onClose, userId }: DecenteringModal
       durationSeconds = Math.floor((Date.now() - session.sessionStartTime.getTime()) / 1000);
     }
     
-    // Extract session data
+    // Extract session data with capacity signals
     const sessionData = extractSessionData(session.conversationHistory);
     
-    // Save to database
+    // Step 2.4: Save with capacity signals (not success/fail)
     if (userId) {
       try {
         const supabase = createClient();
@@ -271,7 +283,13 @@ function DecenteringModalComponent({ isOpen, onClose, userId }: DecenteringModal
           tool_type: 'decentering',
           session_mode: session.sessionMode,
           duration_seconds: durationSeconds,
-          session_data: { themes: sessionData.themes },
+          session_data: { 
+            themes: sessionData.themes,
+            // Capacity signals (not success/fail)
+            was_signal_named: sessionData.wasSignalNamed,
+            was_interpretation_identified: sessionData.wasInterpretationIdentified,
+            action_selected: session.conversationHistory.length >= 6 // Engaged long enough to complete
+          },
           recurring_themes: sessionData.themes
         });
       } catch (error) {
