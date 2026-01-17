@@ -28,7 +28,13 @@ export {
   toolTemplates,
   foundationTemplates,
   getStreakMessage,
-  getNextPracticePrompt
+  getNextPracticePrompt,
+  // NEW: Consolidated templates for ChatInterface
+  weeklyCheckInTemplates,
+  introFlowTemplates,
+  stage7ConversationTemplates,
+  getIntroRedirectMessage,
+  isAskingAboutStage7
 } from './templateLibrary';
 
 // Helper functions
@@ -64,7 +70,6 @@ export {
   getStatusTier,
   getStatusColor
 } from './helpers';
-
 export type { Practice, UnlockCriteria, Tool } from './helpers';
 
 // Voice library for scenario-based responses
