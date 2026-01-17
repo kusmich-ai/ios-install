@@ -1668,77 +1668,26 @@ Ready to continue your transformation?`
     
     setUnlockFlowState('intro_started');
     
-    const newStageTemplates = templateLibrary.stages[pendingUnlockStage as keyof typeof templateLibrary.stages];
+    // Use the unlock.confirmation template which includes BOTH practice intro AND tool intro
+    const stageTemplate = stageTemplates[pendingUnlockStage as keyof typeof stageTemplates];
     
-    if (newStageTemplates && 'intro' in newStageTemplates && typeof newStageTemplates.intro === 'string') {
+    if (stageTemplate?.unlock?.confirmation) {
       const templateContext = buildTemplateContext();
-      const processedMessage = processTemplate(newStageTemplates.intro, templateContext);
+      const processedMessage = processTemplate(stageTemplate.unlock.confirmation, templateContext);
       await postAssistantMessage(processedMessage);
     }
     
+    // Trigger special setup flows after showing the confirmation message
     if (pendingUnlockStage === 3) {
-      startMicroActionSetup();
+      // Stage 3: Start micro action setup after a brief delay
+      setTimeout(() => {
+        startMicroActionSetup();
+      }, 1000);
     } else if (pendingUnlockStage === 4) {
+      // Stage 4: Set flag for flow block setup
       setAwaitingFlowBlockStart(true);
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: `The new practice for Stage 4 is the **Flow Block** — a 60-90 minute deep work session that trains sustained attention.
-
-Ready to set up your Flow Block system? This involves identifying your highest-leverage work and building a weekly schedule.`
-      }]);
-    } else if (pendingUnlockStage === 5) {
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: `**NEW PRACTICE: CO-REGULATION — 3-5 mins**
-
-This practice trains your social nervous system to stay open and regulated in connection.
-
-**When:** Late afternoon/early evening, as you transition from work to personal time.
-
-**The practice:**
-1. Pick a person (we rotate through 5 types over 5 days)
-2. Bring them to mind — visualize their face
-3. Place hand on chest
-4. Inhale: "Be blessed"
-5. Exhale: "I wish you peace and love"
-6. Notice any warmth or softness (don't force it)
-7. 3-5 minutes
-
-**5-Day rotation:**
-- Day 1: Friend
-- Day 2: Neutral person  
-- Day 3: Yourself
-- Day 4: Difficult person
-- Day 5: All beings
-
-You can access this practice anytime from your tools panel. Starting today, add it to your evening routine.`
-      }]);
-    } else if (pendingUnlockStage === 6) {
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: `**NEW PRACTICE: NIGHTLY DEBRIEF — 2 mins**
-
-This is your final integration checkpoint — encoding today's learning into insight before rest.
-
-**When:** Every evening, before sleep.
-
-**The practice:**
-One question: **"What did reality teach me today?"**
-
-1. Dim lights, sit or lie down
-2. Inhale for 4, exhale for 6
-3. Glance back through the day (thumbnails, not replay)
-4. Notice moments with emotional charge
-5. Name the lesson in one sentence
-6. "Lesson received — day integrated — rest well."
-
-That's it. 2 minutes. Every night. Your nervous system will consolidate the learning during sleep.
-
-**You now have the full IOS runtime installed.**
-
-All 7 daily practices + 4 on-demand tools. This is the complete system.`
-      }]);
     }
+    // Stages 2, 5, 6 don't need special setup flows - just the confirmation message
     
     setPendingUnlockStage(null);
   };
