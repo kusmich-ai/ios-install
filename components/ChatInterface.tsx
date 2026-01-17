@@ -28,7 +28,13 @@ import {
   unlockCelebrations,
   declineTemplates,
   breakthroughTemplates,
-  resistanceTemplates
+  resistanceTemplates,
+  // Consolidated templates (from templateLibrary)
+  weeklyCheckInTemplates,
+  introFlowTemplates,
+  stage7ConversationTemplates,
+  getIntroRedirectMessage as getIntroRedirectMessageFromLib,
+  isAskingAboutStage7 as isAskingAboutStage7FromLib
 } from '@/lib/templates';
 
 // ============================================
@@ -282,158 +288,29 @@ const stageRituals: { [key: number]: { list: string; total: string } } = {
 
 // stagePracticeIds now replaced by getStagePracticeIds() from @/app/config/stages
 
-// ============================================
-// WEEKLY CHECK-IN CONSTANTS
-// ============================================
+// Weekly check-in constants now imported from templateLibrary:
+// - weeklyCheckInTemplates.stageQuestions (replaces stageQualitativeQuestions)
+// - weeklyCheckInTemplates.domainQuestions (replaces weeklyDomainQuestions)
 
-const stageQualitativeQuestions: { [key: number]: string } = {
-  1: "How easily can you return to calm when stressed?",
-  2: "Does awareness stay present during movement?",
-  3: "Is your aligned action feeling more automatic?",
-  4: "Can you drop into focused flow reliably?",
-  5: "Do you stay regulated in difficult conversations?",
-  6: "Is awareness stable across all life contexts?",
-  7: "Does awareness feel like your natural baseline?"
-};
-
-const weeklyDomainQuestions = {
-  regulation: "**Regulation:** How easily could you calm yourself when stressed this week? (0 = couldn't at all, 5 = instantly)",
-  awareness: "**Awareness:** How quickly did you notice when lost in thought? (0 = never noticed, 5 = immediately)",
-  outlook: "**Outlook:** How open and positive did you feel toward life? (0 = closed/negative, 5 = open/positive)",
-  attention: "**Attention:** How focused were you on what truly matters? (0 = scattered, 5 = laser-focused)"
-};
+// Backward-compatible aliases for weekly check-in
+const stageQualitativeQuestions = weeklyCheckInTemplates.stageQuestions;
+const weeklyDomainQuestions = weeklyCheckInTemplates.domainQuestions;
 
 // ============================================
-// STAGE 7 TEMPLATES
+// STAGE 7 & INTRO TEMPLATES (from templateLibrary)
 // ============================================
 
-const stage7Templates = {
-  intro: `**System Integration Complete.** 🎯
+// These are now imported from templateLibrary and aliased for backward compatibility:
+// - stage7ConversationTemplates (replaces stage7Templates)
+// - introFlowTemplates.quickReplies (replaces introQuickReplies)
+// - getIntroRedirectMessageFromLib (replaces getIntroRedirectMessage)
+// - isAskingAboutStage7FromLib (replaces isAskingAboutStage7)
 
-You've done something rare. Stage 6 isn't just a milestone — it's proof that awareness has become your operating system. Most people never get here.
-
-There's one more stage. **Stage 7: Accelerated Expansion.**
-
-But I need to be direct with you: Stage 7 is fundamentally different from everything before it. It's not a daily practice. It's not something you do alone. It's an intensive, in-person protocol.
-
-Would you like to learn more about Stage 7, or would you prefer to continue deepening Stage 6 as your daily practice?`,
-
-  explanation: `**Stage 7: The Beyond Protocol**
-
-*The end of seeking starts here.*
-
-Everything you've done in Stages 1-6 has been preparation — building the neural foundation, stabilizing awareness, proving identity through action. Stage 7 is where that foundation meets something more powerful.
-
-**Beyond is a 6-month protocol for complete neural, emotional, and existential reprogramming.**
-
-It includes:
-• **Supervised psychedelic experience** — working with 5-MeO in a held, supported container
-• **Neurotech** — brain entrainment and neurofeedback to normalize beneficial brain-wave states
-• **Molecule protocols** — strategic use of nootropics and supplements
-• **Continued daily practice** — the IOS remains your foundation
-• **Weekly 1:1 support** — you'll never walk alone
-
-This isn't a retreat. It's not coaching. It's not a one-off ceremony.
-
-It's designed to dissolve what you're not — so who you truly are can finally lead.
-
-**This path is not for everyone.** And that's okay. Stage 6 is a complete system. Many people practice it for life.
-
-But if something in you is ready to go beyond the stories, the strategies, and the seeking... I have two questions for you.`,
-
-  question1: `**Question 1:**
-
-Stage 7 includes the use of supervised psychedelics, neuro-tech, nootropics, and supplements.
-
-Are you open to this?`,
-
-  question2: `**Question 2:**
-
-Why is now the right time to consider this in your life?
-
-(Take a moment — there's no right answer, just your honest reflection.)`,
-
-  applicationRoute: `Thank you for sharing that.
-
-Based on what you've described, it sounds like you may be ready for this next step.
-
-**The Beyond Protocol** is by application only. Only a limited number of participants are accepted. After you apply, you'll be contacted for a discovery call if you're a fit.
-
-The application takes about 10 minutes.`,
-
-  stage6Continuation: `That's completely valid.
-
-Stage 6 is a complete operating system. The daily practices you've built — the breathing, the awareness, the identity work, the flow states, the relational coherence, the nightly integration — this is a way of life.
-
-Many people stay here permanently. Not because they're "stuck," but because it's enough.
-
-You can always revisit Stage 7 later. Just ask.
-
-For now, continue showing up. The system is installed. You are the operator.`,
-
-  notOpenRoute: `I appreciate your honesty.
-
-Stage 7 isn't the right fit for everyone, and that's completely okay. The protocols involved require full openness to the modalities — without that, it wouldn't serve you.
-
-Stage 6 is a complete system. The practices you've built are powerful on their own. Many people stay at this level permanently — not because they're stuck, but because it's enough.
-
-Continue showing up. The IOS is installed. You are the operator.
-
-If anything changes in the future, you can always revisit this conversation.`,
-
-  applicationUrl: 'https://nicholaskusmich.typeform.com/beyond'
-};
-
-// Stage 7 trigger patterns for detection
-const stage7TriggerPatterns = [
-  'stage 7',
-  'stage seven',
-  'accelerated expansion',
-  'beyond protocol',
-  'what comes after stage 6',
-  "what's after stage 6",
-  'whats after stage 6',
-  'what is stage 7',
-  'tell me about stage 7',
-  'next level after stage 6',
-  'final stage',
-  'apply for stage 7'
-];
-
-// Helper function to detect Stage 7 questions
-function isAskingAboutStage7(message: string): boolean {
-  const lowerMessage = message.toLowerCase();
-  return stage7TriggerPatterns.some(pattern => lowerMessage.includes(pattern));
-}
-
-// Quick reply button configurations for each intro step
-const introQuickReplies: { [key: number]: { text: string; buttonLabel: string } | null } = {
-  0: { text: "Yes, let's learn the rituals", buttonLabel: "Yes, let's go" },
-  1: { text: "Got it, makes sense. What's next?", buttonLabel: "Got it, next ritual" },
-  2: { text: "Makes sense, I'm ready", buttonLabel: "Got it, I'm ready" },
-  3: null,
-  4: null
-};
-
-// Redirect messages to get user back on track after answering their question
-function getIntroRedirectMessage(currentStep: number): string {
-  switch (currentStep) {
-    case 0:
-      return `---
-
-Now, back to your rituals. Ready to learn them?`;
-    case 1:
-      return `---
-
-Back to the walkthrough. Make sense so far? Ready for the next ritual?`;
-    case 2:
-      return `---
-
-Okay, back to wrapping up. Ready to get started?`;
-    default:
-      return '';
-  }
-}
+// Backward-compatible aliases
+const stage7Templates = stage7ConversationTemplates;
+const introQuickReplies = introFlowTemplates.quickReplies;
+const getIntroRedirectMessage = getIntroRedirectMessageFromLib;
+const isAskingAboutStage7 = isAskingAboutStage7FromLib;
 
 // ============================================
 // FIRST-TIME OPENING MESSAGE
