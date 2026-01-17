@@ -4,6 +4,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { createClient } from '@/lib/supabase-client';
+import { toolUniversalFrame, lowResultFrame } from '@/lib/toolFraming';
 
 // ============================================
 // TYPES
@@ -37,8 +38,10 @@ const ACK_TOKEN = 'acknowledged';
 
 const firstTimeFraming = `**Thought Hygiene** — a short offload to reduce cognitive load.
 
+${toolUniversalFrame}
+
 This is not problem-solving and not meaning-making.
-It’s about making active mental loops visible so they no longer need to be held in working memory.
+It's about making active mental loops visible so they no longer need to be held in working memory.
 
 Nothing here needs to be resolved right now.`;
 
@@ -53,7 +56,7 @@ Now externalize content.
 
 List them as bullets.
 Tasks, conversations, reminders, worries — no explanation needed.
-Just list what’s present.`;
+Just list what's present.`;
 
 const acknowledgePrompt = `Good. The content has been externalized.
 
@@ -94,11 +97,12 @@ function getCompletionMessage(rating: number, sessionsToday: number): string {
   } else if (rating === 3) {
     message = `Partial clearance. Attention is improved but not fully available.`;
   } else {
-    message = `Clarity is ${rating}/5. Consider running **Reframe Protocol** on the dominant Interpretation driving the load.`;
+    // Step 2.3: Low-result fallback for rating <= 2
+    message = `${lowResultFrame}\n\nConsider running **Reframe Protocol** on the dominant Interpretation driving the load.`;
   }
 
   if (sessionsToday >= 3) {
-    message += `\n\n*You’ve run this ${sessionsToday} times today. If the load keeps returning, the next move is usually Interpretation work (Reframe Protocol).*`;
+    message += `\n\n*You've run this ${sessionsToday} times today. If the load keeps returning, the next move is usually Interpretation work (Reframe Protocol).*`;
   }
 
   return message;
@@ -189,9 +193,15 @@ function ThoughtHygieneModalComponent({ isOpen, onClose, userId }: ThoughtHygien
       }
     }
 
-    const openingMessage = isFirstTime
+    // Step 2.2: Universal frame in first-time message only
+    let openingMessage = isFirstTime
       ? `${firstTimeFraming}\n\n${dumpPrompt}`
       : dumpPrompt;
+    
+    // Step 2.3: Add low-result frame if 3+ sessions today
+    if (todayCount >= 3) {
+      openingMessage += `\n\n*${lowResultFrame}*`;
+    }
 
     setSession({
       isActive: true,
@@ -216,13 +226,18 @@ function ThoughtHygieneModalComponent({ isOpen, onClose, userId }: ThoughtHygien
 
     try {
       const supabase = createClient();
+      // Step 2.4: Store as capacity signals, not success/fail
       await supabase.from('tool_sessions').insert({
         user_id: userId,
         tool_type: 'thought_hygiene',
         session_mode: 'standard',
         duration_seconds: durationSeconds,
         session_data: {
+          // Capacity signals (not success/fail)
           clarity_rating: rating,
+          was_signal_named: true, // Always true if they complete dump step
+          was_interpretation_identified: false, // Not applicable for this tool
+          action_selected: rating >= 3, // Did they gain enough clarity to act?
           sessions_today: sessionsToday + 1
         },
         recurring_themes: [] // privacy: do not store dump content
