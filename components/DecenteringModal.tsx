@@ -4,7 +4,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { createClient } from '@/lib/supabase-client';
-import { toolUniversalFrame } from '@/lib/toolFraming';
+import { toolUniversalFrame, lowResultFrame } from '@/lib/toolFraming';
 
 // ============================================
 // TYPES
@@ -127,6 +127,7 @@ function DecenteringModalComponent({ isOpen, onClose, userId }: DecenteringModal
   const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [sessionsToday, setSessionsToday] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -159,10 +160,13 @@ function DecenteringModalComponent({ isOpen, onClose, userId }: DecenteringModal
   const initializeSession = async () => {
     // Check if first time using tool
     let isFirstTime = true;
+    let todayCount = 0;
     
     if (userId) {
       try {
         const supabase = createClient();
+        
+        // Check if first time
         const { count } = await supabase
           .from('tool_sessions')
           .select('id', { count: 'exact', head: true })
@@ -170,13 +174,32 @@ function DecenteringModalComponent({ isOpen, onClose, userId }: DecenteringModal
           .eq('tool_type', 'decentering');
         
         isFirstTime = (count || 0) === 0;
+        
+        // Count sessions today
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const { count: todaySessionCount } = await supabase
+          .from('tool_sessions')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .eq('tool_type', 'decentering')
+          .gte('created_at', today.toISOString());
+        
+        todayCount = todaySessionCount || 0;
+        setSessionsToday(todayCount);
       } catch (error) {
         console.error('[Decentering] Error checking first time:', error);
       }
     }
 
     // Step 2.2: Universal frame in first-time message only
-    const openingMessage = isFirstTime ? firstTimeMessage : returningMessage;
+    let openingMessage = isFirstTime ? firstTimeMessage : returningMessage;
+    
+    // Step 2.3: Add low-result frame if 3+ sessions today
+    if (todayCount >= 3) {
+      openingMessage += `\n\n*${lowResultFrame}*`;
+    }
     
     setSession({
       isActive: true,
@@ -223,19 +246,19 @@ function DecenteringModalComponent({ isOpen, onClose, userId }: DecenteringModal
     try {
       // FIX #1 & #3: Include system prompt with mode in API call
       const response = await fetch('/api/chat', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    messages: [
-      ...session.conversationHistory,
-      { role: 'user', content: userMessage }
-    ],
-    context: 'decentering_practice',
-    additionalContext: session.sessionMode === 'identity_audit' 
-      ? 'MODE: IDENTITY_AUDIT - Follow the IDENTITY AUDIT MODE questions strictly, one at a time.'
-      : undefined
-  })
-});
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [
+            ...session.conversationHistory,
+            { role: 'user', content: userMessage }
+          ],
+          context: 'decentering_practice',
+          additionalContext: session.sessionMode === 'identity_audit' 
+            ? 'MODE: IDENTITY_AUDIT - Follow the IDENTITY AUDIT MODE questions strictly, one at a time.'
+            : undefined
+        })
+      });
       
       if (!response.ok) throw new Error('API request failed');
       
@@ -288,7 +311,8 @@ function DecenteringModalComponent({ isOpen, onClose, userId }: DecenteringModal
             // Capacity signals (not success/fail)
             was_signal_named: sessionData.wasSignalNamed,
             was_interpretation_identified: sessionData.wasInterpretationIdentified,
-            action_selected: session.conversationHistory.length >= 6 // Engaged long enough to complete
+            action_selected: session.conversationHistory.length >= 6, // Engaged long enough to complete
+            sessions_today: sessionsToday + 1
           },
           recurring_themes: sessionData.themes
         });
