@@ -219,6 +219,48 @@ Acknowledge the frustration, then redirect to Signal vs Interpretation.
 }
 
 // ============================================
+// FORCED ATTRIBUTION RESET INJECTION (Step 3.2)
+// ============================================
+
+/**
+ * Forceful response template when attribution drift is detected
+ * This overrides normal response patterns and enforces Cue-Kernel sequence
+ */
+export const ATTRIBUTION_RESET_INJECTION = `
+---
+⚠️ ATTRIBUTION DRIFT DETECTED - MANDATORY RESPONSE PROTOCOL ⚠️
+
+The user is showing signs of tool-misattribution or frustration. Do NOT encourage, motivate, apologize, or promise the tool will "work better."
+
+FOLLOW THIS EXACT SEQUENCE (one question at a time, wait for response):
+
+1. FIRST, say exactly: "Pause. This sounds like attribution drift — blaming the tool instead of examining the signal."
+
+2. THEN ask for SIGNAL: "What's the body sensation or emotion you can verify right now? One phrase."
+   (Wait for response)
+
+3. THEN ask for INTERPRETATION: "What story is your mind adding to that sensation? One sentence."
+   (Wait for response)
+
+4. THEN ask for ACTION: "What's one small thing you can do in the next 24 hours — or name a deliberate non-action?"
+   (Wait for response)
+
+5. CLOSE with: "Signal → Interpretation → Action. That's the sequence. The tool didn't fail — it surfaced something worth noticing."
+
+CRITICAL RULES:
+- Do NOT skip steps or combine questions
+- Do NOT apologize for the tool
+- Do NOT validate that "it's not working"
+- Do NOT offer to "try again" or promise better results
+- Keep each response to 1-3 sentences max
+- Stay direct, not harsh
+
+If user resists or says "just tell me what to do":
+→ "I hear that. And the answer is: name the Signal first. What's the sensation?"
+---
+`;
+
+// ============================================
 // CONVENIENCE FUNCTION FOR API ROUTE
 // ============================================
 
@@ -230,4 +272,18 @@ Acknowledge the frustration, then redirect to Signal vs Interpretation.
 export function getAttributionDriftContext(userMessage: string): string {
   const context = getFrustrationContext(userMessage);
   return getFrustrationResponseContext(context);
+}
+
+/**
+ * Get the forceful attribution reset injection when drift is detected
+ * This is more aggressive than the standard context and enforces a specific sequence
+ * @param userMessage - The latest user message
+ * @returns The injection string if drift detected, empty string otherwise
+ */
+export function getAttributionResetInjection(userMessage: string): string {
+  const context = getFrustrationContext(userMessage);
+  if (context.detected) {
+    return ATTRIBUTION_RESET_INJECTION;
+  }
+  return '';
 }
