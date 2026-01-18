@@ -22,7 +22,7 @@ import { cookies } from 'next/headers';
 import { withToolLayers } from '@/lib/prompts/withToolLayers';
 import { CUE_KERNEL } from '@/lib/prompts/cueKernel';
 import { withCueKernel } from '@/lib/prompts/withCueKernel';
-import { getAttributionDriftContext } from '@/lib/frustrationDetection';
+import { getAttributionDriftContext, getAttributionResetInjection } from '@/lib/frustrationDetection';
 
 
 
@@ -803,12 +803,13 @@ export async function POST(req: Request) {
     }
 
     // STEP 4.6: FRUSTRATION/ATTRIBUTION DRIFT DETECTION
-    const frustrationContext = latestUserMessage 
-      ? getAttributionDriftContext(latestUserMessage.content) 
+    // Uses forceful injection to enforce Cue-Kernel sequence when drift detected
+    const attributionResetInjection = latestUserMessage 
+      ? getAttributionResetInjection(latestUserMessage.content) 
       : '';
 
-    if (frustrationContext) {
-      console.log('[API/Chat] Frustration/attribution drift detected');
+    if (attributionResetInjection) {
+      console.log('[API/Chat] Attribution drift detected - injecting reset protocol');
       await logAuditEvent({
         userId,
         action: 'ATTRIBUTION_DRIFT_DETECTED',
@@ -891,10 +892,10 @@ export async function POST(req: Request) {
         break;
     }
 
-    // STEP 6.5: APPEND FRUSTRATION CONTEXT IF DETECTED
-    // This injects response guidance when user shows attribution drift
-    if (frustrationContext) {
-      systemPrompt += frustrationContext;
+    // STEP 6.5: INJECT ATTRIBUTION RESET PROTOCOL IF DRIFT DETECTED
+    // This forcefully overrides normal response patterns to enforce Cue-Kernel sequence
+    if (attributionResetInjection) {
+      systemPrompt += attributionResetInjection;
     }
 
     const hasSystemPrompt = messages.some((msg: Message) => msg.role === 'system');
