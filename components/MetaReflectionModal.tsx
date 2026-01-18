@@ -5,7 +5,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { createClient } from '@/lib/supabase-client';
 import { getPatternSummary } from '@/lib/resistanceTracking';
-import { toolUniversalFrame } from '@/lib/toolFraming';
+import { toolUniversalFrame, lowResultFrame } from '@/lib/toolFraming';
 
 // ============================================
 // TYPES
@@ -237,6 +237,7 @@ function MetaReflectionModalComponent({ isOpen, onClose, userId, isWeeklyPrompt 
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [pastKernels, setPastKernels] = useState<PastKernel[]>([]);
+  const [sessionsToday, setSessionsToday] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const isMountedRef = useRef(true);
@@ -271,11 +272,13 @@ function MetaReflectionModalComponent({ isOpen, onClose, userId, isWeeklyPrompt 
   const initializeSession = async () => {
     let isFirstTime = true;
     let kernels: PastKernel[] = [];
+    let todayCount = 0;
 
     if (userId) {
       try {
         const supabase = createClient();
 
+        // Check if first time
         const { count } = await supabase
           .from('tool_sessions')
           .select('id', { count: 'exact', head: true })
@@ -284,6 +287,21 @@ function MetaReflectionModalComponent({ isOpen, onClose, userId, isWeeklyPrompt 
 
         isFirstTime = (count || 0) === 0;
 
+        // Count sessions today
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const { count: todaySessionCount } = await supabase
+          .from('tool_sessions')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .eq('tool_type', 'meta_reflection')
+          .gte('created_at', today.toISOString());
+
+        todayCount = todaySessionCount || 0;
+        setSessionsToday(todayCount);
+
+        // Fetch past sessions for kernel context
         const { data: pastSessions } = await supabase
           .from('tool_sessions')
           .select('session_data, recurring_themes, created_at')
@@ -313,6 +331,11 @@ function MetaReflectionModalComponent({ isOpen, onClose, userId, isWeeklyPrompt 
     if (isFirstTime) openingMessage = firstTimeMessage;
     else if (isWeeklyPrompt) openingMessage = returningMessage;
     else openingMessage = onDemandMessage;
+
+    // Step 2.3: Add low-result frame if 3+ sessions today
+    if (todayCount >= 3) {
+      openingMessage += `\n\n*${lowResultFrame}*`;
+    }
 
     if (isWeeklyPrompt && userId) {
       try {
@@ -450,7 +473,8 @@ function MetaReflectionModalComponent({ isOpen, onClose, userId, isWeeklyPrompt 
             // Capacity signals (not success/fail)
             was_signal_named: wasSignalNamed,
             was_interpretation_identified: wasInterpretationIdentified,
-            action_selected: kernel !== null
+            action_selected: kernel !== null,
+            sessions_today: sessionsToday + 1
           },
           recurring_themes: themes
         });
