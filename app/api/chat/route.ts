@@ -22,7 +22,7 @@ import { cookies } from 'next/headers';
 import { withToolLayers } from '@/lib/prompts/withToolLayers';
 import { CUE_KERNEL } from '@/lib/prompts/cueKernel';
 import { withCueKernel } from '@/lib/prompts/withCueKernel';
-import { getAttributionDriftContext, getAttributionResetInjection } from '@/lib/frustrationDetection';
+import { getAttributionDriftContext, getAttributionResetInjection, detectAttributionDrift } from '@/lib/frustrationDetection';
 
 
 
@@ -803,13 +803,14 @@ export async function POST(req: Request) {
     }
 
     // STEP 4.6: FRUSTRATION/ATTRIBUTION DRIFT DETECTION
-    // Uses forceful injection to enforce Cue-Kernel sequence when drift detected
-    const attributionResetInjection = latestUserMessage 
-      ? getAttributionResetInjection(latestUserMessage.content) 
-      : '';
+    // Uses forceful injection with tool-aware responses (Step 3.3)
+    // Detection happens early, but injection is applied after context is determined
+    const hasFrustration = latestUserMessage 
+      ? detectAttributionDrift(latestUserMessage.content) 
+      : false;
 
-    if (attributionResetInjection) {
-      console.log('[API/Chat] Attribution drift detected - injecting reset protocol');
+    if (hasFrustration) {
+      console.log('[API/Chat] Attribution drift detected - will inject tool-aware reset protocol');
       await logAuditEvent({
         userId,
         action: 'ATTRIBUTION_DRIFT_DETECTED',
@@ -892,10 +893,14 @@ export async function POST(req: Request) {
         break;
     }
 
-    // STEP 6.5: INJECT ATTRIBUTION RESET PROTOCOL IF DRIFT DETECTED
-    // This forcefully overrides normal response patterns to enforce Cue-Kernel sequence
-    if (attributionResetInjection) {
-      systemPrompt += attributionResetInjection;
+    // STEP 6.5: INJECT TOOL-AWARE ATTRIBUTION RESET PROTOCOL IF DRIFT DETECTED
+    // Now that we know the context, get the appropriate tool-specific injection
+    if (hasFrustration && latestUserMessage) {
+      const attributionResetInjection = getAttributionResetInjection(latestUserMessage.content, context);
+      if (attributionResetInjection) {
+        systemPrompt += attributionResetInjection;
+        console.log(`[API/Chat] Injected ${context ? context + '-specific' : 'default'} attribution reset protocol`);
+      }
     }
 
     const hasSystemPrompt = messages.some((msg: Message) => msg.role === 'system');
