@@ -1,7 +1,6 @@
 // ============================================
 // app/mirror/page.tsx
-// ENHANCED VERSION - With Transformation Roadmap
-// Combined Prompt/Paste UX
+// ENHANCED VERSION - With History Check & Guided Reflection Alternative
 // ============================================
 
 'use client';
@@ -13,13 +12,18 @@ import {
   MIRROR_GPT_PROMPT, 
   MIRROR_INTRO_TEXT, 
   MIRROR_INSTRUCTIONS,
-  QUALITY_MESSAGES 
+  QUALITY_MESSAGES,
+  GUIDED_REFLECTION_FLOW
 } from '@/lib/mirrorPrompt';
 import { IOS_STAGE_MAPPING } from '@/lib/mirrorMapping';
+import GuidedReflectionFlow from '@/components/GuidedReflectionFlow';
 
 export const dynamic = 'force-dynamic';
 
-// Types
+// ============================================
+// TYPES
+// ============================================
+
 interface Pattern {
   id: string;
   name: string;
@@ -79,12 +83,21 @@ interface MirrorData {
   transformation_roadmap: TransformationRoadmap;
 }
 
-type MirrorStep = 'intro' | 'prompt' | 'results';
+// Updated step type to include history check
+type MirrorStep = 'intro' | 'history-check' | 'alternatives' | 'prompt' | 'guided-reflection' | 'results';
+
+// Path selection type
+type MirrorPath = 'chatgpt_analysis' | 'guided_reflection' | null;
+
+// ============================================
+// MAIN COMPONENT
+// ============================================
 
 export default function MirrorPage() {
   const router = useRouter();
   const supabase = createClient();
 
+  // Existing state
   const [step, setStep] = useState<MirrorStep>('intro');
   const [gptOutput, setGptOutput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -95,6 +108,13 @@ export default function MirrorPage() {
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'roadmap' | 'patterns'>('roadmap');
   const [isRerun, setIsRerun] = useState(false);
+
+  // New state for path selection
+  const [selectedPath, setSelectedPath] = useState<MirrorPath>(null);
+
+  // ============================================
+  // EFFECTS
+  // ============================================
 
   useEffect(() => {
     // Check if this is a rerun (from query param)
@@ -107,6 +127,10 @@ export default function MirrorPage() {
       checkExistingProfile();
     }
   }, []);
+
+  // ============================================
+  // API HANDLERS
+  // ============================================
 
   const checkExistingProfile = async () => {
     try {
@@ -178,21 +202,154 @@ export default function MirrorPage() {
 
   const skipMirror = async () => {
     try {
-      await fetch('/api/mirror/process', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'skip' })
+      // Record the skip in the database
+      await fetch('/api/mirror/skip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
       });
-      router.push('/chat');
     } catch (err) {
-      console.error('Failed to skip:', err);
-      router.push('/chat');
+      console.error('Failed to record skip:', err);
     }
+    router.push('/chat');
   };
 
   const continueToChat = () => {
     router.push('/chat');
   };
+
+  // ============================================
+  // NEW: HISTORY CHECK HANDLERS
+  // ============================================
+
+  const handleHistoryResponse = (hasHistory: boolean) => {
+    if (hasHistory) {
+      // User has ChatGPT history - proceed to prompt step
+      setSelectedPath('chatgpt_analysis');
+      setStep('prompt');
+    } else {
+      // User doesn't have history - show alternatives
+      setStep('alternatives');
+    }
+  };
+
+  const handleSelectGuidedReflection = () => {
+    setSelectedPath('guided_reflection');
+    setStep('guided-reflection');
+  };
+
+  const handleGuidedReflectionComplete = (profile: any) => {
+    // Transform guided reflection profile to match MirrorData structure
+    // The API returns a slightly different format, so we adapt it
+    const adaptedData: MirrorData = {
+      quality_score: profile.quality_score || 3,
+      patterns: {
+        nervous_system: { patterns: [] },
+        awareness: { patterns: [] },
+        identity: { patterns: [] },
+        attention: { patterns: [] },
+        relational: { patterns: [] },
+        outlook: { patterns: [] },
+        shadow: { patterns: [] }
+      },
+      core_pattern: profile.core_pattern,
+      ios_roadmap: profile.roadmap,
+      transformation_roadmap: {
+        milestones: generateMilestonesFromProfile(profile),
+        destination: {
+          core_pattern_name: profile.core_pattern?.name || '',
+          liberation_statement: generateLiberationStatement(profile)
+        }
+      }
+    };
+
+    // Distribute patterns into categories based on ios_stage
+    if (profile.patterns) {
+      profile.patterns.forEach((pattern: any, index: number) => {
+        const adaptedPattern: Pattern = {
+          id: `gr-${index}`,
+          name: pattern.name,
+          description: pattern.description,
+          evidence: pattern.evidence,
+          severity: pattern.severity,
+          ios_stages: [pattern.ios_stage]
+        };
+
+        // Map to appropriate category based on stage
+        switch (pattern.ios_stage) {
+          case 1:
+            adaptedData.patterns.nervous_system.patterns.push(adaptedPattern);
+            break;
+          case 2:
+            adaptedData.patterns.awareness.patterns.push(adaptedPattern);
+            break;
+          case 3:
+            adaptedData.patterns.identity.patterns.push(adaptedPattern);
+            break;
+          case 4:
+            adaptedData.patterns.attention.patterns.push(adaptedPattern);
+            break;
+          case 5:
+            adaptedData.patterns.relational.patterns.push(adaptedPattern);
+            break;
+          case 6:
+            adaptedData.patterns.outlook.patterns.push(adaptedPattern);
+            break;
+          default:
+            adaptedData.patterns.shadow.patterns.push(adaptedPattern);
+        }
+      });
+    }
+
+    setMirrorData(adaptedData);
+    setStep('results');
+  };
+
+  // Helper function to generate milestones from guided reflection profile
+  const generateMilestonesFromProfile = (profile: any): Milestone[] => {
+    const milestones: Milestone[] = [];
+    const stageNames = ['', 'Neural Priming', 'Embodied Awareness', 'Identity Mode', 'Flow Mode', 'Relational Coherence', 'Integration'];
+    
+    // Get unique stages from patterns
+    const stages = new Set<number>();
+    profile.patterns?.forEach((p: any) => stages.add(p.ios_stage));
+    
+    // Always include stage 1
+    stages.add(1);
+    
+    // Sort stages
+    const sortedStages = Array.from(stages).sort((a, b) => a - b);
+    
+    sortedStages.forEach((stage, index) => {
+      const stagePatterns = profile.patterns?.filter((p: any) => p.ios_stage === stage) || [];
+      const roadmapKey = `stage${stage}_focus` as keyof typeof profile.roadmap;
+      
+      milestones.push({
+        number: index + 1,
+        title: `Stage ${stage}: ${stageNames[stage]}`,
+        timeframe: stage === 1 ? 'Weeks 1-2' : `Week ${(stage - 1) * 2 + 1}-${stage * 2}`,
+        stage: stage,
+        stage_name: stageNames[stage],
+        patterns_addressed: stagePatterns.map((p: any) => p.name),
+        whats_broken: profile.roadmap?.[roadmapKey] || `Patterns identified in Stage ${stage}`,
+        what_changes: stagePatterns.map((p: any) => `Address: ${p.name}`),
+        the_shift: `From unconscious pattern to conscious choice in ${stageNames[stage].toLowerCase()}`
+      });
+    });
+
+    return milestones;
+  };
+
+  // Helper function to generate liberation statement
+  const generateLiberationStatement = (profile: any): string => {
+    if (profile.core_pattern) {
+      return `When the "${profile.core_pattern.name}" pattern dissolves, you'll experience freedom from ${profile.core_pattern.description?.toLowerCase() || 'these limiting patterns'}. The practices ahead will systematically rewire these neural pathways.`;
+    }
+    return "Your transformation journey is mapped. Each stage builds on the last, creating lasting neural change.";
+  };
+
+  // ============================================
+  // UTILITY FUNCTIONS
+  // ============================================
 
   const getSeverityColor = (severity: number) => {
     switch (severity) {
@@ -267,7 +424,7 @@ export default function MirrorPage() {
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <button
-            onClick={() => setStep('prompt')}
+            onClick={() => setStep('history-check')}
             className="px-8 py-4 bg-[#ff9e19] text-black font-semibold rounded-lg hover:bg-[#ffb347] transition-colors"
           >
             Begin The Mirror
@@ -288,7 +445,192 @@ export default function MirrorPage() {
   );
 
   // ============================================
-  // RENDER: PROMPT STEP (Combined with Paste)
+  // RENDER: HISTORY CHECK STEP (NEW)
+  // ============================================
+  const renderHistoryCheck = () => (
+    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4">
+      <div className="max-w-2xl w-full">
+        {/* Progress indicator */}
+        <div className="flex items-center justify-center gap-2 mb-8">
+          <div className="w-3 h-3 rounded-full bg-[#ff9e19]" />
+          <div className="w-12 h-0.5 bg-[#1a1a1a]" />
+          <div className="w-3 h-3 rounded-full bg-[#1a1a1a]" />
+        </div>
+
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="text-5xl mb-4">🪞</div>
+          <h2 className="text-2xl font-bold text-white mb-2">
+            Before We Begin
+          </h2>
+        </div>
+
+        {/* History check card */}
+        <div className="bg-[#111111] rounded-xl border border-[#ff9e19]/30 p-6 md:p-8 mb-6">
+          <h3 className="text-[#ff9e19] font-semibold text-lg mb-3 flex items-center gap-2">
+            <span>📊</span>
+            {MIRROR_INTRO_TEXT.historyNotice.title}
+          </h3>
+          <p className="text-gray-400 mb-6 leading-relaxed">
+            {MIRROR_INTRO_TEXT.historyNotice.description}
+          </p>
+          <p className="text-white font-medium mb-6">
+            {MIRROR_INTRO_TEXT.historyNotice.question}
+          </p>
+          
+          <div className="space-y-3">
+            <button
+              onClick={() => handleHistoryResponse(true)}
+              className="w-full p-4 bg-[#1a1a1a] rounded-lg text-left hover:bg-[#222] hover:border-[#ff9e19]/50 border border-transparent transition-all group"
+            >
+              <span className="text-white group-hover:text-[#ff9e19] transition-colors flex items-center gap-3">
+                <span className="text-[#ff9e19]">✓</span>
+                {MIRROR_INTRO_TEXT.historyNotice.options.yes}
+              </span>
+            </button>
+            
+            <button
+              onClick={() => handleHistoryResponse(false)}
+              className="w-full p-4 bg-[#1a1a1a] rounded-lg text-left hover:bg-[#222] border border-transparent transition-all"
+            >
+              <span className="text-gray-400 hover:text-white transition-colors flex items-center gap-3">
+                <span className="text-gray-600">○</span>
+                {MIRROR_INTRO_TEXT.historyNotice.options.no}
+              </span>
+            </button>
+
+            <button
+              onClick={() => handleHistoryResponse(false)}
+              className="w-full p-4 bg-[#1a1a1a] rounded-lg text-left hover:bg-[#222] border border-transparent transition-all"
+            >
+              <span className="text-gray-400 hover:text-white transition-colors flex items-center gap-3">
+                <span className="text-gray-600">?</span>
+                {MIRROR_INTRO_TEXT.historyNotice.options.unsure}
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {/* Back button */}
+        <div className="text-center">
+          <button
+            onClick={() => setStep('intro')}
+            className="text-gray-500 hover:text-gray-300 text-sm transition-colors"
+          >
+            ← Back to intro
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ============================================
+  // RENDER: ALTERNATIVES STEP (NEW)
+  // ============================================
+  const renderAlternatives = () => (
+    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4">
+      <div className="max-w-2xl w-full">
+        {/* Progress indicator */}
+        <div className="flex items-center justify-center gap-2 mb-8">
+          <div className="w-3 h-3 rounded-full bg-[#ff9e19]" />
+          <div className="w-12 h-0.5 bg-[#1a1a1a]" />
+          <div className="w-3 h-3 rounded-full bg-[#1a1a1a]" />
+        </div>
+
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-bold text-white mb-2">
+            No Problem
+          </h2>
+          <p className="text-gray-400">
+            {MIRROR_INTRO_TEXT.alternatives.intro}
+          </p>
+        </div>
+        
+        {/* Two options */}
+        <div className="grid md:grid-cols-2 gap-4 mb-8">
+          {/* Option A: Guided Reflection */}
+          <div className="bg-[#111111] rounded-xl border border-[#ff9e19]/30 p-6 flex flex-col">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xl">💬</span>
+                <h3 className="text-white font-semibold text-lg">
+                  {MIRROR_INTRO_TEXT.alternatives.guidedReflection.title}
+                </h3>
+              </div>
+              <p className="text-gray-400 text-sm mb-4 leading-relaxed">
+                {MIRROR_INTRO_TEXT.alternatives.guidedReflection.description}
+              </p>
+              <p className="text-gray-500 text-xs mb-4">
+                ⏱ {MIRROR_INTRO_TEXT.alternatives.guidedReflection.time}
+              </p>
+            </div>
+            <button
+              onClick={handleSelectGuidedReflection}
+              className="w-full py-3 bg-[#ff9e19] text-black rounded-lg font-semibold hover:bg-[#ffb347] transition-colors"
+            >
+              {MIRROR_INTRO_TEXT.alternatives.guidedReflection.button}
+            </button>
+          </div>
+          
+          {/* Option B: Skip */}
+          <div className="bg-[#111111] rounded-xl border border-[#1a1a1a] p-6 flex flex-col">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xl">⏭</span>
+                <h3 className="text-white font-semibold text-lg">
+                  {MIRROR_INTRO_TEXT.alternatives.skipForNow.title}
+                </h3>
+              </div>
+              <p className="text-gray-400 text-sm mb-4 leading-relaxed">
+                {MIRROR_INTRO_TEXT.alternatives.skipForNow.description}
+              </p>
+            </div>
+            <button
+              onClick={skipMirror}
+              className="w-full py-3 bg-[#1a1a1a] text-gray-400 rounded-lg font-semibold hover:bg-[#222] hover:text-white transition-colors"
+            >
+              {MIRROR_INTRO_TEXT.alternatives.skipForNow.button}
+            </button>
+          </div>
+        </div>
+        
+        {/* Back button */}
+        <div className="text-center">
+          <button
+            onClick={() => setStep('history-check')}
+            className="text-gray-500 hover:text-gray-300 text-sm transition-colors"
+          >
+            ← Go Back
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ============================================
+  // RENDER: GUIDED REFLECTION STEP (NEW)
+  // ============================================
+  const renderGuidedReflection = () => (
+    <div className="min-h-screen bg-[#0a0a0a] py-8 px-4">
+      <div className="max-w-2xl mx-auto">
+        {/* Progress indicator */}
+        <div className="flex items-center justify-center gap-2 mb-8">
+          <div className="w-3 h-3 rounded-full bg-[#ff9e19]" />
+          <div className="w-12 h-0.5 bg-[#ff9e19]/50" />
+          <div className="w-3 h-3 rounded-full bg-[#ff9e19]/50" />
+        </div>
+
+        <GuidedReflectionFlow
+          onComplete={handleGuidedReflectionComplete}
+          onSkip={skipMirror}
+        />
+      </div>
+    </div>
+  );
+
+  // ============================================
+  // RENDER: PROMPT STEP (ChatGPT Analysis)
   // ============================================
   const renderPrompt = () => (
     <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4">
@@ -387,7 +729,7 @@ export default function MirrorPage() {
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <button
-            onClick={() => setStep('intro')}
+            onClick={() => setStep('history-check')}
             disabled={isProcessing}
             className="px-6 py-3 bg-transparent text-gray-500 font-medium rounded-lg hover:text-gray-300 transition-colors disabled:opacity-50"
           >
@@ -412,7 +754,7 @@ export default function MirrorPage() {
     if (!mirrorData?.transformation_roadmap) return null;
 
     const { milestones: unsortedMilestones, destination } = mirrorData.transformation_roadmap;
-const milestones = [...unsortedMilestones].sort((a, b) => a.number - b.number);
+    const milestones = [...unsortedMilestones].sort((a, b) => a.number - b.number);
 
     return (
       <div className="space-y-6">
@@ -427,7 +769,7 @@ const milestones = [...unsortedMilestones].sort((a, b) => a.number - b.number);
               "{mirrorData.core_pattern.name}"
             </h3>
             <p className="text-gray-400">
-              The root. Everything else branches from this.
+              {mirrorData.core_pattern.description || "The root. Everything else branches from this."}
             </p>
           </div>
         )}
@@ -636,24 +978,26 @@ const milestones = [...unsortedMilestones].sort((a, b) => a.number - b.number);
           </div>
 
           {/* Quality indicator */}
-          <div className="bg-[#111111] rounded-xl border border-[#1a1a1a] p-4 mb-8">
-            <div className="flex items-center gap-4">
-              <div className="flex gap-1">
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <div
-                    key={n}
-                    className={`w-2 h-8 rounded-full ${
-                      n <= mirrorData.quality_score ? 'bg-[#ff9e19]' : 'bg-[#1a1a1a]'
-                    }`}
-                  />
-                ))}
-              </div>
-              <div>
-                <p className="text-white font-medium">{qualityInfo.title}</p>
-                <p className="text-gray-400 text-sm">{qualityInfo.message}</p>
+          {qualityInfo && (
+            <div className="bg-[#111111] rounded-xl border border-[#1a1a1a] p-4 mb-8">
+              <div className="flex items-center gap-4">
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <div
+                      key={n}
+                      className={`w-2 h-8 rounded-full ${
+                        n <= mirrorData.quality_score ? 'bg-[#ff9e19]' : 'bg-[#1a1a1a]'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <div>
+                  <p className="text-white font-medium">{qualityInfo.title}</p>
+                  <p className="text-gray-400 text-sm">{qualityInfo.message}</p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Tab Navigation */}
           <div className="flex gap-2 mb-6">
@@ -711,6 +1055,9 @@ const milestones = [...unsortedMilestones].sort((a, b) => a.number - b.number);
   return (
     <>
       {step === 'intro' && renderIntro()}
+      {step === 'history-check' && renderHistoryCheck()}
+      {step === 'alternatives' && renderAlternatives()}
+      {step === 'guided-reflection' && renderGuidedReflection()}
       {step === 'prompt' && renderPrompt()}
       {step === 'results' && renderResults()}
     </>
