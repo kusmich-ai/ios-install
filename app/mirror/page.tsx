@@ -239,7 +239,6 @@ export default function MirrorPage() {
 
   const handleGuidedReflectionComplete = (profile: any) => {
     // Transform guided reflection profile to match MirrorData structure
-    // The API returns a slightly different format, so we adapt it
     const adaptedData: MirrorData = {
       quality_score: profile.quality_score || 3,
       patterns: {
