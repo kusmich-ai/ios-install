@@ -4,6 +4,330 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 
 ---
 
+## [0.29.0] - 2026-01-19
+
+### Added - Reorientation System
+- **Reorientation Modal Triggers**
+  - Day 7 checkpoint: "One week in. The practices aren't about 'doing it right.' They're about noticing what happens when you show up consistently."
+  - Day 21 checkpoint: "Neural pathways don't respond to motivation — they respond to repetition."
+  - Missed week (7+ days away): "You've been away. That's data, not failure."
+  - Pre-Stage 4 unlock: "Flow Blocks don't train productivity — they train the capacity to hold focus without force."
+
+- **New Files Created**
+  - `/lib/reorientationTriggers.ts` - Trigger detection + database operations
+  - `/components/ReorientationModal.tsx` - Modal component with hook
+
+- **Database Updates**
+  - `user_progress.onboarding_started_at` - Timestamp when baseline completes
+  - `user_progress.last_ritual_completed_at` - Auto-updated via database trigger
+  - `user_progress.reorientation_day7_seen` - Flag for day 7 checkpoint
+  - `user_progress.reorientation_day21_seen` - Flag for day 21 checkpoint
+  - `user_progress.reorientation_missedweek_seen` - Flag for missed week (resets on return)
+  - `user_progress.reorientation_stage4_seen` - Flag for Stage 4 preface
+  - Database trigger `on_practice_logged` auto-updates `last_ritual_completed_at`
+
+- **AI Response Protocol**
+  - AI only explains reorientation messages if user explicitly asks
+  - No proactive mentions of the modal system
+  - Brief responses (1-2 sentences) then return to current task
+
+### Added - Capacity Signals Telemetry
+- **Tool Sessions Database Table**
+  - `tool_sessions` table for tracking tool usage
+  - Stores "what happened" not "success/fail"
+  - Columns: `clarity_rating`, `was_signal_named`, `was_interpretation_identified`, `action_selected`, `sessions_today`
+
+- **Updated All Tool Modals**
+  - `ReframeModal.tsx` - Capacity signals in session data
+  - `ThoughtHygieneModal.tsx` - Capacity signals in session data
+  - `DecenteringModal.tsx` - Capacity signals in session data
+  - `LoopDeLoopingModal.tsx` - Capacity signals in session data
+  - `MetaReflectionModal.tsx` - Capacity signals in session data
+
+### Added - Stage 7 & Media Assets
+- **Stage 7 Application Form UI**
+  - Application form for Stage 7 qualification
+  - Manual unlock gate preserved
+
+- **Media Assets Completed**
+  - Awareness Rep audio file (3 mins) - integrated
+  - Somatic Flow video - integrated
+
+### Fixed
+- **useUserProgress Hook Column Names**
+  - Fixed `delta_awareness` → `awareness_delta`
+  - Fixed `awareness_deltas` → `awareness_delta` (typo)
+  - Fixed `++` → `+` operator in average calculation
+
+---
+
+## [0.28.0] - 2026-01-18
+
+### Added - AI Frustration Detection & Attribution Drift Prevention
+- **Frustration Detection System**
+  - `/lib/frustrationDetection.ts` - Detects user frustration patterns
+  - Patterns detected: "isn't working", "not helping", "feel worse", "nothing changed", "waste of time"
+  - Tool-aware attribution reset injections
+
+- **Context Injections in `/api/chat/route.ts`**
+  - `detectAttributionDrift()` function checks user messages
+  - `getAttributionResetInjection()` returns tool-aware context
+  - Enforces Signal → Interpretation → Action framework
+  - No motivational padding, no outcome promises
+
+- **Outcome Framing Constraints**
+  - Added to `SECURITY_INSTRUCTIONS` block
+  - AI cannot promise "this will fix" or "this will help"
+  - Must use capacity-building language: "this trains" vs "this will fix"
+  - Tools restore clarity — they don't "fix" states
+
+### Added - Tool Framing System
+- **Universal Tool Framing**
+  - `/lib/toolFraming.ts` - Shared framing constants
+  - `toolUniversalFrame`: "Tools don't fix states. They restore clarity when interpretation is distorting signal."
+  - `lowResultFrame`: Shown when rating ≤2 or 3+ sessions in one day
+
+- **Updated Tool Modals (firstTimeMessage only)**
+  - ReframeModal - Universal frame added
+  - ThoughtHygieneModal - Universal frame added
+  - DecenteringModal - Universal frame added
+  - LoopDeLoopingModal - Universal frame added
+  - MetaReflectionModal - Universal frame added
+
+---
+
+## [0.27.0] - 2026-01-17
+
+### Added - Stage Attribution System
+- **Stage Attribution Copy**
+  - `/lib/attributioncopy.ts` - Stage unlock copy for all 6 stages
+  - `unlockTitle`: Stage unlock modal header
+  - `unlockBody`: Stage unlock explanation
+  - `ritualMicrocopy`: One-line header in ritual modals
+
+- **Stage Attribution Modal**
+  - `/components/StageAttributionModal.tsx` - Show-once unlock celebration
+  - Imports from `lib/attributioncopy.ts`
+  - Amber accent (#ff9e19) styling
+  - "Continue →" button marks as seen
+
+- **Database Updates**
+  - `user_progress.stage_1_attribution_seen` through `stage_6_attribution_seen`
+  - Flags prevent modal from showing again after first view
+
+- **Integration with ChatInterface**
+  - `showAttributionModal` state
+  - `attributionStage` state
+  - Modified `handleUnlockConfirmation` to show modal first
+  - `handleAttributionContinue` function for post-modal flow
+
+### Changed
+- **useUserProgress Hook**
+  - Added stage attribution "seen" flags to UserProgress interface
+  - Returns all 6 `stage_X_attribution_seen` booleans
+
+---
+
+## [0.26.0] - 2026-01-07
+
+### Added - Admin Dashboard
+- **Admin Route Structure**
+  - `/app/admin/layout.tsx` - Admin auth gate with email whitelist
+  - `/app/admin/page.tsx` - Main dashboard with metrics
+  - `/app/admin/users/page.tsx` - User list with detail modals
+  - `/app/api/admin/metrics/route.ts` - Protected API endpoint
+
+- **Dashboard Metrics**
+  - Total users, paid users, free users, conversion rate
+  - Stage distribution bar chart with percentages
+  - Conversion funnel (stage-to-stage progression rates)
+  - Activity breakdown (active 7d, 30d, churned 14d+)
+  - Revenue metrics (active subs, monthly, annual, trials)
+  - Daily signup trends (last 30 days)
+  - Recent users table
+
+- **User Management**
+  - Search by name or email
+  - Filter by stage or subscription status
+  - Sortable columns
+  - User detail modal with:
+    - Quick stats (stage, adherence, streak, REwired)
+    - Subscription status
+    - Baseline assessment scores
+    - Recent practices
+    - Timeline (joined, stage started, last active)
+
+- **Database Views**
+  - `admin_stage_distribution`
+  - `admin_subscription_overview`
+  - `admin_activity_metrics`
+  - `admin_funnel_metrics`
+  - `admin_user_details`
+  - `admin_daily_signups`
+  - `admin_revenue_metrics`
+  - `get_admin_dashboard_data()` function
+
+- **Access Control**
+  - Email whitelist: `ADMIN_EMAILS` array
+  - Only authenticated users with whitelisted emails can access
+  - Uses `SUPABASE_SERVICE_ROLE_KEY` to bypass RLS for admin queries
+
+---
+
+## [0.25.0] - 2025-12-27
+
+### Added - AI Coaching Limitations for Free Users
+- **Stage 1 Free Access Confirmation**
+  - Stage 1 completely free (baseline + HRVB + Awareness Rep + Decentering)
+  - "Coach with Nic" and "Coach with Fehren" links visible but gated
+
+- **Coaching Access Gate Options**
+  - Option A: Simple modal message (implemented)
+  - Option B: Limited taste (3-5 free messages) considered
+
+---
+
+## [0.24.0] - 2025-12-25
+
+### Added - Paywall & Subscription System
+- **Stripe Integration**
+  - `/lib/stripe.ts` - Server-side Stripe client
+  - `/lib/stripe-client.ts` - Client-side Stripe loader
+  - `/app/api/stripe/create-checkout/route.ts` - Creates checkout sessions
+  - `/app/api/stripe/webhook/route.ts` - Handles Stripe events
+  - `/app/api/stripe/portal/route.ts` - Customer billing portal
+
+- **Subscription Management**
+  - `/hooks/useSubscription.ts` - React hook for subscription state
+  - `subscriptions` table in database
+  - Real-time subscription status sync via webhooks
+
+- **Paywall Modal**
+  - `/components/PaywallModal.tsx` - Upgrade modal with plan selection
+  - Matches design system (#ff9e19 accent)
+  - Two tracks: IOS Installer / Installer + Coaching
+
+- **Pricing Structure**
+  - IOS Installer: $447 (3mo) / $597 (6mo) / $697 (annual)
+  - Installer + Coaching: $1,038 (3mo) / $1,397 (6mo) / $1,797 (annual)
+
+- **Integration with ChatInterface**
+  - Paywall intercepts Stage 2+ unlock for non-subscribers
+  - Post-payment success handler (`?upgrade=success`)
+  - Refetch subscription → retry pending unlock
+
+### Changed
+- **Stage Unlock Flow**
+  - `handleUnlockConfirmation` checks `hasActiveSubscription`
+  - Stage 1 = Free, Stage 2+ = Requires subscription
+
+---
+
+## [0.23.0] - 2025-12-17
+
+### Added - Personalized AI Coaching Modals
+- **Coach with Nic (Mind & Nervous System)**
+  - Distinct personality profile extracted from conversation analysis
+  - Direct opener style, contrarian positioning
+  - Nervous system as the lever
+  - Body-first inquiry ("Where do you feel this?")
+  - Signature phrases: "Let's slow this down", "That's a story. What's the sensation?"
+
+- **Coach with Fehren (Heart & Body)**
+  - Distinct personality profile extracted from conversation analysis
+  - Heart-centered approach
+  - Somatic awareness focus
+  - Complementary to Nic's cognitive approach
+
+- **Coach Profile Template Structure**
+  - Core Identity (background, mission, relationship)
+  - Coaching Philosophy (beliefs, theory, view of user)
+  - Voice & Personality (patterns, phrases, humor, tone)
+  - Methodology (frameworks, questions, interventions)
+  - Sample Responses (10-15+ scenarios)
+  - Signature Content (stories, metaphors, quotes)
+  - Boundaries (never say, never do)
+  - Memory & Continuity (track, reference, build)
+  - Conversation Flow (open, transition, close)
+  - Handoffs (when to suggest other coach)
+
+- **New Files**
+  - `/lib/coachPrompts.ts` - Coach system prompts
+  - `/components/CoachModal.tsx` - Coaching chat interface
+  - Coach conversation storage with memory
+
+- **Database Updates**
+  - `coach_conversations` table for persistent history
+  - Coach-specific memory storage
+
+---
+
+## [0.22.0] - 2025-12-12
+
+### Added - Comprehensive Security Implementation
+- **Authentication Enforcement**
+  - All API routes require authenticated user
+  - `verifyAuth()` helper function
+  - 401 Unauthorized for unauthenticated requests
+
+- **Rate Limiting**
+  - `/lib/security/rateLimit.ts` - Rate limit implementation
+  - Chat: 30 requests/min, 5-minute block
+  - Practice: 60 requests/min, 2-minute block
+  - Progress: 30 requests/min, 2-minute block
+
+- **Input Sanitization & Prompt Injection Protection**
+  - `/lib/security/inputSanitization.ts` - Injection pattern detection
+  - Blocks: "ignore previous instructions", "what is your system prompt", etc.
+  - Safe error responses for blocked requests
+
+- **Row Level Security (RLS) Policies**
+  - All tables protected: `user_progress`, `practice_logs`, `weekly_deltas`, etc.
+  - `resistance_events` table secured (was unrestricted)
+  - Users can only access their own data
+
+- **Anti-Extraction Instructions**
+  - `SECURITY_INSTRUCTIONS` block in chat route
+  - Prevents system prompt extraction
+  - Redirects meta-questions back to user goals
+
+- **Audit Logging**
+  - `logAuditEvent()` function
+  - Tracks: rate limit hits, injection attempts, auth failures
+  - Database persistence for security review
+
+### Changed
+- **API Routes Updated**
+  - `/api/chat/route.ts` - Full security implementation
+  - `/api/practices/log/route.js` - Auth + rate limit
+  - `/api/progress/calculate/route.js` - Auth + rate limit
+  - `/api/chat/coaching/route.ts` - Secured
+  - `/api/chat/insight/route.js` - Secured
+
+### Fixed
+- **Critical Security Issues**
+  - Chat API had NO authentication
+  - Progress API accepted spoofable userId
+  - Practice log accepted userId from body
+  - No prompt injection protection
+  - No rate limiting
+
+---
+
+## [0.21.0] - 2025-12-11
+
+### Added - Unlock Eligibility Auto-Checker Improvements
+- **Competence Threshold Logic**
+  - Average domain score ≥4.0 can bypass delta requirement
+  - Prevents users at high competence from being blocked by low deltas
+  - Hybrid approach: either delta improvement OR high competence
+
+### Fixed
+- **Unlock Eligibility Checker**
+  - Fixed edge case where high-performing users couldn't unlock
+  - Corrected delta calculation for users already near ceiling
+
+---
 ## [0.20.0] - 2025-12-10
 
 ### Added - Phase 1: Sprint Renewal System
@@ -1138,7 +1462,6 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
   - Weekly delta check-in protocols
   - Coaching voice samples
 
----
 
 ## Development Notes
 
@@ -1150,23 +1473,55 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 - Stage 4: Fully implemented with Flow Block + Two-Stage Extraction + intro templates
 - Stage 5: Fully implemented with Co-Regulation modal + 5-day rotation + intro templates
 - Stage 6: Fully implemented with Nightly Debrief modal + evening reminder + intro templates
-- Stage 7: Templates complete, pending manual unlock/application system implementation
+- Stage 7: Templates complete, application form UI complete, pending qualification review system
 - Template Library: **COMPLETE** - All stages 1-7 fully templated
 - Unlock Eligibility Auto-Checker: **COMPLETE** - Hybrid approach with competence threshold
 - Sprint Renewal: Complete for Identity and Flow Block sprints
 - Chat interface: Integrated with baseline data + hybrid template system
 - Supabase storage: Configured and functional
 - Mobile responsive: Complete with drawer navigation
+- **Security: COMPLETE** - Auth, rate limiting, input sanitization, RLS
+- **Paywall: COMPLETE** - Stripe integration, subscription management
+- **Admin Dashboard: COMPLETE** - Team analytics and user management
+- **AI Coaching: COMPLETE** - Nic and Fehren coach modals with distinct personalities
+- **Attribution System: COMPLETE** - Stage unlock modals, tool framing, frustration detection
+- **Reorientation System: COMPLETE** - Day 7/21/missed week/Stage 4 triggers
 
 ## Standing To-Do List
 
 ### Active Reminder Checklist
 - [x] Provide Resonance Breathing video link (www.unbecoming.app/breathe)
-- [ ] Provide Awareness Rep audio link (3 mins) - placeholder exists
-- [ ] Provide Somatic Flow video link - placeholder exists
+- [x] Provide Awareness Rep audio link (3 mins) - COMPLETE
+- [x] Provide Somatic Flow video link - COMPLETE
 - [x] Co-Regulation audio (`/audio/Relational.mp3`) - integrated
 
 ### Completed Development Tasks ✓
+
+#### Security & Infrastructure
+- [x] Security audit implementation (v0.22.0)
+- [x] Row Level Security (RLS) policies
+- [x] API route protection and authentication
+- [x] Input validation and sanitization
+- [x] Rate limiting on sensitive endpoints
+- [x] Audit logging for sensitive operations
+- [x] Stripe integration and subscription management (v0.24.0)
+- [x] Paywall implementation (v0.24.0)
+- [x] Admin dashboard with team analytics (v0.26.0)
+
+#### AI Coaching & Personalization
+- [x] Coach with Nic modal (v0.23.0)
+- [x] Coach with Fehren modal (v0.23.0)
+- [x] Coach personality extraction from conversation data
+- [x] Coach conversation memory and persistence
+
+#### Attribution & Misattribution Prevention
+- [x] Stage attribution copy and modals (v0.27.0)
+- [x] Tool framing system (v0.28.0)
+- [x] AI frustration detection (v0.28.0)
+- [x] Attribution drift context injections (v0.28.0)
+- [x] Outcome framing constraints (v0.28.0)
+- [x] Reorientation system (v0.29.0)
+- [x] Capacity signals telemetry (v0.29.0)
 
 #### Template Library Development
 - [x] Stage 1 ritual introduction templates (COMPLETE - v0.14.0)
@@ -1190,66 +1545,39 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 - [x] Two-stage extraction for flow block sprints
 - [x] Sprint renewal system (Continue/Evolve/Pivot)
 - [x] Unlock eligibility auto-checker (COMPLETE - v0.16.0)
+- [x] Tool session capacity signals tracking (v0.29.0)
 
 #### Stage 5-7 Implementation
 - [x] Co-Regulation Practice modal (Stage 5) - COMPLETE v0.20.0
 - [x] Nightly Debrief modal (Stage 6) - COMPLETE v0.20.0
 - [x] Stage 5-6 intro templates - COMPLETE
 - [x] Stage 7 templates - COMPLETE (manual unlock gate)
+- [x] Stage 7 application form UI - COMPLETE v0.29.0
+- [x] Awareness Rep audio file - COMPLETE v0.29.0
+- [x] Somatic Flow video - COMPLETE v0.29.0
 
 ### Pending Development Tasks
 
 #### Stage 7 Completion
-- [ ] Stage 7 application form UI
+- [x] Stage 7 application form UI - COMPLETE
 - [ ] Stage 7 qualification review system
 
 #### Edge Cases & Troubleshooting
-- [ ] What happens when users miss days? (grace period exists, need full flow)
-- [ ] How to handle resistance patterns?
+- [x] System recovery from breaks (30+ days) - Reorientation system handles
 - [ ] Build regression/reset protocols
 - [ ] Manual override logic for stage changes
-- [ ] System recovery from breaks (30+ days)
 
-#### Coach Personality System & Templates
-- [ ] Expand voice examples for different scenarios
-- [ ] Build response templates for common situations
-- [ ] Design intervention scripts for resistance
-- [ ] Create unlock celebration messages
-- [ ] Behavioral consistency guidelines
-- [ ] Develop and enable "coach" functionality after micro identity selection
-- [ ] Integration of coach with identity progression tracking
-
-#### Monetization & Access Control
-- [ ] Implement paywall after certain stage (define which stage)
-- [ ] Payment integration (Stripe/payment processor)
-- [ ] Subscription management system
-- [ ] Free trial tracking (7-day system currently toggled)
-- [ ] Upgrade prompts and conversion flows
-
-#### Security Implementation
-- [ ] Security audit on all levels
-- [ ] Row Level Security (RLS) policies in Supabase (currently basic implementation)
-- [ ] API route protection and authentication
-- [ ] Input validation and sanitization
-- [ ] Rate limiting on sensitive endpoints
-- [ ] Secure environment variable management
-- [ ] XSS and CSRF protection
-- [ ] Data encryption at rest and in transit
-- [ ] User session management and token security
-- [ ] Audit logging for sensitive operations
-
-### Documentation Tasks
-- [ ] Create supplemental instructions doc after Stage 2 testing
-- [ ] Update main project instructions with baseline assessment flow
-- [ ] Document complete Stage 1-6 flows in detail
-- [ ] Add coaching behavioral guidelines
-- [ ] Create media links placeholder system documentation
+#### Future Enhancements
+- [ ] iOS native app conversion (Capacitor)
+- [ ] Circle integration for community features
+- [ ] "Science of Neural Liberation" course integration (4 modules, 16 tutorials)
 
 ### Technical Stack
 - **Frontend**: Next.js 16, React, Tailwind CSS
 - **Backend**: Supabase
 - **Deployment**: Vercel
 - **AI Integration**: Claude API
+- **Payments**: Stripe
 - **Storage**: Supabase (primary) + localStorage (fallback)
 
 ### Design System
@@ -1263,7 +1591,7 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 - **Components**: Dark theme throughout
 
 ### Database Schema (Key Tables)
-- `user_progress` - Stage, adherence, streaks, ritual_intro_completed, current_identity
+- `user_progress` - Stage, adherence, streaks, attribution flags, reorientation flags
 - `baseline_assessments` - Initial 4-domain scores, REwired Index
 - `practice_logs` - Daily ritual completion records (includes nightly_debrief notes)
 - `weekly_deltas` - Weekly check-in scores
@@ -1271,6 +1599,10 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 - `legal_acceptances` - Terms and consent records
 - `identity_sprints` - 21-day Micro-Action sprint tracking
 - `flow_block_sprints` - Flow Block sprint tracking
+- `subscriptions` - Stripe subscription tracking
+- `tool_sessions` - On-demand tool usage and capacity signals
+- `coach_conversations` - AI coaching conversation history
+- `admin_*` views - Dashboard analytics
 
 ---
 
