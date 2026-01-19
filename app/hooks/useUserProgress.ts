@@ -209,7 +209,7 @@ export function useUserProgress() {
       // Fetch latest weekly delta
       const { data: latestDelta } = await supabase
         .from('weekly_deltas')
-        .select('delta_regulation, delta_awareness, delta_outlook, delta_attention, qualitative_rating')
+        .select('regulation_delta,awareness_delta,outlook_delta,attention_delta,qualitative_rating')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(1)
