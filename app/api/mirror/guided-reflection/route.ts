@@ -2,14 +2,9 @@
 // GUIDED REFLECTION API ROUTE
 // ============================================
 // File: app/api/mirror/guided-reflection/route.ts
-//
-// This endpoint receives the user's guided reflection responses,
-// sends them to Claude for pattern synthesis, and stores the
-// resulting pattern profile in the database.
 // ============================================
 
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createClient } from '@/lib/supabase-server';
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { GUIDED_REFLECTION_SYNTHESIS_PROMPT } from '@/lib/mirrorPrompt';
@@ -60,7 +55,7 @@ interface PatternProfile {
 export async function POST(request: Request) {
   try {
     // Get authenticated user
-    const supabase = createRouteHandlerClient({ cookies });
+    const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !user) {
@@ -176,47 +171,6 @@ export async function POST(request: Request) {
     
     return NextResponse.json(
       { error: errorMessage },
-      { status: 500 }
-    );
-  }
-}
-
-// ============================================
-// GET HANDLER (Optional - retrieve existing profile)
-// ============================================
-
-export async function GET() {
-  try {
-    const supabase = createRouteHandlerClient({ cookies });
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' }, 
-        { status: 401 }
-      );
-    }
-
-    const { data: profile, error: dbError } = await supabase
-      .from('pattern_profiles')
-      .select('*')
-      .eq('user_id', user.id)
-      .single();
-
-    if (dbError && dbError.code !== 'PGRST116') {
-      // PGRST116 = no rows returned (not an error for us)
-      throw dbError;
-    }
-
-    return NextResponse.json({ 
-      success: true, 
-      profile: profile || null 
-    });
-
-  } catch (error) {
-    console.error('Get profile error:', error);
-    return NextResponse.json(
-      { error: 'Failed to retrieve profile' },
       { status: 500 }
     );
   }
