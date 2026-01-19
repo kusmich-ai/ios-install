@@ -15,6 +15,8 @@ import AwakenWithFiveCard from './AwakenWithFiveCard';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import { Zap, Heart } from 'lucide-react';
 import StageAttributionModal, { StageId } from '@/components/StageAttributionModal';
+import { useReorientation } from '@/components/ReorientationModal';
+import ReorientationModal from '@/components/ReorientationModal';
 
 // ============================================
 // TEMPLATE SYSTEM IMPORTS
@@ -889,6 +891,11 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
   const { startCheckout } = useSubscriptionActions();
   const [showPaywall, setShowPaywall] = useState(false);
 
+  // Reorientation modal (day 7, day 21, missed week, stage 4 unlock)
+  const { isOpen: reorientationOpen, content: reorientationContent, dismiss: dismissReorientation } = useReorientation({
+    userId: user?.id || null
+  });
+  
   // ============================================
   // HELPER FUNCTIONS
   // ============================================
@@ -4276,7 +4283,7 @@ const sendMessage = async (e: React.FormEvent) => {
         onUpgrade={handleUpgrade}
       />
 
-      {/* Stage Attribution Modal (show-once unlock celebration) */}
+{/* Stage Attribution Modal (show-once unlock celebration) */}
       {attributionStage && (
         <StageAttributionModal
           stage={attributionStage}
@@ -4288,6 +4295,14 @@ const sendMessage = async (e: React.FormEvent) => {
           onContinue={handleAttributionContinue}
         />
       )}
+
+      {/* Reorientation Modal (day 7, day 21, missed week, stage 4 unlock) */}
+      <ReorientationModal
+        isOpen={reorientationOpen}
+        title={reorientationContent?.title || ''}
+        body={reorientationContent?.body || ''}
+        onDismiss={dismissReorientation}
+      />
     </div>
   );
 }
