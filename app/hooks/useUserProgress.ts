@@ -288,7 +288,7 @@ export function useUserProgress() {
         attention: latestDelta?.attention_delta || 0,
         average: latestDelta
           ? ((latestDelta.regulation_delta || 0) + 
-             (latestDelta.awareness_delta || 0) ++ 
+             (latestDelta.awareness_delta || 0) + 
              (latestDelta.outlook_delta || 0) + 
              (latestDelta.attention_delta || 0)) / 4
           : 0
