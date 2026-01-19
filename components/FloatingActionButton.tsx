@@ -520,11 +520,15 @@ const getPracticeStatus = (practiceId: string): 'completed' | 'pending' => {
             </div>
 
             {/* ON-DEMAND TOOLS - RESTYLED */}
-            <div>
-              <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
-                ON-DEMAND TOOLS
-              </div>
-              <div className="space-y-2">
+            {/* On-Demand Tools */}
+<div>
+  <div className="text-xs font-semibold text-gray-400 mb-2">
+    ON-DEMAND TOOLS
+  </div>
+  <p className="text-xs text-gray-500 italic mb-3">
+    Tools don't fix states. They restore clarity when interpretation is distorting signal.
+  </p>
+  <div className="space-y-2">
                 {unlockedTools.map((tool) => {
                   const ToolIcon = TOOL_ICONS[tool.id] || Sparkles;
                   
