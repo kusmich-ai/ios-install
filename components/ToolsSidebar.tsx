@@ -588,7 +588,7 @@ const getPracticeStatus = (practiceId: string): 'completed' | 'pending' | 'locke
     <p className="text-xs text-gray-500 italic mb-3">
       Tools don't fix states. They restore clarity when interpretation is distorting signal.
     </p>
-    {unlockedTools.map((tool) => (
+    {unlockedTools.map((tool) => {
                   const ToolIcon = TOOL_ICONS[tool.id] || Sparkles;
                   
                   return (
