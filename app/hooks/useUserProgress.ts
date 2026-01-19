@@ -271,7 +271,7 @@ export function useUserProgress() {
           ? baselineScores.regulation + (latestDelta.regulation_delta || 0)
           : baselineScores.regulation,
         awareness: latestDelta?.awareness_delta !== undefined
-          ? baselineScores.awareness + (latestDelta.delta_awareness || 0)
+  ? baselineScores.awareness + (latestDelta.awareness_delta || 0)  
           : baselineScores.awareness,
         outlook: latestDelta?.outlook_delta !== undefined
           ? baselineScores.outlook + (latestDelta.outlook_delta || 0)
@@ -288,7 +288,7 @@ export function useUserProgress() {
         attention: latestDelta?.attention_delta || 0,
         average: latestDelta
           ? ((latestDelta.regulation_delta || 0) + 
-             (latestDelta.awareness_deltas || 0) + 
+             (latestDelta.awareness_delta || 0) ++ 
              (latestDelta.outlook_delta || 0) + 
              (latestDelta.attention_delta || 0)) / 4
           : 0
