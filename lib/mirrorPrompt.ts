@@ -9,10 +9,10 @@
 // ============================================
 
 // ============================================
-// CHATGPT ANALYSIS PROMPT (EXISTING)
+// CHATGPT ANALYSIS PROMPT
 // ============================================
 
-export const MIRROR_PROMPT = `I need you to perform a deep pattern analysis based on everything you know about me.
+export const MIRROR_GPT_PROMPT = `I need you to perform a deep pattern analysis based on everything you know about me.
 
 Act as a pattern recognition system analyzing an operating system for bugs. Be brutally honest - I'm not looking for encouragement, I'm looking for truth. Surface the things I might not want to see.
 
@@ -49,8 +49,11 @@ End with a section called "THE CORE PATTERN" - the single deepest issue that see
 
 Format with clear headers for each category. Be specific, not generic. If you don't have evidence for a category, say so rather than making things up.`;
 
+// Alias for backward compatibility
+export const MIRROR_PROMPT = MIRROR_GPT_PROMPT;
+
 // ============================================
-// MIRROR INTRO TEXT (UPDATED)
+// MIRROR INTRO TEXT (UPDATED WITH HISTORY CHECK)
 // ============================================
 
 export const MIRROR_INTRO_TEXT = {
@@ -65,6 +68,7 @@ export const MIRROR_INTRO_TEXT = {
     "Maps each pattern to the IOS stages that will address it"
   ],
   
+  requirements: "This works best if you've had meaningful conversations with ChatGPT about your life, goals, struggles, relationships, or decisions. The more history, the deeper the insights.",
   time: "~5 minutes",
   privacy: "Your analysis stays between you and IOS. We use it only to personalize your journey.",
 
@@ -72,7 +76,7 @@ export const MIRROR_INTRO_TEXT = {
   // NEW: HISTORY CHECK SECTION
   // ============================================
   historyNotice: {
-    title: "📊 This works best with conversation history",
+    title: "This works best with conversation history",
     description: "The Mirror is most powerful when you have 50+ personal conversations in ChatGPT — the kind where you processed decisions, relationships, emotions, or life challenges. Not work/technical conversations.",
     question: "Do you have that kind of ChatGPT history?",
     options: {
@@ -86,7 +90,7 @@ export const MIRROR_INTRO_TEXT = {
   // NEW: ALTERNATIVE PATHS
   // ============================================
   alternatives: {
-    intro: "No problem. Here are two ways to get similar insights:",
+    intro: "Here are two ways to get similar insights:",
     
     guidedReflection: {
       title: "Option A: Guided Reflection",
@@ -104,34 +108,34 @@ export const MIRROR_INTRO_TEXT = {
 };
 
 // ============================================
-// MIRROR INSTRUCTIONS (EXISTING)
+// MIRROR INSTRUCTIONS
 // ============================================
 
 export const MIRROR_INSTRUCTIONS = {
   step1: {
     title: "Copy the Prompt",
-    description: "Click the button below to copy the analysis prompt to your clipboard."
+    description: "Copy the prompt"
   },
   step2: {
     title: "Open ChatGPT",
-    description: "Go to chat.openai.com and start a new conversation (or use an existing one with history)."
+    description: "Go to ChatGPT"
   },
   step3: {
     title: "Paste & Run",
-    description: "Paste the prompt and press Enter. Wait for ChatGPT to analyze your patterns."
+    description: "Paste and run it"
   },
   step4: {
-    title: "Copy the Response",
-    description: "Select all of ChatGPT's response and copy it."
+    title: "Copy Response",
+    description: "Copy the response"
   },
   step5: {
-    title: "Paste Back Here",
-    description: "Paste ChatGPT's full response in the text area below."
+    title: "Paste Here",
+    description: "Paste it below"
   }
 };
 
 // ============================================
-// QUALITY MESSAGES (EXISTING)
+// QUALITY MESSAGES
 // ============================================
 
 export const QUALITY_MESSAGES = {
@@ -314,7 +318,12 @@ Respond ONLY with valid JSON in this exact format:
   "quality_score": number
 }`;
 
+// ============================================
+// DEFAULT EXPORT
+// ============================================
+
 export default {
+  MIRROR_GPT_PROMPT,
   MIRROR_PROMPT,
   MIRROR_INTRO_TEXT,
   MIRROR_INSTRUCTIONS,
