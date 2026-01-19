@@ -5,7 +5,14 @@
 // 
 // This file contains all text content for The Mirror feature,
 // including the ChatGPT analysis prompt, intro text, and the
-// new Guided Reflection alternative flow.
+// Guided Reflection alternative flow.
+//
+// PHILOSOPHY ALIGNMENT:
+// - Recognition over improvement
+// - Notice, don't excavate
+// - Signal → Interpretation → Action
+// - Tools restore clarity, don't fix
+// - Unbecoming, not becoming
 // ============================================
 
 // ============================================
@@ -53,19 +60,19 @@ Format with clear headers for each category. Be specific, not generic. If you do
 export const MIRROR_PROMPT = MIRROR_GPT_PROMPT;
 
 // ============================================
-// MIRROR INTRO TEXT (UPDATED WITH HISTORY CHECK)
+// MIRROR INTRO TEXT (WITH HISTORY CHECK)
 // ============================================
 
 export const MIRROR_INTRO_TEXT = {
   headline: "The Mirror",
   tagline: "See what's running under the hood.",
-  description: "Before we install your new operating system, let's reveal what's running in your current one. The Mirror analyzes patterns from your conversations to surface hidden blind spots, self-sabotage cycles, and the core issue driving everything else.",
+  description: "Before we install your new operating system, let's reveal what's running in your current one. The Mirror surfaces patterns from your conversations — not to fix them, but to see them clearly. Awareness of a pattern is the first step to freedom from it.",
   
   whatItDoes: [
-    "Identifies unconscious patterns across 7 life domains",
-    "Reveals the connections between your patterns",
-    "Uncovers your Core Pattern - the root issue driving everything else",
-    "Maps each pattern to the IOS stages that will address it"
+    "Surfaces patterns across 7 life domains",
+    "Reveals connections between patterns",
+    "Identifies the Core Pattern — the central dynamic",
+    "Maps each pattern to the IOS stages that train awareness of it"
   ],
   
   requirements: "This works best if you've had meaningful conversations with ChatGPT about your life, goals, struggles, relationships, or decisions. The more history, the deeper the insights.",
@@ -73,7 +80,7 @@ export const MIRROR_INTRO_TEXT = {
   privacy: "Your analysis stays between you and IOS. We use it only to personalize your journey.",
 
   // ============================================
-  // NEW: HISTORY CHECK SECTION
+  // HISTORY CHECK SECTION
   // ============================================
   historyNotice: {
     title: "This works best with conversation history",
@@ -87,14 +94,14 @@ export const MIRROR_INTRO_TEXT = {
   },
 
   // ============================================
-  // NEW: ALTERNATIVE PATHS
+  // ALTERNATIVE PATHS
   // ============================================
   alternatives: {
     intro: "Here are two ways to get similar insights:",
     
     guidedReflection: {
       title: "Option A: Guided Reflection",
-      description: "I'll ask you 7 questions directly about your patterns. Takes about 5 minutes. We'll build your transformation roadmap from your answers.",
+      description: "I'll ask you 7 questions directly about your current experience. Takes about 5 minutes. We'll build your awareness map from your answers.",
       time: "~5 minutes",
       button: "Start Guided Reflection"
     },
@@ -151,12 +158,12 @@ export const QUALITY_MESSAGES = {
   },
   3: {
     title: "Good Pattern Profile",
-    message: "Solid pattern analysis with good evidence across multiple domains. This will be useful for your IOS journey.",
+    message: "Solid pattern recognition with good evidence across multiple domains. This will be useful for your IOS journey.",
     showSkip: false
   },
   4: {
     title: "Strong Pattern Profile",
-    message: "Comprehensive analysis with clear patterns and connections. This gives us a detailed map of what to address.",
+    message: "Comprehensive analysis with clear patterns and connections. This gives us a detailed map of what to notice.",
     showSkip: false
   },
   5: {
@@ -167,83 +174,90 @@ export const QUALITY_MESSAGES = {
 };
 
 // ============================================
-// NEW: GUIDED REFLECTION FLOW
+// GUIDED REFLECTION FLOW
+// ============================================
+// PHILOSOPHY ALIGNMENT:
+// - Questions surface patterns without implying they need fixing
+// - Follow-ups point to somatic signal, not interpretation/archaeology
+// - Language is "notice" and "shows up" not "fix" and "sabotage"
+// - No digging into origins or meaning of patterns
+// - Framing is recognition-based, not improvement-based
 // ============================================
 
 export const GUIDED_REFLECTION_FLOW = {
-  intro: `Since we don't have your ChatGPT history to analyze, I'm going to ask you directly about your patterns.
+  intro: `Since we don't have your ChatGPT history to analyze, I'm going to ask you directly about your current experience.
 
-These questions are designed to surface the same material The Mirror would extract from conversation analysis. Be honest — there are no wrong answers, only useful data.
+These questions surface patterns that are already running — not to fix them, but to see them clearly. Awareness of a pattern is different from being trapped in it.
 
 This takes about 5 minutes. Ready?`,
 
   questions: [
     {
-      id: 'friction_point',
-      category: 'Core Friction',
-      question: "What's the thing you keep trying to fix about yourself — the pattern that keeps showing up no matter what you do?",
-      followUp: "How long has this been a theme in your life?",
-      placeholder: "Describe the pattern or issue that keeps recurring...",
-      note: "This often points to the Core Pattern"
+      id: 'current_friction',
+      category: 'Current Friction',
+      question: "What pattern or experience keeps showing up in your life — the thing that's present even when circumstances change?",
+      followUp: "When it shows up, where do you notice it first — in your body, your thoughts, or your behavior?",
+      placeholder: "Describe what keeps recurring...",
+      note: "Surfaces Core Pattern without 'fix' framing"
     },
     {
       id: 'stress_response',
       category: 'Nervous System',
-      question: "When you're under pressure or triggered, what's your default response? Do you fight (push harder, get aggressive), flight (avoid, distract, escape), freeze (shut down, go numb), or fawn (people-please, over-accommodate)?",
-      followUp: "What happens in your body when you're stressed? Where do you feel it?",
-      placeholder: "Describe how you typically react under stress...",
-      note: "Maps to Stage 1 work"
+      question: "When you're under pressure or triggered, what's your body's default response? Do you notice more fight (push harder, get tense), flight (urge to escape, distract), freeze (shut down, go blank), or fawn (accommodate, appease)?",
+      followUp: "Where do you feel that response in your body right now, even thinking about it?",
+      placeholder: "Describe what you notice in your body...",
+      note: "Maps to Stage 1 - somatic signal focus"
     },
     {
       id: 'blind_spot',
       category: 'Awareness',
-      question: "What feedback have you received multiple times that you've dismissed or explained away? Or: What do people close to you see about you that you struggle to see yourself?",
+      question: "What do people close to you see about you that's hard for you to see yourself? Or: what feedback keeps coming that you tend to dismiss?",
       followUp: null,
-      placeholder: "Think about recurring feedback or observations others have made...",
-      note: "Surfaces awareness blind spots"
+      placeholder: "What's hard to see about yourself...",
+      note: "Surfaces awareness gaps without excavation"
     },
     {
-      id: 'identity_trap',
+      id: 'identity_story',
       category: 'Identity',
-      question: "Complete this sentence honestly: 'I'm just not the kind of person who...' or 'I could never...'",
-      followUp: "Where did that belief come from? Can you trace it to a specific experience or message?",
-      placeholder: "I'm just not the kind of person who...",
-      note: "Maps to Stage 3 Identity work"
+      question: "What story do you tell yourself about who you are that feels limiting? The 'I am...' or 'I'm not...' that runs in the background.",
+      followUp: "When that story is running, what do you notice happening in your body or behavior?",
+      placeholder: "The story that plays...",
+      note: "Identifies the story without archaeology of its origin"
     },
     {
-      id: 'attention_leak',
+      id: 'attention_scatter',
       category: 'Focus',
-      question: "What are the 'open tabs' in your mind that drain your focus? The things you keep thinking about but don't actually address?",
-      followUp: "What do you think you're avoiding by letting your attention scatter?",
-      placeholder: "List the thoughts, worries, or unfinished business that occupy your mental bandwidth...",
-      note: "Maps to Stage 4 Flow work"
+      question: "What tends to pull your attention away from what matters? The things that scatter focus or keep running in the background.",
+      followUp: "When your attention scatters, what's the signal in your body — restlessness, tension, numbness, something else?",
+      placeholder: "What scatters your attention...",
+      note: "Maps to Stage 4 - signal-based, not interpretation-based"
     },
     {
-      id: 'relational_pattern',
+      id: 'relational_signal',
       category: 'Relationships',
-      question: "What pattern keeps showing up in your relationships — romantic, family, or professional? The thing that happens again and again with different people?",
-      followUp: "What do you think you're getting from that pattern, even if it hurts you?",
-      placeholder: "Describe the recurring dynamic or issue in your relationships...",
-      note: "Maps to Stage 5 Relational work"
+      question: "What tends to happen in your close relationships that creates friction or distance? The dynamic that keeps repeating.",
+      followUp: "When that dynamic is happening, what do you notice in your body?",
+      placeholder: "The recurring relational pattern...",
+      note: "Maps to Stage 5 - pattern recognition without meaning-making"
     },
     {
-      id: 'self_sabotage',
+      id: 'self_interruption',
       category: 'Shadow',
-      question: "When things are going well, how do you typically sabotage yourself? What's your signature way of getting in your own way?",
+      question: "When things are moving toward what you want, what tends to interrupt or slow that down? Not why — just what shows up.",
       followUp: null,
-      placeholder: "Describe how you tend to undermine your own success or happiness...",
-      note: "Core Shadow material"
+      placeholder: "What tends to interrupt progress...",
+      note: "Shadow material without self-judgment framing"
     }
   ],
 
   processing: {
-    title: "Analyzing Your Patterns",
-    message: "Building your transformation roadmap..."
+    title: "Mapping Your Patterns",
+    message: "Building your awareness map..."
   },
 
-  synthesis: `Based on what you've shared, here's what I'm seeing...`,
+  synthesis: `Here's what showed up. These aren't problems to fix — they're patterns to see clearly. Awareness of a pattern is the first step to freedom from it.`,
 
-  closing: `This gives us a strong foundation. As you progress through IOS, these patterns will become clearer — and you'll watch them transform.
+  closing: `This gives us a clear starting point. As you move through the IOS, you'll develop the capacity to notice these patterns in real-time — and choose how to respond rather than react.
 
 Ready to begin Stage 1?`
 };
@@ -251,44 +265,62 @@ Ready to begin Stage 1?`
 // ============================================
 // CLAUDE SYNTHESIS PROMPT FOR GUIDED REFLECTION
 // ============================================
+// PHILOSOPHY ALIGNMENT:
+// - Patterns are not problems to fix — they are dynamics to see clearly
+// - Focus on what IS, not what's wrong
+// - Use language of "noticing" and "awareness" not "fixing" or "healing"
+// - Avoid excavation language (why it started, what caused it)
+// ============================================
 
-export const GUIDED_REFLECTION_SYNTHESIS_PROMPT = `You are analyzing a user's self-reported patterns from a guided reflection intake for the IOS (Integrated Operating System) transformation platform. Your job is to identify their core patterns and map them to the IOS stages.
+export const GUIDED_REFLECTION_SYNTHESIS_PROMPT = `You are analyzing a user's self-reported patterns from a guided reflection intake for the IOS (Integrated Operating System) transformation platform.
+
+IMPORTANT FRAMING:
+- Patterns are not problems to fix — they are dynamics to see clearly
+- The goal is RECOGNITION, not improvement
+- Focus on what IS, not what's wrong
+- Use language of "noticing" and "awareness" not "fixing" or "healing"
+- Avoid excavation language (why it started, what caused it, what it means)
 
 The IOS has 6 main stages:
-- Stage 1: Neural Priming (nervous system regulation, stress response, emotional reactivity)
-- Stage 2: Embodied Awareness (body awareness, somatic patterns, embodiment)
-- Stage 3: Identity Mode (identity, limiting self-concepts, stories about self)
-- Stage 4: Flow Mode (focus, attention, sustained concentration, deep work)
-- Stage 5: Relational Coherence (relationships, boundaries, interpersonal patterns)
-- Stage 6: Integration (insight encoding, daily reflection, consolidation)
+- Stage 1: Neural Priming (nervous system regulation, noticing stress signals)
+- Stage 2: Embodied Awareness (body awareness, somatic signals)
+- Stage 3: Identity Mode (noticing identity stories, choosing consciously)
+- Stage 4: Flow Mode (attention training, noticing scatter)
+- Stage 5: Relational Coherence (noticing relational patterns)
+- Stage 6: Integration (daily reflection, pattern recognition)
 
 Based on their responses, create a pattern profile with:
 
 1. **Identified Patterns** (3-5 clear patterns)
    For each pattern:
-   - name: Clear, specific name (e.g., "Perfectionism Loop", "Conflict Avoidance", "Attention Scatter")
-   - description: 1-2 sentence explanation
-   - severity: 1-5 (1=minor tendency, 5=significantly impacting life)
-   - ios_stage: Which stage primarily addresses this (1-6)
+   - name: Clear, descriptive name (e.g., "Attention Scatter", "Freeze Response", "Performance Story")
+   - description: 1-2 sentence description of WHAT shows up (not why or what it means)
+   - severity: 1-5 (1=occasionally present, 5=frequently running)
+   - ios_stage: Which stage trains awareness of this pattern (1-6)
    - evidence: What they said that revealed this pattern
 
-2. **Core Pattern** - The single deepest issue that seems to drive the others
+2. **Core Pattern** - The central dynamic that connects to others
    - name: Clear name
-   - description: How this manifests and why it's central
+   - description: How this manifests (not its origin or meaning)
    - connections: List of other pattern names it connects to
 
-3. **IOS Roadmap** - How their journey through the stages will address these patterns
-   - stage1_focus: What Stage 1 will specifically address for them
-   - stage3_focus: What Stage 3 will specifically address for them
-   - stage4_focus: What Stage 4 will specifically address for them
-   - stage5_focus: What Stage 5 will specifically address for them
+3. **IOS Roadmap** - How each stage builds awareness capacity
+   - stage1_focus: What nervous system signals to notice
+   - stage3_focus: What identity stories to recognize
+   - stage4_focus: What attention patterns to observe
+   - stage5_focus: What relational dynamics to see
 
 4. **Quality Score** (3-5)
    - 3: Good self-reflection, patterns identifiable
    - 4: Strong self-awareness, clear patterns with connections
-   - 5: Exceptional depth, nuanced understanding of own patterns
+   - 5: Exceptional clarity about current experience
 
-Be specific and honest, but constructive. Frame patterns as "what we're going to address" not "what's wrong with you." Use their own language where possible.
+LANGUAGE CONSTRAINTS:
+- Use "notice" not "fix"
+- Use "pattern" not "problem"
+- Use "shows up" not "caused by"
+- Use "trains awareness of" not "addresses" or "heals"
+- Never use "healing", "trauma", "wound", or "broken"
 
 User's Guided Reflection Responses:
 {responses}
