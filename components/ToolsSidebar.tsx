@@ -584,8 +584,11 @@ const getPracticeStatus = (practiceId: string): 'completed' | 'pending' | 'locke
             </button>
 
             {toolsExpanded && (
-              <div className="space-y-2">
-                {unlockedTools.map((tool) => {
+  <div className="space-y-2">
+    <p className="text-xs text-gray-500 italic mb-3">
+      Tools don't fix states. They restore clarity when interpretation is distorting signal.
+    </p>
+    {unlockedTools.map((tool) => (
                   const ToolIcon = TOOL_ICONS[tool.id] || Sparkles;
                   
                   return (
