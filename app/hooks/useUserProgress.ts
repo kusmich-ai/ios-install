@@ -267,30 +267,30 @@ export function useUserProgress() {
       };
 
       const domainScores = {
-        regulation: latestDelta?.delta_regulation !== undefined 
-          ? baselineScores.regulation + (latestDelta.delta_regulation || 0)
+        regulation: latestDelta?.regulation_delta !== undefined 
+          ? baselineScores.regulation + (latestDelta.regulation_delta || 0)
           : baselineScores.regulation,
-        awareness: latestDelta?.delta_awareness !== undefined
+        awareness: latestDelta?.awareness_delta !== undefined
           ? baselineScores.awareness + (latestDelta.delta_awareness || 0)
           : baselineScores.awareness,
-        outlook: latestDelta?.delta_outlook !== undefined
-          ? baselineScores.outlook + (latestDelta.delta_outlook || 0)
+        outlook: latestDelta?.outlook_delta !== undefined
+          ? baselineScores.outlook + (latestDelta.outlook_delta || 0)
           : baselineScores.outlook,
-        attention: latestDelta?.delta_attention !== undefined
-          ? baselineScores.attention + (latestDelta.delta_attention || 0)
+        attention: latestDelta?.attention_delta !== undefined
+          ? baselineScores.attention + (latestDelta.attention_delta || 0)
           : baselineScores.attention
       };
 
       const domainDeltas = {
-        regulation: latestDelta?.delta_regulation || 0,
-        awareness: latestDelta?.delta_awareness || 0,
-        outlook: latestDelta?.delta_outlook || 0,
-        attention: latestDelta?.delta_attention || 0,
+        regulation: latestDelta?.regulation_delta || 0,
+        awareness: latestDelta?.awareness_delta || 0,
+        outlook: latestDelta?.outlook_delta || 0,
+        attention: latestDelta?.attention_delta || 0,
         average: latestDelta
-          ? ((latestDelta.delta_regulation || 0) + 
-             (latestDelta.delta_awareness || 0) + 
-             (latestDelta.delta_outlook || 0) + 
-             (latestDelta.delta_attention || 0)) / 4
+          ? ((latestDelta.regulation_delta || 0) + 
+             (latestDelta.awareness_deltas || 0) + 
+             (latestDelta.outlook_delta || 0) + 
+             (latestDelta.attention_delta || 0)) / 4
           : 0
       };
 
