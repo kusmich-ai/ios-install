@@ -133,7 +133,7 @@ import {
 
 
 // ============================================
-// FLOW BLOCK SETUP IMPORTS (TEMPLATE-DRIVEN v6)
+// FLOW BLOCK SETUP IMPORTS (API-DRIVEN v2.4)
 // ============================================
 import {
   FlowBlockState,
@@ -143,16 +143,16 @@ import {
   flowBlockOpeningMessage,
   getFlowBlockOpeningWithIdentity,
   isCommitmentResponse,
-  processFlowBlockStep,
+  buildFlowBlockAPIMessages,
+  buildFlowBlockExtractionMessages,
+  parseFlowBlockExtraction,
+  cleanFlowBlockResponseForDisplay,
   getTodaysBlock,
   getDailyFlowBlockPrompt,
   postBlockReflectionPrompt,
   getSprintDayNumber,
   isSprintComplete,
-  sprintCompleteMessage,
-  // Legacy functions (for sprint evolution compatibility)
-  buildFlowBlockAPIMessages,
-  cleanFlowBlockResponseForDisplay
+  sprintCompleteMessage
 } from '@/lib/flowBlockAPI';
 
 
@@ -2537,34 +2537,26 @@ const updateUserProgressCoherence = async (coherenceStatement: string, microActi
 
 
   // ============================================
-  // FLOW BLOCK SETUP HANDLERS (TEMPLATE-DRIVEN)
+  // FLOW BLOCK SETUP HANDLERS (API-DRIVEN v2.4)
   // ============================================
   
   const startFlowBlockSetup = useCallback(() => {
-    devLog('[FlowBlock]', 'Starting setup flow (TEMPLATE-DRIVEN)');
+    devLog('[FlowBlock]', 'Starting setup flow (API-DRIVEN)');
     
-    // Reset state and start at step 1
+    // Reset state for new setup
     setFlowBlockState(prev => ({
       ...prev,
       isActive: true,
-      step: 1,
-      domains: [],
-      tasks: [],
-      taskClassifications: [],
-      weeklyMap: [],
-      preferences: {
-        professionalLocation: '',
-        personalLocation: '',
-        playlist: '',
-        timerMethod: '',
-        notificationsOff: false,
-      },
       conversationHistory: [
         { role: 'assistant', content: flowBlockOpeningMessage }
-      ]
+      ],
+      extractedDomains: null,
+      extractedWeeklyMap: null,
+      extractedPreferences: null,
+      focusType: null
     }));
     
-    // Show the opening message (fixed template)
+    // Show the opening message
     setMessages(prev => [...prev, {
       role: 'assistant',
       content: flowBlockOpeningMessage
@@ -2574,85 +2566,179 @@ const updateUserProgressCoherence = async (coherenceStatement: string, microActi
   const processFlowBlockResponse = useCallback(async (userResponse: string) => {
     if (!flowBlockState.isActive) return;
     
-    devLog('[FlowBlock]', `Processing step ${flowBlockState.step}:`, userResponse);
+    devLog('[FlowBlock]', 'Processing response:', userResponse);
     
     // Add user message to chat
     setMessages(prev => [...prev, { role: 'user', content: userResponse }]);
     setLoading(true);
     
     try {
-      // Process through state machine - returns next message and state updates
-      const result = processFlowBlockStep(
-        flowBlockState.step,
-        userResponse,
-        flowBlockState
-      );
+      // Update conversation history with user message
+      const updatedHistory = [
+        ...flowBlockState.conversationHistory,
+        { role: 'user' as const, content: userResponse }
+      ];
       
-      devLog('[FlowBlock]', 'Step result:', {
-        nextStep: result.nextStep,
-        isComplete: result.isComplete,
-        messagePreview: result.message.substring(0, 50) + '...'
+      // Check if this is a commitment response (two-stage extraction trigger)
+      const lastAssistantMessage = flowBlockState.conversationHistory.length > 0
+        ? flowBlockState.conversationHistory[flowBlockState.conversationHistory.length - 1]?.content || ''
+        : '';
+      const isCommitment = isCommitmentResponse(userResponse, lastAssistantMessage);
+      
+      devLog('[FlowBlock]', 'Commitment check:', { isCommitment, lastAssistantMessage: lastAssistantMessage.substring(0, 50) });
+      
+      // Get current identity if available for context
+      const currentIdentity = microActionState.extractedIdentity || (progress as any)?.currentIdentity || undefined;
+      
+      // STAGE 1: Get Claude's natural response
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: buildFlowBlockAPIMessages(updatedHistory, userResponse, currentIdentity),
+          context: 'flow_block_setup'
+        })
       });
       
-      // Update state with new step and any collected data
-      setFlowBlockState(prev => ({
-        ...prev,
-        ...result.updatedState,
-        step: result.nextStep,
-        conversationHistory: [
-          ...prev.conversationHistory,
-          { role: 'user' as const, content: userResponse },
-          { role: 'assistant' as const, content: result.message }
-        ]
-      }));
+      if (!response.ok) throw new Error('API request failed');
       
-      // Show the template response
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: result.message
-      }]);
+      const data = await response.json();
+      const assistantResponse = data.response || data.content || '';
       
-      // If complete, save to database
-      if (result.isComplete) {
-        devLog('[FlowBlock]', 'Setup complete, saving sprint...');
-        await saveFlowBlockSprint(result.updatedState);
+      devLog('[FlowBlock]', 'API response received:', assistantResponse.substring(0, 100) + '...');
+      
+      // Clean and display response
+      const cleanResponse = cleanFlowBlockResponseForDisplay(assistantResponse);
+      setMessages(prev => [...prev, { role: 'assistant', content: cleanResponse }]);
+      
+      // Update conversation history with assistant response
+      const fullHistory = [...updatedHistory, { role: 'assistant' as const, content: cleanResponse }];
+      
+      // STAGE 2: If commitment detected, run silent extraction
+      if (isCommitment) {
+        devLog('[FlowBlock]', 'Commitment detected, running extraction...');
+        
+        const extractionMessages = buildFlowBlockExtractionMessages(fullHistory);
+        
+        const extractionResponse = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: extractionMessages,
+            context: 'flow_block_extraction'
+          })
+        });
+        
+        if (extractionResponse.ok) {
+          const extractionData = await extractionResponse.json();
+          const extractionText = extractionData.response || extractionData.content || '';
+          
+          devLog('[FlowBlock]', 'Extraction response:', extractionText.substring(0, 200));
+          
+          const extracted = parseFlowBlockExtraction(extractionText);
+          
+          if (extracted) {
+            devLog('[FlowBlock]', 'Extraction successful:', {
+              domains: extracted.domains,
+              weeklyMapLength: extracted.weeklyMap?.length,
+              focusType: extracted.focusType
+            });
+            
+            // Save to database
+            const sprintResult = await startNewFlowBlockSprint(
+              user.id,
+              extracted.weeklyMap,
+              extracted.setupPreferences,
+              extracted.domains,
+              extracted.focusType
+            );
+            
+            devLog('[FlowBlock]', 'Sprint saved:', sprintResult);
+            
+            // Update state with extracted data
+            setFlowBlockState(prev => ({
+              ...prev,
+              isActive: false,
+              isComplete: true,
+              conversationHistory: fullHistory,
+              extractedDomains: extracted.domains,
+              extractedWeeklyMap: extracted.weeklyMap,
+              extractedPreferences: extracted.setupPreferences,
+              focusType: extracted.focusType,
+              sprintStartDate: sprintResult.startDate,
+              sprintNumber: sprintResult.sprintNumber
+            }));
+            
+            // Refresh progress to update sidebar
+            if (refetchProgress) {
+              await refetchProgress();
+            }
+          } else {
+            devLog('[FlowBlock]', 'Extraction failed, keeping conversation active');
+            // Extraction failed but conversation can continue
+            setFlowBlockState(prev => ({
+              ...prev,
+              conversationHistory: fullHistory
+            }));
+          }
+        } else {
+          devLog('[FlowBlock]', 'Extraction API call failed');
+          setFlowBlockState(prev => ({
+            ...prev,
+            conversationHistory: fullHistory
+          }));
+        }
+      } else {
+        // Not a commitment, just update conversation history
+        setFlowBlockState(prev => ({
+          ...prev,
+          conversationHistory: fullHistory
+        }));
       }
       
     } catch (error) {
       console.error('[FlowBlock] Error:', error);
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: 'Something went wrong. Let me restart the setup.'
+        content: 'Something went wrong. Let me try again — where were we with your Flow Block setup?'
       }]);
-      setFlowBlockState(prev => ({
-        ...prev,
-        isActive: false,
-        step: 0
-      }));
     } finally {
       setLoading(false);
     }
-  }, [flowBlockState]);
+  }, [flowBlockState, microActionState.extractedIdentity, progress, user?.id, refetchProgress]);
 
   // Save Flow Block sprint to database
-  const saveFlowBlockSprint = async (completedState: Partial<FlowBlockState>) => {
+  const saveFlowBlockSprint = async (completedData: {
+    domains?: string[];
+    extractedDomains?: string[] | null;
+    weeklyMap?: WeeklyMapEntry[];
+    extractedWeeklyMap?: WeeklyMapEntry[] | null;
+    preferences?: SetupPreferences;
+    extractedPreferences?: SetupPreferences | null;
+    focusType?: 'concentrated' | 'distributed' | null;
+  }) => {
     if (!user?.id) {
       console.error('[FlowBlock] No userId for save');
       return;
     }
     
+    const domains = completedData.extractedDomains || completedData.domains || [];
+    const weeklyMap = completedData.extractedWeeklyMap || completedData.weeklyMap || [];
+    const preferences = completedData.extractedPreferences || completedData.preferences || {};
+    const focusType = completedData.focusType || 'distributed';
+    
     devLog('[FlowBlock]', 'Saving sprint to database...', {
-      domains: completedState.domains || completedState.extractedDomains,
-      weeklyMapLength: (completedState.weeklyMap || completedState.extractedWeeklyMap)?.length
+      domains,
+      weeklyMapLength: weeklyMap.length
     });
     
     try {
       const sprintResult = await startNewFlowBlockSprint(
         user.id,
-        completedState.weeklyMap || completedState.extractedWeeklyMap || [],
-        completedState.preferences || completedState.extractedPreferences || {},
-        completedState.domains || completedState.extractedDomains || [],
-        completedState.focusType || 'distributed'
+        weeklyMap,
+        preferences,
+        domains,
+        focusType
       );
       
       devLog('[FlowBlock]', 'Sprint saved:', sprintResult);
