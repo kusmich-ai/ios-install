@@ -1,25 +1,20 @@
 // lib/flowBlockAPI.ts
-// Flow Block Integration Protocol v6.0 - TEMPLATE-DRIVEN STATE MACHINE
-// 
-// Architecture: 80% Templates / 20% API (matches working ritual intro pattern)
-// - Each step has a FIXED template message
-// - User responses are parsed/validated locally  
-// - State machine controls the flow
-// - AI only called for edge cases
-// - Guarantees all data is collected before save
+// 100% API-driven Flow Block Integration Protocol v2.4
+// Claude handles all the discovery, planning, and setup naturally
+// v2.4: Two-stage completion - natural response + silent extraction call
 
 // ============================================
 // TYPE DEFINITIONS
 // ============================================
 
 export interface WeeklyMapEntry {
-  day: string;
-  domain: string;
-  task: string;
-  flowType: string;
-  category: string;
-  coherenceLink: string;
-  duration: number;
+  day: string;           // 'Monday', 'Tuesday', etc.
+  domain: string;        // 'Professional Work', 'Creative Projects', etc.
+  task: string;          // The specific task
+  flowType: string;      // 'Creative', 'Strategic', 'Learning'
+  category: string;      // 'Goal', 'Growth', 'Gratitude'
+  identityLink: string;  // 'Direct', 'Indirect', 'Autonomous'
+  duration: number;      // 60 or 90 minutes
 }
 
 export interface SetupPreferences {
@@ -32,21 +27,12 @@ export interface SetupPreferences {
 
 export interface FlowBlockState {
   isActive: boolean;
-  step: number; // 0-14 state machine
-  // Collected data
-  domains: string[];
-  tasks: string[];
-  taskClassifications: Array<{ flowType: string; category: string; coherenceLink: string }>;
-  schedule: { daysPerWeek: number; time: string };
-  focusType: 'concentrated' | 'distributed' | null;
-  weeklyMap: WeeklyMapEntry[];
-  preferences: SetupPreferences;
-  // Legacy fields for compatibility
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>;
   phase: 'discovery' | 'planning' | 'setup' | 'commitment' | null;
   extractedDomains: string[] | null;
   extractedWeeklyMap: WeeklyMapEntry[] | null;
   extractedPreferences: SetupPreferences | null;
+  focusType: 'concentrated' | 'distributed' | null;
   isComplete: boolean;
   sprintStartDate: string | null;
   sprintNumber: number;
@@ -54,42 +40,39 @@ export interface FlowBlockState {
 
 export const initialFlowBlockState: FlowBlockState = {
   isActive: false,
-  step: 0,
-  domains: [],
-  tasks: [],
-  taskClassifications: [],
-  schedule: { daysPerWeek: 5, time: '9:00 AM' },
-  focusType: null,
-  weeklyMap: [],
-  preferences: {
-    professionalLocation: '',
-    personalLocation: '',
-    playlist: '',
-    timerMethod: '',
-    notificationsOff: false,
-  },
-  // Legacy
   conversationHistory: [],
   phase: null,
   extractedDomains: null,
   extractedWeeklyMap: null,
   extractedPreferences: null,
+  focusType: null,
   isComplete: false,
   sprintStartDate: null,
   sprintNumber: 1,
 };
 
 // ============================================
-// STEP TEMPLATES (Fixed Messages)
+// SYSTEM PROMPT v2.4 (Cleaner - no marker instructions)
 // ============================================
 
-export const FLOW_BLOCK_TEMPLATES = {
-  // Step 0: Opening
-  opening: `**Flow Block Setup**
+export const flowBlockSystemPrompt = `You are a performance coach helping a user set up their Flow Block system — the "performance element" of the Mental Operating System (MOS).
 
-Let's build your weekly deep work schedule. Takes about 3 minutes.
+Flow Blocks are deep work sessions (60-90 minutes) designed to train the nervous system to recognize sustained attention as familiar and safe—not effortful. By the end of 21 days, dropping into focus becomes automatic because the environmental cues do the work.
 
-**Pick your top 3 domains** (give me the numbers in priority order):
+## YOUR ROLE
+
+You operate in two modes:
+1. **Strategist** — Help identify the right Flow Blocks aligned with their identity and life domains
+2. **Architect** — Build a concrete weekly map with specific tasks, timings, and environmental setup
+
+## OPERATING MODES
+
+### Mode 1: Strategist (Discovery Phase)
+
+Help the user identify the highest-leverage work across their life domains.
+
+**Domain Prioritization:**
+Ask them to rank their top 3 from:
 1. Professional Work
 2. Personal Development
 3. Relationships
@@ -97,584 +80,122 @@ Let's build your weekly deep work schedule. Takes about 3 minutes.
 5. Learning
 6. Health
 
-Example: "1, 4, 2" means Professional first, then Creative, then Personal Dev.`,
+**Task Selection (Per Domain):**
+For each prioritized domain, ask:
+"If you completed only ONE thing in [domain] this week that would genuinely move outcomes forward, what would it be?"
 
-  // Step 1: Confirm domains
-  confirmDomains: (domains: string[]) => `Got it:
-1. **${domains[0]}**
-2. **${domains[1]}**
-3. **${domains[2]}**
+**Classification:**
+As tasks emerge, classify each:
+- **Flow Type:** Creative (open-ended, generative) | Strategic (planning, decisions) | Learning (skill acquisition, study)
+- **3G Category:** Goal (outcome-driven) | Growth (capability-building) | Gratitude (relationship/appreciation)
+- **Identity Link:** Direct (proves identity) | Indirect (supports identity) | Autonomous (valuable but separate)
 
-Correct? (yes/no)`,
+### Mode 2: Architect (Planning Phase)
 
-  // Step 2: Task for domain 1
-  taskDomain1: (domain: string) => `**${domain}** — What ONE task would make the biggest impact if you focused on it for 60-90 minutes this week?
+Once domains and tasks are identified, build the concrete weekly map.
 
-Just name the task (e.g., "finish proposal", "write chapter 3", "plan Q1 strategy").`,
+**Baseline Proposal:**
+"Baseline: 5 Flow Blocks per week (Mon-Fri), 60-90 minutes, one per day, first main task after you start work. Does that baseline fit your schedule?"
 
-  // Step 3: Task for domain 2
-  taskDomain2: (domain: string) => `**${domain}** — Same question: ONE high-impact task worth 60-90 min of deep focus?`,
+**Concentrated vs Distributed:**
+Based on their tasks, recommend one approach:
+- **Concentrated:** Fewer tasks, multiple sessions each (good for deadlines, stuck projects, one dominant priority)
+- **Distributed:** More variety, each task once per week (good for multiple equal priorities, maintenance phase)
 
-  // Step 4: Task for domain 3
-  taskDomain3: (domain: string) => `**${domain}** — And the third: ONE task worth focused time?`,
+**Weekly Map Construction:**
+Build a table showing:
+| Day | Domain | Task | Flow Type | Category | Identity Link | Duration |
 
-  // Step 5: Schedule
-  schedule: `Quick scheduling:
-• How many days per week? (Default: 5, Mon-Fri)
-• What time works best? (e.g., "9:30am", "morning", "after lunch")
+### Mode 3: Setup Requirements (Critical)
 
-Give me both (e.g., "5 days, 9:30am").`,
+After the map is set, collect environmental setup. Ask ONE question at a time:
 
-  // Step 6: Show classifications
-  classifications: (tasks: string[], classifications: Array<{ flowType: string; category: string }>) => {
-    let msg = `Here's how I'd classify these:\n\n`;
-    tasks.forEach((task, i) => {
-      const c = classifications[i] || { flowType: 'Strategic', category: 'Goal' };
-      msg += `• **${task}**: ${c.flowType} | ${c.category}\n`;
-    });
-    msg += `\nLook right? (yes/no or tell me what to change)`;
-    return msg;
-  },
+1. **Professional Location:** "Where will you do your professional Flow Blocks? (home office, coffee shop, library, etc.)"
+2. **Personal Location:** "Where will you do personal/relational Flow Blocks if different?"
+3. **Playlist/Sound:** "Do you have a focus playlist or want a suggestion? (music, brown noise, silence)"
+4. **Timer:** "How will you track time? (phone timer, Pomodoro app, watch)"
+5. **Notifications:** "Will you commit to putting your phone on airplane mode during blocks?"
 
-  // Step 7: Weekly Map
-  weeklyMap: (map: WeeklyMapEntry[], time: string) => {
-    let table = `**Your Weekly Flow Block Map:**\n\n`;
-    table += `| Day | Task | Duration |\n`;
-    table += `|-----|------|----------|\n`;
-    map.forEach(entry => {
-      table += `| ${entry.day} | ${entry.task} | ${entry.duration} min |\n`;
-    });
-    table += `\n*All blocks at ${time}*\n\n`;
-    table += `Any changes? (yes to continue, or tell me what to adjust)`;
-    return table;
-  },
+**Present the setup checklist:**
+"Your Flow Block Setup:
+- Professional Location: [X]
+- Personal Location: [X]  
+- Focus Sound: [X]
+- Timer: [X]
+- Notifications: OFF ✓"
 
-  // Step 8: Location
-  location: `**Environment setup** (same setup every time = faster focus)
+### Mode 4: Calendar Integration
 
-Where will you do your Flow Blocks? (desk, office, coffee shop, etc.)`,
+Offer calendar templates:
+"Want me to give you copy/paste calendar events for each day?"
 
-  // Step 9: Playlist
-  playlist: `Do you have a focus playlist, or want a suggestion?
+If yes, provide simple text blocks they can paste into their calendar.
 
-(If you have one, just name it. If not, say "suggest" and I'll recommend some.)`,
+### Mode 5: Commitment
 
-  playlistSuggestion: `Try one of these:
-• Spotify: "Deep Focus" or "Brain Food"
-• YouTube: "lofi hip hop beats"
-• App: Endel or Brain.fm
+Present the final summary:
+"Here's your Flow Block system:
 
-Pick one or name your own:`,
+**Weekly Map:**
+[Table]
 
-  // Step 10: Timer
-  timer: `How will you track time?
-• Phone timer
-• Computer timer
-• Physical timer
-• App (Forest, Toggl, etc.)`,
+**Setup Protocol:**
+[Checklist]
 
-  // Step 11: Notifications
-  notifications: `Last one: Can you commit to **phone on airplane mode** (or in another room) during blocks?
+Do you commit to:
+- 5 blocks per week for 21 days
+- Following the setup protocol (location, playlist, timer, phone off)
+- Daily check-ins for the first 7 days
+- No major structure changes for 2 weeks
 
-(yes/no)`,
+Are you in?"
 
-  // Step 12: Setup summary
-  setupSummary: (prefs: SetupPreferences) => `**Setup locked:**
-• Location: ${prefs.professionalLocation}
-• Playlist: ${prefs.playlist}
-• Timer: ${prefs.timerMethod}
-• Phone: ${prefs.notificationsOff ? 'Airplane mode ✓' : 'Off during blocks'}`,
+Wait for explicit commitment.
 
-  // Step 13: Final commitment
-  commitment: (map: WeeklyMapEntry[], time: string, prefs: SetupPreferences) => {
-    let msg = `**Your Flow Block System:**\n\n`;
-    msg += `| Day | Task | Duration |\n`;
-    msg += `|-----|------|----------|\n`;
-    map.forEach(entry => {
-      msg += `| ${entry.day} | ${entry.task} | ${entry.duration} min |\n`;
-    });
-    msg += `\n**Schedule:** ${time}, Mon-Fri\n`;
-    msg += `**Location:** ${prefs.professionalLocation}\n`;
-    msg += `**Playlist:** ${prefs.playlist}\n`;
-    msg += `**Timer:** ${prefs.timerMethod}\n\n`;
-    msg += `21-day sprint starts tomorrow.\n\n`;
-    msg += `**Do you commit? Are you in?**`;
-    return msg;
-  },
+### 6. Close
+After they commit, give a brief motivating close. Reference their specific setup and first block day.
 
-  // Step 14: Complete
-  complete: (time: string) => `**Flow Blocks: INSTALLED ✓**
+## IMPORTANT RULES
+- Ask ONE question at a time
+- Keep responses concise—no walls of text except when presenting the weekly map table or final summary
+- If they already have an identity from Micro-Action, look for opportunities to connect Flow Blocks to it
+- If user seems overwhelmed, simplify: start with just 3 blocks per week
+- If they resist structure, emphasize that the protocol IS the point (nervous system learns through consistency)
+- If they want to change their map mid-setup, accommodate but remind them the first 21 days should be consistent
 
-Day 1 starts tomorrow at ${time}.
-Mark each block complete in the sidebar when done.
+## TONE & STYLE
+- Direct, grounded, systems-coach voice
+- No hype or motivation-speak
+- Practical over inspirational
+- "Train consistency, not heroics"
+- "Proof over pressure"
 
-See you on the other side.`,
-};
+## CONVERSATION FLOW SUMMARY
+1. Identify top 3 life domains
+2. Get ONE high-leverage task per domain
+3. Classify each task (Flow Type, 3G, Identity Link)
+4. Propose weekly schedule (concentrated vs distributed)
+5. Build the weekly map table
+6. Collect setup requirements (location, playlist, timer, phone)
+7. Present final summary
+8. Get commitment
+9. Brief motivating close`;
 
 // ============================================
-// DOMAIN MAPPING
+// OPENING MESSAGES
 // ============================================
 
-const DOMAIN_MAP: { [key: string]: string } = {
-  '1': 'Professional Work',
-  '2': 'Personal Development',
-  '3': 'Relationships',
-  '4': 'Creative Projects',
-  '5': 'Learning',
-  '6': 'Health',
-  'professional': 'Professional Work',
-  'professional work': 'Professional Work',
-  'work': 'Professional Work',
-  'personal': 'Personal Development',
-  'personal development': 'Personal Development',
-  'development': 'Personal Development',
-  'relationships': 'Relationships',
-  'relationship': 'Relationships',
-  'creative': 'Creative Projects',
-  'creative projects': 'Creative Projects',
-  'learning': 'Learning',
-  'health': 'Health',
-  'fitness': 'Health',
-};
+export const flowBlockOpeningMessage = `**Flow Mode Unlocked** 🎯
 
-// ============================================
-// RESPONSE PARSERS
-// ============================================
+Time to set up your Flow Block system — the execution element of the MOS.
 
-export function parseDomainSelection(input: string): string[] | null {
-  const normalized = input.toLowerCase().trim();
-  
-  // Try to parse comma/space/period separated numbers: "1, 4, 2" or "1 4 2" or "1. 3. 2"
-  const numbers = normalized.match(/[1-6]/g);
-  if (numbers && numbers.length >= 3) {
-    const unique = [...new Set(numbers)].slice(0, 3);
-    if (unique.length === 3) {
-      return unique.map(n => DOMAIN_MAP[n]).filter(Boolean);
-    }
-  }
-  
-  // Try to parse words
-  const words = normalized.split(/[,.\s]+/).filter(w => w.length > 2);
-  const domains: string[] = [];
-  for (const word of words) {
-    if (DOMAIN_MAP[word] && !domains.includes(DOMAIN_MAP[word])) {
-      domains.push(DOMAIN_MAP[word]);
-    }
-    if (domains.length === 3) break;
-  }
-  
-  if (domains.length === 3) return domains;
-  return null;
-}
+Flow Blocks are 60–90 minute deep work sessions designed to train your nervous system to recognize sustained attention as familiar and safe—not effortful.
 
-export function parseSchedule(input: string): { daysPerWeek: number; time: string } | null {
-  const normalized = input.toLowerCase().trim();
-  
-  // Extract days
-  let days = 5; // default
-  const dayMatch = normalized.match(/(\d)\s*(days?|x)?/i);
-  if (dayMatch) {
-    days = parseInt(dayMatch[1]);
-    if (days < 1 || days > 7) days = 5;
-  }
-  
-  // Extract time
-  let time = '9:00 AM';
-  const timeMatch = normalized.match(/(\d{1,2}):?(\d{2})?\s*(am|pm)?/i);
-  if (timeMatch) {
-    let hour = parseInt(timeMatch[1]);
-    const mins = timeMatch[2] || '00';
-    const ampm = timeMatch[3]?.toLowerCase();
-    
-    if (ampm === 'pm' && hour < 12) hour += 12;
-    if (ampm === 'am' && hour === 12) hour = 0;
-    
-    const ampmStr = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
-    time = `${displayHour}:${mins} ${ampmStr}`;
-  } else if (normalized.includes('morning')) {
-    time = '9:00 AM';
-  } else if (normalized.includes('afternoon') || normalized.includes('after lunch')) {
-    time = '1:00 PM';
-  } else if (normalized.includes('evening')) {
-    time = '6:00 PM';
-  }
-  
-  return { daysPerWeek: days, time };
-}
+By day 21, dropping into focus won't require willpower. The environmental cues do the work.
 
-export function isAffirmative(input: string): boolean {
-  const normalized = input.toLowerCase().trim();
-  const affirmatives = [
-    'yes', 'yeah', 'yep', 'yup', 'y', 'sure', 'ok', 'okay', 
-    'correct', 'right', 'good', 'looks good', 'sounds good',
-    'perfect', 'great', 'fine', 'continue', 'let\'s go', 'lets go',
-    'i\'m in', 'im in', 'i am in', 'in', 'commit', 'committed'
-  ];
-  return affirmatives.some(a => normalized.includes(a));
-}
+First, let's identify where Flow Blocks will have the most impact.
 
-export function isNegative(input: string): boolean {
-  const normalized = input.toLowerCase().trim();
-  const negatives = ['no', 'nope', 'nah', 'wrong', 'incorrect', 'change', 'adjust'];
-  return negatives.some(n => normalized.includes(n));
-}
-
-export function isCommitmentResponse(userMessage: string, lastAssistantMessage: string): boolean {
-  const normalizedAssistant = lastAssistantMessage.toLowerCase();
-  if (!normalizedAssistant.includes('are you in') && !normalizedAssistant.includes('do you commit')) {
-    return false;
-  }
-  return isAffirmative(userMessage);
-}
-
-// ============================================
-// WEEKLY MAP BUILDER
-// ============================================
-
-export function buildWeeklyMap(
-  domains: string[],
-  tasks: string[],
-  classifications: Array<{ flowType: string; category: string; coherenceLink: string }>,
-  daysPerWeek: number = 5
-): WeeklyMapEntry[] {
-  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-  const map: WeeklyMapEntry[] = [];
-  
-  // Distribution: Primary domain gets more days
-  // For 5 days: D1, D2, D1, D3, D1 (domain 1 gets 3, domain 2 gets 1, domain 3 gets 1)
-  const distribution = daysPerWeek === 5 
-    ? [0, 1, 0, 2, 0] // Mon=D1, Tue=D2, Wed=D1, Thu=D3, Fri=D1
-    : daysPerWeek === 4
-    ? [0, 1, 0, 2]
-    : daysPerWeek === 3
-    ? [0, 1, 2]
-    : daysPerWeek === 6
-    ? [0, 1, 0, 2, 0, 1]
-    : [0, 1, 0, 2, 0, 1, 2]; // 7 days
-  
-  for (let i = 0; i < Math.min(daysPerWeek, distribution.length); i++) {
-    const domainIndex = distribution[i];
-    const task = tasks[domainIndex] || tasks[0];
-    const classification = classifications[domainIndex] || { flowType: 'Strategic', category: 'Goal', coherenceLink: 'Direct' };
-    
-    map.push({
-      day: days[i],
-      domain: domains[domainIndex] || domains[0],
-      task: task,
-      flowType: classification.flowType,
-      category: classification.category,
-      coherenceLink: classification.coherenceLink,
-      duration: i % 2 === 0 ? 90 : 60, // Alternate 90/60
-    });
-  }
-  
-  return map;
-}
-
-// ============================================
-// DEFAULT CLASSIFICATIONS (Fallback)
-// ============================================
-
-export function getDefaultClassification(domain: string): { flowType: string; category: string; coherenceLink: string } {
-  const map: { [key: string]: { flowType: string; category: string; coherenceLink: string } } = {
-    'Professional Work': { flowType: 'Strategic', category: 'Goal', coherenceLink: 'Direct' },
-    'Personal Development': { flowType: 'Learning', category: 'Growth', coherenceLink: 'Indirect' },
-    'Relationships': { flowType: 'Creative', category: 'Growth', coherenceLink: 'Direct' },
-    'Creative Projects': { flowType: 'Creative', category: 'Goal', coherenceLink: 'Autonomous' },
-    'Learning': { flowType: 'Learning', category: 'Growth', coherenceLink: 'Indirect' },
-    'Health': { flowType: 'Strategic', category: 'Gratitude', coherenceLink: 'Autonomous' },
-  };
-  return map[domain] || { flowType: 'Strategic', category: 'Goal', coherenceLink: 'Direct' };
-}
-
-// ============================================
-// STATE MACHINE PROCESSOR
-// ============================================
-
-export interface StepResult {
-  nextStep: number;
-  message: string;
-  updatedState: Partial<FlowBlockState>;
-  isComplete?: boolean;
-}
-
-export function processFlowBlockStep(
-  currentStep: number,
-  userInput: string,
-  state: FlowBlockState
-): StepResult {
-  
-  switch (currentStep) {
-    
-    // Step 0: Show opening (handled by startFlowBlockSetup)
-    case 0:
-      return {
-        nextStep: 1,
-        message: FLOW_BLOCK_TEMPLATES.opening,
-        updatedState: { step: 1 }
-      };
-    
-    // Step 1: Parse domain selection
-    case 1: {
-      const domains = parseDomainSelection(userInput);
-      if (!domains) {
-        return {
-          nextStep: 1,
-          message: `I didn't catch that. Please give me 3 numbers from the list (e.g., "1, 4, 2").`,
-          updatedState: {}
-        };
-      }
-      return {
-        nextStep: 2,
-        message: FLOW_BLOCK_TEMPLATES.confirmDomains(domains),
-        updatedState: { step: 2, domains }
-      };
-    }
-    
-    // Step 2: Confirm domains
-    case 2: {
-      if (isNegative(userInput)) {
-        return {
-          nextStep: 1,
-          message: FLOW_BLOCK_TEMPLATES.opening,
-          updatedState: { step: 1, domains: [] }
-        };
-      }
-      return {
-        nextStep: 3,
-        message: FLOW_BLOCK_TEMPLATES.taskDomain1(state.domains[0]),
-        updatedState: { step: 3 }
-      };
-    }
-    
-    // Step 3: Task for domain 1
-    case 3: {
-      const task = userInput.trim();
-      if (task.length < 2) {
-        return {
-          nextStep: 3,
-          message: `What's a specific task for ${state.domains[0]}? (e.g., "write proposal", "plan strategy")`,
-          updatedState: {}
-        };
-      }
-      return {
-        nextStep: 4,
-        message: FLOW_BLOCK_TEMPLATES.taskDomain2(state.domains[1]),
-        updatedState: { step: 4, tasks: [task] }
-      };
-    }
-    
-    // Step 4: Task for domain 2
-    case 4: {
-      const task = userInput.trim();
-      if (task.length < 2) {
-        return {
-          nextStep: 4,
-          message: `What task for ${state.domains[1]}?`,
-          updatedState: {}
-        };
-      }
-      return {
-        nextStep: 5,
-        message: FLOW_BLOCK_TEMPLATES.taskDomain3(state.domains[2]),
-        updatedState: { step: 5, tasks: [...state.tasks, task] }
-      };
-    }
-    
-    // Step 5: Task for domain 3
-    case 5: {
-      const task = userInput.trim();
-      if (task.length < 2) {
-        return {
-          nextStep: 5,
-          message: `What task for ${state.domains[2]}?`,
-          updatedState: {}
-        };
-      }
-      return {
-        nextStep: 6,
-        message: FLOW_BLOCK_TEMPLATES.schedule,
-        updatedState: { step: 6, tasks: [...state.tasks, task] }
-      };
-    }
-    
-    // Step 6: Parse schedule
-    case 6: {
-      const schedule = parseSchedule(userInput);
-      if (!schedule) {
-        return {
-          nextStep: 6,
-          message: `Just tell me days and time (e.g., "5 days, 9:30am").`,
-          updatedState: {}
-        };
-      }
-      
-      // Generate default classifications
-      const classifications = state.domains.map(d => getDefaultClassification(d));
-      
-      return {
-        nextStep: 7,
-        message: FLOW_BLOCK_TEMPLATES.classifications(state.tasks, classifications),
-        updatedState: { 
-          step: 7, 
-          schedule,
-          taskClassifications: classifications
-        }
-      };
-    }
-    
-    // Step 7: Confirm classifications, build weekly map
-    case 7: {
-      // Build weekly map
-      const weeklyMap = buildWeeklyMap(
-        state.domains,
-        state.tasks,
-        state.taskClassifications,
-        state.schedule.daysPerWeek
-      );
-      
-      return {
-        nextStep: 8,
-        message: FLOW_BLOCK_TEMPLATES.weeklyMap(weeklyMap, state.schedule.time),
-        updatedState: { step: 8, weeklyMap }
-      };
-    }
-    
-    // Step 8: Confirm weekly map
-    case 8: {
-      if (isNegative(userInput) && userInput.length > 5) {
-        return {
-          nextStep: 8,
-          message: `Got it. For now, let's continue with this map and you can adjust after the first week. Continue? (yes)`,
-          updatedState: {}
-        };
-      }
-      return {
-        nextStep: 9,
-        message: FLOW_BLOCK_TEMPLATES.location,
-        updatedState: { step: 9 }
-      };
-    }
-    
-    // Step 9: Location
-    case 9: {
-      const location = userInput.trim();
-      if (location.length < 2) {
-        return {
-          nextStep: 9,
-          message: `Where will you do your Flow Blocks?`,
-          updatedState: {}
-        };
-      }
-      return {
-        nextStep: 10,
-        message: FLOW_BLOCK_TEMPLATES.playlist,
-        updatedState: { 
-          step: 10, 
-          preferences: { ...state.preferences, professionalLocation: location, personalLocation: location }
-        }
-      };
-    }
-    
-    // Step 10: Playlist
-    case 10: {
-      const input = userInput.toLowerCase().trim();
-      if (input === 'suggest' || input === 'suggestion' || input.includes('suggest')) {
-        return {
-          nextStep: 10,
-          message: FLOW_BLOCK_TEMPLATES.playlistSuggestion,
-          updatedState: {}
-        };
-      }
-      const playlist = userInput.trim() || 'Deep Focus';
-      return {
-        nextStep: 11,
-        message: FLOW_BLOCK_TEMPLATES.timer,
-        updatedState: { 
-          step: 11,
-          preferences: { ...state.preferences, playlist }
-        }
-      };
-    }
-    
-    // Step 11: Timer
-    case 11: {
-      const timer = userInput.trim() || 'Phone timer';
-      return {
-        nextStep: 12,
-        message: FLOW_BLOCK_TEMPLATES.notifications,
-        updatedState: {
-          step: 12,
-          preferences: { ...state.preferences, timerMethod: timer }
-        }
-      };
-    }
-    
-    // Step 12: Notifications
-    case 12: {
-      const notificationsOff = isAffirmative(userInput);
-      const prefs = { ...state.preferences, notificationsOff };
-      
-      return {
-        nextStep: 13,
-        message: FLOW_BLOCK_TEMPLATES.setupSummary(prefs) + '\n\n' + FLOW_BLOCK_TEMPLATES.commitment(state.weeklyMap, state.schedule.time, prefs),
-        updatedState: {
-          step: 13,
-          preferences: prefs
-        }
-      };
-    }
-    
-    // Step 13: Final commitment
-    case 13: {
-      if (!isAffirmative(userInput)) {
-        return {
-          nextStep: 13,
-          message: `No worries. Take your time. When you're ready to commit, just say "yes" or "I'm in."`,
-          updatedState: {}
-        };
-      }
-      
-      return {
-        nextStep: 14,
-        message: FLOW_BLOCK_TEMPLATES.complete(state.schedule.time),
-        updatedState: { 
-          step: 14,
-          isComplete: true,
-          extractedDomains: state.domains,
-          extractedWeeklyMap: state.weeklyMap,
-          extractedPreferences: state.preferences,
-          sprintStartDate: new Date().toISOString(),
-          focusType: 'distributed'
-        },
-        isComplete: true
-      };
-    }
-    
-    default:
-      return {
-        nextStep: 0,
-        message: FLOW_BLOCK_TEMPLATES.opening,
-        updatedState: { step: 1 }
-      };
-  }
-}
-
-// ============================================
-// OPENING MESSAGE (Used by ChatInterface)
-// ============================================
-
-export const flowBlockOpeningMessage = FLOW_BLOCK_TEMPLATES.opening;
-
-export function getFlowBlockOpeningWithIdentity(anchor: string, action: string): string {
-  return `**Flow Block Setup**
-
-You have a daily anchor: *${action}*
-
-Let's build Flow Blocks around that rhythm. Takes about 3 minutes.
-
-**Pick your top 3 domains** (give me the numbers in priority order):
+**Rank your top 3 life domains right now:**
 1. Professional Work
 2. Personal Development
 3. Relationships
@@ -682,14 +203,34 @@ Let's build Flow Blocks around that rhythm. Takes about 3 minutes.
 5. Learning
 6. Health
 
-Example: "1, 4, 2"`;
+Just give me your top 3 in order.`;
+
+// Opening message with identity context
+export function getFlowBlockOpeningWithIdentity(identity: string, microAction: string): string {
+  return `**Flow Mode Unlocked** 🎯
+
+Time to set up your Flow Block system — the execution element of the MOS.
+
+You're currently operating as: **${identity}**
+Daily proof: *${microAction}*
+
+Flow Blocks are 60–90 minute deep work sessions. They train your nervous system to recognize sustained attention as familiar and safe.
+
+We'll look for opportunities to connect your Flow Blocks to your identity where it makes sense.
+
+**Rank your top 3 life domains right now:**
+1. Professional Work
+2. Personal Development
+3. Relationships
+4. Creative Projects
+5. Learning
+6. Health
+
+Just give me your top 3 in order.`;
 }
 
-export const getFlowBlockOpeningWithAnchor = getFlowBlockOpeningWithIdentity;
-export const getFlowBlockOpeningWithCoherenceAnchor = getFlowBlockOpeningWithIdentity;
-
 // ============================================
-// COMPLETION DATA (For saving)
+// COMPLETION DATA TYPES
 // ============================================
 
 export interface FlowBlockCompletion {
@@ -699,51 +240,214 @@ export interface FlowBlockCompletion {
   focusType: 'concentrated' | 'distributed';
 }
 
-export function getCompletionData(state: FlowBlockState): FlowBlockCompletion | null {
-  if (!state.isComplete || !state.weeklyMap.length) return null;
+// ============================================
+// COMMITMENT DETECTION
+// ============================================
+
+// Check if user message is a commitment response
+export function isCommitmentResponse(
+  userMessage: string, 
+  lastAssistantMessage: string
+): boolean {
+  const normalizedMessage = userMessage.trim().toLowerCase();
   
-  return {
-    domains: state.domains,
-    weeklyMap: state.weeklyMap,
-    setupPreferences: state.preferences,
-    focusType: state.focusType || 'distributed',
-  };
+  const commitmentPatterns = [
+    /^yes[.!,\s]*$/i,
+    /^yeah[.!,\s]*$/i,
+    /^yep[.!,\s]*$/i,
+    /^yup[.!,\s]*$/i,
+    /^i'm in[.!,\s]*$/i,
+    /^im in[.!,\s]*$/i,
+    /^i commit[.!,\s]*$/i,
+    /^committed[.!,\s]*$/i,
+    /^absolutely[.!,\s]*$/i,
+    /^let's do it[.!,\s]*$/i,
+    /^lets do it[.!,\s]*$/i,
+    /^let's go[.!,\s]*$/i,
+    /^lets go[.!,\s]*$/i,
+    /^ready[.!,\s]*$/i,
+    /^locked[.!,\s]*$/i,
+    /^done[.!,\s]*$/i,
+    /^100%[.!,\s]*$/i,
+  ];
+
+  const isCommitment = commitmentPatterns.some(pattern => pattern.test(normalizedMessage));
+  
+  const askedForCommitment = 
+    lastAssistantMessage.toLowerCase().includes('are you in') ||
+    lastAssistantMessage.toLowerCase().includes('do you commit') ||
+    lastAssistantMessage.toLowerCase().includes('ready to commit');
+
+  return isCommitment && askedForCommitment;
 }
 
 // ============================================
-// LEGACY FUNCTIONS (For compatibility - no longer used)
+// API MESSAGE BUILDERS
 // ============================================
 
-export const flowBlockSystemPrompt = ''; // Not used in template approach
-
+// Build messages for the main conversation
 export function buildFlowBlockAPIMessages(
-  _conversationHistory: Array<{ role: string; content: string }>,
-  _userMessage: string
-): Array<{ role: string; content: string }> {
-  // Legacy stub - returns simple message for evolution context
+  conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>,
+  newUserMessage: string,
+  currentIdentity?: string
+): Array<{ role: 'user' | 'assistant' | 'system'; content: string }> {
+  // Add identity context to system prompt if available
+  let systemPrompt = flowBlockSystemPrompt;
+  if (currentIdentity) {
+    systemPrompt += `\n\n## IDENTITY CONTEXT\nThe user's current Micro-Action identity is: "${currentIdentity}". Look for opportunities to connect one of their Flow Blocks to this identity if it makes sense.`;
+  }
+
   return [
-    { role: 'user', content: _userMessage }
+    { role: 'system' as const, content: systemPrompt },
+    ...conversationHistory,
+    { role: 'user' as const, content: newUserMessage }
   ];
 }
 
-export function buildFlowBlockExtractionMessages(): Array<{ role: string; content: string }> {
-  return []; // Not used
+// Build messages for the silent extraction call (stage 2)
+export function buildFlowBlockExtractionMessages(
+  conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>
+): Array<{ role: 'user' | 'assistant' | 'system'; content: string }> {
+  
+  const extractionPrompt = `Based on the Flow Block setup conversation above, extract ALL the data into this exact JSON format.
+
+IMPORTANT: Output ONLY valid JSON. No markdown, no explanation, no backticks. Just the JSON object.
+
+{
+  "domains": ["Domain1", "Domain2", "Domain3"],
+  "weeklyMap": [
+    {"day": "Monday", "domain": "Professional Work", "task": "Task description", "flowType": "Strategic", "category": "Goal", "identityLink": "Direct", "duration": 90},
+    {"day": "Tuesday", "domain": "Domain", "task": "Task", "flowType": "Type", "category": "Category", "identityLink": "Link", "duration": 60},
+    {"day": "Wednesday", "domain": "Domain", "task": "Task", "flowType": "Type", "category": "Category", "identityLink": "Link", "duration": 90},
+    {"day": "Thursday", "domain": "Domain", "task": "Task", "flowType": "Type", "category": "Category", "identityLink": "Link", "duration": 60},
+    {"day": "Friday", "domain": "Domain", "task": "Task", "flowType": "Type", "category": "Category", "identityLink": "Link", "duration": 60}
+  ],
+  "preferences": {
+    "professionalLocation": "Their work location from conversation",
+    "personalLocation": "Their home/personal location from conversation",
+    "playlist": "Their playlist choice from conversation",
+    "timerMethod": "Their timer method from conversation",
+    "notificationsOff": true
+  },
+  "focusType": "concentrated"
 }
 
-export function parseFlowBlockExtraction(): FlowBlockCompletion | null {
-  return null; // Not used
-}
+Rules:
+- Extract the ACTUAL data from the conversation, not placeholders
+- domains: The 3 life domains they prioritized
+- weeklyMap: All 5 days with the exact tasks they agreed to
+- flowType must be: "Creative", "Strategic", or "Learning"
+- category must be: "Goal", "Growth", or "Gratitude"
+- identityLink must be: "Direct", "Indirect", or "Autonomous"
+- duration: Use the actual durations discussed (60 or 90)
+- preferences: Their actual answers for location, playlist, timer
+- focusType: "concentrated" or "distributed" based on what was decided
 
-export function parseFlowBlockCompletion(): FlowBlockCompletion | null {
-  return null; // Not used
-}
+Output the JSON now:`;
 
-export function cleanFlowBlockResponseForDisplay(response: string): string {
-  return response;
+  return [
+    { role: 'system' as const, content: 'You are a data extraction assistant. Your only job is to output valid JSON based on conversation data. No explanation, no markdown formatting, just pure JSON.' },
+    ...conversationHistory,
+    { role: 'user' as const, content: extractionPrompt }
+  ];
 }
 
 // ============================================
-// DAILY HELPERS (Unchanged)
+// EXTRACTION PARSING
+// ============================================
+
+// Parse the extraction response (expects pure JSON)
+export function parseFlowBlockExtraction(response: string): FlowBlockCompletion | null {
+  try {
+    // Clean up any markdown formatting that might have slipped through
+    let cleanResponse = response.trim();
+    
+    // Remove markdown code blocks if present
+    if (cleanResponse.startsWith('```json')) {
+      cleanResponse = cleanResponse.slice(7);
+    } else if (cleanResponse.startsWith('```')) {
+      cleanResponse = cleanResponse.slice(3);
+    }
+    if (cleanResponse.endsWith('```')) {
+      cleanResponse = cleanResponse.slice(0, -3);
+    }
+    cleanResponse = cleanResponse.trim();
+    
+    // Find JSON object boundaries
+    const startIndex = cleanResponse.indexOf('{');
+    const endIndex = cleanResponse.lastIndexOf('}');
+    
+    if (startIndex === -1 || endIndex === -1) {
+      console.error('[FlowBlock] No JSON object found in extraction response');
+      return null;
+    }
+    
+    const jsonString = cleanResponse.substring(startIndex, endIndex + 1);
+    const parsed = JSON.parse(jsonString);
+    
+    // Validate required fields exist
+    if (!parsed.domains || !parsed.weeklyMap || !parsed.preferences) {
+      console.error('[FlowBlock] Missing required fields in extraction');
+      return null;
+    }
+    
+    return {
+      domains: parsed.domains || [],
+      weeklyMap: parsed.weeklyMap || [],
+      setupPreferences: {
+        professionalLocation: parsed.preferences?.professionalLocation || '',
+        personalLocation: parsed.preferences?.personalLocation || '',
+        playlist: parsed.preferences?.playlist || '',
+        timerMethod: parsed.preferences?.timerMethod || '',
+        notificationsOff: parsed.preferences?.notificationsOff !== false
+      },
+      focusType: parsed.focusType === 'distributed' ? 'distributed' : 'concentrated'
+    };
+  } catch (error) {
+    console.error('[FlowBlock] Error parsing extraction JSON:', error);
+    console.error('[FlowBlock] Raw response:', response);
+    return null;
+  }
+}
+
+// Legacy function for backward compatibility (if marker approach is ever used)
+export function parseFlowBlockCompletion(response: string): FlowBlockCompletion | null {
+  const markerIndex = response.indexOf('[FLOWBLOCK_SETUP_COMPLETE]');
+  if (markerIndex === -1) return null;
+
+  const afterMarker = response.substring(markerIndex + '[FLOWBLOCK_SETUP_COMPLETE]'.length).trim();
+  const jsonMatch = afterMarker.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) return null;
+
+  try {
+    const parsed = JSON.parse(jsonMatch[0]);
+    return {
+      domains: parsed.domains || [],
+      weeklyMap: parsed.weeklyMap || [],
+      setupPreferences: parsed.preferences || {
+        professionalLocation: '',
+        personalLocation: '',
+        playlist: '',
+        timerMethod: '',
+        notificationsOff: true
+      },
+      focusType: parsed.focusType || 'distributed'
+    };
+  } catch (error) {
+    console.error('[FlowBlock] Error parsing completion JSON:', error);
+    return null;
+  }
+}
+
+// Remove any completion marker from display (legacy support)
+export function cleanFlowBlockResponseForDisplay(response: string): string {
+  const markerIndex = response.indexOf('[FLOWBLOCK_SETUP_COMPLETE]');
+  if (markerIndex === -1) return response.trim();
+  return response.substring(0, markerIndex).trim();
+}
+
+// ============================================
+// DAILY FLOW BLOCK HELPERS
 // ============================================
 
 export function getTodaysBlock(weeklyMap: WeeklyMapEntry[]): WeeklyMapEntry | null {
@@ -753,57 +457,97 @@ export function getTodaysBlock(weeklyMap: WeeklyMapEntry[]): WeeklyMapEntry | nu
 }
 
 export function formatWeeklyMapForDisplay(weeklyMap: WeeklyMapEntry[]): string {
-  let table = `| Day | Task | Duration |\n|-----|------|----------|\n`;
-  weeklyMap.forEach(entry => {
-    table += `| ${entry.day} | ${entry.task} | ${entry.duration} min |\n`;
-  });
+  let table = `| Day | Domain | Task | Type | Category | Duration |
+|-----|--------|------|------|----------|----------|`;
+
+  for (const entry of weeklyMap) {
+    table += `\n| ${entry.day} | ${entry.domain} | ${entry.task} | ${entry.flowType} | ${entry.category} | ${entry.duration} min |`;
+  }
+
   return table;
 }
 
-export function getDailyFlowBlockPrompt(block: WeeklyMapEntry, preferences: SetupPreferences): string {
-  return `**Today's Flow Block: ${block.task}**
+// Daily Flow Block prompt
+export function getDailyFlowBlockPrompt(todaysBlock: WeeklyMapEntry, preferences: SetupPreferences): string {
+  return `**Today's Flow Block** 🎯
 
-${block.duration} min | ${block.domain}
+**Task:** ${todaysBlock.task}
+**Domain:** ${todaysBlock.domain}
+**Duration:** ${todaysBlock.duration} minutes
+**Type:** ${todaysBlock.flowType}
 
-**Setup:**
-• Location: ${preferences.professionalLocation}
-• Playlist: ${preferences.playlist}
-• Timer: ${preferences.timerMethod}
-• Phone: Off
+**Setup Checklist:**
+- [ ] Location: ${preferences.professionalLocation || preferences.personalLocation}
+- [ ] Sound: ${preferences.playlist}
+- [ ] Timer: ${preferences.timerMethod}
+- [ ] Phone: Airplane mode
 
-**Start with:** "For the next ${block.duration} minutes, my only job is ${block.task}."
+**Intention:** For the next ${todaysBlock.duration} minutes, your only job is: ${todaysBlock.task}
 
-Mark complete when done.`;
+Ready to start? Once you begin, I'll check in after you're done.`;
 }
 
-export const postBlockReflectionPrompt = `**Block complete.**
+// Post-block reflection prompt
+export const postBlockReflectionPrompt = `**Flow Block Complete** ✓
 
-Quick check:
-1. One sentence: What was the learning?
-2. Ratings 1-5: Focus, Challenge-Skill, Energy, Flow Presence
+Quick debrief (takes 30 seconds):
 
-Example: "4, 3, 4, 5 - Realized I work better with outline first"`;
+1. **One-sentence reflection:** What was the learning from today?
 
+2. **Performance Tags (1-5):**
+   - Focus Quality: How sustained was attention?
+   - Challenge-Skill Balance: Too easy (1), balanced (3), too hard (5)?
+   - Energy After: Drained (1) or calm satisfaction (5)?
+   - Flow Presence: Did time distort? Did mental chatter fade?
+
+Give me your ratings (e.g., "4, 3, 4, 5") and your reflection.`;
+
+// ============================================
+// SPRINT STATUS HELPERS
+// ============================================
+
+// Calculate which day of the current sprint we're on (1-21)
 export function getSprintDayNumber(sprintStartDate: string): number {
   const start = new Date(sprintStartDate);
   start.setHours(0, 0, 0, 0);
+  
   const now = new Date();
   now.setHours(0, 0, 0, 0);
-  return Math.max(1, Math.min(Math.floor((now.getTime() - start.getTime()) / 86400000) + 1, 21));
+  
+  const diffTime = now.getTime() - start.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+  
+  return Math.max(1, Math.min(diffDays, 21));
 }
 
+// Check if current sprint is complete
 export function isSprintComplete(sprintStartDate: string): boolean {
-  return getSprintDayNumber(sprintStartDate) > 21;
+  const start = new Date(sprintStartDate);
+  start.setHours(0, 0, 0, 0);
+  
+  const endDate = new Date(start);
+  endDate.setDate(endDate.getDate() + 21);
+  
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  
+  return now >= endDate;
 }
 
-export const sprintCompleteMessage = (sprintNumber: number) => `**Sprint ${sprintNumber} Complete**
+// Sprint complete message
+export const sprintCompleteMessage = (sprintNumber: number) => `**21-Day Flow Block Sprint ${sprintNumber} Complete** 🎉
 
-• Which blocks hit flow fastest?
-• Where did resistance show up?
+You've completed a full cycle. Let's review what your nervous system learned.
 
-Options:
-1. Continue (same map)
-2. Evolve (adjust)
-3. Redesign (new setup)
+**Reflection Questions:**
+- Which blocks felt most natural by the end?
+- Which domain improved most?
+- What environmental factor made the biggest difference?
+- Where did resistance show up, and what did you learn from it?
 
-Which?`;
+**Options:**
+1) **Continue** — Keep the same map for another 21 days
+2) **Evolve** — Adjust tasks/durations while keeping structure
+3) **Redesign** — New discovery phase with different domains
+
+Which path forward?`;
