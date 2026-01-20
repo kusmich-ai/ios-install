@@ -394,54 +394,47 @@ export default function UpgradePage() {
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {/* Nicholas */}
-            <div className="text-center">
-              <div className="w-32 h-32 rounded-full mx-auto mb-6 overflow-hidden bg-[#1a1a1a]">
-                <Image
-                  src="/coaches/nic.webp"
-                  alt="Nicholas Kusmich"
-                  width={128}
-                  height={128}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Nicholas Kusmich</h3>
-              <p className="text-[#ff9e19] text-sm mb-4">IOS Systems Architect</p>
-              <p className="text-gray-400 text-sm">
-                Former pastor turned marketing strategist who's generated over $1B in client revenue. 
-                Now dedicated to helping high-performers install the integrated operating system that matches their outer ambitions.
-              </p>
-            </div>
+<div className="text-center">
+  <div className="w-32 h-32 rounded-full mx-auto mb-6 overflow-hidden bg-[#1a1a1a]">
+    <Image
+      src="/coaches/nic.webp"
+      alt="Nicholas Kusmich"
+      width={256}
+      height={256}
+      quality={100}
+      className="w-full h-full object-cover"
+    />
+  </div>
+  {/* ... rest of content */}
+</div>
 
-            {/* Fehren */}
-            <div className="text-center">
-              <div className="w-32 h-32 rounded-full mx-auto mb-6 overflow-hidden bg-[#1a1a1a]">
-                <Image
-                  src="/coaches/fehren.webp"
-                  alt="Fehren Kusmich"
-                  width={128}
-                  height={128}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Fehren Kusmich</h3>
-              <p className="text-[#ff9e19] text-sm mb-4">Heart & Body Specialist</p>
-              <p className="text-gray-400 text-sm">
-                Certified practitioner who brings somatic wisdom and heart-centered guidance. 
-                Her spacious approach creates safety for deep transformation.
-              </p>
-            </div>
+{/* Fehren */}
+<div className="text-center">
+  <div className="w-32 h-32 rounded-full mx-auto mb-6 overflow-hidden bg-[#1a1a1a]">
+    <Image
+      src="/coaches/fehren.webp"
+      alt="Fehren Kusmich"
+      width={256}
+      height={256}
+      quality={100}
+      className="w-full h-full object-cover"
+    />
+  </div>
+  {/* ... rest of content */}
+</div>
 
-            {/* Charok */}
-            <div className="text-center">
-              <div className="w-32 h-32 rounded-full mx-auto mb-6 overflow-hidden bg-[#1a1a1a]">
-                <Image
-                  src="/coaches/charok.jpg"
-                  alt="Charok Lama"
-                  width={128}
-                  height={128}
-                  className="w-full h-full object-cover"
-                />
-              </div>
+{/* Charok */}
+<div className="text-center">
+  <div className="w-32 h-32 rounded-full mx-auto mb-6 overflow-hidden bg-[#1a1a1a]">
+    <Image
+      src="/coaches/charok.jpg"
+      alt="Charok Lama"
+      width={256}
+      height={256}
+      quality={100}
+      className="w-full h-full object-cover"
+    />
+  </div>
               <h3 className="text-xl font-semibold mb-2">Charok Lama</h3>
               <p className="text-[#ff9e19] text-sm mb-4">Leading Buddhist Teacher & Life Coach</p>
               <p className="text-gray-400 text-sm">
