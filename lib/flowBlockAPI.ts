@@ -5,10 +5,8 @@
 // - Each step has a FIXED template message
 // - User responses are parsed/validated locally  
 // - State machine controls the flow
-// - AI only called for classification (Step 6) and edge cases
+// - AI only called for edge cases
 // - Guarantees all data is collected before save
-
-import { withToolLayers } from '@/lib/prompts/withToolLayers';
 
 // ============================================
 // TYPE DEFINITIONS
@@ -24,16 +22,6 @@ export interface WeeklyMapEntry {
   duration: number;
 }
 
-export interface WeeklyMapEntryLegacy {
-  day: string;
-  domain: string;
-  task: string;
-  flowType: string;
-  category: string;
-  identityLink: string;
-  duration: number;
-}
-
 export interface SetupPreferences {
   professionalLocation: string;
   personalLocation: string;
@@ -44,7 +32,7 @@ export interface SetupPreferences {
 
 export interface FlowBlockState {
   isActive: boolean;
-  step: number; // 0-15 state machine
+  step: number; // 0-14 state machine
   // Collected data
   domains: string[];
   tasks: string[];
@@ -137,7 +125,7 @@ Just name the task (e.g., "finish proposal", "write chapter 3", "plan Q1 strateg
 
 Give me both (e.g., "5 days, 9:30am").`,
 
-  // Step 6: Show classifications (AI-assisted, but we have fallback)
+  // Step 6: Show classifications
   classifications: (tasks: string[], classifications: Array<{ flowType: string; category: string }>) => {
     let msg = `Here's how I'd classify these:\n\n`;
     tasks.forEach((task, i) => {
@@ -256,7 +244,7 @@ const DOMAIN_MAP: { [key: string]: string } = {
 export function parseDomainSelection(input: string): string[] | null {
   const normalized = input.toLowerCase().trim();
   
-  // Try to parse comma/space separated numbers: "1, 4, 2" or "1 4 2"
+  // Try to parse comma/space/period separated numbers: "1, 4, 2" or "1 4 2" or "1. 3. 2"
   const numbers = normalized.match(/[1-6]/g);
   if (numbers && numbers.length >= 3) {
     const unique = [...new Set(numbers)].slice(0, 3);
@@ -266,7 +254,7 @@ export function parseDomainSelection(input: string): string[] | null {
   }
   
   // Try to parse words
-  const words = normalized.split(/[,\s]+/).filter(w => w.length > 2);
+  const words = normalized.split(/[,.\s]+/).filter(w => w.length > 2);
   const domains: string[] = [];
   for (const word of words) {
     if (DOMAIN_MAP[word] && !domains.includes(DOMAIN_MAP[word])) {
@@ -284,7 +272,7 @@ export function parseSchedule(input: string): { daysPerWeek: number; time: strin
   
   // Extract days
   let days = 5; // default
-  const dayMatch = normalized.match(/(\d)\s*(days?|x)/i);
+  const dayMatch = normalized.match(/(\d)\s*(days?|x)?/i);
   if (dayMatch) {
     days = parseInt(dayMatch[1]);
     if (days < 1 || days > 7) days = 5;
@@ -320,7 +308,8 @@ export function isAffirmative(input: string): boolean {
   const affirmatives = [
     'yes', 'yeah', 'yep', 'yup', 'y', 'sure', 'ok', 'okay', 
     'correct', 'right', 'good', 'looks good', 'sounds good',
-    'perfect', 'great', 'fine', 'continue', 'let\'s go', 'lets go'
+    'perfect', 'great', 'fine', 'continue', 'let\'s go', 'lets go',
+    'i\'m in', 'im in', 'i am in', 'in', 'commit', 'committed'
   ];
   return affirmatives.some(a => normalized.includes(a));
 }
@@ -352,15 +341,17 @@ export function buildWeeklyMap(
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   const map: WeeklyMapEntry[] = [];
   
-  // Distribution: Primary domain gets 3 days, secondary 2 (for 5-day week)
-  // Adjust for other day counts
+  // Distribution: Primary domain gets more days
+  // For 5 days: D1, D2, D1, D3, D1 (domain 1 gets 3, domain 2 gets 1, domain 3 gets 1)
   const distribution = daysPerWeek === 5 
     ? [0, 1, 0, 2, 0] // Mon=D1, Tue=D2, Wed=D1, Thu=D3, Fri=D1
     : daysPerWeek === 4
     ? [0, 1, 0, 2]
     : daysPerWeek === 3
     ? [0, 1, 2]
-    : [0, 1, 0, 2, 0, 1, 2]; // 6-7 days
+    : daysPerWeek === 6
+    ? [0, 1, 0, 2, 0, 1]
+    : [0, 1, 0, 2, 0, 1, 2]; // 7 days
   
   for (let i = 0; i < Math.min(daysPerWeek, distribution.length); i++) {
     const domainIndex = distribution[i];
@@ -382,7 +373,7 @@ export function buildWeeklyMap(
 }
 
 // ============================================
-// DEFAULT CLASSIFICATIONS (Fallback if API fails)
+// DEFAULT CLASSIFICATIONS (Fallback)
 // ============================================
 
 export function getDefaultClassification(domain: string): { flowType: string; category: string; coherenceLink: string } {
@@ -406,8 +397,6 @@ export interface StepResult {
   message: string;
   updatedState: Partial<FlowBlockState>;
   isComplete?: boolean;
-  needsAPICall?: boolean;
-  apiContext?: string;
 }
 
 export function processFlowBlockStep(
@@ -535,7 +524,7 @@ export function processFlowBlockStep(
       };
     }
     
-    // Step 7: Confirm classifications
+    // Step 7: Confirm classifications, build weekly map
     case 7: {
       // Build weekly map
       const weeklyMap = buildWeeklyMap(
@@ -555,8 +544,6 @@ export function processFlowBlockStep(
     // Step 8: Confirm weekly map
     case 8: {
       if (isNegative(userInput) && userInput.length > 5) {
-        // They want changes - for now, just acknowledge and continue
-        // Future: could parse specific changes
         return {
           nextStep: 8,
           message: `Got it. For now, let's continue with this map and you can adjust after the first week. Continue? (yes)`,
@@ -658,7 +645,8 @@ export function processFlowBlockStep(
           extractedDomains: state.domains,
           extractedWeeklyMap: state.weeklyMap,
           extractedPreferences: state.preferences,
-          sprintStartDate: new Date().toISOString()
+          sprintStartDate: new Date().toISOString(),
+          focusType: 'distributed'
         },
         isComplete: true
       };
@@ -698,6 +686,7 @@ Example: "1, 4, 2"`;
 }
 
 export const getFlowBlockOpeningWithAnchor = getFlowBlockOpeningWithIdentity;
+export const getFlowBlockOpeningWithCoherenceAnchor = getFlowBlockOpeningWithIdentity;
 
 // ============================================
 // COMPLETION DATA (For saving)
@@ -722,10 +711,9 @@ export function getCompletionData(state: FlowBlockState): FlowBlockCompletion | 
 }
 
 // ============================================
-// LEGACY FUNCTIONS (For compatibility)
+// LEGACY FUNCTIONS (For compatibility - no longer used)
 // ============================================
 
-// These are no longer used but kept for import compatibility
 export const flowBlockSystemPrompt = ''; // Not used in template approach
 
 export function buildFlowBlockAPIMessages(): Array<{ role: string; content: string }> {
@@ -813,6 +801,3 @@ Options:
 3. Redesign (new setup)
 
 Which?`;
-
-// Legacy exports
-export const getFlowBlockOpeningWithCoherenceAnchor = getFlowBlockOpeningWithAnchor;
