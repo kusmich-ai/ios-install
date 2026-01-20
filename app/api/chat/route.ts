@@ -882,6 +882,7 @@ export async function POST(req: Request) {
 
     // STEP 6: PREPARE API CALL
     let maxTokens = 2048;
+    let temperature = 0.7;
     let systemPrompt = mainSystemPrompt + patternContext;
 
     switch (context) {
@@ -897,10 +898,12 @@ export async function POST(req: Request) {
       case 'flow_block_setup':
         systemPrompt = SECURITY_INSTRUCTIONS + '\n\n' + flowBlockSystemPrompt + patternContext;
         maxTokens = 2048;
+        temperature = 0.3;
         break;
 
       case 'flow_block_extraction':
         maxTokens = 500;
+        temperature = 0.2;
         break;
 
       case 'weekly_check_in':
