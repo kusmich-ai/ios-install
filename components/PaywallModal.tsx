@@ -86,10 +86,10 @@ export function PaywallModal({ isOpen, onClose, onUpgrade }: PaywallModalProps) 
             Congratulations. Stage 1 Neural Priming Complete.
           </h2>
           <p className="text-gray-400 mb-4">
-            You've now proven your stability. It's time to install the full system with Stages 2-7.
+            Signal Stabilized. Stability precedes capacity. And capacity precedes progress. It's time to increase your capacity and progress by installing the full system with Stages 2-7.
           </p>
           <p className="text-gray-500 text-sm">
-            Below are your options where you can get just the IOS Installer or the IOS Installer + Live Weekly Coaching.
+            Below are your options, where you can get just the STATE IOS Installer or the STATE IOS Installer + Live Weekly Coaching.
           </p>
         </div>
 
