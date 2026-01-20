@@ -397,7 +397,7 @@ export default function UpgradePage() {
       <div className="text-center">
         <div className="w-32 h-32 rounded-full mx-auto mb-6 overflow-hidden bg-[#1a1a1a]">
           <Image
-            src="/coaches/nic.webp"
+            src="/coaches/nic.avif"
             alt="Nicholas Kusmich"
             width={256}
             height={256}
@@ -417,7 +417,7 @@ export default function UpgradePage() {
       <div className="text-center">
         <div className="w-32 h-32 rounded-full mx-auto mb-6 overflow-hidden bg-[#1a1a1a]">
           <Image
-            src="/coaches/fehren.webp"
+            src="/coaches/fehren.avif"
             alt="Fehren Kusmich"
             width={256}
             height={256}
