@@ -13,7 +13,7 @@ export interface WeeklyMapEntry {
   task: string;          // The specific task
   flowType: string;      // 'Creative', 'Strategic', 'Learning'
   category: string;      // 'Goal', 'Growth', 'Gratitude'
-  identityLink: string;  // 'Direct', 'Indirect', 'Autonomous'
+  coherenceLink: string; // 'Direct', 'Indirect', 'Autonomous'
   duration: number;      // 60 or 90 minutes
 }
 
@@ -88,7 +88,7 @@ For each prioritized domain, ask:
 As tasks emerge, classify each:
 - **Flow Type:** Creative (open-ended, generative) | Strategic (planning, decisions) | Learning (skill acquisition, study)
 - **3G Category:** Goal (outcome-driven) | Growth (capability-building) | Gratitude (relationship/appreciation)
-- **Identity Link:** Direct (proves identity) | Indirect (supports identity) | Autonomous (valuable but separate)
+- **Coherence Link:** Direct (proves coherence) | Indirect (supports coherence) | Autonomous (valuable but separate)
 
 ### Mode 2: Architect (Planning Phase)
 
@@ -104,7 +104,7 @@ Based on their tasks, recommend one approach:
 
 **Weekly Map Construction:**
 Build a table showing:
-| Day | Domain | Task | Flow Type | Category | Identity Link | Duration |
+| Day | Domain | Task | Flow Type | Category | Coherence Link | Duration |
 
 ### Mode 3: Setup Requirements (Critical)
 
@@ -316,11 +316,11 @@ IMPORTANT: Output ONLY valid JSON. No markdown, no explanation, no backticks. Ju
 {
   "domains": ["Domain1", "Domain2", "Domain3"],
   "weeklyMap": [
-    {"day": "Monday", "domain": "Professional Work", "task": "Task description", "flowType": "Strategic", "category": "Goal", "identityLink": "Direct", "duration": 90},
-    {"day": "Tuesday", "domain": "Domain", "task": "Task", "flowType": "Type", "category": "Category", "identityLink": "Link", "duration": 60},
-    {"day": "Wednesday", "domain": "Domain", "task": "Task", "flowType": "Type", "category": "Category", "identityLink": "Link", "duration": 90},
-    {"day": "Thursday", "domain": "Domain", "task": "Task", "flowType": "Type", "category": "Category", "identityLink": "Link", "duration": 60},
-    {"day": "Friday", "domain": "Domain", "task": "Task", "flowType": "Type", "category": "Category", "identityLink": "Link", "duration": 60}
+    {"day": "Monday", "domain": "Professional Work", "task": "Task description", "flowType": "Strategic", "category": "Goal", "coherenceLink": "Direct", "duration": 90},
+    {"day": "Tuesday", "domain": "Domain", "task": "Task", "flowType": "Type", "category": "Category", "coherenceLink": "Link", "duration": 60},
+    {"day": "Wednesday", "domain": "Domain", "task": "Task", "flowType": "Type", "category": "Category", "coherenceLink": "Link", "duration": 90},
+    {"day": "Thursday", "domain": "Domain", "task": "Task", "flowType": "Type", "category": "Category", "coherenceLink": "Link", "duration": 60},
+    {"day": "Friday", "domain": "Domain", "task": "Task", "flowType": "Type", "category": "Category", "coherenceLink": "Link", "duration": 60}
   ],
   "preferences": {
     "professionalLocation": "Their work location from conversation",
@@ -338,7 +338,7 @@ Rules:
 - weeklyMap: All 5 days with the exact tasks they agreed to
 - flowType must be: "Creative", "Strategic", or "Learning"
 - category must be: "Goal", "Growth", or "Gratitude"
-- identityLink must be: "Direct", "Indirect", or "Autonomous"
+- coherenceLink must be: "Direct", "Indirect", or "Autonomous"
 - duration: Use the actual durations discussed (60 or 90)
 - preferences: Their actual answers for location, playlist, timer
 - focusType: "concentrated" or "distributed" based on what was decided
