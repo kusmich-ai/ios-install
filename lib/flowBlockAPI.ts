@@ -1,15 +1,9 @@
 // lib/flowBlockAPI.ts
-// 100% API-driven Flow Block Integration Protocol v4.1 (Cue Kernel Aligned + Strict Enforcement)
+// Flow Block Integration Protocol v5.0 - STRICT INSTALLER MODE
 // 
-// Philosophy: Task-model, not identity-model. Attention → Action.
-// Flow Blocks train the nervous system to recognize deep work as familiar—not effortful.
-// Tools restore clarity; they don't fix states.
-//
-// v4.1 CHANGES:
-// - Added strict protocol enforcement language
-// - Made step sequence non-negotiable
-// - Added explicit commitment trigger phrases
-// - Prevented shortcut-taking behavior
+// CRITICAL: This is a SYSTEM SETUP flow, not a coaching session.
+// The AI must collect structured data, build a weekly map, and save.
+// NO strategy diving. NO lengthy explanations. INSTALLER MODE ONLY.
 
 import { withToolLayers } from '@/lib/prompts/withToolLayers';
 
@@ -18,23 +12,22 @@ import { withToolLayers } from '@/lib/prompts/withToolLayers';
 // ============================================
 
 export interface WeeklyMapEntry {
-  day: string;           // 'Monday', 'Tuesday', etc.
-  domain: string;        // 'Professional Work', 'Creative Projects', etc.
-  task: string;          // The specific task
-  flowType: string;      // 'Creative', 'Strategic', 'Learning'
-  category: string;      // 'Goal', 'Growth', 'Gratitude'
-  coherenceLink: string; // 'Direct', 'Indirect', 'Autonomous' (formerly identityLink)
-  duration: number;      // 60 or 90 minutes
+  day: string;
+  domain: string;
+  task: string;
+  flowType: string;
+  category: string;
+  coherenceLink: string;
+  duration: number;
 }
 
-// Legacy interface for backward compatibility with existing data
 export interface WeeklyMapEntryLegacy {
   day: string;
   domain: string;
   task: string;
   flowType: string;
   category: string;
-  identityLink: string;  // Legacy field name - maps to coherenceLink
+  identityLink: string;
   duration: number;
 }
 
@@ -73,210 +66,189 @@ export const initialFlowBlockState: FlowBlockState = {
 };
 
 // ============================================
-// SYSTEM PROMPT v4.1 (Strict Protocol Enforcement)
+// SYSTEM PROMPT v5.0 - STRICT INSTALLER MODE
 // ============================================
 
-export const flowBlockSystemPrompt = withToolLayers(`You are a performance coach helping a user set up their Flow Block system — the execution element of the Mental Operating System (MOS).
+export const flowBlockSystemPrompt = withToolLayers(`You are a SYSTEM INSTALLER setting up a user's Flow Block configuration.
 
-## ⚠️ CRITICAL: STRICT PROTOCOL ENFORCEMENT
+## ⛔ CRITICAL CONSTRAINTS - READ CAREFULLY
 
-YOU MUST FOLLOW THE EXACT STEP SEQUENCE BELOW. DO NOT SKIP STEPS. DO NOT COMBINE STEPS. DO NOT TAKE SHORTCUTS.
+You are NOT a coach. You are NOT a strategist. You are an INSTALLER.
+Your ONLY job is to collect structured data and build a weekly Flow Block schedule.
 
-If the user tries to rush or skip ahead, acknowledge their input but RETURN TO THE CURRENT STEP. The protocol exists because each step builds on the previous one. Skipping steps results in incomplete data and failed saves.
+FORBIDDEN BEHAVIORS:
+- Do NOT give strategy advice about their work/projects
+- Do NOT create detailed plans for their tasks
+- Do NOT explain HOW to do their work
+- Do NOT write long paragraphs of advice
+- Do NOT ask multiple questions at once
+- Do NOT skip any required steps
+- Do NOT proceed to commitment until ALL data is collected
 
-ASK ONLY ONE QUESTION PER MESSAGE. Wait for the user's response before proceeding to the next question.
+REQUIRED BEHAVIORS:
+- Keep responses SHORT (3-5 lines max, except for the weekly map table)
+- Ask exactly ONE question per message
+- Wait for answer before proceeding
+- Follow the EXACT step sequence below
+- Present weekly map as a TABLE before commitment
+- Use EXACT commitment phrase at the end
 
-## COHERENCE (Definition)
-Coherence = stable attention + regulated nervous system + action without self-referential narrative.
-It's not a state to achieve—it's what's already present when story drops.
+## RESPONSE LENGTH RULE
+Every response must be 5 lines or fewer, EXCEPT:
+- The weekly map table (Step 8)
+- The final commitment summary (Step 14)
 
-## LANGUAGE RULES (Non-Negotiable)
-- Do NOT use identity language ("I am...", "becoming the person who...")
-- Do NOT use improvement language ("get better", "improve", "optimize")
-- USE task-model language: attention → action, cue → execution
-- USE recognition language: "notice", "recognize", "what's already here"
+If you catch yourself writing more than 5 lines, STOP and simplify.
 
 ---
 
 ## MANDATORY STEP SEQUENCE
 
-### PHASE 1: DISCOVERY (Steps 1-3)
+### PHASE 1: DOMAIN DISCOVERY (Steps 1-4)
 
-**STEP 1: Domain Prioritization**
-Ask EXACTLY this:
-"Rank your top 3 life domains right now (where Flow Blocks would have the most impact):
+**STEP 1:** Ask for top 3 domains.
+"Pick your top 3 from this list (in priority order):
 1. Professional Work
-2. Personal Development  
+2. Personal Development
 3. Relationships
 4. Creative Projects
 5. Learning
-6. Health
+6. Health"
 
-Just give me your top 3 in order."
+**STEP 2:** Confirm their selection.
+"Got it: 1) [Domain A], 2) [Domain B], 3) [Domain C]. Correct?"
 
-WAIT for response. Do not proceed until you have 3 domains.
+**STEP 3:** Get ONE task for Domain A.
+"For [Domain A]: What ONE task, if you focused on it for 60-90 mins, would move the needle most this week?"
 
-**STEP 2: Task Identification (Per Domain)**
-For EACH of the 3 domains they listed, ask:
-"For [DOMAIN]: If you completed only ONE thing this week that would genuinely move outcomes forward, what would it be?"
+**STEP 4:** Get ONE task for Domain B.
+"For [Domain B]: Same question—ONE high-impact task for a 60-90 min block?"
 
-Ask this THREE TIMES (once per domain). Do not batch. One domain per message.
-
-**STEP 3: Task Classification**
-After collecting all 3 tasks, classify EACH ONE:
-"Here's how I'd classify your tasks:
-
-[Task 1]: [Flow Type: Creative/Strategic/Learning] | [3G: Goal/Growth/Gratitude] | Coherence Link: [Direct/Indirect/Autonomous]
-[Task 2]: ...
-[Task 3]: ...
-
-Does this classification feel accurate? Any adjustments?"
-
-WAIT for confirmation before proceeding.
+**STEP 5:** Get ONE task for Domain C.
+"For [Domain C]: And the third—ONE task worth 60-90 mins of deep focus?"
 
 ---
 
-### PHASE 2: PLANNING (Steps 4-6)
+### PHASE 2: CLASSIFICATION (Steps 6-7)
 
-**STEP 4: Weekly Rhythm**
-Ask EXACTLY this:
-"Now let's build your weekly rhythm.
-- How many days per week can you commit to Flow Blocks? (Baseline is 5: Mon-Fri)
-- What time works best for deep work?"
+**STEP 6:** Classify all three tasks. Present as a simple list:
+"Here's how I'd classify these:
 
-WAIT for response.
+• [Task 1]: [Creative/Strategic/Learning] | [Goal/Growth/Gratitude]
+• [Task 2]: [Creative/Strategic/Learning] | [Goal/Growth/Gratitude]
+• [Task 3]: [Creative/Strategic/Learning] | [Goal/Growth/Gratitude]
 
-**STEP 5: Concentrated vs Distributed**
-Based on their tasks, recommend ONE approach:
-"Based on what you've shared, I recommend [Concentrated/Distributed] Focus:
+Look right?"
 
-Concentrated = fewer tasks, multiple sessions each (good for: deadlines, stuck projects, one dominant priority)
-Distributed = more variety, each task once per week (good for: multiple equal priorities, maintenance phase)
+**STEP 7:** Ask about schedule.
+"How many days per week for Flow Blocks? (Default: 5, Mon-Fri)
+And what time works best?"
 
-Does [Concentrated/Distributed] fit your current situation?"
+---
 
-WAIT for confirmation.
+### PHASE 3: WEEKLY MAP (Step 8)
 
-**STEP 6: Weekly Map (Visual Table)**
-Present the COMPLETE weekly map as a table:
+**STEP 8:** Present the weekly map as a TABLE. This is the ONE exception to the short-response rule.
 
 "Here's your Weekly Flow Block Map:
 
-| Day | Domain | Task | Flow Type | 3G | Coherence | Duration |
-|-----|--------|------|-----------|-----|-----------|----------|
-| Monday | [Domain] | [Task] | [Type] | [Category] | [Link] | [60/90] min |
-| Tuesday | [Domain] | [Task] | [Type] | [Category] | [Link] | [60/90] min |
-| Wednesday | [Domain] | [Task] | [Type] | [Category] | [Link] | [60/90] min |
-| Thursday | [Domain] | [Task] | [Type] | [Category] | [Link] | [60/90] min |
-| Friday | [Domain] | [Task] | [Type] | [Category] | [Link] | [60/90] min |
+| Day | Domain | Task | Type | Category | Duration |
+|-----|--------|------|------|----------|----------|
+| Mon | [Domain] | [Task] | [Type] | [Cat] | 90 min |
+| Tue | [Domain] | [Task] | [Type] | [Cat] | 60 min |
+| Wed | [Domain] | [Task] | [Type] | [Cat] | 90 min |
+| Thu | [Domain] | [Task] | [Type] | [Cat] | 60 min |
+| Fri | [Domain] | [Task] | [Type] | [Cat] | 90 min |
 
-Does this map look right, or do you want to adjust anything?"
+Any changes needed?"
 
-WAIT for confirmation before proceeding to setup.
-
----
-
-### PHASE 3: SETUP (Steps 7-11)
-
-Ask these ONE AT A TIME. Do not batch.
-
-**STEP 7: Professional Location**
-"Now let's lock your environment. Same setup every time = faster flow entry.
-
-Where will you do your professional/creative Flow Blocks? (desk, office, specific room, etc.)"
-
-WAIT for response.
-
-**STEP 8: Personal Location**
-"Where will you do relational or personal development blocks? (might be different from professional)"
-
-WAIT for response.
-
-**STEP 9: Playlist/Sound**
-"Do you have a focus playlist, or should I suggest options? Music/sound creates a powerful consistency cue."
-
-WAIT for response. If they need suggestions, offer: "Spotify's 'Deep Focus', 'Brain Food', or apps like Endel work great."
-
-**STEP 10: Timer Method**
-"How will you track time? Phone timer, dedicated timer app, or physical timer?"
-
-WAIT for response.
-
-**STEP 11: Notifications Confirmation**
-"Final setup element: Can you commit to turning notifications OFF during Flow Blocks? Phone on airplane mode or in another room?"
-
-WAIT for explicit yes.
+IMPORTANT: Distribute the 3 tasks across 5 days. Primary domain gets 3 days, secondary gets 2.
 
 ---
 
-### PHASE 4: COMMITMENT (Step 12)
+### PHASE 4: ENVIRONMENT SETUP (Steps 9-13)
 
-**STEP 12: Final Commitment (CRITICAL - USE EXACT WORDING)**
+Ask these ONE AT A TIME. Short responses only.
 
-After ALL setup questions are answered, present the summary and ask for commitment using EXACTLY these trigger phrases:
+**STEP 9:** "Where will you do these blocks? (desk, office, etc.)"
+
+**STEP 10:** "Do you have a focus playlist or want a suggestion?"
+(If they need one: "Try Spotify's 'Deep Focus' or 'Brain Food'")
+
+**STEP 11:** "How will you track time? Phone timer, app, or physical timer?"
+
+**STEP 12:** "Can you commit to phone on airplane mode during blocks?"
+
+**STEP 13:** Confirm setup:
+"Setup locked:
+• Location: [X]
+• Playlist: [X]
+• Timer: [X]
+• Phone: Airplane mode ✓"
+
+---
+
+### PHASE 5: COMMITMENT (Step 14)
+
+**STEP 14:** Present final summary and ask for commitment using EXACT phrase.
 
 "Your Flow Block System:
 
-**Weekly Map:**
-[Repeat the table from Step 6]
+| Day | Task | Time | Duration |
+|-----|------|------|----------|
+| Mon | [Task] | [Time] | [Dur] |
+| Tue | [Task] | [Time] | [Dur] |
+| Wed | [Task] | [Time] | [Dur] |
+| Thu | [Task] | [Time] | [Dur] |
+| Fri | [Task] | [Time] | [Dur] |
 
-**Environment:**
-- Professional location: [their answer]
-- Personal location: [their answer]  
-- Playlist: [their answer]
-- Timer: [their answer]
-- Notifications: OFF ✓
+Environment: [Location] | [Playlist] | [Timer] | Phone off
 
-**Do you commit to:**
-- 5 blocks per week for 21 days
-- Following the setup protocol (same time, same place, same cues)
-- Check-ins for the first 7 days
-- No major structure changes for 2 weeks
+21-day sprint starts tomorrow.
 
-**Are you in?**"
+**Do you commit? Are you in?**"
 
-The phrase "Are you in?" or "Do you commit" MUST appear in your final message. This triggers the save function.
+YOU MUST include "Do you commit?" or "Are you in?" - this triggers the save.
 
-WAIT for explicit commitment (yes, yeah, I'm in, committed, etc.)
+**STEP 15:** After they confirm:
+"Flow Blocks: INSTALLED ✓
 
-After they confirm, respond:
-"Flow Block System: LOCKED ✅
+Day 1 starts tomorrow at [time]. 
+After each block, mark it complete in the sidebar.
+See you on the other side."
 
-Sprint 1 starts tomorrow. Your nervous system will begin recognizing this rhythm by day 7. By day 21, dropping into flow will feel familiar—not forced.
-
-After each block, come back for your reflection and performance check."
+Keep this short. No long motivational speeches.
 
 ---
 
-## ENFORCEMENT REMINDERS
+## RECOVERY RULES
 
-1. ONE question per message
-2. WAIT for response before next step  
-3. Do NOT skip domain prioritization
-4. Do NOT skip task classification
-5. Do NOT skip setup questions
-6. MUST present weekly map as table
-7. MUST use "Are you in?" or "Do you commit" in final message
-8. If user rushes: "I hear you want to move fast. Let me just get [current step] and we'll keep rolling."
+If user tries to skip ahead:
+"Let me grab [current step info] first, then we'll keep moving."
 
-## TONE
-Grounded, clear, efficient. No hype. Clarity over inspiration.`);
+If user gives unclear answer:
+"Quick clarification: [specific question]"
+
+If user asks strategy questions:
+"Good question—that's exactly what your Flow Blocks are for. Let's finish setup first. [Return to current step]"
+
+---
+
+## LANGUAGE RULES
+- No identity language ("becoming", "who you are")
+- No improvement language ("get better", "optimize")
+- Short, direct sentences
+- No emojis except ✓ for confirmations`);
 
 // ============================================
-// OPENING MESSAGES
+// OPENING MESSAGE (Starts with Step 1)
 // ============================================
 
-export const flowBlockOpeningMessage = `**Flow Block Setup** 🎯
+export const flowBlockOpeningMessage = `**Flow Block Setup**
 
-Let's set up your Flow Block system — the execution element of the MOS.
+Let's build your weekly deep work schedule. Takes about 3 minutes.
 
-Flow Blocks are 60–90 minute deep work sessions. They train the nervous system to recognize sustained attention as familiar and safe—not effortful.
-
-By day 21, dropping into focus won't require willpower. The cues do the work.
-
-First, let's identify where Flow Blocks will have the most impact.
-
-**Rank your top 3 life domains right now:**
+Pick your top 3 domains (in priority order):
 1. Professional Work
 2. Personal Development
 3. Relationships
@@ -284,27 +256,20 @@ First, let's identify where Flow Blocks will have the most impact.
 5. Learning
 6. Health
 
-Just give me your top 3 in order.`;
+Which 3 matter most right now?`;
 
-// Legacy function name preserved for import compatibility
 export function getFlowBlockOpeningWithIdentity(anchor: string, action: string): string {
   return getFlowBlockOpeningWithAnchor(anchor, action);
 }
 
-// Preferred function name (Cue Kernel aligned)
 export function getFlowBlockOpeningWithAnchor(anchor: string, action: string): string {
-  return `**Flow Block Setup** 🎯
+  return `**Flow Block Setup**
 
-Let's set up your Flow Block system — the execution element of the MOS.
+You have a daily anchor: *${action}*
 
-You already have a daily anchor in the system:
-*${action}*
+Let's build Flow Blocks around that rhythm. Takes about 3 minutes.
 
-We'll treat that as a consistency cue and build Flow Blocks that complement your existing rhythm.
-
-First, let's identify where Flow Blocks will have the most impact.
-
-**Rank your top 3 life domains right now:**
+Pick your top 3 domains (in priority order):
 1. Professional Work
 2. Personal Development
 3. Relationships
@@ -312,7 +277,7 @@ First, let's identify where Flow Blocks will have the most impact.
 5. Learning
 6. Health
 
-Just give me your top 3 in order.`;
+Which 3 matter most right now?`;
 }
 
 // ============================================
@@ -332,8 +297,20 @@ export interface FlowBlockCompletion {
 
 export function isCommitmentResponse(userMessage: string, lastAssistantMessage: string): boolean {
   const normalizedMessage = userMessage.trim().toLowerCase();
+  const normalizedAssistant = lastAssistantMessage.toLowerCase();
 
-  const commitmentPatterns = [
+  // Check if assistant asked for commitment
+  const askedForCommitment =
+    normalizedAssistant.includes('are you in') ||
+    normalizedAssistant.includes('do you commit') ||
+    normalizedAssistant.includes('ready to commit') ||
+    normalizedAssistant.includes('ready to lock') ||
+    normalizedAssistant.includes('lock this in');
+
+  if (!askedForCommitment) return false;
+
+  // Strict commitment patterns (short responses)
+  const strictPatterns = [
     /^yes[.!,\s]*$/i,
     /^yeah[.!,\s]*$/i,
     /^yep[.!,\s]*$/i,
@@ -347,46 +324,29 @@ export function isCommitmentResponse(userMessage: string, lastAssistantMessage: 
     /^lets do it[.!,\s]*$/i,
     /^let's go[.!,\s]*$/i,
     /^lets go[.!,\s]*$/i,
-    /^i do[.!,\s]*$/i,
     /^ready[.!,\s]*$/i,
-    /^do it[.!,\s]*$/i,
-    /^100%[.!,\s]*$/i,
-    /^definitely[.!,\s]*$/i,
-    /^for sure[.!,\s]*$/i,
-    /^all in[.!,\s]*$/i,
     /^locked[.!,\s]*$/i,
-    /^lock it[.!,\s]*$/i,
     /^done[.!,\s]*$/i,
+    /^100%[.!,\s]*$/i,
   ];
 
-  // Also check for commitment phrases within longer messages
-  const looseCommitmentPatterns = [
-    /yes/i,
-    /i'm in/i,
-    /im in/i,
-    /i commit/i,
-    /committed/i,
-    /let's do/i,
-    /lets do/i,
-    /sounds good/i,
-    /looks good/i,
-    /works for me/i,
-    /i'm ready/i,
-    /im ready/i,
+  // Loose patterns (commitment phrases within longer messages)
+  const loosePatterns = [
+    /\byes\b/i,
+    /\bi'm in\b/i,
+    /\bim in\b/i,
+    /\bi commit\b/i,
+    /\bsounds good\b/i,
+    /\blooks good\b/i,
+    /\bworks for me\b/i,
+    /\blet's do/i,
+    /\blets do/i,
   ];
 
-  const isStrictCommitment = commitmentPatterns.some((pattern) => pattern.test(normalizedMessage));
-  const isLooseCommitment = looseCommitmentPatterns.some((pattern) => pattern.test(normalizedMessage));
+  const isStrictMatch = strictPatterns.some(p => p.test(normalizedMessage));
+  const isLooseMatch = loosePatterns.some(p => p.test(normalizedMessage));
 
-  // Check if assistant asked for commitment
-  const askedForCommitment =
-    lastAssistantMessage.toLowerCase().includes('are you in') ||
-    lastAssistantMessage.toLowerCase().includes('do you commit') ||
-    lastAssistantMessage.toLowerCase().includes('ready to commit') ||
-    lastAssistantMessage.toLowerCase().includes('ready to lock') ||
-    lastAssistantMessage.toLowerCase().includes('lock this in');
-
-  return (isStrictCommitment || isLooseCommitment) && askedForCommitment;
+  return isStrictMatch || isLooseMatch;
 }
 
 // ============================================
@@ -401,7 +361,21 @@ export function buildFlowBlockAPIMessages(
   let systemPrompt = flowBlockSystemPrompt;
 
   if (currentAnchor) {
-    systemPrompt += `\n\n## EXISTING ANCHOR\nThe user has an existing daily anchor. Treat it as a consistency cue for scheduling.`;
+    systemPrompt += `\n\n## EXISTING ANCHOR\nUser has daily anchor: "${currentAnchor}". Reference it briefly but stay in installer mode.`;
+  }
+
+  // Add conversation length context to help AI know where it is
+  const messageCount = conversationHistory.length;
+  if (messageCount < 4) {
+    systemPrompt += `\n\n## CURRENT PHASE: DOMAIN DISCOVERY\nYou should be in Steps 1-5. Collect domains and tasks.`;
+  } else if (messageCount < 8) {
+    systemPrompt += `\n\n## CURRENT PHASE: CLASSIFICATION & SCHEDULE\nYou should be in Steps 6-7. Classify tasks and get schedule.`;
+  } else if (messageCount < 10) {
+    systemPrompt += `\n\n## CURRENT PHASE: WEEKLY MAP\nYou should be presenting the weekly map table (Step 8).`;
+  } else if (messageCount < 18) {
+    systemPrompt += `\n\n## CURRENT PHASE: ENVIRONMENT SETUP\nYou should be in Steps 9-13. Ask about location, playlist, timer, phone.`;
+  } else {
+    systemPrompt += `\n\n## CURRENT PHASE: COMMITMENT\nYou should be presenting final summary and asking "Do you commit? Are you in?"`;
   }
 
   return [
@@ -414,48 +388,46 @@ export function buildFlowBlockAPIMessages(
 export function buildFlowBlockExtractionMessages(
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>
 ): Array<{ role: 'user' | 'assistant' | 'system'; content: string }> {
-  const extractionPrompt = `Based on the Flow Block setup conversation above, extract ALL the data into this exact JSON format.
+  const extractionPrompt = `Extract the Flow Block setup data from this conversation into JSON.
 
-IMPORTANT: Output ONLY valid JSON. No markdown, no explanation, no backticks. Just the JSON object.
+IMPORTANT: Output ONLY valid JSON. No markdown, no explanation, no backticks.
 
 {
   "domains": ["Domain1", "Domain2", "Domain3"],
   "weeklyMap": [
-    {"day": "Monday", "domain": "Professional Work", "task": "Task description", "flowType": "Strategic", "category": "Goal", "identityLink": "Direct", "duration": 90},
-    {"day": "Tuesday", "domain": "Domain", "task": "Task", "flowType": "Type", "category": "Category", "identityLink": "Indirect", "duration": 60},
-    {"day": "Wednesday", "domain": "Domain", "task": "Task", "flowType": "Type", "category": "Category", "identityLink": "Autonomous", "duration": 90},
-    {"day": "Thursday", "domain": "Domain", "task": "Task", "flowType": "Type", "category": "Category", "identityLink": "Direct", "duration": 60},
-    {"day": "Friday", "domain": "Domain", "task": "Task", "flowType": "Type", "category": "Category", "identityLink": "Indirect", "duration": 60}
+    {"day": "Monday", "domain": "Domain", "task": "Task description", "flowType": "Strategic", "category": "Goal", "identityLink": "Direct", "duration": 90},
+    {"day": "Tuesday", "domain": "Domain", "task": "Task", "flowType": "Creative", "category": "Growth", "identityLink": "Indirect", "duration": 60},
+    {"day": "Wednesday", "domain": "Domain", "task": "Task", "flowType": "Learning", "category": "Goal", "identityLink": "Autonomous", "duration": 90},
+    {"day": "Thursday", "domain": "Domain", "task": "Task", "flowType": "Strategic", "category": "Gratitude", "identityLink": "Direct", "duration": 60},
+    {"day": "Friday", "domain": "Domain", "task": "Task", "flowType": "Creative", "category": "Goal", "identityLink": "Indirect", "duration": 90}
   ],
   "preferences": {
-    "professionalLocation": "Their work location from conversation",
-    "personalLocation": "Their home/personal location from conversation",
-    "playlist": "Their playlist choice from conversation",
-    "timerMethod": "Their timer method from conversation",
+    "professionalLocation": "their location answer",
+    "personalLocation": "their location answer or same as professional",
+    "playlist": "their playlist answer",
+    "timerMethod": "their timer answer",
     "notificationsOff": true
   },
-  "focusType": "concentrated"
+  "focusType": "distributed"
 }
 
 Rules:
-- Extract the ACTUAL data from the conversation, not placeholders
-- domains: The 3 life domains they prioritized
-- weeklyMap: All 5 days with the exact tasks they agreed to
-- flowType must be: "Creative", "Strategic", or "Learning"
-- category must be: "Goal", "Growth", or "Gratitude"
-- identityLink values: "Direct", "Indirect", "Autonomous" (maps to Coherence Link)
-- duration: Use the actual durations discussed (60 or 90)
-- preferences: Their actual answers for location, playlist, timer
-- focusType: "concentrated" or "distributed" based on what was decided
+- Extract ACTUAL data from conversation
+- domains: The 3 domains they chose in priority order
+- weeklyMap: All 5 days with actual tasks discussed
+- flowType: "Creative", "Strategic", or "Learning"
+- category: "Goal", "Growth", or "Gratitude"
+- identityLink: "Direct", "Indirect", or "Autonomous"
+- duration: 60 or 90 based on what was discussed
+- preferences: Their actual setup answers
+- focusType: Usually "distributed" unless they said otherwise
 
-If any data is missing from the conversation, use reasonable defaults but note that incomplete conversations should not reach extraction.
-
-Output the JSON now:`;
+Output JSON now:`;
 
   return [
     {
       role: 'system' as const,
-      content: 'You are a data extraction assistant. Output only valid JSON based on conversation data. No markdown, no explanation.',
+      content: 'You are a data extraction assistant. Output only valid JSON. No explanation.',
     },
     ...conversationHistory,
     { role: 'user' as const, content: extractionPrompt },
@@ -485,37 +457,41 @@ export function parseFlowBlockExtraction(response: string): FlowBlockCompletion 
   try {
     let cleanResponse = response.trim();
 
+    // Remove markdown code blocks if present
     if (cleanResponse.startsWith('```json')) cleanResponse = cleanResponse.slice(7);
     else if (cleanResponse.startsWith('```')) cleanResponse = cleanResponse.slice(3);
-
     if (cleanResponse.endsWith('```')) cleanResponse = cleanResponse.slice(0, -3);
     cleanResponse = cleanResponse.trim();
 
+    // Find JSON object
     const startIndex = cleanResponse.indexOf('{');
     const endIndex = cleanResponse.lastIndexOf('}');
-
     if (startIndex === -1 || endIndex === -1) return null;
 
     const jsonString = cleanResponse.substring(startIndex, endIndex + 1);
     const parsed = JSON.parse(jsonString);
 
-    if (!parsed.domains || !parsed.weeklyMap || !parsed.preferences) return null;
+    // Validate required fields
+    if (!parsed.domains || !Array.isArray(parsed.domains) || parsed.domains.length < 1) return null;
+    if (!parsed.weeklyMap || !Array.isArray(parsed.weeklyMap) || parsed.weeklyMap.length < 1) return null;
+    if (!parsed.preferences) return null;
 
     const normalizedMap = parsed.weeklyMap.map(normalizeWeeklyMapEntry);
 
     return {
-      domains: parsed.domains || [],
+      domains: parsed.domains,
       weeklyMap: normalizedMap,
       setupPreferences: {
-        professionalLocation: parsed.preferences?.professionalLocation || '',
-        personalLocation: parsed.preferences?.personalLocation || '',
-        playlist: parsed.preferences?.playlist || '',
-        timerMethod: parsed.preferences?.timerMethod || '',
+        professionalLocation: parsed.preferences?.professionalLocation || 'Not specified',
+        personalLocation: parsed.preferences?.personalLocation || parsed.preferences?.professionalLocation || 'Not specified',
+        playlist: parsed.preferences?.playlist || 'Not specified',
+        timerMethod: parsed.preferences?.timerMethod || 'Phone timer',
         notificationsOff: parsed.preferences?.notificationsOff !== false,
       },
-      focusType: parsed.focusType === 'distributed' ? 'distributed' : 'concentrated',
+      focusType: parsed.focusType === 'concentrated' ? 'concentrated' : 'distributed',
     };
-  } catch {
+  } catch (e) {
+    console.error('[FlowBlock] Extraction parse error:', e);
     return null;
   }
 }
@@ -577,55 +553,36 @@ export function formatWeeklyMapForDisplay(weeklyMap: WeeklyMapEntry[]): string {
 }
 
 export function getDailyFlowBlockPrompt(block: WeeklyMapEntry, preferences: SetupPreferences): string {
-  const location =
-    block.domain.includes('Professional') ||
-    block.domain.includes('Creative') ||
-    block.domain.includes('Learning')
-      ? preferences.professionalLocation
-      : preferences.personalLocation;
-
   const coherenceLink = 'coherenceLink' in block ? block.coherenceLink : (block as unknown as WeeklyMapEntryLegacy).identityLink;
 
   return `**Today's Flow Block: ${block.task}**
 
-**${block.duration} minutes** • ${block.domain} • ${block.flowType}/${block.category}
-Coherence: ${coherenceLink}
+${block.duration} min | ${block.domain} | ${block.flowType}
 
----
-
-**Environment Check:**
-• Location: ${location}
+**Setup:**
+• Location: ${preferences.professionalLocation}
 • Playlist: ${preferences.playlist}
-• Timer: Ready
-• Phone: Off/away
+• Timer: ${preferences.timerMethod}
+• Phone: Off
 
----
+**Start with:** "For the next ${block.duration} minutes, my only job is ${block.task}."
 
-**Before you begin, say this aloud or write it:**
-
-*"For the next ${block.duration} minutes, my only job is ${block.task}."*
-
-No story. One action at a time. Attention on what's present.
-
----
-
-Come back when you're done for your reflection and performance check.`;
+Mark complete when done.`;
 }
 
 export const postBlockReflectionPrompt = `**Block complete.**
 
-Quick debrief (60 seconds):
+Quick check (30 sec):
 
-**1) One-sentence reflection:**
-What was the learning from today? (No story—just the signal.)
+1. One sentence: What was the learning?
 
-**2) Performance Check (1–5):**
-• Focus Quality: How sustained was attention?
-• Challenge–Skill Balance: Too easy (1), balanced (3), too hard (5)
-• Energy After: Depleted (1), calm clarity (5)
-• Flow Presence: Time distortion, reduced mental chatter
+2. Ratings 1-5:
+• Focus Quality
+• Challenge-Skill Balance  
+• Energy After
+• Flow Presence
 
-Send ratings like: "4, 3, 4, 5" + your one sentence.`;
+Example: "4, 3, 4, 5 - Realized I work better with outline first"`;
 
 export function getSprintDayNumber(sprintStartDate: string): number {
   const start = new Date(sprintStartDate);
@@ -647,25 +604,22 @@ export function isSprintComplete(sprintStartDate: string): boolean {
   return now >= endDate;
 }
 
-export const sprintCompleteMessage = (sprintNumber: number) => `**21-Day Flow Block Sprint ${sprintNumber} Complete**
+export const sprintCompleteMessage = (sprintNumber: number) => `**Sprint ${sprintNumber} Complete**
 
-Review (notice, don't judge):
-- Which blocks produced clean focus fastest?
-- Where did reactivity or distraction show up?
-- Was environment or task selection the limiter?
-- Which domains showed clearest execution?
-
-The nervous system now recognizes this rhythm. The question is whether to deepen it or redirect it.
+Quick review:
+• Which blocks hit flow fastest?
+• Where did resistance show up?
+• What needs adjustment?
 
 Options:
-1) **Continue** — same map, same cues
-2) **Evolve** — adjust difficulty, duration, or 3G balance
-3) **Redesign** — new discovery from scratch
+1. Continue (same map)
+2. Evolve (adjust tasks/times)
+3. Redesign (new discovery)
 
 Which?`;
 
 // ============================================
-// LEGACY EXPORT ALIASES
+// LEGACY EXPORTS
 // ============================================
 
 export const getFlowBlockOpeningWithCoherenceAnchor = getFlowBlockOpeningWithAnchor;
