@@ -45,7 +45,7 @@ export function PaywallModal({ isOpen, onClose, onUpgrade }: PaywallModalProps) 
 
   const installerFeatures = [
     { icon: Brain, text: 'All stage rituals including Embodied Awareness & Somatic Flow' },
-    { icon: Star, text: '21-Day Identity Installation and Flow Block Performance Cycles' },
+    { icon: Star, text: '21-Day Aligned Action Installation and Flow Block Performance Cycles' },
     { icon: Shield, text: 'Relational Coherence Protocols' },
     { icon: Sparkles, text: 'Nic AI and Fehren AI Coaches ($1,200 Value)' },
     { icon: Video, text: 'Science of Neural Liberation Course ($497 Value)' },
