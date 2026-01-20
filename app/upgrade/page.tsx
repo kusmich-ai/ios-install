@@ -481,7 +481,7 @@ export default function UpgradePage() {
               { icon: Zap, title: "All 7 Stage Rituals & Protocols", desc: "From Neural Priming to Accelerated Expansion. Each stage unlocks when you're ready.", value: "Core System" },
               { icon: Brain, title: "Nic AI & Fehren AI Coaches", desc: "24/7 access to AI coaches trained on hundreds of real coaching conversations. Not chatbots. Coaches.", value: "$1,200 Value" },
               { icon: Star, title: "Science of Neural Liberation Course", desc: "4 modules, 16 tutorials, 30+ hours of neuroscience-backed transformation education.", value: "$497 Value" },
-              { icon: Target, title: "21-Day Identity Installation Cycles", desc: "Systematic identity engineering. Become who you're meant to be through daily micro-proof.", value: "Included" },
+              { icon: Target, title: "21-Day Evidence Cycles", desc: "Repeated, verifiable actions that condition the nervous system through proof and updates behavior automatically..", value: "Included" },
               { icon: Clock, title: "Flow Block Performance System", desc: "Deep work training. 60-90 minute flow states become your new normal.", value: "Included" },
               { icon: Shield, title: "Cognitive Protocol Suite", desc: "Reframe, Decentering, Thought Hygiene, Meta-Reflection. Real tools, not affirmations.", value: "Included" },
             ].map((item, i) => (
