@@ -131,22 +131,19 @@ import {
   parseMicroActionExtraction
 } from '@/lib/microActionAPI';
 
+
 // ============================================
-// FLOW BLOCK SETUP IMPORTS (100% API version)
+// FLOW BLOCK SETUP IMPORTS (TEMPLATE-DRIVEN v6)
 // ============================================
 import {
   FlowBlockState,
   initialFlowBlockState,
   WeeklyMapEntry,
   SetupPreferences,
-  flowBlockSystemPrompt,
   flowBlockOpeningMessage,
   getFlowBlockOpeningWithIdentity,
   isCommitmentResponse,
-  buildFlowBlockAPIMessages,
-  buildFlowBlockExtractionMessages,
-  parseFlowBlockExtraction,
-  cleanFlowBlockResponseForDisplay,
+  processFlowBlockStep,
   getTodaysBlock,
   getDailyFlowBlockPrompt,
   postBlockReflectionPrompt,
@@ -154,6 +151,7 @@ import {
   isSprintComplete,
   sprintCompleteMessage
 } from '@/lib/flowBlockAPI';
+
 
 // ============================================
 // ON-DEMAND TOOL MODALS
@@ -2534,145 +2532,152 @@ const updateUserProgressCoherence = async (coherenceStatement: string, microActi
     }
   };
 
+
   // ============================================
-  // FLOW BLOCK SETUP HANDLERS
+  // FLOW BLOCK SETUP HANDLERS (TEMPLATE-DRIVEN)
   // ============================================
   
-  const startFlowBlockSetup = useCallback(async () => {
-    devLog('[FlowBlock]', 'Starting setup flow (100% API)');
+  const startFlowBlockSetup = useCallback(() => {
+    devLog('[FlowBlock]', 'Starting setup flow (TEMPLATE-DRIVEN)');
     
+    // Reset state and start at step 1
     setFlowBlockState(prev => ({
       ...prev,
       isActive: true,
+      step: 1,
+      domains: [],
+      tasks: [],
+      taskClassifications: [],
+      weeklyMap: [],
+      preferences: {
+        professionalLocation: '',
+        personalLocation: '',
+        playlist: '',
+        timerMethod: '',
+        notificationsOff: false,
+      },
       conversationHistory: [
         { role: 'assistant', content: flowBlockOpeningMessage }
       ]
     }));
     
-    await postAssistantMessage(flowBlockOpeningMessage);
+    // Show the opening message (fixed template)
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      content: flowBlockOpeningMessage
+    }]);
   }, []);
 
   const processFlowBlockResponse = useCallback(async (userResponse: string) => {
     if (!flowBlockState.isActive) return;
     
-    devLog('[FlowBlock]', 'Processing response (API):', userResponse);
+    devLog('[FlowBlock]', `Processing step ${flowBlockState.step}:`, userResponse);
     
+    // Add user message to chat
     setMessages(prev => [...prev, { role: 'user', content: userResponse }]);
     setLoading(true);
     
-    const lastAssistantMsg = flowBlockState.conversationHistory
-      .filter(m => m.role === 'assistant')
-      .pop()?.content || '';
-    
-    const isCommitment = isCommitmentResponse(userResponse, lastAssistantMsg);
-    devLog('[FlowBlock]', 'Is commitment response:', isCommitment);
-    
-    const updatedHistory = [
-      ...flowBlockState.conversationHistory,
-      { role: 'user' as const, content: userResponse }
-    ];
-    
     try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: buildFlowBlockAPIMessages(flowBlockState.conversationHistory, userResponse),
-          context: 'flow_block_setup'
-        })
+      // Process through state machine - returns next message and state updates
+      const result = processFlowBlockStep(
+        flowBlockState.step,
+        userResponse,
+        flowBlockState
+      );
+      
+      devLog('[FlowBlock]', 'Step result:', {
+        nextStep: result.nextStep,
+        isComplete: result.isComplete,
+        messagePreview: result.message.substring(0, 50) + '...'
       });
       
-      if (!response.ok) {
-        throw new Error('API request failed');
-      }
+      // Update state with new step and any collected data
+      setFlowBlockState(prev => ({
+        ...prev,
+        ...result.updatedState,
+        step: result.nextStep,
+        conversationHistory: [
+          ...prev.conversationHistory,
+          { role: 'user' as const, content: userResponse },
+          { role: 'assistant' as const, content: result.message }
+        ]
+      }));
       
-      const data = await response.json();
-      let assistantResponse = data.response || data.content || '';
-      
-      devLog('[FlowBlock]', 'API response:', assistantResponse);
-      
-      const cleanResponse = cleanFlowBlockResponseForDisplay(assistantResponse);
-      setMessages(prev => [...prev, { role: 'assistant', content: cleanResponse }]);
-      
-      const fullHistory = [...updatedHistory, { role: 'assistant' as const, content: cleanResponse }];
-      
-      if (isCommitment) {
-        devLog('[FlowBlock]', 'Commitment detected, running extraction...');
-        
-        const extractionMessages = buildFlowBlockExtractionMessages(fullHistory);
-        
-        const extractionResponse = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            messages: extractionMessages,
-            context: 'flow_block_extraction'
-          })
-        });
-        
-        if (extractionResponse.ok) {
-          const extractionData = await extractionResponse.json();
-          const extractionText = extractionData.response || extractionData.content || '';
-          
-          devLog('[FlowBlock]', 'Extraction response:', extractionText);
-          
-          const extracted = parseFlowBlockExtraction(extractionText);
-          
-          if (extracted) {
-            devLog('[FlowBlock]', 'Extraction successful:', extracted);
-            
-            const sprintResult = await startNewFlowBlockSprint(
-              user.id,
-              extracted.weeklyMap,
-              extracted.setupPreferences,
-              extracted.domains,
-              extracted.focusType
-            );
-            
-            devLog('[FlowBlock]', 'Sprint saved:', sprintResult);
-            
-            setFlowBlockState(prev => ({
-              ...prev,
-              conversationHistory: fullHistory,
-              extractedDomains: extracted.domains,
-              extractedWeeklyMap: extracted.weeklyMap,
-              extractedPreferences: extracted.setupPreferences,
-              focusType: extracted.focusType,
-              isComplete: true,
-              isActive: false,
-              sprintStartDate: sprintResult.startDate,
-              sprintNumber: sprintResult.sprintNumber
-            }));
-          } else {
-            devLog('[FlowBlock]', 'Extraction parsing failed, continuing conversation');
-            setFlowBlockState(prev => ({
-              ...prev,
-              conversationHistory: fullHistory
-            }));
-          }
-        } else {
-          devLog('[FlowBlock]', 'Extraction API call failed');
-          setFlowBlockState(prev => ({
-            ...prev,
-            conversationHistory: fullHistory
-          }));
-        }
-      } else {
-        setFlowBlockState(prev => ({
-          ...prev,
-          conversationHistory: fullHistory
-        }));
-      }
-    } catch (error) {
-      console.error('[FlowBlock] API call failed:', error);
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: "I had trouble processing that. Let's continue - what were you saying?" 
+      // Show the template response
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: result.message
       }]);
+      
+      // If complete, save to database
+      if (result.isComplete) {
+        devLog('[FlowBlock]', 'Setup complete, saving sprint...');
+        await saveFlowBlockSprint(result.updatedState);
+      }
+      
+    } catch (error) {
+      console.error('[FlowBlock] Error:', error);
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: 'Something went wrong. Let me restart the setup.'
+      }]);
+      setFlowBlockState(prev => ({
+        ...prev,
+        isActive: false,
+        step: 0
+      }));
+    } finally {
+      setLoading(false);
+    }
+  }, [flowBlockState]);
+
+  // Save Flow Block sprint to database
+  const saveFlowBlockSprint = async (completedState: Partial<FlowBlockState>) => {
+    if (!user?.id) {
+      console.error('[FlowBlock] No userId for save');
+      return;
     }
     
-    setLoading(false);
-  }, [flowBlockState, user?.id]);
+    devLog('[FlowBlock]', 'Saving sprint to database...', {
+      domains: completedState.domains || completedState.extractedDomains,
+      weeklyMapLength: (completedState.weeklyMap || completedState.extractedWeeklyMap)?.length
+    });
+    
+    try {
+      const sprintResult = await startNewFlowBlockSprint(
+        user.id,
+        completedState.weeklyMap || completedState.extractedWeeklyMap || [],
+        completedState.preferences || completedState.extractedPreferences || {},
+        completedState.domains || completedState.extractedDomains || [],
+        completedState.focusType || 'distributed'
+      );
+      
+      devLog('[FlowBlock]', 'Sprint saved:', sprintResult);
+      
+      // Mark setup as complete in state
+      setFlowBlockState(prev => ({
+        ...prev,
+        isComplete: true,
+        isActive: false,
+        sprintStartDate: sprintResult.startDate,
+        sprintNumber: sprintResult.sprintNumber
+      }));
+      
+      // Refresh progress to update sidebar
+      if (refetchProgress) {
+        await refetchProgress();
+      }
+      
+    } catch (error) {
+      console.error('[FlowBlock] Save error:', error);
+      // Still mark as complete locally
+      setFlowBlockState(prev => ({
+        ...prev,
+        isComplete: true,
+        isActive: false
+      }));
+    }
+  };
 
   // ============================================
   // WEEKLY CHECK-IN HANDLERS
