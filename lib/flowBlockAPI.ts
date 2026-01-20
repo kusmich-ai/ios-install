@@ -1,10 +1,21 @@
 // lib/flowBlockAPI.ts
-// 100% API-driven Flow Block Integration Protocol v3.0 (Cue-Compatible)
-// Notes:
-// - Removes identity-building language.
-// - Keeps types/fields to minimize downstream breakage (identityLink retained but treated as coherenceLink).
+// 100% API-driven Flow Block Integration Protocol v4.0 (Cue Kernel Aligned)
+// 
+// Philosophy: Task-model, not identity-model. Attention → Action.
+// Flow Blocks train the nervous system to recognize deep work as familiar—not effortful.
+// Tools restore clarity; they don't fix states.
+//
+// Key Cue Kernel Principles Applied:
+// - Recognition over improvement
+// - No self-story or identity language
+// - Coherence = stable attention + regulated NS + action without narrative
+// - Tools restore clarity when interpretation distorts signal
+
 import { withToolLayers } from '@/lib/prompts/withToolLayers';
 
+// ============================================
+// TYPE DEFINITIONS
+// ============================================
 
 export interface WeeklyMapEntry {
   day: string;           // 'Monday', 'Tuesday', etc.
@@ -12,8 +23,19 @@ export interface WeeklyMapEntry {
   task: string;          // The specific task
   flowType: string;      // 'Creative', 'Strategic', 'Learning'
   category: string;      // 'Goal', 'Growth', 'Gratitude'
-  identityLink: string;  // legacy name; treated as "Coherence Link": 'Direct', 'Indirect', 'Autonomous'
+  coherenceLink: string; // 'Direct', 'Indirect', 'Autonomous' (formerly identityLink)
   duration: number;      // 60 or 90 minutes
+}
+
+// Legacy interface for backward compatibility with existing data
+export interface WeeklyMapEntryLegacy {
+  day: string;
+  domain: string;
+  task: string;
+  flowType: string;
+  category: string;
+  identityLink: string;  // Legacy field name - maps to coherenceLink
+  duration: number;
 }
 
 export interface SetupPreferences {
@@ -51,19 +73,28 @@ export const initialFlowBlockState: FlowBlockState = {
 };
 
 // ============================================
-// SYSTEM PROMPT v3.0 (Cue-Compatible)
+// SYSTEM PROMPT v4.0 (Cue Kernel Aligned)
 // ============================================
 
-export const flowBlockSystemPrompt = withToolLayers(`You are a performance coach helping a user set up their Flow Block system — the performance element of the Mental Operating System (MOS).
+export const flowBlockSystemPrompt = withToolLayers(`You are a performance coach helping a user set up their Flow Block system — the execution element of the Mental Operating System (MOS).
 
-Flow Blocks are deep work sessions that train attention stability, reduce reactivity, and improve execution through consistent environmental cues and clean action selection.
+Flow Blocks are deep work sessions that train the nervous system to recognize sustained attention as familiar and safe. The goal is clean execution through consistent environmental cues and deliberate task selection.
 
-IMPORTANT: Do NOT use identity-model language ("I am...", "becoming the person who..."). Use task-model language (attention → action). The goal is coherent performance without self-story.
+## COHERENCE (Definition)
+Coherence = stable attention + regulated nervous system + action without self-referential narrative.
+It's not a state to achieve or improve toward—it's what's already present when story drops.
+Tools don't create coherence; they restore clarity when interpretation distorts signal.
+
+## CRITICAL LANGUAGE RULES
+- Do NOT use identity-model language ("I am...", "becoming the person who...", "who you're becoming")
+- Do NOT use improvement/fixing language ("get better at", "improve your", "optimize")
+- USE task-model language: attention → action, signal → response, cue → execution
+- USE recognition language: "notice", "recognize", "what's already here", "restore clarity"
 
 ## OPERATING MODES
 
 ### Strategist (Phase 1)
-Help the user identify the right Flow Blocks across life domains aligned with outcomes and nervous-system reality.
+Help the user identify the right Flow Blocks across life domains aligned with outcomes and nervous-system capacity.
 
 - Begin with domain prioritization across 6 key areas: Professional Work, Personal Development, Relationships, Creative Projects, Learning, Health
 - Identify high-leverage tasks in top 3 domains
@@ -86,18 +117,20 @@ Lock the environment and schedule the blocks.
 - Get written commitment
 - Provide calendar templates for copy/paste
 
-## COHERENCE LINK (Legacy field: identityLink)
-You will still label each block using identityLink values, but interpret them as a COHERENCE LINK:
+## COHERENCE LINK
+Each block is labeled with a Coherence Link indicating how attention relates to the task:
 
-- Direct: The block itself requires deliberate coherence (e.g., hard conversation, deep writing, decision-making)
-- Indirect: The block expresses coherence qualities (patience, clean attention, restraint) but is not explicitly "coherence practice"
-- Autonomous: Any task done while holding coherence rules (no story, one action at a time)
+- **Direct**: The block itself requires deliberate coherence—sustained attention through difficulty (e.g., hard conversation, complex writing, decision-making under uncertainty)
+- **Indirect**: The block expresses coherence qualities (patience, clean attention, restraint) without being explicitly "coherence practice"
+- **Autonomous**: Any task executed while holding coherence—no story, one action at a time, attention on what's present
+
+Note: The database field may still be called "identityLink" for backward compatibility. Treat it as Coherence Link.
 
 ## SESSION FLOW BLUEPRINT
 
 ### 1) Discovery
 30-second primer:
-"We'll classify your blocks by type (Creative/Strategic/Learning) and priority (Goal/Growth/Gratitude) so you build a week that produces outcomes without burning your nervous system."
+"We'll classify your blocks by type (Creative/Strategic/Learning) and priority (Goal/Growth/Gratitude) so you build a week that produces outcomes without depleting your nervous system."
 
 Prompt:
 "Rank your top 3 domains right now:
@@ -115,7 +148,7 @@ For each top domain:
 As tasks emerge, classify them:
 "That is [Flow Type] and sits in [3G]."
 
-Then assign coherence link (identityLink field):
+Then assign coherence link:
 "Coherence link: [Direct/Indirect/Autonomous]."
 
 ### 3) Weekly Map
@@ -153,36 +186,51 @@ Wait for explicit commitment.
 ## IMPORTANT RULES
 - Ask ONE question at a time
 - Keep responses concise except when presenting the table or final summary
-- No identity-model language
+- No identity-model language—ever
+- No improvement/fixing framing
 - If user drifts into story/excuses: return to constraints and next action
+- Frame consistency as recognition ("the nervous system recognizes this as familiar") not achievement
 
 ## TONE & STYLE
-Grounded, clear, systems-coach voice. No hype. Clarity > inspiration.`);
+Grounded, clear, systems-coach voice. No hype. Clarity over inspiration.
+
+Example phrases:
+- "Train consistency, not heroics"
+- "Proof over pressure"
+- "What was the learning from today?"
+- "The nervous system recognizes focus as familiar—not effortful"
+- "Clean execution, no story attached"`);
 
 // ============================================
 // OPENING MESSAGES
 // ============================================
 
-export const flowBlockOpeningMessage = `**Flow Mode Unlocked** 🎯
+export const flowBlockOpeningMessage = `**Flow Block Setup** 🎯
 
-Let's set up your Flow Block system — the performance element of the MOS.
+Let's set up your Flow Block system — the execution element of the MOS.
 
-Flow Blocks are 60–90 minute deep work sessions designed to train stable attention and clean execution through consistent setup cues.
+Flow Blocks are 60–90 minute deep work sessions. They train the nervous system to recognize sustained attention as familiar and safe—not effortful.
 
-By the end of 21 days, dropping into flow will feel less like effort and more like a default.
+By day 21, dropping into focus won't require willpower. The cues do the work.
 
 Before we build your weekly map: what are the top 1–3 outcomes you want this sprint to move forward?`;
 
-export function getFlowBlockOpeningWithIdentity(identity: string, action: string): string {
-  // Legacy signature kept to avoid breaking imports; does not use identity framing.
-  return `**Flow Mode Unlocked** 🎯
+// Legacy function name preserved for import compatibility
+// Treats the anchor parameter as a coherence cue, not an identity
+export function getFlowBlockOpeningWithIdentity(anchor: string, action: string): string {
+  return getFlowBlockOpeningWithAnchor(anchor, action);
+}
 
-Let's set up your Flow Block system — the performance element of the MOS.
+// Preferred function name (Cue Kernel aligned)
+export function getFlowBlockOpeningWithAnchor(anchor: string, action: string): string {
+  return `**Flow Block Setup** 🎯
 
-You already have a daily micro-action in the system:
+Let's set up your Flow Block system — the execution element of the MOS.
+
+You already have a daily anchor in the system:
 *${action}*
 
-We'll treat that as a coherence anchor (not an identity) and build Flow Blocks that work with it.
+We'll treat that as a consistency cue and build Flow Blocks that work with your existing rhythm.
 
 Ready to identify your highest-leverage work?`;
 }
@@ -245,13 +293,13 @@ export function isCommitmentResponse(userMessage: string, lastAssistantMessage: 
 export function buildFlowBlockAPIMessages(
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>,
   newUserMessage: string,
-  currentIdentity?: string
+  currentAnchor?: string // Renamed from currentIdentity for clarity
 ): Array<{ role: 'user' | 'assistant' | 'system'; content: string }> {
   let systemPrompt = flowBlockSystemPrompt;
 
-  // Treat currentIdentity as a coherence anchor if present (legacy param retained)
-  if (currentIdentity) {
-    systemPrompt += `\n\n## COHERENCE ANCHOR (legacy param: currentIdentity)\nThe user has an existing daily anchor. Do NOT frame it as identity. Use it only as a consistency cue for scheduling and state hygiene.`;
+  // Treat currentAnchor as a consistency cue if present (legacy param support)
+  if (currentAnchor) {
+    systemPrompt += `\n\n## EXISTING ANCHOR\nThe user has an existing daily anchor in the system. Do NOT frame it as identity. Use it only as a consistency cue for scheduling and environmental setup.`;
   }
 
   return [
@@ -293,7 +341,7 @@ Rules:
 - weeklyMap: All 5 days with the exact tasks they agreed to
 - flowType must be: "Creative", "Strategic", or "Learning"
 - category must be: "Goal", "Growth", or "Gratitude"
-- identityLink values remain: "Direct", "Indirect", "Autonomous" (treat as Coherence Link)
+- identityLink values: "Direct", "Indirect", "Autonomous" (this maps to Coherence Link internally)
 - duration: Use the actual durations discussed (60 or 90)
 - preferences: Their actual answers for location, playlist, timer
 - focusType: "concentrated" or "distributed" based on what was decided
@@ -311,8 +359,24 @@ Output the JSON now:`;
 }
 
 // ============================================
-// EXTRACTION PARSING (unchanged)
+// EXTRACTION PARSING
 // ============================================
+
+// Helper to normalize legacy identityLink to coherenceLink
+function normalizeWeeklyMapEntry(entry: WeeklyMapEntryLegacy | WeeklyMapEntry): WeeklyMapEntry {
+  if ('identityLink' in entry && !('coherenceLink' in entry)) {
+    return {
+      day: entry.day,
+      domain: entry.domain,
+      task: entry.task,
+      flowType: entry.flowType,
+      category: entry.category,
+      coherenceLink: entry.identityLink, // Map legacy field
+      duration: entry.duration,
+    };
+  }
+  return entry as WeeklyMapEntry;
+}
 
 export function parseFlowBlockExtraction(response: string): FlowBlockCompletion | null {
   try {
@@ -334,9 +398,12 @@ export function parseFlowBlockExtraction(response: string): FlowBlockCompletion 
 
     if (!parsed.domains || !parsed.weeklyMap || !parsed.preferences) return null;
 
+    // Normalize weeklyMap entries to use coherenceLink
+    const normalizedMap = parsed.weeklyMap.map(normalizeWeeklyMapEntry);
+
     return {
       domains: parsed.domains || [],
-      weeklyMap: parsed.weeklyMap || [],
+      weeklyMap: normalizedMap,
       setupPreferences: {
         professionalLocation: parsed.preferences?.professionalLocation || '',
         personalLocation: parsed.preferences?.personalLocation || '',
@@ -361,9 +428,11 @@ export function parseFlowBlockCompletion(response: string): FlowBlockCompletion 
 
   try {
     const parsed = JSON.parse(jsonMatch[0]);
+    const normalizedMap = (parsed.weeklyMap || []).map(normalizeWeeklyMapEntry);
+    
     return {
       domains: parsed.domains || [],
-      weeklyMap: parsed.weeklyMap || [],
+      weeklyMap: normalizedMap,
       setupPreferences: parsed.preferences || {
         professionalLocation: '',
         personalLocation: '',
@@ -385,7 +454,7 @@ export function cleanFlowBlockResponseForDisplay(response: string): string {
 }
 
 // ============================================
-// DAILY EXECUTION HELPERS (unchanged)
+// DAILY EXECUTION HELPERS
 // ============================================
 
 export function getTodaysBlock(weeklyMap: WeeklyMapEntry[]): WeeklyMapEntry | null {
@@ -413,9 +482,13 @@ export function getDailyFlowBlockPrompt(block: WeeklyMapEntry, preferences: Setu
       ? preferences.professionalLocation
       : preferences.personalLocation;
 
+  // Get coherenceLink from either field name for backward compatibility
+  const coherenceLink = 'coherenceLink' in block ? block.coherenceLink : (block as unknown as WeeklyMapEntryLegacy).identityLink;
+
   return `**Today's Flow Block: ${block.task}**
 
 **${block.duration} minutes** • ${block.domain} • ${block.flowType}/${block.category}
+Coherence: ${coherenceLink}
 
 ---
 
@@ -431,9 +504,11 @@ export function getDailyFlowBlockPrompt(block: WeeklyMapEntry, preferences: Setu
 
 *"For the next ${block.duration} minutes, my only job is ${block.task}."*
 
+No story. One action at a time. Attention on what's present.
+
 ---
 
-Come back when you're done for your reflection and performance tagging.`;
+Come back when you're done for your reflection and performance check.`;
 }
 
 export const postBlockReflectionPrompt = `**Block complete.**
@@ -441,13 +516,13 @@ export const postBlockReflectionPrompt = `**Block complete.**
 Quick debrief (60 seconds):
 
 **1) One-sentence reflection:**
-What was the learning from today (without story)?
+What was the learning from today? (No story—just the signal.)
 
-**2) Performance Tagging (1–5):**
-• Focus Quality
-• Challenge–Skill Balance (too easy 1, balanced 3, too hard 5)
-• Energy After (drained 1, calm satisfaction 5)
-• Flow Presence (time distortion, reduced chatter)
+**2) Performance Check (1–5):**
+• Focus Quality: How sustained was attention?
+• Challenge–Skill Balance: Too easy (1), balanced (3), too hard (5)
+• Energy After: Depleted (1), calm clarity (5)
+• Flow Presence: Time distortion, reduced mental chatter
 
 Send ratings like: "4, 3, 4, 5" + your one sentence.`;
 
@@ -473,15 +548,24 @@ export function isSprintComplete(sprintStartDate: string): boolean {
 
 export const sprintCompleteMessage = (sprintNumber: number) => `**21-Day Flow Block Sprint ${sprintNumber} Complete**
 
-Review:
+Review (notice, don't judge):
 - Which blocks produced clean focus fastest?
-- Where did reactivity/distraction show up?
+- Where did reactivity or distraction show up?
 - Was environment or task selection the limiter?
-- Which domains improved most?
+- Which domains showed clearest execution?
+
+The nervous system now recognizes this rhythm. The question is whether to deepen it or redirect it.
 
 Options:
-1) Continue same map
-2) Evolve (adjust difficulty/duration/3G)
-3) Redesign (new discovery)
+1) **Continue** — same map, same cues
+2) **Evolve** — adjust difficulty, duration, or 3G balance
+3) **Redesign** — new discovery from scratch
 
 Which?`;
+
+// ============================================
+// LEGACY EXPORT ALIASES (for backward compatibility)
+// ============================================
+
+// Some components may still import with old names
+export const getFlowBlockOpeningWithCoherenceAnchor = getFlowBlockOpeningWithAnchor;
