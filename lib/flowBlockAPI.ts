@@ -80,6 +80,11 @@ Ask them to rank their top 3 from:
 5. Learning
 6. Health
 
+IMPORTANT: When the user responds with numbers like "1, 3, 2" or "1. 3. 2.", these are MENU SELECTIONS in priority order, NOT rankings. So "1, 3, 2" means:
+- 1st priority: Option 1 (Professional Work)
+- 2nd priority: Option 3 (Relationships)
+- 3rd priority: Option 2 (Personal Development)
+
 **Task Selection (Per Domain):**
 For each prioritized domain, ask:
 "If you completed only ONE thing in [domain] this week that would genuinely move outcomes forward, what would it be?"
@@ -203,7 +208,7 @@ First, let's identify where Flow Blocks will have the most impact.
 5. Learning
 6. Health
 
-Just give me your top 3 in order.`;
+Give me the numbers in priority order (e.g., "1, 4, 2" = Professional Work first, Creative Projects second, Personal Development third).`;
 
 // Opening message with identity context
 export function getFlowBlockOpeningWithIdentity(identity: string, microAction: string): string {
@@ -226,7 +231,7 @@ We'll look for opportunities to connect your Flow Blocks to your identity where 
 5. Learning
 6. Health
 
-Just give me your top 3 in order.`;
+Give me the numbers in priority order (e.g., "1, 4, 2" = Professional Work first, Creative Projects second, Personal Development third).`;
 }
 
 // ============================================
