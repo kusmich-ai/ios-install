@@ -149,7 +149,10 @@ import {
   postBlockReflectionPrompt,
   getSprintDayNumber,
   isSprintComplete,
-  sprintCompleteMessage
+  sprintCompleteMessage,
+  // Legacy functions (for sprint evolution compatibility)
+  buildFlowBlockAPIMessages,
+  cleanFlowBlockResponseForDisplay
 } from '@/lib/flowBlockAPI';
 
 
