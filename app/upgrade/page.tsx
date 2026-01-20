@@ -72,12 +72,12 @@ export default function UpgradePage() {
 
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.1] mb-6">
             You Don't Need Another Book, Course, App, Seminar, or Tactic.<br/>
-            <span className="text-[#ff9e19]">You Need an Installation.</span>
+            <span className="text-[#ff9e19]">You Need STATE Installation.</span>
           </h1>
 
           <p className="text-xl sm:text-2xl text-gray-400 max-w-3xl mx-auto mb-8 leading-relaxed">
             The IOS Installer rewires your nervous system and mental architecture for thriving. 
-            Not learning. Not implementation. <span className="text-white font-medium">Complete neural upgrade.</span>
+            Not learning. Not implementation. <span className="text-white font-medium">Complete neural state upgrade.</span>
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
@@ -259,9 +259,9 @@ export default function UpgradePage() {
 
           <div className="space-y-4">
             {[
-              { stage: 1, name: "Neural Priming", tagline: "Stabilize the signal", desc: "Resonance training + Awareness reps. The foundation everything builds on.", free: true },
+              { stage: 1, name: "Neural Priming", tagline: "Stabilize the signal", desc: "Resonance state training + Awareness reps. The foundation everything builds on.", free: true },
               { stage: 2, name: "Embodied Awareness", tagline: "Bring awareness into the whole self", desc: "Somatic flow practices. Your body becomes a coherent extension of your awareness." },
-              { stage: 3, name: "Identity Mode", tagline: "Act from coherence", desc: "21-day identity installation cycles. Become who you're meant to be." },
+              { stage: 3, name: "Aligned Action Mode", tagline: "Act from coherence", desc: "21-day action installation cycles. Act in alignment" },
               { stage: 4, name: "Flow Mode", tagline: "Train sustained flow states", desc: "Deep work protocols. Flow blocks become your new normal." },
               { stage: 5, name: "Relational Coherence", tagline: "Stay open in connection", desc: "Co-regulation practices. Your nervous system stays open and connected." },
               { stage: 6, name: "Integration", tagline: "Convert insights and states to traits", desc: "Nightly debrief protocols. Daily lessons encode into permanent trait-level changes." },
@@ -386,78 +386,88 @@ export default function UpgradePage() {
       </section>
 
       {/* ===== YOUR GUIDES ===== */}
-      <section className="py-20 px-4 border-t border-[#1a1a1a]">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-6">Your Guides On This Journey</h2>
-          </div>
+<section className="py-20 px-4 border-t border-[#1a1a1a]">
+  <div className="max-w-6xl mx-auto">
+    <div className="text-center mb-16">
+      <h2 className="text-3xl sm:text-4xl font-bold mb-6">Your Guides On This Journey</h2>
+    </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {/* Nicholas */}
-<div className="text-center">
-  <div className="w-32 h-32 rounded-full mx-auto mb-6 overflow-hidden bg-[#1a1a1a]">
-    <Image
-      src="/coaches/nic.webp"
-      alt="Nicholas Kusmich"
-      width={256}
-      height={256}
-      quality={100}
-      className="w-full h-full object-cover"
-    />
-  </div>
-  {/* ... rest of content */}
-</div>
-
-{/* Fehren */}
-<div className="text-center">
-  <div className="w-32 h-32 rounded-full mx-auto mb-6 overflow-hidden bg-[#1a1a1a]">
-    <Image
-      src="/coaches/fehren.webp"
-      alt="Fehren Kusmich"
-      width={256}
-      height={256}
-      quality={100}
-      className="w-full h-full object-cover"
-    />
-  </div>
-  {/* ... rest of content */}
-</div>
-
-{/* Charok */}
-<div className="text-center">
-  <div className="w-32 h-32 rounded-full mx-auto mb-6 overflow-hidden bg-[#1a1a1a]">
-    <Image
-      src="/coaches/charok.jpg"
-      alt="Charok Lama"
-      width={256}
-      height={256}
-      quality={100}
-      className="w-full h-full object-cover"
-    />
-  </div>
-              <h3 className="text-xl font-semibold mb-2">Charok Lama</h3>
-              <p className="text-[#ff9e19] text-sm mb-4">Leading Buddhist Teacher & Life Coach</p>
-              <p className="text-gray-400 text-sm">
-                Recognized reincarnation of a Himalayan yogi. Trained at Kopan and Sera Je Monasteries. 
-                Bridges ancient wisdom with modern psychology, fluent in CBT and traditional Buddhist practice.
-              </p>
-            </div>
-
-            {/* Guest Experts */}
-            <div className="text-center">
-              <div className="w-32 h-32 rounded-full mx-auto mb-6 overflow-hidden bg-[#1a1a1a] flex items-center justify-center">
-                <User className="w-16 h-16 text-gray-600" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Guest Experts</h3>
-              <p className="text-[#ff9e19] text-sm mb-4">World's Leading Experts</p>
-              <p className="text-gray-400 text-sm">
-                Each month there will be a guest who is a world class leader and authority in their field 
-                bringing their expertise and perspective to relevant topic matters.
-              </p>
-            </div>
-          </div>
+    <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+      {/* Nicholas */}
+      <div className="text-center">
+        <div className="w-32 h-32 rounded-full mx-auto mb-6 overflow-hidden bg-[#1a1a1a]">
+          <Image
+            src="/coaches/nic.webp"
+            alt="Nicholas Kusmich"
+            width={256}
+            height={256}
+            quality={100}
+            className="w-full h-full object-cover"
+          />
         </div>
-      </section>
+        <h3 className="text-xl font-semibold mb-2">Nicholas Kusmich</h3>
+        <p className="text-[#ff9e19] text-sm mb-4">IOS Systems Architect</p>
+        <p className="text-gray-400 text-sm">
+          Former pastor turned marketing strategist who's generated over $1B in client revenue. 
+          Now dedicated to helping high-performers install the integrated operating system that matches their outer ambitions.
+        </p>
+      </div>
+
+      {/* Fehren */}
+      <div className="text-center">
+        <div className="w-32 h-32 rounded-full mx-auto mb-6 overflow-hidden bg-[#1a1a1a]">
+          <Image
+            src="/coaches/fehren.webp"
+            alt="Fehren Kusmich"
+            width={256}
+            height={256}
+            quality={100}
+            className="w-full h-full object-cover"
+          />
+        </div>
+        <h3 className="text-xl font-semibold mb-2">Fehren Kusmich</h3>
+        <p className="text-[#ff9e19] text-sm mb-4">Heart & Body Specialist</p>
+        <p className="text-gray-400 text-sm">
+          Certified practitioner who brings somatic wisdom and heart-centered guidance. 
+          Her spacious approach creates safety for deep transformation.
+        </p>
+      </div>
+
+      {/* Charok */}
+      <div className="text-center">
+        <div className="w-32 h-32 rounded-full mx-auto mb-6 overflow-hidden bg-[#1a1a1a]">
+          <Image
+            src="/coaches/charok.jpg"
+            alt="Charok Lama"
+            width={256}
+            height={256}
+            quality={100}
+            className="w-full h-full object-cover"
+          />
+        </div>
+        <h3 className="text-xl font-semibold mb-2">Charok Lama</h3>
+        <p className="text-[#ff9e19] text-sm mb-4">Leading Buddhist Teacher & Life Coach</p>
+        <p className="text-gray-400 text-sm">
+          Recognized reincarnation of a Himalayan yogi. Trained at Kopan and Sera Je Monasteries. 
+          Bridges ancient wisdom with modern psychology, fluent in CBT and traditional Buddhist practice.
+        </p>
+      </div>
+
+      {/* Guest Experts */}
+      <div className="text-center">
+        <div className="w-32 h-32 rounded-full mx-auto mb-6 overflow-hidden bg-[#1a1a1a] flex items-center justify-center">
+          <User className="w-16 h-16 text-gray-600" />
+        </div>
+        <h3 className="text-xl font-semibold mb-2">Guest Experts</h3>
+        <p className="text-[#ff9e19] text-sm mb-4">World's Leading Experts</p>
+        <p className="text-gray-400 text-sm">
+          Each month there will be a guest who is a world class leader and authority in their field 
+          bringing their expertise and perspective to relevant topic matters.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
 
       {/* ===== WHAT'S INCLUDED ===== */}
       <section className="py-20 px-4 bg-[#0d0d0d] border-t border-[#1a1a1a]">
