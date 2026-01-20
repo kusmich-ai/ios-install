@@ -716,8 +716,14 @@ export function getCompletionData(state: FlowBlockState): FlowBlockCompletion | 
 
 export const flowBlockSystemPrompt = ''; // Not used in template approach
 
-export function buildFlowBlockAPIMessages(): Array<{ role: string; content: string }> {
-  return []; // Not used
+export function buildFlowBlockAPIMessages(
+  _conversationHistory: Array<{ role: string; content: string }>,
+  _userMessage: string
+): Array<{ role: string; content: string }> {
+  // Legacy stub - returns simple message for evolution context
+  return [
+    { role: 'user', content: _userMessage }
+  ];
 }
 
 export function buildFlowBlockExtractionMessages(): Array<{ role: string; content: string }> {
