@@ -2668,7 +2668,7 @@ if (isCommitment) {
               extractedDomains: extracted.domains,
               extractedWeeklyMap: extracted.weeklyMap,
               extractedPreferences: extracted.preferences,
-              focusType: extracted.focusType,
+             focusType: extracted.focusType as 'concentrated' | 'distributed',
               sprintStartDate: sprintResult.startDate,
               sprintNumber: sprintResult.sprintNumber
             }));
