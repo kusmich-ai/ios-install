@@ -122,15 +122,18 @@ import {
   initialMicroActionState,
   microActionSystemPrompt,
   microActionOpeningMessage,
+  microActionReturningMessage,        // NEW
   parseCompletionMarker,
   cleanResponseForDisplay,
   buildAPIMessages,
-  // NEW: Two-stage extraction functions
   isIdentityCommitmentResponse,
   buildMicroActionExtractionMessages,
-  parseMicroActionExtraction
+  parseMicroActionExtraction,
+  parseMicroActionExtractionFull,     // NEW - includes execution_cue
+  sprintRenewalMessage,               // NEW
+  dailyMicroActionPrompt,             // NEW
+  completionConfirmation              // NEW
 } from '@/lib/microActionAPI';
-
 
 // ============================================
 // FLOW BLOCK SETUP IMPORTS (API-DRIVEN v2.4)
