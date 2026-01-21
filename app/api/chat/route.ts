@@ -895,11 +895,13 @@ export async function POST(req: Request) {
         maxTokens = 500;
         break;
 
-      case 'flow_block_setup':
-        systemPrompt = SECURITY_INSTRUCTIONS + '\n\n' + flowBlockSystemPrompt + patternContext;
-        maxTokens = 2048;
-        temperature = 0.3;
-        break;
+     case 'flow_block_setup':
+  // ISOLATED: No security instructions, no cue kernel, no pattern context
+  // Flow Block is an installer that needs strict protocol following
+  systemPrompt = flowBlockSystemPrompt;  // Raw prompt only
+  maxTokens = 2048;
+  temperature = 0.3;  // Lower temperature for deterministic behavior
+  break;
 
       case 'flow_block_extraction':
         maxTokens = 500;
