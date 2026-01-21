@@ -268,11 +268,9 @@ export function isCommitmentResponse(userMessage: string, lastAssistantMessage: 
 export function buildFlowBlockAPIMessages(
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>,
   userMessage: string,
-  _currentIdentity?: string // Optional third param for backward compatibility (unused in v2.4)
-): Array<{ role: 'user' | 'assistant' | 'system'; content: string }> {
-  const messages: Array<{ role: 'user' | 'assistant' | 'system'; content: string }> = [
-    { role: 'system', content: flowBlockSystemPrompt }
-  ];
+  _currentIdentity?: string
+): Array<{ role: 'user' | 'assistant'; content: string }> {
+  const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [];
   
   // Add conversation history
   for (const msg of conversationHistory) {
