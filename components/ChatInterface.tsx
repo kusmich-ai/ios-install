@@ -1107,11 +1107,11 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
       try {
         const supabase = createClient();
         const { data: config } = await supabase
-          .from('flow_block_config')
+          .from('flow_block_sprints')
           .select('*')
           .eq('user_id', user.id)
-          .eq('is_active', true)
-          .single();
+          .eq('completion_status', 'active')
+          .maybeSingle();
         
         if (config) {
           devLog('[FlowBlock]', 'Loaded existing config:', config);
@@ -1119,10 +1119,10 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
             ...prev,
             isComplete: true,
             extractedWeeklyMap: config.weekly_map || [],
-            extractedPreferences: config.setup_preferences || {},
+            extractedPreferences: config.preferences || {},
             extractedDomains: config.domains || [],
             focusType: config.focus_type || 'distributed',
-            sprintStartDate: config.sprint_start_date,
+            sprintStartDate: config.start_date,
             sprintNumber: config.sprint_number || 1
           }));
         }
