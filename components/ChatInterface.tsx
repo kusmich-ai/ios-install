@@ -4265,7 +4265,7 @@ const sendMessage = async (e: React.FormEvent) => {
                   onClick={handleStartNewStageIntro}
                   className="px-6 py-3 bg-[#ff9e19] hover:bg-orange-600 text-white font-semibold rounded-xl transition-colors shadow-lg"
                 >
-                  {pendingUnlockStage === 3 ? 'Start Identity Installation' :
+                  {pendingUnlockStage === 3 ? 'Start Aligned Action Installation' :
                    pendingUnlockStage === 4 ? 'Set Up Flow Blocks' :
                    pendingUnlockStage === 5 ? 'Learn Co-Regulation Practice' :
                    pendingUnlockStage === 6 ? 'Learn Nightly Debrief' :
@@ -4314,7 +4314,7 @@ const sendMessage = async (e: React.FormEvent) => {
             </form>
             <p className="text-xs text-gray-500 mt-2 text-center">
               {microActionState.isActive
-                ? "Setting up your identity - type your responses"
+                ? "Setting up your Aligned Action - type your responses"
                 : flowBlockState.isActive
                   ? "Setting up your Flow Blocks - type your responses"
                   : currentQuickReply 
