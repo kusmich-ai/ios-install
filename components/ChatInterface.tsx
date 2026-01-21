@@ -2654,7 +2654,7 @@ if (isCommitment) {
               extracted.weeklyMap,
               extracted.preferences,
               extracted.domains,
-              extracted.focusType
+              extracted.focusType as 'concentrated' | 'distributed'
             );
             
             devLog('[FlowBlock]', 'Sprint saved:', sprintResult);
