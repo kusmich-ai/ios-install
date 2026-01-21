@@ -646,8 +646,46 @@ export function buildFlowBlockAPIMessages(
   return messages;
 }
 
-// Alias for backward compatibility
-export const buildFlowBlockExtractionMessages = buildFlowBlockAPIMessages;
+// Build messages for extracting flow block data from conversation
+export function buildFlowBlockExtractionMessages(
+  conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>
+): Array<{ role: 'system' | 'user' | 'assistant'; content: string }> {
+  const extractionPrompt = `Based on the conversation history, extract the Flow Block setup data in this exact format:
+
+[FLOW_BLOCK_SETUP_COMPLETE]
+Domains: [domain1], [domain2], [domain3]
+Focus Type: [concentrated/distributed]
+Weekly Map:
+- Monday: [task] | [domain] | [type] | [category] | [duration]
+- Tuesday: [task] | [domain] | [type] | [category] | [duration]
+- Wednesday: [task] | [domain] | [type] | [category] | [duration]
+- Thursday: [task] | [domain] | [type] | [category] | [duration]
+- Friday: [task] | [domain] | [type] | [category] | [duration]
+Setup:
+- Professional Location: [location]
+- Personal Location: [location]
+- Playlist: [playlist]
+- Timer: [method]
+- Notifications: OFF
+Sprint Start: ${new Date().toISOString().split('T')[0]}
+[/FLOW_BLOCK_SETUP_COMPLETE]
+
+Extract all information from the conversation. If any field is missing, use "Not specified". Output ONLY the extraction block, nothing else.`;
+
+  const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+    { role: 'system', content: 'You are a data extraction assistant. Extract Flow Block setup data from conversations into a structured format.' }
+  ];
+
+  // Add conversation history
+  for (const msg of conversationHistory) {
+    messages.push({ role: msg.role, content: msg.content });
+  }
+
+  // Add extraction request
+  messages.push({ role: 'user', content: extractionPrompt });
+
+  return messages;
+}
 
 export function isCommitmentResponse(userResponse: string, lastAssistantMessage: string): boolean {
   const commitmentPhrases = [
