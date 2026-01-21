@@ -58,30 +58,13 @@ import {
   loadActiveSprintsForUser,
   // Sprint renewal functions
   continueMicroActionSprint,
-  completeMicroActionSprint
+  completeMicroActionSprint,
+  // FlowBlock sprint functions
+  startNewFlowBlockSprint,
+  getCurrentFlowBlockSprint,
+  continueFlowBlockSprint,
+  completeFlowBlockSprint
 } from '@/lib/sprintDatabase';
-
-// Stub functions for FlowBlock sprint operations (not yet implemented in sprintDatabase)
-// These return properly typed objects to avoid TypeScript errors
-const startNewFlowBlockSprint = async (
-  _userId: string, 
-  _weeklyMap: any, 
-  _setupPreferences: any, 
-  _domains: string[], 
-  _focusType: 'concentrated' | 'distributed'
-): Promise<{ success: boolean; startDate: string; sprintNumber: number }> => ({ 
-  success: true, 
-  startDate: new Date().toISOString(), 
-  sprintNumber: 1 
-});
-const getCurrentFlowBlockSprint = async (_userId: string): Promise<{
-  sprint_number: number;
-  weekly_map: any;
-  domains: string[];
-  focus_type: 'concentrated' | 'distributed';
-} | null> => null;
-const continueFlowBlockSprint = async (_userId: string): Promise<{ success: boolean }> => ({ success: true });
-const completeFlowBlockSprint = async (_userId: string): Promise<{ success: boolean }> => ({ success: true });
 
 // Sprint Renewal utilities
 import {
