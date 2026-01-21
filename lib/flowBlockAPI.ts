@@ -628,7 +628,8 @@ This marker allows the system to extract and store the configuration.`;
 
 export function buildFlowBlockAPIMessages(
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>,
-  userMessage: string
+  userMessage: string,
+  _currentIdentity?: string | null // Kept for backward compatibility, no longer used
 ): Array<{ role: 'system' | 'user' | 'assistant'; content: string }> {
   const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
     { role: 'system', content: flowBlockSystemPrompt }
