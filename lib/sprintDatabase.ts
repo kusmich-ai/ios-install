@@ -62,6 +62,7 @@ export async function startNewMicroActionSprint(
   userId: string,
   coherenceStatement: string,
   microAction: string
+  executionCue?: string 
 ): Promise<MicroActionSprintResult> {
   const supabase = createClient();
   const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
