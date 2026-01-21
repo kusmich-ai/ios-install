@@ -2589,7 +2589,7 @@ const updateUserProgressCoherence = async (coherenceStatement: string, microActi
       
       // Get current identity if available for context
       const currentIdentity = microActionState.extractedIdentity || (progress as any)?.currentIdentity || undefined;
-      / DEBUG: Check what system prompt is being sent
+      // DEBUG: Check what system prompt is being sent
 const apiMessages = buildFlowBlockAPIMessages(updatedHistory, userResponse, currentIdentity);
 console.log('[FlowBlock DEBUG] System prompt preview:', apiMessages[0]?.content?.substring(0, 200));
       
