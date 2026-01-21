@@ -2652,7 +2652,7 @@ if (isCommitment) {
             const sprintResult = await startNewFlowBlockSprint(
               user.id,
               extracted.weeklyMap,
-              extracted.setupPreferences,
+              extracted.preferences,
               extracted.domains,
               extracted.focusType
             );
@@ -2667,7 +2667,7 @@ if (isCommitment) {
               conversationHistory: fullHistory,
               extractedDomains: extracted.domains,
               extractedWeeklyMap: extracted.weeklyMap,
-              extractedPreferences: extracted.setupPreferences,
+              extractedPreferences: extracted.preferences,
               focusType: extracted.focusType,
               sprintStartDate: sprintResult.startDate,
               sprintNumber: sprintResult.sprintNumber
