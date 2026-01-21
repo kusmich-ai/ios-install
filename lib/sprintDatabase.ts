@@ -1,7 +1,7 @@
 // ============================================
 // lib/sprintDatabase.ts
 // Sprint tracking for Identity and Flow Block 21-day cycles
-// Version 3.0 - Complete with all functions including getCurrentFlowBlockSprint
+// Version 4.0 - Full execution_cue support for Cue Kernel alignment
 // ============================================
 
 import { createClient } from '@/lib/supabase-client';
@@ -30,8 +30,9 @@ export interface ActiveSprints {
     sprintNumber: number;
     dayOfSprint: number;
     coherenceStatement: string | null;
-    identityStatement: string | null;
+    identityStatement: string | null;  // Alias for backwards compat
     microAction: string | null;
+    executionCue: string | null;       // NEW: v4.0
     startDate: string | null;
   } | null;
   flowBlock: {
@@ -56,13 +57,13 @@ export interface ActiveSprints {
  * - Creates new sprint with incremented sprint number
  * 
  * Table: identity_sprints
- * Columns: identity_statement, micro_action, start_date, completion_status
+ * Columns: identity_statement, micro_action, execution_cue, start_date, completion_status
  */
 export async function startNewMicroActionSprint(
   userId: string,
   coherenceStatement: string,
-  microAction: string
-  executionCue?: string 
+  microAction: string,
+  executionCue?: string  // NEW: v4.0 - optional execution cue
 ): Promise<MicroActionSprintResult> {
   const supabase = createClient();
   const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
@@ -101,19 +102,27 @@ export async function startNewMicroActionSprint(
       // Continue anyway - not critical
     }
     
-    // 4. Insert new sprint
+    // 4. Build insert object (only include execution_cue if provided)
+    const insertData: any = {
+      user_id: userId,
+      sprint_number: nextSprintNumber,
+      identity_statement: coherenceStatement,  // DB column name (legacy)
+      micro_action: microAction,
+      start_date: today,
+      completion_status: 'active',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    
+    // Add execution_cue if provided (column must exist in DB)
+    if (executionCue) {
+      insertData.execution_cue = executionCue;
+    }
+    
+    // 5. Insert new sprint
     const { data: newSprint, error: insertError } = await supabase
       .from('identity_sprints')
-      .insert({
-        user_id: userId,
-        sprint_number: nextSprintNumber,
-        identity_statement: coherenceStatement,  // DB column name
-        micro_action: microAction,               // DB column name
-        start_date: today,
-        completion_status: 'active',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
+      .insert(insertData)
       .select()
       .single();
     
@@ -126,6 +135,7 @@ export async function startNewMicroActionSprint(
       sprintNumber: nextSprintNumber,
       coherenceStatement,
       microAction,
+      executionCue: executionCue || '(none)',
       startDate: today
     });
     
@@ -398,6 +408,7 @@ export async function loadActiveSprintsForUser(userId: string): Promise<ActiveSp
       coherenceStatement: microActionSprint.identity_statement,   // DB column: identity_statement
       identityStatement: microActionSprint.identity_statement,    // Alias for backwards compat
       microAction: microActionSprint.micro_action,                // DB column: micro_action
+      executionCue: microActionSprint.execution_cue || null,      // NEW: v4.0
       startDate: microActionSprint.start_date
     } : null,
     flowBlock: flowBlockSprint ? {
@@ -424,10 +435,9 @@ export async function loadActiveSprintsForUser(userId: string): Promise<ActiveSp
 export async function continueMicroActionSprint(
   userId: string,
   coherenceStatement?: string,
-  microAction?: string
+  microAction?: string,
+  executionCue?: string  // NEW: v4.0
 ): Promise<MicroActionSprintResult> {
-  const supabase = createClient();
-  
   try {
     // Get current active sprint
     const currentSprint = await getCurrentMicroActionSprint(userId);
@@ -435,7 +445,7 @@ export async function continueMicroActionSprint(
     if (!currentSprint) {
       // No active sprint to continue - start a new one if values provided
       if (coherenceStatement && microAction) {
-        return startNewMicroActionSprint(userId, coherenceStatement, microAction);
+        return startNewMicroActionSprint(userId, coherenceStatement, microAction, executionCue);
       }
       return {
         success: false,
@@ -448,9 +458,10 @@ export async function continueMicroActionSprint(
     // Use existing values if not provided
     const newCoherenceStatement = coherenceStatement || currentSprint.identity_statement;
     const newMicroAction = microAction || currentSprint.micro_action;
+    const newExecutionCue = executionCue || currentSprint.execution_cue;
     
     // Start a new sprint (this will mark current as completed)
-    return startNewMicroActionSprint(userId, newCoherenceStatement, newMicroAction);
+    return startNewMicroActionSprint(userId, newCoherenceStatement, newMicroAction, newExecutionCue);
     
   } catch (error) {
     console.error('[SprintDB] continueMicroActionSprint failed:', error);
@@ -473,8 +484,6 @@ export async function continueFlowBlockSprint(
   domains?: string[],
   focusType?: 'concentrated' | 'distributed'
 ): Promise<FlowBlockSprintResult> {
-  const supabase = createClient();
-  
   try {
     // Get current active sprint
     const currentSprint = await getCurrentFlowBlockSprint(userId);
@@ -558,4 +567,38 @@ export function checkFlowBlockSprintRenewal(startDate: string | null): {
     needsRenewal: daysComplete >= 21,
     daysComplete
   };
+}
+
+// ============================================
+// UTILITY: Update execution cue for existing sprint
+// ============================================
+
+/**
+ * Update just the execution cue for the current active sprint
+ * Useful if cue was extracted after initial save
+ */
+export async function updateMicroActionExecutionCue(
+  userId: string,
+  executionCue: string
+): Promise<boolean> {
+  const supabase = createClient();
+  
+  try {
+    const { error } = await supabase
+      .from('identity_sprints')
+      .update({
+        execution_cue: executionCue,
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', userId)
+      .eq('completion_status', 'active');
+    
+    if (error) throw error;
+    
+    console.log('[SprintDB] Execution cue updated:', executionCue);
+    return true;
+  } catch (error) {
+    console.error('[SprintDB] updateMicroActionExecutionCue failed:', error);
+    return false;
+  }
 }
