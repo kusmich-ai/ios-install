@@ -255,6 +255,32 @@ Before each block, say: **'For the next 60 minutes, my only job is [task]. Let's
 
 Come back after your first block and tell me how it went."
 
+### 5. Calendar Scheduling (Optional)
+
+If user asks about calendar or scheduling, or after commitment if flow feels natural:
+
+"Want me to help you get these into your calendar?
+
+I can give you copy-paste event details for Google Calendar, or a template you can adapt."
+
+If they want it, provide for each day:
+
+**[Day] Flow Block**
+- Title: Flow Block: [Task]
+- Duration: 60 minutes
+- Description: 
+  Domain: [Domain]
+  Type: [Flow Type] / [3G Category]
+  Location: [Their location]
+  
+  Pre-block: "For the next 60 minutes, my only job is [task]."
+  
+  Setup: [Playlist] ready, notifications OFF, timer set.
+
+Provide all 5 days in a clean format they can copy.
+
+---
+
 ## IMPORTANT RULES
 
 - **Ask ONE question at a time** — this is critical, never violate this
