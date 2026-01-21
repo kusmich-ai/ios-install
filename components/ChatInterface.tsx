@@ -2232,7 +2232,7 @@ Which one?`;
           
           devLog('[MicroAction]', 'Extraction response:', extractionText);
           
-          const extracted = parseMicroActionExtraction(extractionText);
+          const extracted = parseMicroActionExtractionFull(extractionText);
           
           if (extracted) {
             devLog('[MicroAction]', 'Extraction successful:', extracted);
@@ -2240,7 +2240,8 @@ Which one?`;
             const sprintResult = await startNewMicroActionSprint(
               user.id,
               extracted.identityStatement,
-              extracted.microAction
+              extracted.microAction,
+              extracted.executionCue || undefined
             );
             
             devLog('[MicroAction]', 'Sprint saved:', sprintResult);
