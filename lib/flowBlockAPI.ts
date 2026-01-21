@@ -378,19 +378,13 @@ export function isCommitmentResponse(
 // ============================================
 
 // Build messages for the main conversation
+// NOTE: Do NOT include system message here - the API route handles it via the 'flow_block_setup' context
 export function buildFlowBlockAPIMessages(
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>,
   newUserMessage: string,
-  currentIdentity?: string | null
-): Array<{ role: 'user' | 'assistant' | 'system'; content: string }> {
-  // Add identity context to system prompt if available
-  let systemPrompt = flowBlockSystemPrompt;
-  if (currentIdentity) {
-    systemPrompt += `\n\n## IDENTITY CONTEXT\nThe user's current Micro-Action identity is: "${currentIdentity}". Look for opportunities to connect one of their Flow Blocks to this identity if it makes sense.`;
-  }
-
+  _currentIdentity?: string | null  // Kept for backward compatibility, not used
+): Array<{ role: 'user' | 'assistant'; content: string }> {
   return [
-    { role: 'system' as const, content: systemPrompt },
     ...conversationHistory,
     { role: 'user' as const, content: newUserMessage }
   ];
