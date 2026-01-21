@@ -2614,9 +2614,13 @@ const updateUserProgressCoherence = async (coherenceStatement: string, microActi
       // Update conversation history with assistant response
       const fullHistory = [...updatedHistory, { role: 'assistant' as const, content: cleanResponse }];
       
-      // STAGE 2: If commitment detected, run silent extraction
-      if (isCommitment) {
-        devLog('[FlowBlock]', 'Commitment detected, running extraction...');
+      // STAGE 2: If commitment detected, run extraction
+console.log('[FlowBlock DEBUG] isCommitment value:', isCommitment);
+console.log('[FlowBlock DEBUG] userResponse:', userResponse);
+console.log('[FlowBlock DEBUG] lastAssistantMsg preview:', lastAssistantMsg.substring(0, 100));
+
+if (isCommitment) {
+  console.log('[FlowBlock DEBUG] ✅ Commitment detected, running extraction...');
         
         const extractionMessages = buildFlowBlockExtractionMessages(fullHistory);
         
