@@ -978,13 +978,13 @@ export async function POST(req: Request) {
       }));
 
     // STEP 7: MAKE API CALL
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: maxTokens,
-      temperature: temperature,
-      system: hasSystemPrompt ? undefined : systemPrompt,
-      messages: conversationMessages,
-    });
+  const response = await anthropic.messages.create({
+  model: 'claude-sonnet-4-20250514',
+  max_tokens: maxTokens,
+  temperature: temperature,  
+  system: hasSystemPrompt ? undefined : systemPrompt,
+  messages: conversationMessages,
+});
 
     const responseText = response.content[0].type === 'text' 
       ? response.content[0].text 
