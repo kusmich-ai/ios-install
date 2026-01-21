@@ -386,7 +386,7 @@ export function useUserProgress() {
         identitySprintStart: identitySprint?.start_date || null,
         
         // Flow Block fields
-        hasFlowBlockConfig: !flowBlockSprint,
+        hasFlowBlockConfig: !!flowBlockSprint,
         flowBlockSprintNumber: flowBlockSprint?.sprint_number || null,
         flowBlockSprintStart: flowBlockSprint?.start_date || null,
         flowBlockSprintDay: flowBlockSprintDay,
