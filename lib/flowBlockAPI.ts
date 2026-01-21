@@ -299,17 +299,11 @@ After they commit, give a brief motivating close. Reference their specific setup
 
 export const flowBlockOpeningMessage = `**Flow Mode Unlocked** 🎯
 
-Let's set up your Flow Block system — the performance element of the MOS.
+Let's set up your Flow Block system — the progression element of the IOS.
 
-Flow Blocks are 60-90 minute deep work sessions designed to identify actions that upgrade your MOS by training your NOS through its safety and reward circuits, so you experience even better outcomes.
+They're 60-90 minute deep work sessions designed to train your nervous system to recognize sustained attention as familiar and safe — not effortful. By the end of 21 days, dropping into focus and flow becomes automatic because the environmental cues do the work.
 
-By the end of 21 days, dropping into flow won't feel like effort — it'll feel like home.
-
-Before we design your highest-leverage work blocks, do you currently have a Micro-Action Identity you want to consider as part of the mix — the behavioral identity you're reinforcing through small daily actions?
-
-If so, share it and we can connect at least one Flow Block to it. If not, we'll start fresh.
-
-What's your situation?`;
+Ready to start?`;
 
 // Message for when user has existing identity
 export function getFlowBlockOpeningWithIdentity(identity: string, action?: string): string {
