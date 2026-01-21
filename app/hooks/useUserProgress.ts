@@ -213,7 +213,7 @@ export function useUserProgress() {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+       .single();
 
       // Fetch today's practice logs
       const { data: todayLogs } = await supabase
@@ -233,7 +233,7 @@ export function useUserProgress() {
         .eq('completion_status', 'active')
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       // Fetch active Flow Block sprint
       const { data: flowBlockSprint } = await supabase
@@ -243,7 +243,7 @@ export function useUserProgress() {
         .eq('completion_status', 'active')
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       // Calculate sprint days
       const calculateSprintDay = (startDate: string | null): number | null => {
