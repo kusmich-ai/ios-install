@@ -221,7 +221,8 @@ Now let's build the deep work architecture that reinforces this.
 
 Which three matter most right now?`;
 }
-
+// Legacy alias for backward compatibility
+export const getFlowBlockOpeningWithIdentity = getFlowBlockOpeningWithAnchor;
 // ============================================
 // COMMITMENT DETECTION (Two-Stage Extraction)
 // ============================================
