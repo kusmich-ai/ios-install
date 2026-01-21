@@ -1114,18 +1114,17 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
           .maybeSingle();
         
         if (config) {
-          devLog('[FlowBlock]', 'Loaded existing config:', config);
-          setFlowBlockState(prev => ({
-            ...prev,
-            isComplete: true,
-            extractedWeeklyMap: config.weekly_map || [],
-            extractedPreferences: config.preferences || {},
-            extractedDomains: config.domains || [],
-            focusType: config.focus_type || 'distributed',
-            sprintStartDate: config.start_date,
-            sprintNumber: config.sprint_number || 1
-          }));
-        }
+  setFlowBlockState(prev => ({
+    ...prev,
+    isComplete: true,
+    extractedWeeklyMap: config.weekly_map || [],
+    extractedPreferences: config.preferences || {},
+    extractedDomains: config.domains || [],
+    focusType: config.focus_type || 'distributed',
+    sprintStartDate: config.start_date,
+    sprintNumber: config.sprint_number || 1
+  }));
+}
       } catch (error) {
         devLog('[FlowBlock]', 'No existing config found (expected for new users)');
       }
