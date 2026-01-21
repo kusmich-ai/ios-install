@@ -2617,7 +2617,7 @@ const updateUserProgressCoherence = async (coherenceStatement: string, microActi
       // STAGE 2: If commitment detected, run extraction
 console.log('[FlowBlock DEBUG] isCommitment value:', isCommitment);
 console.log('[FlowBlock DEBUG] userResponse:', userResponse);
-console.log('[FlowBlock DEBUG] lastAssistantMsg preview:', lastAssistantMsg.substring(0, 100));
+console.log('[FlowBlock DEBUG] lastAssistantMessage preview:', lastAssistantMessage.substring(0, 100));
 
 if (isCommitment) {
   console.log('[FlowBlock DEBUG] ✅ Commitment detected, running extraction...');
