@@ -170,7 +170,7 @@ export async function getCurrentMicroActionSprint(userId: string) {
       .eq('completion_status', 'active')
       .order('created_at', { ascending: false })
       .limit(1)
-      .single();
+     .maybeSingle()
     
     if (error) {
       if (error.code === 'PGRST116') {
@@ -320,7 +320,7 @@ export async function getCurrentFlowBlockSprint(userId: string) {
       .eq('completion_status', 'active')
       .order('created_at', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle()
     
     if (error) {
       if (error.code === 'PGRST116') {
