@@ -645,6 +645,9 @@ export function buildFlowBlockAPIMessages(
   return messages;
 }
 
+// Alias for backward compatibility
+export const buildFlowBlockExtractionMessages = buildFlowBlockAPIMessages;
+
 export function isCommitmentResponse(userResponse: string, lastAssistantMessage: string): boolean {
   const commitmentPhrases = [
     "i'm in",
@@ -729,4 +732,95 @@ export function extractFlowBlockData(response: string): {
     console.error('[FlowBlock] Extraction error:', error);
     return null;
   }
+}
+
+// Alias for backward compatibility
+export const parseFlowBlockExtraction = extractFlowBlockData;
+
+// ============================================
+// DISPLAY & CLEANING FUNCTIONS
+// ============================================
+
+export function cleanFlowBlockResponseForDisplay(response: string): string {
+  // Remove the extraction marker from displayed response
+  return response
+    .replace(/\[FLOW_BLOCK_SETUP_COMPLETE\][\s\S]*?\[\/FLOW_BLOCK_SETUP_COMPLETE\]/g, '')
+    .trim();
+}
+
+// ============================================
+// DAILY EXECUTION HELPERS
+// ============================================
+
+export function getTodaysBlock(weeklyMap: WeeklyMapEntry[]): WeeklyMapEntry | null {
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const today = days[new Date().getDay()];
+  
+  return weeklyMap.find(entry => entry.day === today) || null;
+}
+
+export function getDailyFlowBlockPrompt(
+  block: WeeklyMapEntry,
+  preferences: SetupPreferences
+): string {
+  return `**Flow Block: ${block.task}**
+
+${block.duration} minutes. Single task. Environment set?
+- Location: ${block.domain.includes('Professional') ? preferences.professionalLocation : preferences.personalLocation}
+- Playlist: ${preferences.playlist}
+- Timer: ${preferences.timerMethod}
+- Phone: off/away
+
+**Intention:** For the next ${block.duration} minutes, my only job is ${block.task}. Let's begin.
+
+I'll check in after you're done.`;
+}
+
+export const postBlockReflectionPrompt = `**Block complete. Quick debrief:**
+
+1. One-sentence reflection: What was the learning from today?
+
+2. Performance Tagging (1-5):
+   - **Focus Quality:** How sustained was attention?
+   - **Challenge-Skill Balance:** Too easy (1), balanced (3), too hard (5)?
+   - **Energy After:** Drained (1) or calm satisfaction (5)?
+   - **Flow Presence:** Did time distort? Did mental chatter fade?
+
+Give me your ratings.`;
+
+// ============================================
+// SPRINT TRACKING HELPERS
+// ============================================
+
+export function getSprintDayNumber(sprintStartDate: string | null): number {
+  if (!sprintStartDate) return 0;
+  
+  const start = new Date(sprintStartDate);
+  const now = new Date();
+  const diffTime = Math.abs(now.getTime() - start.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  return diffDays;
+}
+
+export function isSprintComplete(sprintStartDate: string | null): boolean {
+  return getSprintDayNumber(sprintStartDate) >= 21;
+}
+
+export const sprintCompleteMessage = `🎉 **Flow Block Sprint Complete!**
+
+You've completed 21 days of deep work training. Your nervous system has learned that sustained focus = safety + reward.
+
+**What stays? What evolves? What new high-leverage work has emerged?**
+
+Ready to design your next 21-day cycle?`;
+
+// ============================================
+// DEPRECATED - Keep for backward compatibility
+// ============================================
+
+// This function is no longer used but kept for backward compatibility
+export function getFlowBlockOpeningWithIdentity(identity?: string): string {
+  // Identity integration removed - just return standard opening
+  return flowBlockOpeningMessage;
 }
