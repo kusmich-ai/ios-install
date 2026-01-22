@@ -87,7 +87,7 @@ export const STAGES: Stage[] = [
   },
   {
     number: 3,
-    name: 'Identity Mode',
+    name: 'Aligned Action Mode',
     tagline: 'Act from coherence.',
     practices: [
       {
@@ -116,11 +116,11 @@ export const STAGES: Stage[] = [
       },
       {
         id: 'micro_action',
-        name: 'Morning Micro-Action',
+        name: 'Aligned Action',
         shortName: 'Micro',
-        duration: 2,
+        duration: 1,
         icon: '⚡',
-        description: 'Identity proof action'
+        description: 'Daily coherence training'
       }
     ],
     unlockCriteria: {
@@ -160,11 +160,11 @@ export const STAGES: Stage[] = [
       },
       {
         id: 'micro_action',
-        name: 'Morning Micro-Action',
+        name: 'Aligned Action',
         shortName: 'Micro',
-        duration: 2,
+        duration: 1,
         icon: '⚡',
-        description: 'Identity proof action'
+        description: 'Daily coherence training'
       },
       {
         id: 'flow_block',
@@ -212,11 +212,11 @@ export const STAGES: Stage[] = [
       },
       {
         id: 'micro_action',
-        name: 'Morning Micro-Action',
+        name: 'Aligned Action',
         shortName: 'Micro',
-        duration: 2,
+        duration: 1,
         icon: '⚡',
-        description: 'Identity proof action'
+        description: 'Daily coherence training'
       },
       {
         id: 'flow_block',
@@ -272,11 +272,11 @@ export const STAGES: Stage[] = [
       },
       {
         id: 'micro_action',
-        name: 'Morning Micro-Action',
+        name: 'Aligned Action',
         shortName: 'Micro',
-        duration: 2,
+        duration: 1,
         icon: '⚡',
-        description: 'Identity proof action'
+        description: 'Daily coherence training'
       },
       {
         id: 'flow_block',
