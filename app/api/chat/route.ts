@@ -795,7 +795,6 @@ export async function POST(req: Request) {
     const authResult = await verifyAuth();
     
     if (!authResult.authenticated || !authResult.userId) {
-      console.log('[API/Chat] Unauthorized request');
       return unauthorizedResponse('Please sign in to continue.');
     }
 
@@ -805,7 +804,6 @@ export async function POST(req: Request) {
     const rateLimitResult = checkRateLimit(userId, 'chat');
     
     if (!rateLimitResult.allowed) {
-      console.log('[API/Chat] Rate limited:', userId);
       
       await logAuditEvent({
         userId,
@@ -822,7 +820,6 @@ export async function POST(req: Request) {
 
     const validationResult = validateMessages(messages);
     if (!validationResult.valid) {
-      console.log('[API/Chat] Invalid messages:', validationResult.error);
       return badRequestResponse(validationResult.error || 'Invalid messages');
     }
 
@@ -834,7 +831,6 @@ export async function POST(req: Request) {
       const sanitizationResult = sanitizeInput(latestUserMessage.content);
       
       if (!sanitizationResult.safe) {
-        console.log('[API/Chat] Blocked injection attempt:', userId);
         
         await logAuditEvent({
           userId,
@@ -869,7 +865,6 @@ export async function POST(req: Request) {
       : false;
 
     if (hasFrustration) {
-      console.log('[API/Chat] Attribution drift detected - will inject tool-aware reset protocol');
       await logAuditEvent({
         userId,
         action: 'ATTRIBUTION_DRIFT_DETECTED',
