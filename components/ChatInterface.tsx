@@ -1097,6 +1097,7 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
           .maybeSingle();
         
         if (config) {
+          console.log('Flow Block weekly_map from DB:', config.weekly_map);
   setFlowBlockState(prev => ({
     ...prev,
     isComplete: true,
