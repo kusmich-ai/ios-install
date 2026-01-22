@@ -1,7 +1,7 @@
 // app/api/chat/route.ts - ENHANCED VERSION with Complete Voice System, Layer Zero Cue, and Frustration Detection
 import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
-import { microActionSystemPrompt } from '@/lib/microActionAPI';
+import { microActionSystemPrompt, extractionSystemPrompt } from '@/lib/microActionAPI';
 import { flowBlockSystemPrompt } from '@/lib/flowBlockAPI';
 import {
   verifyAuth,
