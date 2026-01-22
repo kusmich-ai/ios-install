@@ -3951,6 +3951,8 @@ const sendMessage = async (e: React.FormEvent) => {
           sprintDay={(progress as any)?.sprintDay ?? (progress as any)?.identitySprintDay ?? undefined}
           identitySprintDay={(progress as any)?.identitySprintDay ?? undefined}
           onStage7Click={startStage7Introduction}
+          flowBlockWeeklyMap={flowBlockState?.extractedWeeklyMap || null}
+  flowBlockSprintDay={flowBlockState?.sprintStartDate ? getSprintDayNumber(flowBlockState.sprintStartDate) : undefined}
         />
       )}
       {/* Main Chat Area */}
