@@ -149,9 +149,9 @@ These movements mobilize the vagus nerve along the spine, enhance cerebrospinal 
 **Guided video:** [Somatic Flow](https://www.unbecoming.app/somatic)`
   },
 
-  // MORNING MICRO-ACTION (Stage 3+)
+  // ALIGNED ACTION (Stage 3+)
   micro_action: {
-    startPrompt: `Time for your **Morning Micro-Action**.
+    startPrompt: `Time for your **Morning Aligned Action**.
 
 Today's action: **{{microAction}}**
 
@@ -159,19 +159,16 @@ Treat this as execution only. No evaluation. No story about what it means.
 
 Complete the action, then click **"Done"** in the {{toolbarReference}}.`,
 
-    completionResponse: `Morning Micro-Action logged. ✓
-
-Identity: {{currentIdentity}}
-Evidence: logged.
+    completionResponse: `Aligned Action logged. ✓
 
 Day {{identityDayInCycle}} of 21. You're not chasing perfection — you're training consistency. 
 
 {{nextPracticePrompt}}`,
 
-    // Special: When identity needs to be set (new sprint or first time)
-    identityNeeded: `Time to set your **21-day micro action**.
+    // Special: When action needs to be set (new sprint or first time)
+    identityNeeded: `Time to set your **21-day aligned action**.
 
-Before starting your Morning Micro-Action, we'll choose one clear action to run consistently for the next 21 days.
+Before starting your Morning Aligned Action, we'll choose one clear action to run consistently for the next 21 days.
 
 This takes about 5 minutes and removes guesswork from your mornings. Ready to begin?
 
@@ -527,12 +524,12 @@ Mobilizes the vagus nerve along the spine, enhances proprioception, and circulat
 **How:**
 Two simple movements synced with your 4s inhale / 6s exhale:
 
-**1. Cat-Cow Flow (15 breaths)**
+**1. Cat-Cow Flow (7 breaths)**
 - Hands and knees (or seated, hands on knees)
 - Inhale 4s: Drop belly, lift chest — Cow
 - Exhale 6s: Round spine, tuck chin — Cat
 
-**2. Squat to Reach (15 breaths)**
+**2. Squat to Reach (7 breaths)**
 - Feet shoulder-width apart
 - Inhale 4s: Bend knees, sweep arms forward
 - Exhale 6s: Stand tall, arms overhead
@@ -602,7 +599,7 @@ You've proven consistency and transformation:
 
 **Embodiment achieved.** The body is now connected awareness.
 
-Before we unlock **Stage 3: Identity Mode**, quick reflection:
+Before we unlock **Stage 3: Coherent Action Mode**, quick reflection:
 
 **What did you notice about awareness during Somatic Flow? Did it stay present through the movement, or did it drift?**
 
@@ -625,9 +622,9 @@ You've embodied awareness. Now we anchor it into who you are.
 
 **NEW RITUAL UNLOCKING:**
 
-**Morning Aligned Action** — One small action taken without narrative or self-definition. Not to become someone - but to notice when identity is no longer required.
+**Morning Aligned Action** — One small action taken without narrative or self-definition. Not to become someone - but to notice when identity is no longer required and to train your nervous system in how to respond.
 
-We'll run the Identity Installation Protocol to define a 21-day action and track what remains consistent without interpretation.
+We'll run the Coherant Action Coherence Protocol to define a 21-day action and track what remains consistent without interpretation.
 
 ---
 
@@ -699,14 +696,15 @@ Ready to begin?`
 1. Resonance Breathing — 5 mins
 2. Somatic Flow — 3 mins
 3. Awareness Rep — 2 mins
-4. **Morning Micro-Action — 2-3 mins** (new)
+4. **Morning Aligned Action — 1 min** (new)
 
 **Total: ${getMorningRitualTime(3)}**
 
-Your identity: **{{currentIdentity}}**
-Your daily proof: **{{microAction}}**
+Coherence Statement: **{{currentIdentity}}**
+Aligned Action: **{{microAction}}**
+Cue:** **{{executionCue}}**
 
-Every 21 days, we'll reassess and either deepen or evolve the identity.
+Every 21 days, we'll reassess and either evolve or modify the action.
 
 **Remember:** The **Reframe Protocol** is now available in your {{toolbarReference}} under "On-Demand Tools" for when triggers arise.
 
@@ -729,7 +727,7 @@ Ready to act without identity?`,
       standard: `{{greeting}}{{userName}}.
 
 **Stage 3: Aligned Action Mode** — Day {{daysInStage}}
-**Action:** {{currentIdentity}} (Day {{identityDayInCycle}}/21)
+**Action:** {{microAction}} (Day {{identityDayInCycle}}/21)
 **Adherence:** {{adherence}}%{{streakMessage}}
 
 **Today's rituals:**
@@ -773,11 +771,11 @@ Current status vs unlock criteria:
 - Avg Delta: {{currentAvgDelta}} (need +0.5)
 - Days: {{currentConsecutiveDays}} (need 14)
 
-Your identity is forming. Keep the proof consistent.`,
+Keep acting from awareness. Keep the ritual consistent.`,
 
       confirmation: `**🎉 Stage 4 Unlocked: Flow Mode**
 
-Your identity is becoming aligned. Now we train sustained attention on performance drivers.
+Your actions are becoming aligned. Now we train sustained attention on performance drivers.
 
 ---
 
@@ -855,7 +853,7 @@ Ready to design your system?`
 1. Resonance Breathing — 5 mins
 2. Somatic Flow — 3 mins
 3. Awareness Rep — 2 mins
-4. Morning Micro-Action — 2-3 mins
+4. Morning Aligned Action — 1 min
 
 **Daily (scheduled):**
 5. Flow Block — 60-90 mins
@@ -871,7 +869,7 @@ Your Flow Menu and Weekly Map are set. Time to train deep work as a neural skill
       standard: `{{greeting}}{{userName}}.
 
 **Stage 4: Flow Mode** — Day {{daysInStage}}
-**Identity:** {{currentIdentity}} (Day {{identityDayInCycle}}/21)
+**Morning Action:** {{microAction}} (Day {{identityDayInCycle}}/21)
 **Adherence:** {{adherence}}%{{streakMessage}}
 
 **Today's rituals:**
@@ -922,7 +920,7 @@ You can sustain attention in solitude. Now we train it in connection.
 
 **NEW PRACTICE UNLOCKING:**
 
-**Co-Regulation Practice** — 3-5 minutes training the social nervous system. You'll activate the ventral vagal complex (your social safety circuit) through heart-focused compassion exercises. This trains your nervous system to stay open and regulated in relational contexts — not just when you're alone.
+**Co-Regulation Practice** — 4 minutes training the social nervous system. You'll activate the ventral vagal complex (your social safety circuit) through heart-focused compassion exercises. This trains your nervous system to stay open and regulated in relational contexts — not just when you're alone.
 
 **When:** Late afternoon/early evening, as you transition from work to personal time.
 
@@ -967,7 +965,7 @@ Activates the ventral vagal complex (social safety circuit) through heart-focuse
 4. Inhale: "Be blessed"
 5. Exhale: "I wish you peace and love"
 6. Notice any warmth or softness (don't force it)
-7. 3-5 minutes
+7. 4 minutes
 
 **5-Day rotation:**
 - Day 1: Friend
@@ -987,13 +985,13 @@ Make sense?`
 1. Resonance Breathing — 5 mins
 2. Somatic Flow — 3 mins
 3. Awareness Rep — 2 mins
-4. Morning Micro-Action — 2-3 mins
+4. Morning Aligned Action — 1 min
 
 **Daily:**
 5. Flow Block — 60-90 mins (scheduled)
 
 **Evening:**
-6. Co-Regulation Practice — 3-5 mins (new)
+6. Co-Regulation Practice — 4 mins (new)
 
 **Total: ${getMorningRitualTime(5)}**
 
@@ -1004,7 +1002,7 @@ You're now training awareness in relationship, not just in solitude. This is whe
       standard: `{{greeting}}{{userName}}.
 
 **Stage 5: Relational Coherence** — Day {{daysInStage}}
-**Identity:** {{currentIdentity}} (Day {{identityDayInCycle}}/21)
+**Morning Action:** {{microAction}} (Day {{identityDayInCycle}}/21)
 **Adherence:** {{adherence}}%{{streakMessage}}
 
 **Today's practices:**
@@ -1068,7 +1066,7 @@ You now have the complete IOS toolkit:
 - Resonance Breathing (regulation)
 - Somatic Flow (embodiment)  
 - Awareness Rep (meta-awareness)
-- Morning Micro-Action (identity)
+- Morning Aligned Action (coherent action)
 - Flow Block (performance)
 - Co-Regulation (relationship)
 - Nightly Debrief (integration)
@@ -1136,7 +1134,7 @@ Make sense?`
 1. Resonance Breathing — 5 mins
 2. Somatic Flow — 3 mins
 3. Awareness Rep — 2 mins
-4. Morning Micro-Action — 2-3 mins
+4. Morning Aligned Action — 1 min
 
 **Daily:**
 5. Flow Block — 60-90 mins
@@ -1156,7 +1154,7 @@ This is the complete system. You're now running the full IOS.
       standard: `{{greeting}}{{userName}}.
 
 **Stage 6: Integration** — Day {{daysInStage}}
-**Identity:** {{currentIdentity}} (Day {{identityDayInCycle}}/21)
+**Morning Action:** {{microAction}} (Day {{identityDayInCycle}}/21)
 **Adherence:** {{adherence}}%{{streakMessage}}
 
 **Today's practices:**
@@ -1221,7 +1219,7 @@ For now, continue the Stage 6 practices. Welcome to Embodied Consciousness.`
 
 **Tagline:** *Awareness engineers itself.*
 
-You've installed the complete IOS. Now we accelerate its evolution with advanced integration tools.
+You've installed the complete IOS and established a new STATE. Now we accelerate its evolution with advanced integration tools.
 
 This stage is personalized. Your protocol will be designed in our live conversation.
 
