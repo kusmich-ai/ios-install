@@ -892,8 +892,10 @@ export async function POST(req: Request) {
         break;
 
       case 'micro_action_extraction':
-        maxTokens = 500;
-        break;
+  systemPrompt = extractionSystemPrompt;
+  maxTokens = 500;
+  temperature = 0.1;  // Low temperature for deterministic JSON output
+  break;
 
      case 'flow_block_setup':
   // ISOLATED: No security instructions, no cue kernel, no pattern context
