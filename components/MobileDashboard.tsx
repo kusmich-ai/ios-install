@@ -1,10 +1,11 @@
 // components/MobileDashboard.tsx
 // Mobile dashboard drawer with luxury cream styling (matches DashboardSidebar)
+// v2.1: Added Flow Block Schedule section with instant tooltip
 'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Menu, X, User, TrendingUp, TrendingDown, Zap, Sparkles } from 'lucide-react';
+import { Menu, X, User, TrendingUp, TrendingDown, Zap, Sparkles, Target } from 'lucide-react';
 import AwakenWithFiveCard from './AwakenWithFiveCard';
 
 // ============================================
@@ -22,6 +23,18 @@ interface UnlockProgress {
   requiredAdherence?: number;
   requiredDays?: number;
   requiredDelta?: number;
+}
+
+// Flow Block types (matches flowBlockAPI.ts)
+interface WeeklyMapEntry {
+  day: string;
+  domain: string;
+  task: string;
+  flowType: string;
+  category: string;
+  coherenceLink?: string;
+  duration: number;
+  timeSlot?: string;  // e.g., "9:00am", "7:00pm"
 }
 
 interface MobileDashboardProps {
@@ -62,6 +75,10 @@ interface MobileDashboardProps {
   microAction?: string;
   sprintDay?: number;
   identitySprintDay?: number;
+  
+  // Flow Block (Stage 4+)
+  flowBlockWeeklyMap?: WeeklyMapEntry[] | null;
+  flowBlockSprintDay?: number;
   
   // Handlers
   onStage7Unlock?: () => void;
@@ -108,6 +125,27 @@ function getProgressBarColor(index: number): string {
   return 'bg-purple-500';
 }
 
+// Get abbreviated day name
+function getShortDay(day: string): string {
+  const shortNames: { [key: string]: string } = {
+    'Monday': 'Mon',
+    'Tuesday': 'Tue',
+    'Wednesday': 'Wed',
+    'Thursday': 'Thu',
+    'Friday': 'Fri',
+    'Saturday': 'Sat',
+    'Sunday': 'Sun'
+  };
+  return shortNames[day] || day.slice(0, 3);
+}
+
+// Check if today matches the day
+function isToday(day: string): boolean {
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const today = dayNames[new Date().getDay()];
+  return day === today;
+}
+
 // Monochromatic amber shades for domains (luxury design)
 const DOMAIN_COLORS = {
   regulation: { bar: 'bg-amber-600', text: 'text-amber-600' },
@@ -115,6 +153,116 @@ const DOMAIN_COLORS = {
   outlook: { bar: 'bg-amber-400', text: 'text-amber-400' },
   attention: { bar: 'bg-amber-300', text: 'text-amber-500' },
 };
+
+// ============================================
+// FLOW BLOCK SCHEDULE (Mobile - Tap to Expand)
+// ============================================
+
+function FlowBlockScheduleMobile({ 
+  weeklyMap, 
+  sprintDay 
+}: { 
+  weeklyMap: WeeklyMapEntry[]; 
+  sprintDay?: number;
+}) {
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+
+  const handleTap = (index: number) => {
+    setExpandedIndex(expandedIndex === index ? null : index);
+  };
+
+  return (
+    <div className="bg-white rounded-xl p-4 border border-zinc-200/80 shadow-sm">
+      <div className="flex items-center gap-2 mb-3">
+        <Target className="w-4 h-4 text-blue-500" />
+        <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider">My Flow Block Schedule</h3>
+      </div>
+      
+      {/* Weekly Map Display */}
+      <div className="space-y-1">
+        {weeklyMap.map((entry, index) => {
+          const isTodayBlock = isToday(entry.day);
+          const isExpanded = expandedIndex === index;
+          
+          return (
+            <div key={index}>
+              {/* Main Row - Tappable */}
+              <button
+                onClick={() => handleTap(index)}
+                className={`w-full flex items-center gap-2 py-2 px-2 rounded-lg text-xs transition-all ${
+                  isTodayBlock 
+                    ? 'bg-blue-50 border border-blue-200/50' 
+                    : isExpanded
+                      ? 'bg-zinc-50'
+                      : 'hover:bg-zinc-50 active:bg-zinc-100'
+                }`}
+              >
+                {/* Day */}
+                <span className={`w-10 font-semibold text-left ${isTodayBlock ? 'text-blue-600' : 'text-zinc-500'}`}>
+                  {getShortDay(entry.day)}
+                </span>
+                
+                {/* Divider */}
+                <span className="text-zinc-300">|</span>
+                
+                {/* Task (truncated) */}
+                <span className={`flex-1 truncate text-left ${isTodayBlock ? 'text-blue-700 font-medium' : 'text-zinc-600'}`}>
+                  {entry.task}
+                </span>
+                
+                {/* Time and Duration */}
+                <span className={`text-xs whitespace-nowrap ${isTodayBlock ? 'text-blue-500' : 'text-zinc-400'}`}>
+                  {entry.timeSlot ? `${entry.timeSlot} · ` : ''}{entry.duration}m
+                </span>
+                
+                {/* Expand indicator */}
+                <svg 
+                  className={`w-3.5 h-3.5 transition-transform duration-200 ${isTodayBlock ? 'text-blue-400' : 'text-zinc-300'} ${isExpanded ? 'rotate-180' : ''}`}
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              
+              {/* Expanded Content */}
+              <div 
+                className={`overflow-hidden transition-all duration-200 ease-out ${
+                  isExpanded ? 'max-h-24 opacity-100' : 'max-h-0 opacity-0'
+                }`}
+              >
+                <div className={`px-3 py-2 mx-2 mb-1 rounded-lg text-xs ${isTodayBlock ? 'bg-blue-50/50' : 'bg-zinc-50'}`}>
+                  <p className={`font-medium mb-1 ${isTodayBlock ? 'text-blue-700' : 'text-zinc-700'}`}>
+                    {entry.task}
+                  </p>
+                  <p className={`${isTodayBlock ? 'text-blue-500' : 'text-zinc-500'}`}>
+                    {entry.domain} · {entry.flowType} · {entry.category}
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      
+      {/* Sprint Progress */}
+      {sprintDay && (
+        <div className="mt-3 pt-3 border-t border-black/[0.04] flex items-center gap-2">
+          <div className="flex-1 h-1 bg-black/[0.04] rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-blue-500 rounded-full transition-all"
+              style={{ width: `${(sprintDay / 21) * 100}%` }}
+            />
+          </div>
+          <span className="text-xs text-zinc-400 font-medium">
+            Day {sprintDay}/21
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ============================================
 // COMPONENT
@@ -136,6 +284,8 @@ export default function MobileDashboard({
   microAction,
   sprintDay,
   identitySprintDay,
+  flowBlockWeeklyMap,
+  flowBlockSprintDay,
   onStage7Unlock,
 }: MobileDashboardProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -158,13 +308,13 @@ export default function MobileDashboard({
     <>
       {/* Hamburger Button - Fixed top left on mobile */}
       <button
-  onClick={() => setIsOpen(true)}
-  className="fixed top-4 left-4 z-30 h-10 px-3 bg-white border border-amber-200/60 rounded-lg flex items-center gap-1.5 hover:border-amber-400 hover:shadow-md transition-all md:hidden shadow-sm"
-  aria-label="Open dashboard"
->
-  <Menu className="w-5 h-5 text-zinc-700" />
-  <span className="text-xs font-medium text-zinc-600">Dashboard</span>
-</button>
+        onClick={() => setIsOpen(true)}
+        className="fixed top-4 left-4 z-30 h-10 px-3 bg-white border border-amber-200/60 rounded-lg flex items-center gap-1.5 hover:border-amber-400 hover:shadow-md transition-all md:hidden shadow-sm"
+        aria-label="Open dashboard"
+      >
+        <Menu className="w-5 h-5 text-zinc-700" />
+        <span className="text-xs font-medium text-zinc-600">Dashboard</span>
+      </button>
 
       {/* Overlay */}
       {isOpen && (
@@ -398,11 +548,29 @@ export default function MobileDashboard({
                 </p>
               )}
               {displaySprintDay && (
-                <p className="text-xs text-zinc-400 mt-2">
-                  Day {displaySprintDay} of 21
-                </p>
+                <div className="mt-3 flex items-center gap-2">
+                  <div className="flex-1 h-1 bg-black/[0.04] rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-amber-500 rounded-full transition-all"
+                      style={{ width: `${(displaySprintDay / 21) * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-zinc-400 font-medium">
+                    Day {displaySprintDay}/21
+                  </span>
+                </div>
               )}
             </div>
+          )}
+
+          {/* ==========================================
+              MY FLOW BLOCK SCHEDULE (Stage 4+)
+              ========================================== */}
+          {flowBlockWeeklyMap && flowBlockWeeklyMap.length > 0 && (
+            <FlowBlockScheduleMobile 
+              weeklyMap={flowBlockWeeklyMap} 
+              sprintDay={flowBlockSprintDay} 
+            />
           )}
 
           {/* ==========================================
