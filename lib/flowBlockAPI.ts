@@ -313,6 +313,36 @@ Provide all 5 days in a clean format they can copy.
 - Working from stress state → Suggest breathing reset first
 - Too many Goal blocks → Rebalance toward Growth/Gratitude
 - All blocks in one domain → Redistribute across domains`;
+- Too many Goal blocks → Rebalance toward Growth/Gratitude
+- All blocks in one domain → Redistribute across domains`;
+
+// ============================================
+// EXTRACTION SYSTEM PROMPT (for route.ts)
+// ============================================
+
+export const flowBlockExtractionSystemPrompt = `You are a data extraction assistant. Your only job is to output valid JSON based on conversation data. No explanation, no markdown formatting, just pure JSON.
+
+Output ONLY valid JSON in this exact format:
+{
+  "domains": ["Domain1", "Domain2"],
+  "weeklyMap": [
+    {"day": "Monday", "domain": "Domain", "task": "Task", "flowType": "Strategic", "category": "Goal", "duration": 60}
+  ],
+  "preferences": {
+    "professionalLocation": "location",
+    "personalLocation": "location", 
+    "playlist": "playlist",
+    "timerMethod": "method",
+    "notificationsOff": true
+  },
+  "focusType": "concentrated"
+}
+
+Rules:
+- flowType must be: "Creative", "Strategic", or "Learning"
+- category must be: "Goal", "Growth", or "Gratitude"
+- focusType must be: "concentrated" or "distributed"
+- Output ONLY JSON, no markdown, no explanation`;
 
 // ============================================
 // OPENING MESSAGES
