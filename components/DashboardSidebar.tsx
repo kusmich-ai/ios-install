@@ -519,10 +519,13 @@ export default function DashboardSidebar({
                     {/* Divider */}
                     <span className="text-zinc-300">|</span>
                     
-                    {/* Task (truncated) */}
-                    <span className={`flex-1 truncate ${isTodayBlock ? 'text-blue-700 font-medium' : 'text-zinc-600'}`}>
-                      {entry.task}
-                    </span>
+                  {/* Task (truncated with tooltip) */}
+<span 
+  className={`flex-1 truncate ${isTodayBlock ? 'text-blue-700 font-medium' : 'text-zinc-600'}`}
+  title={entry.task}
+>
+  {entry.task}
+</span>
                     
                     {/* Time and Duration */}
                     <span className={`text-xs whitespace-nowrap ${isTodayBlock ? 'text-blue-500' : 'text-zinc-400'}`}>
