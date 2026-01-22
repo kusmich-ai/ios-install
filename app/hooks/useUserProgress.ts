@@ -226,14 +226,15 @@ export function useUserProgress() {
       // FETCH ACTIVE IDENTITY SPRINT
       // Reads from identity_sprints table
       // ============================================
-      const { data: identitySprint } = await supabase
-        .from('identity_sprints')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('completion_status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+    const { data: identitySprintArray } = await supabase
+  .from('identity_sprints')
+  .select('*')
+  .eq('user_id', user.id)
+  .eq('completion_status', 'active')
+  .order('created_at', { ascending: false })
+  .limit(1);
+
+const identitySprint = identitySprintArray?.[0] || null;
 
       // Fetch active Flow Block sprint
       const { data: flowBlockSprint } = await supabase
