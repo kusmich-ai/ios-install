@@ -237,13 +237,15 @@ export function useUserProgress() {
 const identitySprint = identitySprintArray?.[0] || null;
 
       // Fetch active Flow Block sprint
-      const { data: flowBlockSprint } = await supabase
-        .from('flow_block_sprints')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('completion_status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(1)
+const { data: flowBlockSprintArray } = await supabase
+  .from('flow_block_sprints')
+  .select('*')
+  .eq('user_id', user.id)
+  .eq('completion_status', 'active')
+  .order('created_at', { ascending: false })
+  .limit(1);
+
+const flowBlockSprint = flowBlockSprintArray?.[0] || null;
 
       // Calculate sprint days
       const calculateSprintDay = (startDate: string | null): number | null => {
