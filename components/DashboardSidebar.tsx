@@ -505,7 +505,7 @@ export default function DashboardSidebar({
                 return (
                   <div 
                     key={index}
-                    className={`flex items-center gap-2 py-1.5 px-2 rounded-lg text-xs transition-colors ${
+                    className={`group relative flex items-center gap-2 py-1.5 px-2 rounded-lg text-xs transition-colors ${
                       isTodayBlock 
                         ? 'bg-blue-50 border border-blue-200/50' 
                         : 'hover:bg-zinc-50'
@@ -519,13 +519,22 @@ export default function DashboardSidebar({
                     {/* Divider */}
                     <span className="text-zinc-300">|</span>
                     
-                  {/* Task (truncated with tooltip) */}
-<span 
-  className={`flex-1 truncate ${isTodayBlock ? 'text-blue-700 font-medium' : 'text-zinc-600'}`}
-  title={entry.task}
->
-  {entry.task}
-</span>
+                    {/* Task (truncated with instant tooltip) */}
+                    <span className={`flex-1 truncate cursor-default ${isTodayBlock ? 'text-blue-700 font-medium' : 'text-zinc-600'}`}>
+                      {entry.task}
+                    </span>
+                    
+                    {/* Instant Tooltip - shows full task on hover */}
+                    <div className="absolute left-0 right-0 -top-1 -translate-y-full opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50 pointer-events-none">
+                      <div className="bg-zinc-900 text-white text-xs rounded-lg px-3 py-2 shadow-lg mx-2">
+                        <div className="font-medium">{entry.task}</div>
+                        <div className="text-zinc-400 mt-0.5">
+                          {entry.domain} · {entry.flowType} · {entry.category}
+                        </div>
+                        {/* Tooltip arrow */}
+                        <div className="absolute left-4 bottom-0 translate-y-full w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-zinc-900"></div>
+                      </div>
+                    </div>
                     
                     {/* Time and Duration */}
                     <span className={`text-xs whitespace-nowrap ${isTodayBlock ? 'text-blue-500' : 'text-zinc-400'}`}>
