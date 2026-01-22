@@ -2,7 +2,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
 import { microActionSystemPrompt, extractionSystemPrompt } from '@/lib/microActionAPI';
-import { flowBlockSystemPrompt } from '@/lib/flowBlockAPI';
+import { flowBlockSystemPrompt, flowBlockExtractionSystemPrompt } from '@/lib/flowBlockAPI';
 import {
   verifyAuth,
   unauthorizedResponse,
