@@ -1096,7 +1096,6 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
           .maybeSingle();
         
         if (config) {
-          console.log('Flow Block weekly_map from DB:', config.weekly_map);
   setFlowBlockState(prev => ({
     ...prev,
     isComplete: true,
@@ -2211,12 +2210,10 @@ Which one?`;
         if (extractionResponse.ok) {
           const extractionData = await extractionResponse.json();
           const extractionText = extractionData.response || extractionData.content || '';
-          console.log('[MicroAction] Raw extraction response:', extractionText); 
           
           devLog('[MicroAction]', 'Extraction response:', extractionText);
           
           const extracted = parseMicroActionExtractionFull(extractionText);
-          console.log('[MicroAction] Parsed extraction:', extracted);
           
           if (extracted) {
             devLog('[MicroAction]', 'Extraction successful:', extracted);
@@ -2586,7 +2583,6 @@ const updateUserProgressCoherence = async (coherenceStatement: string, microActi
       const currentIdentity = microActionState.extractedIdentity || (progress as any)?.currentIdentity || undefined;
       // DEBUG: Check what system prompt is being sent
 const apiMessages = buildFlowBlockAPIMessages(updatedHistory, userResponse, currentIdentity);
-console.log('[FlowBlock DEBUG] System prompt preview:', apiMessages[0]?.content?.substring(0, 200));
       
       // STAGE 1: Get Claude's natural response
       const response = await fetch('/api/chat', {
@@ -2613,12 +2609,7 @@ console.log('[FlowBlock DEBUG] System prompt preview:', apiMessages[0]?.content?
       const fullHistory = [...updatedHistory, { role: 'assistant' as const, content: cleanResponse }];
       
       // STAGE 2: If commitment detected, run extraction
-console.log('[FlowBlock DEBUG] isCommitment value:', isCommitment);
-console.log('[FlowBlock DEBUG] userResponse:', userResponse);
-console.log('[FlowBlock DEBUG] lastAssistantMessage preview:', lastAssistantMessage.substring(0, 100));
-
 if (isCommitment) {
-  console.log('[FlowBlock DEBUG] ✅ Commitment detected, running extraction...');
         
         const extractionMessages = buildFlowBlockExtractionMessages(fullHistory);
         
@@ -3636,7 +3627,6 @@ const sendMessage = async (e: React.FormEvent) => {
     }
     
     // 2. Micro-Action Setup Flow
-  console.log('[SendMessage] About to check microActionState.isActive:', microActionState.isActive);
     if (microActionState.isActive) {
       await processMicroActionResponse(userMessage);
       return;
@@ -3932,7 +3922,6 @@ const sendMessage = async (e: React.FormEvent) => {
 
   return (
     <div className="flex h-[100dvh] bg-[#1a1a1a]">
-      console.log('Flow Block Data:', flowBlockState?.extractedWeeklyMap);
       {/* Left Sidebar - Dashboard (Desktop Only) */}
       {!isMobile && (
         <DashboardSidebar
