@@ -2211,10 +2211,12 @@ Which one?`;
         if (extractionResponse.ok) {
           const extractionData = await extractionResponse.json();
           const extractionText = extractionData.response || extractionData.content || '';
+          console.log('[MicroAction] Raw extraction response:', extractionText); 
           
           devLog('[MicroAction]', 'Extraction response:', extractionText);
           
           const extracted = parseMicroActionExtractionFull(extractionText);
+          console.log('[MicroAction] Parsed extraction:', extracted);
           
           if (extracted) {
             devLog('[MicroAction]', 'Extraction successful:', extracted);
