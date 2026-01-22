@@ -528,12 +528,12 @@ IMPORTANT: Output ONLY valid JSON. No markdown, no explanation, no backticks. Ju
 
 {
   "domains": ["Domain1", "Domain2", "Domain3"],
-  "weeklyMap": [
-    {"day": "Monday", "domain": "Professional Work", "task": "Task description", "flowType": "Strategic", "category": "Goal", "duration": 60},
-    {"day": "Tuesday", "domain": "Domain", "task": "Task", "flowType": "Type", "category": "Category", "duration": 60},
-    {"day": "Wednesday", "domain": "Domain", "task": "Task", "flowType": "Type", "category": "Category", "duration": 60},
-    {"day": "Thursday", "domain": "Domain", "task": "Task", "flowType": "Type", "category": "Category", "duration": 60},
-    {"day": "Friday", "domain": "Domain", "task": "Task", "flowType": "Type", "category": "Category", "duration": 60}
+"weeklyMap": [
+    {"day": "Monday", "domain": "Professional Work", "task": "Task description", "flowType": "Strategic", "category": "Goal", "duration": 60, "timeSlot": "9:00am"},
+    {"day": "Tuesday", "domain": "Domain", "task": "Task", "flowType": "Type", "category": "Category", "duration": 60, "timeSlot": "9:00am"},
+    {"day": "Wednesday", "domain": "Domain", "task": "Task", "flowType": "Type", "category": "Category", "duration": 60, "timeSlot": "9:00am"},
+    {"day": "Thursday", "domain": "Domain", "task": "Task", "flowType": "Type", "category": "Category", "duration": 60, "timeSlot": "7:00pm"},
+    {"day": "Friday", "domain": "Domain", "task": "Task", "flowType": "Type", "category": "Category", "duration": 60, "timeSlot": "9:00am"}
   ],
   "preferences": {
     "professionalLocation": "Their work location from conversation",
@@ -553,6 +553,7 @@ Rules:
 - flowType must be: "Creative", "Strategic", or "Learning"
 - category must be: "Goal", "Growth", or "Gratitude"  
 - duration: Use the actual durations discussed (60 or 90)
+- timeSlot: The specific time for each day (e.g., "9:00am", "7:00pm"). If they gave one time for all days, use it for all. If they said "morning" use "9:00am", "afternoon" use "1:00pm", "evening" use "6:00pm". Default to preferredTime if no day-specific time was given.
 - preferences: Their actual answers for location, playlist, timer, preferred time
 - focusType: "concentrated" or "distributed" based on what was decided
 
