@@ -1,5 +1,6 @@
 // components/DashboardSidebar.tsx
 // Extracted left sidebar from ChatInterface with luxury styling
+// v2.1: Added Flow Block Schedule section with timeSlot support
 'use client';
 
 import Link from 'next/link';
@@ -11,6 +12,7 @@ import {
   CheckCircle2,
   Lock,
   Sparkles,
+  Target,
 } from 'lucide-react';
 import AwakenWithFiveCard from './AwakenWithFiveCard';
 
@@ -43,6 +45,18 @@ interface UnlockProgress {
   requiredDelta: number;
 }
 
+// Flow Block types (matches flowBlockAPI.ts)
+interface WeeklyMapEntry {
+  day: string;
+  domain: string;
+  task: string;
+  flowType: string;
+  category: string;
+  coherenceLink?: string;
+  duration: number;
+  timeSlot?: string;  // e.g., "9:00am", "7:00pm"
+}
+
 interface DashboardSidebarProps {
   // User info
   userName?: string;
@@ -66,6 +80,10 @@ interface DashboardSidebarProps {
   microAction?: string;
   sprintDay?: number;
   identitySprintDay?: number;
+  
+  // Flow Block (Stage 4+)
+  flowBlockWeeklyMap?: WeeklyMapEntry[] | null;
+  flowBlockSprintDay?: number;
   
   // Handlers
   onStage7Click?: () => void;
@@ -112,6 +130,27 @@ function getProgressBarColor(index: number): string {
   return 'bg-purple-500';
 }
 
+// Get abbreviated day name
+function getShortDay(day: string): string {
+  const shortNames: { [key: string]: string } = {
+    'Monday': 'Mon',
+    'Tuesday': 'Tue',
+    'Wednesday': 'Wed',
+    'Thursday': 'Thu',
+    'Friday': 'Fri',
+    'Saturday': 'Sat',
+    'Sunday': 'Sun'
+  };
+  return shortNames[day] || day.slice(0, 3);
+}
+
+// Check if today matches the day
+function isToday(day: string): boolean {
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const today = dayNames[new Date().getDay()];
+  return day === today;
+}
+
 // Monochromatic amber shades for domains (luxury design)
 const DOMAIN_COLORS = {
   regulation: { bar: 'bg-amber-600', text: 'text-amber-600' },
@@ -140,6 +179,8 @@ export default function DashboardSidebar({
   microAction,
   sprintDay,
   identitySprintDay,
+  flowBlockWeeklyMap,
+  flowBlockSprintDay,
   onStage7Click,
 }: DashboardSidebarProps) {
   
@@ -416,7 +457,9 @@ export default function DashboardSidebar({
           </div>
         )}
 
-        {/* MY ALIGNED ACTION (Stage 3+) */}
+        {/* ==========================================
+            MY ALIGNED ACTION (Stage 3+)
+            ========================================== */}
         {displayStatement && (
           <div className="bg-white rounded-xl p-4 border border-black/[0.04] shadow-sm">
             <div className="flex items-center gap-2 mb-2">
@@ -439,6 +482,68 @@ export default function DashboardSidebar({
                 </div>
                 <span className="text-xs text-zinc-400 font-medium">
                   Day {displaySprintDay}/21
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ==========================================
+            MY FLOW BLOCK SCHEDULE (Stage 4+)
+            ========================================== */}
+        {flowBlockWeeklyMap && flowBlockWeeklyMap.length > 0 && (
+          <div className="bg-white rounded-xl p-4 border border-black/[0.04] shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <Target className="w-4 h-4 text-blue-500" />
+              <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider">My Flow Block Schedule</h3>
+            </div>
+            
+            {/* Weekly Map Display */}
+            <div className="space-y-2">
+              {flowBlockWeeklyMap.map((entry, index) => {
+                const isTodayBlock = isToday(entry.day);
+                return (
+                  <div 
+                    key={index}
+                    className={`flex items-center gap-2 py-1.5 px-2 rounded-lg text-xs transition-colors ${
+                      isTodayBlock 
+                        ? 'bg-blue-50 border border-blue-200/50' 
+                        : 'hover:bg-zinc-50'
+                    }`}
+                  >
+                    {/* Day */}
+                    <span className={`w-10 font-semibold ${isTodayBlock ? 'text-blue-600' : 'text-zinc-500'}`}>
+                      {getShortDay(entry.day)}
+                    </span>
+                    
+                    {/* Divider */}
+                    <span className="text-zinc-300">|</span>
+                    
+                    {/* Task (truncated) */}
+                    <span className={`flex-1 truncate ${isTodayBlock ? 'text-blue-700 font-medium' : 'text-zinc-600'}`}>
+                      {entry.task}
+                    </span>
+                    
+                    {/* Time and Duration */}
+                    <span className={`text-xs whitespace-nowrap ${isTodayBlock ? 'text-blue-500' : 'text-zinc-400'}`}>
+                      {entry.timeSlot ? `${entry.timeSlot} · ` : ''}{entry.duration}m
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            
+            {/* Sprint Progress */}
+            {flowBlockSprintDay && (
+              <div className="mt-3 pt-3 border-t border-black/[0.04] flex items-center gap-2">
+                <div className="flex-1 h-1 bg-black/[0.04] rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-blue-500 rounded-full transition-all"
+                    style={{ width: `${(flowBlockSprintDay / 21) * 100}%` }}
+                  />
+                </div>
+                <span className="text-xs text-zinc-400 font-medium">
+                  Day {flowBlockSprintDay}/21
                 </span>
               </div>
             )}
