@@ -3932,9 +3932,9 @@ const sendMessage = async (e: React.FormEvent) => {
 
   return (
     <div className="flex h-[100dvh] bg-[#1a1a1a]">
+      console.log('Flow Block Data:', flowBlockState?.extractedWeeklyMap);
       {/* Left Sidebar - Dashboard (Desktop Only) */}
       {!isMobile && (
-      console.log('Flow Block Data:', flowBlockState?.extractedWeeklyMap);
         <DashboardSidebar
           userName={getUserName()}
           currentStage={progress?.currentStage || 1}
