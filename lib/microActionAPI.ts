@@ -310,7 +310,7 @@ export function buildAPIMessages(
 // EXTRACTION SYSTEM
 // ============================================
 
-const extractionSystemPrompt = `You are a data extraction system. Extract the final coherence statement, micro-action, and execution cue from this conversation.
+export const extractionSystemPrompt = `You are a data extraction system. Extract the final coherence statement, micro-action, and execution cue from this conversation.
 
 Output ONLY valid JSON:
 {
