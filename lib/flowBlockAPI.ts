@@ -396,7 +396,7 @@ Output ONLY valid JSON in this exact format:
 {
   "domains": ["Domain1", "Domain2"],
   "weeklyMap": [
-    {"day": "Monday", "domain": "Domain", "task": "Task", "flowType": "Strategic", "category": "Goal", "duration": 60}
+    {"day": "Monday", "domain": "Domain", "task": "Task", "flowType": "Strategic", "category": "Goal", "duration": 60, "timeSlot": "9:00am"}
   ],
   "preferences": {
     "professionalLocation": "location",
