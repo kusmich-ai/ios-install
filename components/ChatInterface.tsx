@@ -4352,7 +4352,6 @@ const sendMessage = async (e: React.FormEvent) => {
           onStage7Unlock={startStage7Introduction}
           flowBlockWeeklyMap={flowBlockState?.extractedWeeklyMap || null}
   flowBlockSprintDay={flowBlockState?.sprintStartDate ? getSprintDayNumber(flowBlockState.sprintStartDate) : undefined}
-/>
         />
       )}
 
