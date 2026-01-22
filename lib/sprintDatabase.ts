@@ -170,17 +170,12 @@ export async function getCurrentMicroActionSprint(userId: string) {
       .eq('completion_status', 'active')
       .order('created_at', { ascending: false })
       .limit(1)
-     .maybeSingle()
     
     if (error) {
-      if (error.code === 'PGRST116') {
-        // No rows found - not an error
-        return null;
-      }
       throw error;
     }
     
-    return data;
+    return data?.[0] || null;
   } catch (error) {
     console.error('[SprintDB] getCurrentMicroActionSprint failed:', error);
     return null;
