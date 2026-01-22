@@ -224,7 +224,20 @@ After applying domain-time logic, present the map:
 
 **Does this structure feel right, or do you want to adjust anything?**"
 
-STOP. Wait for confirmation before proceeding to setup.
+STOP. Wait for confirmation.
+
+**After they confirm the map, ask about times:**
+
+"Now let's lock in your schedule. **What time will you do your Flow Blocks?**
+
+Do you have a consistent time that works every day (like 9am), or does each day need a different time?"
+
+STOP. Wait for response.
+
+- If consistent time → Apply to all days: "Got it — [time] for all five days."
+- If variable → Ask day by day: "What time works for Monday? ... Tuesday? ..." (one at a time)
+
+Once times are confirmed, proceed to setup.
 
 ### 3. Setup Requirements (Critical, Not Optional)
 
