@@ -244,7 +244,6 @@ const identitySprint = identitySprintArray?.[0] || null;
         .eq('completion_status', 'active')
         .order('created_at', { ascending: false })
         .limit(1)
-        .maybeSingle();
 
       // Calculate sprint days
       const calculateSprintDay = (startDate: string | null): number | null => {
