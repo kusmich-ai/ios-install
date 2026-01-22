@@ -960,11 +960,8 @@ export async function POST(req: Request) {
       const attributionResetInjection = getAttributionResetInjection(latestUserMessage.content, context);
       if (attributionResetInjection) {
         systemPrompt += attributionResetInjection;
-        console.log(`[API/Chat] Injected ${context ? context + '-specific' : 'default'} attribution reset protocol`);
       }
     }
-console.log('[API/Chat] Context:', context);
-    console.log('[API/Chat] System prompt first 100 chars:', systemPrompt?.substring(0, 100));
     const hasSystemPrompt = messages.some((msg: Message) => msg.role === 'system');
     
     // Build properly typed messages array
