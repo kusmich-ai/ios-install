@@ -2245,30 +2245,37 @@ Which one?`;
               await refetchProgress();
             }
           } else {
-            devLog('[MicroAction]', 'Extraction parsing failed, continuing conversation');
-            setMicroActionState(prev => ({
-              ...prev,
-              conversationHistory: fullHistory
-            }));
+            // ✅ FIX: Extraction parsing failed - reset state
+            devLog('[MicroAction]', 'Extraction parsing failed, resetting state');
+            setMicroActionState(initialMicroActionState);
+            setMessages(prev => [...prev, { 
+              role: 'assistant', 
+              content: "I had trouble saving your coherence practice. Let's try setting it up again - just say 'set up aligned action' when you're ready." 
+            }]);
           }
         } else {
-          devLog('[MicroAction]', 'Extraction API call failed');
-          setMicroActionState(prev => ({
-            ...prev,
-            conversationHistory: fullHistory
-          }));
+          // ✅ FIX: Extraction API failed - reset state
+          devLog('[MicroAction]', 'Extraction API call failed, resetting state');
+          setMicroActionState(initialMicroActionState);
+          setMessages(prev => [...prev, { 
+            role: 'assistant', 
+            content: "I had trouble saving your coherence practice. Let's try setting it up again - just say 'set up aligned action' when you're ready." 
+          }]);
         }
       } else {
+        // Not a commitment - continue conversation normally
         setMicroActionState(prev => ({
           ...prev,
           conversationHistory: fullHistory
         }));
       }
     } catch (error) {
+      // ✅ FIX: Any error - reset state completely
       console.error('[MicroAction] API call failed:', error);
+      setMicroActionState(initialMicroActionState);
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: "I had trouble processing that. Let's continue - what were you saying?" 
+        content: "I had trouble processing that. Let's start fresh - say 'set up aligned action' when you're ready to try again." 
       }]);
     }
     
