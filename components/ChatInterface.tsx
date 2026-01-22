@@ -564,7 +564,6 @@ function determineOpeningType(
   }
   
   if (!lastVisit) {
-    console.log('[ChatInterface] No lastVisit but onboarding completed - treating as new_day');
     return 'new_day';
   }
   
