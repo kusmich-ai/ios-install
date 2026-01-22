@@ -711,12 +711,20 @@ Give me your ratings (e.g., "4, 3, 4, 5") and your reflection.`;
 
 export function getSprintDayNumber(sprintStartDate: string | null): number {
   if (!sprintStartDate) return 0;
-  const start = new Date(sprintStartDate);
-  start.setHours(0, 0, 0, 0);
+  
+  // Extract just the YYYY-MM-DD portion to avoid timezone issues
+  const startDateOnly = sprintStartDate.substring(0, 10); // "2026-01-22"
+  
   const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  const diffTime = now.getTime() - start.getTime();
+  const todayDateOnly = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  
+  // Parse as local dates (noon to avoid DST edge cases)
+  const startDate = new Date(startDateOnly + 'T12:00:00');
+  const todayDate = new Date(todayDateOnly + 'T12:00:00');
+  
+  const diffTime = todayDate.getTime() - startDate.getTime();
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+  
   return Math.max(1, Math.min(diffDays, 21));
 }
 
