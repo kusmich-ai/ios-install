@@ -985,7 +985,9 @@ console.log('[API/Chat] Context:', context);
   model: 'claude-sonnet-4-20250514',
   max_tokens: maxTokens,
   temperature: temperature,  
-  system: hasSystemPrompt ? undefined : systemPrompt,
+  system: (context === 'micro_action_extraction' || context === 'flow_block_extraction') 
+  ? systemPrompt 
+  : (hasSystemPrompt ? undefined : systemPrompt),
   messages: conversationMessages,
 });
 
