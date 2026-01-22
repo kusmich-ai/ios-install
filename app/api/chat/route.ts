@@ -900,10 +900,11 @@ export async function POST(req: Request) {
   temperature = 0.3;  // Lower temperature for deterministic behavior
   break;
 
-      case 'flow_block_extraction':
-        maxTokens = 500;
-        temperature = 0.2;
-        break;
+  case 'flow_block_extraction':
+  systemPrompt = flowBlockExtractionSystemPrompt;  // ADD THIS LINE
+  maxTokens = 500;
+  temperature = 0.2;
+  break;
 
       case 'weekly_check_in':
         maxTokens = 1024;
