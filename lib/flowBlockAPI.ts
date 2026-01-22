@@ -313,8 +313,6 @@ Provide all 5 days in a clean format they can copy.
 - Working from stress state → Suggest breathing reset first
 - Too many Goal blocks → Rebalance toward Growth/Gratitude
 - All blocks in one domain → Redistribute across domains`;
-- Too many Goal blocks → Rebalance toward Growth/Gratitude
-- All blocks in one domain → Redistribute across domains`;
 
 // ============================================
 // EXTRACTION SYSTEM PROMPT (for route.ts)
