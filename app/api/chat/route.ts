@@ -992,10 +992,13 @@ export async function POST(req: Request) {
       ? response.content[0].text 
       : '';
 
-    return NextResponse.json({ 
-      response: cuePrefix + responseText,
-      context: context || 'general',
-    });
+// Skip cue prefix for extraction contexts (need clean JSON)
+const skipCuePrefix = context === 'micro_action_extraction' || context === 'flow_block_extraction';
+
+return NextResponse.json({ 
+  response: skipCuePrefix ? responseText : cuePrefix + responseText,
+  context: context || 'general',
+});
 
   } catch (error) {
     console.error('[API/Chat] Error:', error);
