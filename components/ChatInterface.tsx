@@ -4092,33 +4092,66 @@ if (regressionIntervention?.isActive) {
   </div>
 )}
             
-            {/* Regression Quick Replies */}
-            {regressionIntervention?.isActive && !loading && (
-              <div className="flex justify-center gap-3 flex-wrap">
-                <button
-                  onClick={() => {
-                    setMessages(prev => [...prev, { role: 'user', content: `Regress to Stage ${(regressionIntervention?.currentStage || 2) - 1}` }]);
-                    handleRegressionResponse("regress").then(response => {
-                      setMessages(prev => [...prev, { role: 'assistant', content: response }]);
-                    });
-                  }}
-                  className="px-5 py-2.5 bg-[#1a1a1a] border border-[#333] hover:border-[#ff9e19] text-white font-medium rounded-xl transition-all"
-                >
-                  Regress to Stage {(regressionIntervention?.currentStage || 2) - 1}
-                </button>
-                <button
-                  onClick={() => {
-                    setMessages(prev => [...prev, { role: 'user', content: "Let's troubleshoot" }]);
-                    handleRegressionResponse("troubleshoot").then(response => {
-                      setMessages(prev => [...prev, { role: 'assistant', content: response }]);
-                    });
-                  }}
-                  className="px-5 py-2.5 bg-[#ff9e19] hover:bg-orange-600 text-white font-medium rounded-xl transition-all"
-                >
-                  Troubleshoot
-                </button>
-              </div>
-            )}
+{/* Regression Quick Replies */}
+{regressionIntervention?.isActive && !loading && (
+  <div className="flex justify-center gap-3 flex-wrap">
+    <button
+      onClick={async () => {
+        const userMsg = `Regress to Stage ${regressionIntervention.currentStage - 1}`;
+        setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+        setLoading(true);
+        
+        await handleRegressionAction('regress', {
+          currentStage: regressionIntervention.currentStage,
+          adherence: regressionIntervention.adherence,
+          avgDelta: regressionIntervention.avgDelta,
+          reason: regressionIntervention.reason
+        });
+        
+        const response = await sendRegressionToAPI(
+          userMsg,
+          {
+            currentStage: regressionIntervention.currentStage,
+            adherence: regressionIntervention.adherence,
+            avgDelta: regressionIntervention.avgDelta,
+            reason: regressionIntervention.reason
+          }
+        );
+        
+        setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+        setLoading(false);
+      }}
+      className="px-5 py-2.5 bg-[#1a1a1a] border border-[#333] hover:border-[#ff9e19] text-white font-medium rounded-xl transition-all"
+    >
+      Regress to Stage {(regressionIntervention?.currentStage || 2) - 1}
+    </button>
+    
+    <button
+      onClick={async () => {
+        const userMsg = "Let's troubleshoot";
+        setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+        setLoading(true);
+        
+        const response = await sendRegressionToAPI(
+          userMsg,
+          {
+            currentStage: regressionIntervention.currentStage,
+            adherence: regressionIntervention.adherence,
+            avgDelta: regressionIntervention.avgDelta,
+            reason: regressionIntervention.reason
+          }
+        );
+        
+        setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+        // Keep intervention active for troubleshooting exploration
+        setLoading(false);
+      }}
+      className="px-5 py-2.5 bg-[#ff9e19] hover:bg-orange-600 text-white font-medium rounded-xl transition-all"
+    >
+      Troubleshoot
+    </button>
+  </div>
+)}
             
             {/* Sprint Renewal Quick Replies */}
             {sprintRenewalState.isActive && !sprintRenewalState.awaitingEvolutionInput && !loading && (
