@@ -3901,43 +3901,93 @@ const sendMessage = async (e: React.FormEvent) => {
 )}
             
             {/* System Recovery Quick Replies (30+ days) */}
-            {systemRecoveryIntervention?.isActive && !loading && (
-              <div className="flex justify-center gap-3 flex-wrap">
-                <button
-                  onClick={() => {
-                    setMessages(prev => [...prev, { role: 'user', content: "Full Reset - back to Stage 1" }]);
-                    handleSystemRecoveryResponse("full reset").then(response => {
-                      setMessages(prev => [...prev, { role: 'assistant', content: response }]);
-                    });
-                  }}
-                  className="px-5 py-2.5 bg-[#1a1a1a] border border-[#333] hover:border-[#ff9e19] text-white font-medium rounded-xl transition-all"
-                >
-                  Full Reset
-                </button>
-                <button
-                  onClick={() => {
-                    setMessages(prev => [...prev, { role: 'user', content: "Soft Reset - keep my stage" }]);
-                    handleSystemRecoveryResponse("soft reset").then(response => {
-                      setMessages(prev => [...prev, { role: 'assistant', content: response }]);
-                    });
-                  }}
-                  className="px-5 py-2.5 bg-[#ff9e19] hover:bg-orange-600 text-white font-medium rounded-xl transition-all"
-                >
-                  Soft Reset
-                </button>
-                <button
-                  onClick={() => {
-                    setMessages(prev => [...prev, { role: 'user', content: "Continue as-is" }]);
-                    handleSystemRecoveryResponse("continue as-is").then(response => {
-                      setMessages(prev => [...prev, { role: 'assistant', content: response }]);
-                    });
-                  }}
-                  className="px-5 py-2.5 bg-[#1a1a1a] border border-[#333] hover:border-[#ff9e19] text-white font-medium rounded-xl transition-all"
-                >
-                  Continue As-Is
-                </button>
-              </div>
-            )}
+{systemRecoveryIntervention?.isActive && !loading && (
+  <div className="flex justify-center gap-3 flex-wrap">
+    <button
+      onClick={async () => {
+        const userMsg = "Full Reset - back to Stage 1";
+        setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+        setLoading(true);
+        
+        await handleReEngagementAction('full_reset', 'system_recovery', { 
+          daysAway: systemRecoveryIntervention.daysAway,
+          previousStage: systemRecoveryIntervention.previousStage
+        });
+        
+        const response = await sendReEngagementToAPI(
+          userMsg,
+          'system_recovery',
+          { 
+            daysAway: systemRecoveryIntervention.daysAway,
+            previousStage: systemRecoveryIntervention.previousStage
+          }
+        );
+        
+        setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+        setLoading(false);
+      }}
+      className="px-5 py-2.5 bg-[#1a1a1a] border border-[#333] hover:border-[#ff9e19] text-white font-medium rounded-xl transition-all"
+    >
+      Full Reset
+    </button>
+    
+    <button
+      onClick={async () => {
+        const userMsg = "Soft Reset - keep my stage";
+        setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+        setLoading(true);
+        
+        await handleReEngagementAction('soft_reset', 'system_recovery', { 
+          daysAway: systemRecoveryIntervention.daysAway,
+          previousStage: systemRecoveryIntervention.previousStage
+        });
+        
+        const response = await sendReEngagementToAPI(
+          userMsg,
+          'system_recovery',
+          { 
+            daysAway: systemRecoveryIntervention.daysAway,
+            previousStage: systemRecoveryIntervention.previousStage
+          }
+        );
+        
+        setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+        setLoading(false);
+      }}
+      className="px-5 py-2.5 bg-[#ff9e19] hover:bg-orange-600 text-white font-medium rounded-xl transition-all"
+    >
+      Soft Reset
+    </button>
+    
+    <button
+      onClick={async () => {
+        const userMsg = "Continue as-is";
+        setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+        setLoading(true);
+        
+        await handleReEngagementAction('continue_as_is', 'system_recovery', { 
+          daysAway: systemRecoveryIntervention.daysAway,
+          previousStage: systemRecoveryIntervention.previousStage
+        });
+        
+        const response = await sendReEngagementToAPI(
+          userMsg,
+          'system_recovery',
+          { 
+            daysAway: systemRecoveryIntervention.daysAway,
+            previousStage: systemRecoveryIntervention.previousStage
+          }
+        );
+        
+        setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+        setLoading(false);
+      }}
+      className="px-5 py-2.5 bg-[#1a1a1a] border border-[#333] hover:border-[#ff9e19] text-white font-medium rounded-xl transition-all"
+    >
+      Continue As-Is
+    </button>
+  </div>
+)}
             
             {/* Regression Quick Replies */}
             {regressionIntervention?.isActive && !loading && (
