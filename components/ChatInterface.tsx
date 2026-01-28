@@ -4131,53 +4131,34 @@ if (regressionIntervention?.isActive) {
               </div>
             )}
 
-            {/* Stage 7 Quick Reply Buttons */}
-            {stage7FlowState === 'intro_shown' && !loading && (
-              <div className="flex justify-center gap-3 flex-wrap">
-                <button
-                  onClick={() => handleStage7QuickReply('learn_more')}
-                  className="px-5 py-2.5 bg-[#ff9e19] hover:bg-orange-600 text-white font-medium rounded-xl transition-all"
-                >
-                  Tell me about Stage 7
-                </button>
-                <button
-                  onClick={() => handleStage7QuickReply('continue_stage6')}
-                  className="px-5 py-2.5 bg-[#1a1a1a] border border-[#333] hover:border-[#ff9e19] text-white font-medium rounded-xl transition-all"
-                >
-                  Continue with Stage 6
-                </button>
-              </div>
-            )}
-            
-            {stage7FlowState === 'question1_shown' && !loading && (
-              <div className="flex justify-center gap-3 flex-wrap">
-                <button
-                  onClick={() => handleStage7QuickReply('yes_open')}
-                  className="px-5 py-2.5 bg-[#ff9e19] hover:bg-orange-600 text-white font-medium rounded-xl transition-all"
-                >
-                  Yes, I'm open
-                </button>
-                <button
-                  onClick={() => handleStage7QuickReply('no_not_open')}
-                  className="px-5 py-2.5 bg-[#1a1a1a] border border-[#333] hover:border-[#ff9e19] text-white font-medium rounded-xl transition-all"
-                >
-                  No, not for me
-                </button>
-              </div>
-            )}
-            
-            {stage7FlowState === 'complete' && stage7OpenToProtocol && !loading && (
-              <div className="flex justify-center">
-                <a
-                  href="https://nicholaskusmich.typeform.com/beyond"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-6 py-3 bg-[#ff9e19] hover:bg-orange-600 text-white font-semibold rounded-xl transition-colors shadow-lg inline-flex items-center gap-2"
-                >
-                  Apply for Stage 7 →
-                </a>
-              </div>
-            )}
+            const handleStage7QuickReply = useCallback(async (action: string) => {
+  let userMsg = '';
+  
+  switch (action) {
+    case 'learn_more':
+      userMsg = 'Tell me about Stage 7';
+      break;
+    case 'continue_stage6':
+      userMsg = "I'll continue deepening Stage 6";
+      break;
+    case 'yes_open':
+      userMsg = "Yes, I'm open to this";
+      break;
+    case 'no_not_open':
+      userMsg = 'No, not for me right now';
+      break;
+    case 'apply':
+      window.open('https://nicholaskusmich.typeform.com/beyond', '_blank');
+      return;
+  }
+  
+  if (userMsg) {
+    setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+    setLoading(true);
+    await processStage7Response(userMsg);
+    setLoading(false);
+  }
+}, [processStage7Response]);
             
             {/* Unlock Confirmation Buttons */}
             {unlockFlowState === 'eligible_shown' && pendingUnlockStage && !loading && (
