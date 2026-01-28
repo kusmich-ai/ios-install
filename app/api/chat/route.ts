@@ -1290,7 +1290,43 @@ ${context === 'regression_opening'
   : 'You are IN an active regression conversation. DO NOT loop back to the 2-option menu. Explore what the user shared and help them find the right path forward.'}
 `;
         
-        systemPrompt = regressionSystemPrompt + regressionContext + patternContext;
+    systemPrompt = regressionSystemPrompt + regressionContext + patternContext;
+        maxTokens = 1024;
+        break;
+      }
+
+      // ============================================
+      // STAGE 7 CONTEXT HANDLING
+      // ============================================
+      case 'stage_7':
+      case 'stage_7_opening': {
+        const stage7Data = additionalContext || {};
+        
+        const stage7Context = `
+## CURRENT STAGE 7 CONTEXT
+- User name: ${stage7Data.userName || 'User'}
+- Current stage: Stage 6 (Integration) - completed
+- Conversation phase: ${stage7Data.phase || 'introduction'}
+- User showed openness: ${stage7Data.isOpen !== undefined ? (stage7Data.isOpen ? 'Yes' : 'No') : 'Not yet asked'}
+${context === 'stage_7_opening' ? '- This is the OPENING message - introduce Stage 7 and offer choice to learn more or continue Stage 6' : ''}
+
+## APPLICATION URL
+https://nicholaskusmich.typeform.com/beyond
+
+## AWAKEN WITH 5 INFO
+- Private 1-on-1 5-MeO-DMT experience
+- Location: Kelowna, BC, Canada
+- 2-month journey: preparation → experience → integration
+- Facilitated by Nicholas and Fehren Kusmich
+- Full site: https://awakenwith5.com
+
+## CRITICAL INSTRUCTION
+${context === 'stage_7_opening' 
+  ? 'Generate an opening message introducing Stage 7. Explain it requires application, involves advanced tools including psychedelics, and offer two paths: learn more OR continue deepening Stage 6.' 
+  : 'You are IN an active Stage 7 conversation. Respond naturally to what the user shared. Move the conversation forward based on their interest level.'}
+`;
+        
+        systemPrompt = stage7SystemPrompt + stage7Context + patternContext;
         maxTokens = 1024;
         break;
       }
