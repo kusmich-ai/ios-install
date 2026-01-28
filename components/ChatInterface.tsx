@@ -2804,25 +2804,25 @@ ${avgDelta >= 0.3 ? '📈 Great progress! Your nervous system is responding to t
             else if (negativeDelta) reason = 'negative_delta';
             
             // Delay the regression message so user can see their weekly results first
-            setTimeout(async () => {
-              const regressionMsg = getRegressionMessage(
-                currentStage,
-                adherence,
-                avgDelta,
-                reason,
-                getUserName()
-              );
-              
-              await postAssistantMessage(regressionMsg);
-              
-              setRegressionIntervention({
-                isActive: true,
-                currentStage,
-                adherence,
-                avgDelta,
-                reason
-              });
-            }, 2000);
+setTimeout(async () => {
+  const regressionMsg = await getRegressionOpeningFromAPI(
+    currentStage,
+    adherence,
+    avgDelta,
+    reason,
+    getUserName()
+  );
+  
+  await postAssistantMessage(regressionMsg);
+  
+  setRegressionIntervention({
+    isActive: true,
+    currentStage,
+    adherence,
+    avgDelta,
+    reason
+  });
+}, 2000);
           }
         }
       }
