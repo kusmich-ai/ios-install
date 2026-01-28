@@ -3470,19 +3470,42 @@ if (missedDaysIntervention?.isActive) {
   return;
 }
     
-    // 0.6 Regression Intervention Flow
-    if (regressionIntervention?.isActive) {
-      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
-      setLoading(true);
-      
-      const response = await handleRegressionResponse(userMessage);
-      
-      setTimeout(async () => {
-        await postAssistantMessage(response);
-        setLoading(false);
-      }, 500);
-      return;
+// 0.6 Regression Intervention Flow
+if (regressionIntervention?.isActive) {
+  setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+  setLoading(true);
+  
+  const response = await sendRegressionToAPI(
+    userMessage,
+    {
+      currentStage: regressionIntervention.currentStage,
+      adherence: regressionIntervention.adherence,
+      avgDelta: regressionIntervention.avgDelta,
+      reason: regressionIntervention.reason
     }
+  );
+  
+  // Check if user chose to regress (clear intervention and update DB)
+  const lowerMsg = userMessage.toLowerCase();
+  if (lowerMsg.includes('regress') || lowerMsg.includes('go back') || lowerMsg.includes('previous stage')) {
+    await handleRegressionAction('regress', {
+      currentStage: regressionIntervention.currentStage,
+      adherence: regressionIntervention.adherence,
+      avgDelta: regressionIntervention.avgDelta,
+      reason: regressionIntervention.reason
+    });
+  }
+  // If they found a resolution during troubleshooting, clear the intervention
+  if (lowerMsg.includes('i\'ll try') || lowerMsg.includes('let\'s do') || lowerMsg.includes('sounds good') || lowerMsg.includes('that helps')) {
+    setRegressionIntervention(null);
+  }
+  
+  setTimeout(async () => {
+    await postAssistantMessage(response);
+    setLoading(false);
+  }, 500);
+  return;
+}
     
     // 1. Weekly Check-In Flow
     if (weeklyCheckInActive) {
