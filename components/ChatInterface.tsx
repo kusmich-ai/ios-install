@@ -1833,124 +1833,72 @@ Ready to continue your transformation?`
   // STAGE 7 FLOW HANDLERS
   // ============================================
   
-  const startStage7Introduction = useCallback(() => {
-    setStage7FlowState('intro_shown');
-    setMessages(prev => [...prev, {
-      role: 'assistant',
-      content: stage7Templates.intro
-    }]);
-  }, []);
+const startStage7Introduction = useCallback(async () => {
+  setStage7FlowState('intro_shown');
+  
+  const openingMessage = await getStage7OpeningFromAPI();
+  
+  setMessages(prev => [...prev, {
+    role: 'assistant',
+    content: openingMessage
+  }]);
+}, []);
 
-  const processStage7Response = useCallback((userMessage: string): boolean => {
-    const lowerMessage = userMessage.toLowerCase();
-    
-    switch (stage7FlowState) {
-      case 'intro_shown': {
-        const wantsToLearn = ['yes', 'learn', 'tell me', 'more', 'stage 7', 'interested', 'about'].some(
-          word => lowerMessage.includes(word)
-        );
-        const wantsToContinue = ['no', 'continue', 'stage 6', 'stay', 'not now', 'later', 'deepen'].some(
-          word => lowerMessage.includes(word)
-        );
-        
-        if (wantsToLearn) {
-          setStage7FlowState('explanation_shown');
-          setMessages(prev => [...prev, {
-            role: 'assistant',
-            content: stage7Templates.explanation
-          }]);
-          setTimeout(() => {
-            setStage7FlowState('question1_shown');
-            setMessages(prev => [...prev, {
-              role: 'assistant',
-              content: stage7Templates.question1
-            }]);
-          }, 1500);
-          return true;
-        } else if (wantsToContinue) {
-          setStage7FlowState('complete');
-          setMessages(prev => [...prev, {
-            role: 'assistant',
-            content: stage7Templates.stage6Continuation
-          }]);
-          return true;
-        }
-        return false;
-      }
-      
-      case 'question1_shown': {
-        const isOpen = ['yes', 'open', 'interested', 'ready', 'absolutely', 'definitely', 'yeah', 'yep', 'sure'].some(
-          word => lowerMessage.includes(word)
-        );
-        const notOpen = ['no', 'not', 'pass', 'skip'].some(
-          word => lowerMessage.includes(word)
-        );
-        
-        if (isOpen) {
-          setStage7OpenToProtocol(true);
-          setStage7FlowState('question2_shown');
-          setMessages(prev => [...prev, {
-            role: 'assistant',
-            content: stage7Templates.question2
-          }]);
-          return true;
-        } else if (notOpen) {
-          setStage7OpenToProtocol(false);
-          setStage7FlowState('complete');
-          setMessages(prev => [...prev, {
-            role: 'assistant',
-            content: stage7Templates.notOpenRoute
-          }]);
-          return true;
-        }
-        return false;
-      }
-      
-      case 'question2_shown': {
-        if (userMessage.trim().length > 10) {
-          setStage7FlowState('complete');
-          setMessages(prev => [...prev, {
-            role: 'assistant',
-            content: stage7Templates.applicationRoute
-          }]);
-          return true;
-        } else {
-          setMessages(prev => [...prev, {
-            role: 'assistant',
-            content: "Take a moment to reflect. Why does this feel like the right time in your life?"
-          }]);
-          return true;
-        }
-      }
-      
-      default:
-        return false;
-    }
-  }, [stage7FlowState]);
+  const processStage7Response = useCallback(async (userMessage: string): Promise<boolean> => {
+  if (stage7FlowState === 'none' || stage7FlowState === 'complete') {
+    return false;
+  }
+  
+  const lowerMessage = userMessage.toLowerCase();
+  
+  // Detect key decision points for state management
+  const wantsToLearn = ['yes', 'learn', 'tell me', 'more', 'stage 7', 'interested', 'about'].some(
+    word => lowerMessage.includes(word)
+  );
+  const wantsToContinue = ['no', 'continue', 'stage 6', 'stay', 'not now', 'later', 'deepen'].some(
+    word => lowerMessage.includes(word)
+  );
+  const isOpenResponse = ['yes', 'open', 'ready', 'absolutely', 'definitely'].some(
+    word => lowerMessage.includes(word)
+  );
+  const notOpenResponse = ['no', 'not', 'pass', 'skip'].some(
+    word => lowerMessage.includes(word)
+  );
+  
+  // Update openness state if they've answered
+  if (isOpenResponse && stage7OpenToProtocol === null) {
+    setStage7OpenToProtocol(true);
+  } else if (notOpenResponse && stage7OpenToProtocol === null) {
+    setStage7OpenToProtocol(false);
+    setStage7FlowState('complete');
+  }
+  
+  // If they want to continue Stage 6, complete the flow
+  if (wantsToContinue) {
+    setStage7FlowState('complete');
+  }
+  
+  // Determine conversation phase for API context
+  let phase = 'exploration';
+  if (stage7FlowState === 'intro_shown' && !wantsToLearn && !wantsToContinue) {
+    phase = 'introduction';
+  } else if (stage7OpenToProtocol === true) {
+    phase = 'ready_for_application';
+  } else if (stage7OpenToProtocol === false) {
+    phase = 'continuing_stage_6';
+  }
+  
+  // Send to API
+  const response = await sendStage7ToAPI(userMessage, phase, stage7OpenToProtocol);
+  
+  setMessages(prev => [...prev, {
+    role: 'assistant',
+    content: response
+  }]);
+  
+  return true;
+}, [stage7FlowState, stage7OpenToProtocol, messages]);
 
-  const handleStage7QuickReply = useCallback((action: string) => {
-    switch (action) {
-      case 'learn_more':
-        setMessages(prev => [...prev, { role: 'user', content: 'Tell me about Stage 7' }]);
-        processStage7Response('tell me more about stage 7');
-        break;
-      case 'continue_stage6':
-        setMessages(prev => [...prev, { role: 'user', content: "I'll continue with Stage 6" }]);
-        processStage7Response('continue stage 6');
-        break;
-      case 'yes_open':
-        setMessages(prev => [...prev, { role: 'user', content: "Yes, I'm open to this" }]);
-        processStage7Response('yes open');
-        break;
-      case 'no_not_open':
-        setMessages(prev => [...prev, { role: 'user', content: 'No, not for me right now' }]);
-        processStage7Response('no');
-        break;
-      case 'apply':
-        window.open(stage7Templates.applicationUrl, '_blank');
-        break;
-    }
-  }, [processStage7Response]);
 
   // ============================================
   // MICRO-ACTION SETUP HANDLERS
