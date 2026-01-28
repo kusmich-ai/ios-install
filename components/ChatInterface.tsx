@@ -429,50 +429,6 @@ Ready to start? Use the toolbar or let me know what you need.`;
 }
 
 // ============================================
-// REGRESSION INTERVENTION MESSAGE
-// ============================================
-
-function getRegressionMessage(
-  currentStage: number,
-  adherence: number,
-  avgDelta: number,
-  reason: 'low_adherence' | 'negative_delta' | 'both',
-  userName: string
-): string {
-  const stageName = getStageName(currentStage);
-  const previousStageName = getStageName(currentStage - 1);
-  
-  let problemStatement = '';
-  if (reason === 'both') {
-    problemStatement = `Your adherence dropped to **${adherence.toFixed(0)}%** and your delta scores are **${avgDelta >= 0 ? '+' : ''}${avgDelta.toFixed(2)}** (declining).`;
-  } else if (reason === 'low_adherence') {
-    problemStatement = `Your adherence dropped to **${adherence.toFixed(0)}%** since unlocking Stage ${currentStage}.`;
-  } else {
-    problemStatement = `Your delta scores are **${avgDelta >= 0 ? '+' : ''}${avgDelta.toFixed(2)}** — you're not seeing the improvements we'd expect at this stage.`;
-  }
-
-  return `Hey${userName ? `, ${userName}` : ''}.
-
-${problemStatement}
-
-That's feedback. The system is telling us something.
-
-**Two possibilities:**
-
-1. **New stage overwhelm** — Stage ${currentStage} (${stageName}) added too much too fast
-2. **Something else** — Life circumstances, schedule changes, or something blocking you
-
-**Two options:**
-
-1. **Regress to Stage ${currentStage - 1}** — Return to ${previousStageName} rituals, restabilize, then try again
-2. **Troubleshoot** — Stay at Stage ${currentStage} and figure out what's breaking down
-
-No shame in regressing. It's not failure — it's recalibration. The nervous system learns at its own pace.
-
-What sounds right?`;
-}
-
-// ============================================
 // STAGE INTRO MESSAGE
 // ============================================
 
