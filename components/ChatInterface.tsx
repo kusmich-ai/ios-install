@@ -825,6 +825,207 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
   const currentQuickReply = openingType === 'first_time' && introStep < 3 ? introQuickReplies[introStep] : null;
 
   // ============================================
+// RE-ENGAGEMENT API HANDLER (Unified)
+// ============================================
+
+const sendReEngagementToAPI = async (
+  userMessage: string,
+  interventionType: 'missed_days' | 'system_recovery',
+  interventionData: { daysAway: number; previousStage?: number }
+): Promise<string> => {
+  try {
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [
+          ...messages.map(m => ({ role: m.role, content: m.content })),
+          { role: 'user', content: userMessage }
+        ],
+        context: 're_engagement',
+        additionalContext: {
+          interventionType,
+          daysAway: interventionData.daysAway,
+          previousStage: interventionData.previousStage || progress?.currentStage || 1,
+          currentStage: progress?.currentStage || 1,
+          stageName: getStageName(progress?.currentStage || 1),
+          userName: getUserName(),
+          adherence: progress?.adherencePercentage || 0
+        }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('API request failed');
+    }
+
+    const data = await response.json();
+    return data.response || data.content || "I'm here to help. What would you like to do?";
+  } catch (error) {
+    console.error('Re-engagement API error:', error);
+    return "Something went wrong. Let's just continue — your rituals are waiting when you're ready.";
+  }
+};
+
+// ============================================
+// GET RE-ENGAGEMENT OPENING FROM API
+// ============================================
+
+const getReEngagementOpeningFromAPI = async (
+  type: 'missed_days' | 'system_recovery',
+  daysAway: number,
+  currentStage: number,
+  userName: string
+): Promise<string> => {
+  try {
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [],
+        context: 're_engagement_opening',
+        additionalContext: {
+          interventionType: type,
+          daysAway,
+          currentStage,
+          stageName: getStageName(currentStage),
+          userName,
+          adherence: 0,
+          isOpening: true
+        }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('API request failed');
+    }
+
+    const data = await response.json();
+    return data.response || data.content || getFallbackReEngagementMessage(type, daysAway, currentStage, userName);
+  } catch (error) {
+    console.error('Re-engagement opening API error:', error);
+    return getFallbackReEngagementMessage(type, daysAway, currentStage, userName);
+  }
+};
+
+// Fallback in case API fails
+const getFallbackReEngagementMessage = (
+  type: 'missed_days' | 'system_recovery',
+  daysAway: number,
+  currentStage: number,
+  userName: string
+): string => {
+  const rituals = stageRituals[currentStage] || stageRituals[1];
+  
+  if (type === 'system_recovery') {
+    return `Hey${userName ? `, ${userName}` : ''}. It's been **${daysAway} days** since your last practice.
+
+I'll be direct: at this point, much of the neural rewiring has likely faded. But reinstallation is faster the second time.
+
+**Three options:**
+1. **Full Reset** — Back to Stage 1, new baseline
+2. **Soft Reset** — Stay at Stage ${currentStage}, reset streak
+3. **Continue As-Is** — Jump right back in
+
+What sounds right?`;
+  }
+  
+  return `Hey${userName ? `, ${userName}` : ''}. It's been **${daysAway} days**. Let's be honest about what's happening.
+
+${daysAway >= 7 ? "A week" : `${daysAway} days`} isn't "I forgot" — it's either:
+1. Life blew up (legitimate pause needed)
+2. Resistance is running the show
+3. The system isn't fitting your reality right now
+
+Which is it? No judgment — just need accurate data to help you.`;
+};
+
+// ============================================
+// RE-ENGAGEMENT ACTION HANDLERS
+// ============================================
+
+const handleReEngagementAction = async (
+  action: 'continue' | 'talk' | 'reset' | 'full_reset' | 'soft_reset' | 'continue_as_is',
+  interventionType: 'missed_days' | 'system_recovery',
+  interventionData: { daysAway: number; previousStage?: number }
+): Promise<void> => {
+  const supabase = createClient();
+  
+  switch (action) {
+    case 'continue':
+    case 'continue_as_is':
+      // Log and clear intervention
+      if (interventionType === 'missed_days' && interventionData.daysAway) {
+        await logMissedDays(
+          user.id,
+          interventionData.daysAway,
+          'continued_without_explanation',
+          progress?.currentStage || 1
+        );
+      }
+      setMissedDaysIntervention(null);
+      setSystemRecoveryIntervention(null);
+      break;
+      
+    case 'reset':
+      // Reset stage start date
+      await supabase
+        .from('user_progress')
+        .update({ 
+          stage_start_date: new Date().toISOString(),
+          consecutive_days: 0
+        })
+        .eq('user_id', user.id);
+      setMissedDaysIntervention(null);
+      if (refetchProgress) await refetchProgress();
+      break;
+      
+    case 'full_reset':
+      // Full reset to Stage 1
+      await supabase
+        .from('user_progress')
+        .update({ 
+          current_stage: 1,
+          stage_start_date: new Date().toISOString(),
+          consecutive_days: 0,
+          adherence_percentage: 0,
+          baseline_completed: false,
+          ritual_intro_completed: false,
+          last_visit: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
+      
+      await supabase
+        .from('baseline_assessments')
+        .delete()
+        .eq('user_id', user.id);
+      
+      setSystemRecoveryIntervention(null);
+      if (refetchProgress) await refetchProgress();
+      break;
+      
+    case 'soft_reset':
+      // Keep stage, reset streak
+      await supabase
+        .from('user_progress')
+        .update({ 
+          stage_start_date: new Date().toISOString(),
+          consecutive_days: 0,
+          adherence_percentage: 0,
+          last_visit: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
+      setSystemRecoveryIntervention(null);
+      if (refetchProgress) await refetchProgress();
+      break;
+      
+    case 'talk':
+      // Keep intervention active for exploration
+      break;
+  }
+};
+
+  // ============================================
   // BUILD TEMPLATE CONTEXT
   // ============================================
   
