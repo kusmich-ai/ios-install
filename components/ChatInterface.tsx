@@ -1026,6 +1026,164 @@ const handleReEngagementAction = async (
 };
 
   // ============================================
+// REGRESSION API HANDLER (Unified)
+// ============================================
+
+const sendRegressionToAPI = async (
+  userMessage: string,
+  interventionData: { 
+    currentStage: number; 
+    adherence: number; 
+    avgDelta: number; 
+    reason: 'low_adherence' | 'negative_delta' | 'both';
+  }
+): Promise<string> => {
+  try {
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [
+          ...messages.map(m => ({ role: m.role, content: m.content })),
+          { role: 'user', content: userMessage }
+        ],
+        context: 'regression',
+        additionalContext: {
+          currentStage: interventionData.currentStage,
+          stageName: getStageName(interventionData.currentStage),
+          adherence: interventionData.adherence,
+          avgDelta: interventionData.avgDelta,
+          reason: interventionData.reason,
+          userName: getUserName()
+        }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('API request failed');
+    }
+
+    const data = await response.json();
+    return data.response || data.content || "Let's figure out the best path forward. Would you like to regress or troubleshoot?";
+  } catch (error) {
+    console.error('Regression API error:', error);
+    return "Something went wrong. Let's continue — would you like to regress to the previous stage or troubleshoot what's happening?";
+  }
+};
+
+// ============================================
+// GET REGRESSION OPENING FROM API
+// ============================================
+
+const getRegressionOpeningFromAPI = async (
+  currentStage: number,
+  adherence: number,
+  avgDelta: number,
+  reason: 'low_adherence' | 'negative_delta' | 'both',
+  userName: string
+): Promise<string> => {
+  try {
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [],
+        context: 'regression_opening',
+        additionalContext: {
+          currentStage,
+          stageName: getStageName(currentStage),
+          adherence,
+          avgDelta,
+          reason,
+          userName,
+          isOpening: true
+        }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('API request failed');
+    }
+
+    const data = await response.json();
+    return data.response || data.content || getFallbackRegressionMessage(currentStage, adherence, avgDelta, reason, userName);
+  } catch (error) {
+    console.error('Regression opening API error:', error);
+    return getFallbackRegressionMessage(currentStage, adherence, avgDelta, reason, userName);
+  }
+};
+
+// Fallback in case API fails
+const getFallbackRegressionMessage = (
+  currentStage: number,
+  adherence: number,
+  avgDelta: number,
+  reason: 'low_adherence' | 'negative_delta' | 'both',
+  userName: string
+): string => {
+  const stageName = getStageName(currentStage);
+  const previousStageName = getStageName(currentStage - 1);
+  
+  let problemStatement = '';
+  if (reason === 'both') {
+    problemStatement = `Your adherence dropped to **${adherence.toFixed(0)}%** and your delta scores are **${avgDelta >= 0 ? '+' : ''}${avgDelta.toFixed(2)}** (declining).`;
+  } else if (reason === 'low_adherence') {
+    problemStatement = `Your adherence dropped to **${adherence.toFixed(0)}%** since unlocking Stage ${currentStage}.`;
+  } else {
+    problemStatement = `Your delta scores are **${avgDelta >= 0 ? '+' : ''}${avgDelta.toFixed(2)}** — you're not seeing the improvements we'd expect at this stage.`;
+  }
+
+  return `Hey${userName ? `, ${userName}` : ''}.
+
+${problemStatement}
+
+That's feedback. The system is telling us something.
+
+**Two options:**
+
+1. **Regress to Stage ${currentStage - 1}** — Return to ${previousStageName} rituals, restabilize, then try again
+2. **Troubleshoot** — Stay at Stage ${currentStage} and figure out what's breaking down
+
+No shame in regressing. It's not failure — it's recalibration. The nervous system learns at its own pace.
+
+What sounds right?`;
+};
+
+// ============================================
+// REGRESSION ACTION HANDLER
+// ============================================
+
+const handleRegressionAction = async (
+  action: 'regress' | 'troubleshoot',
+  interventionData: { 
+    currentStage: number; 
+    adherence: number; 
+    avgDelta: number; 
+    reason: 'low_adherence' | 'negative_delta' | 'both';
+  }
+): Promise<void> => {
+  const supabase = createClient();
+  
+  if (action === 'regress') {
+    const previousStage = interventionData.currentStage - 1;
+    
+    await supabase
+      .from('user_progress')
+      .update({ 
+        current_stage: previousStage,
+        stage_start_date: new Date().toISOString(),
+        consecutive_days: 0
+      })
+      .eq('user_id', user.id);
+    
+    setRegressionIntervention(null);
+    if (refetchProgress) await refetchProgress();
+  }
+  // For troubleshoot, we keep the intervention active for exploration
+  // It gets cleared when user chooses a resolution path
+};
+  
+  // ============================================
   // BUILD TEMPLATE CONTEXT
   // ============================================
   
