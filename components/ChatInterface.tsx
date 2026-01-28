@@ -1710,12 +1710,13 @@ Ready to continue your transformation?`
     
     // Check if they're providing an excuse/reason (after "talk about it")
     const excuseKeywords = {
-      time: ['time', 'busy', 'schedule', 'work', 'meeting', 'deadline'],
-      energy: ['tired', 'exhaust', 'energy', 'sleep', 'drained', 'burnt'],
-      motivation: ['motivation', 'feel like', 'want to', 'why bother', 'point'],
-      life_event: ['happen', 'family', 'emergency', 'sick', 'illness', 'crisis', 'travel'],
-      forgot: ['forgot', 'remember', 'slipped', 'mind']
-    };
+  time: ['time', 'busy', 'schedule', 'work', 'meeting', 'deadline'],
+  energy: ['tired', 'exhaust', 'energy', 'sleep', 'drained', 'burnt'],
+  motivation: ['motivation', 'feel like', 'want to', 'why bother', 'point'],
+  resistance: ['resistance', 'resisting', 'resist', 'don\'t want to', 'avoiding', 'avoidance', 'procrastinat'],
+  life_event: ['happen', 'family', 'emergency', 'sick', 'illness', 'crisis', 'travel'],
+  forgot: ['forgot', 'remember', 'slipped', 'mind']
+};
     
     // Detect if this is an excuse response
     let detectedExcuse: string | null = null;
@@ -1738,13 +1739,14 @@ Ready to continue your transformation?`
       );
       
       // Check if this excuse has been used before
-      const excuseLabels: { [key: string]: string } = {
-        time: 'no time',
-        energy: 'too tired',
-        motivation: 'not motivated',
-        life_event: 'life happened',
-        forgot: 'forgot'
-      };
+    const excuseLabels: { [key: string]: string } = {
+  time: 'no time',
+  energy: 'too tired',
+  motivation: 'not motivated',
+  resistance: 'resistance',  
+  life_event: 'life happened',
+  forgot: 'forgot'
+};
       
       setMissedDaysIntervention(null);
       
@@ -1793,6 +1795,23 @@ ${rituals?.list || '1. Resonance Breathing - 5 mins\n2. Awareness Rep - 2 mins'}
 Your brain deprioritizes what it doesn't value. That's not a judgment — it's just how neuroscience works. The fact that you "forgot" means the practice hasn't become automatic yet.
 
 What would make it impossible to forget? Tie it to something you already do every morning.
+
+resistance: `Resistance. Got it. That's honest.
+
+Here's the thing about resistance: it's information. Your nervous system is saying "no" for a reason.
+
+Which of these resonates most?
+
+- **Fear of failure** — "What if I do this and still don't change?"
+- **Fear of success** — "What if this works and I have to keep showing up?"
+- **Identity protection** — Part of me doesn't actually want to be different
+- **Energy mismatch** — The practices feel like one more thing on my list
+- **Timing** — This isn't the right season for this
+
+Or is it something else entirely? What does the resistance actually feel like?
+
+Take a moment to sit with it. When you're ready to continue, your rituals are here:
+${rituals?.list || '1. Resonance Breathing - 5 mins\\n2. Awareness Rep - 2 mins'}`,
 
 Your rituals:
 ${rituals?.list || '1. Resonance Breathing - 5 mins\n2. Awareness Rep - 2 mins'}`
