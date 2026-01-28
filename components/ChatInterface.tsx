@@ -4207,35 +4207,6 @@ if (regressionIntervention?.isActive) {
                 ))}
               </div>
             )}
-
-            const handleStage7QuickReply = useCallback(async (action: string) => {
-  let userMsg = '';
-  
-  switch (action) {
-    case 'learn_more':
-      userMsg = 'Tell me about Stage 7';
-      break;
-    case 'continue_stage6':
-      userMsg = "I'll continue deepening Stage 6";
-      break;
-    case 'yes_open':
-      userMsg = "Yes, I'm open to this";
-      break;
-    case 'no_not_open':
-      userMsg = 'No, not for me right now';
-      break;
-    case 'apply':
-      window.open('https://nicholaskusmich.typeform.com/beyond', '_blank');
-      return;
-  }
-  
-  if (userMsg) {
-    setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
-    setLoading(true);
-    await processStage7Response(userMsg);
-    setLoading(false);
-  }
-}, [processStage7Response]);
             
             {/* Unlock Confirmation Buttons */}
             {unlockFlowState === 'eligible_shown' && pendingUnlockStage && !loading && (
