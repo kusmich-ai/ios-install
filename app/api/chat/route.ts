@@ -1,4 +1,4 @@
-// app/api/chat/route.ts - ENHANCED VERSION with Complete Voice System, Layer Zero Cue, and Frustration Detection
+// app/api/chat/route.ts - UPDATED with Re-engagement Context Handling
 import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
 import { microActionSystemPrompt, extractionSystemPrompt } from '@/lib/microActionAPI';
@@ -440,6 +440,95 @@ Example responses:
 - Reference "the modal" or "the popup" — just answer the question directly
 `;
 const mainSystemPrompt = withCueKernel(mainSystemPromptBase);
+
+// ============================================
+// RE-ENGAGEMENT SYSTEM PROMPT (NEW)
+// ============================================
+const reEngagementSystemPrompt = `${SECURITY_INSTRUCTIONS}
+
+# RE-ENGAGEMENT CONVERSATION HANDLER
+
+You are handling a re-engagement conversation with a user who has returned after an absence.
+
+## CRITICAL ANTI-LOOP RULES
+
+**NEVER:**
+- Return to the initial 3-option menu (Continue/Talk/Reset) once the user has made a choice
+- Repeat "What got in the way?" after they've already answered
+- Show options again during exploration
+- Loop back to the beginning of the flow
+
+**ALWAYS:**
+- Acknowledge their answer and explore deeper
+- Move the conversation FORWARD
+- Only offer resolution options AFTER exploration is complete
+
+## CONVERSATION PHASES
+
+### Phase 1: Initial Contact (Opening Message Only)
+Generate an opening that:
+- Acknowledges the gap directly but without judgment
+- States the days away
+- Offers three clear options
+
+### Phase 2: Exploration Mode
+When user chooses "Talk About It" or similar:
+- Ask what got in the way ONCE
+- When they answer (time, energy, resistance, life event, etc.), ACKNOWLEDGE and EXPLORE
+- Use follow-up questions to understand the root cause
+- Do NOT return to Phase 1 menu
+
+### Phase 3: Resolution
+After exploration is complete, offer:
+- Adapted approach suggestions
+- Intentional pause option
+- Push through with awareness option
+
+## HANDLING SPECIFIC OBSTACLES
+
+### If user says "Resistance":
+"Resistance. Got it. That's honest.
+
+Here's the thing about resistance: it's information. Your nervous system is saying 'no' for a reason.
+
+Which of these resonates most?
+- **Fear of failure** — "What if I do this and still don't change?"
+- **Fear of success** — "What if this works and I have to keep showing up?"
+- **Identity protection** — Part of me doesn't actually want to be different
+- **Energy mismatch** — The practices feel like one more thing on my list
+- **Timing** — This isn't the right season for this
+
+Or is it something else entirely?"
+
+Then WAIT for their response and explore THAT, don't loop back.
+
+### If user says "Time":
+Explore whether it's actually time or priority. Ask about their morning routine. Don't lecture — inquire.
+
+### If user says "Energy":
+Acknowledge the depletion loop. Ask what's draining them. Offer the counterintuitive truth that practices give energy.
+
+### If user says "Life Event":
+Acknowledge that life happens. Ask if they want to share what happened. Be human about it.
+
+### If user says "Motivation":
+Discuss the unreliability of motivation vs. systems. Ask what made them show up today.
+
+## STAGE RITUALS REFERENCE
+
+Stage 1: Resonance Breathing (5 min) + Awareness Rep (2 min)
+Stage 2: + Somatic Flow (3 min)
+Stage 3: + Morning Micro-Action (2-3 min)
+Stage 4: + Flow Block (60-90 min)
+Stage 5: + Co-Regulation (3-5 min)
+Stage 6: + Nightly Debrief (2 min)
+
+## VOICE
+- Direct, not harsh
+- Curious, not interrogating
+- Supportive without coddling
+- No fake positivity
+`;
 
 // ============================================
 // THOUGHT HYGIENE SYSTEM PROMPT
@@ -887,24 +976,64 @@ export async function POST(req: Request) {
         break;
 
       case 'micro_action_extraction':
-  systemPrompt = extractionSystemPrompt;
-  maxTokens = 500;
-  temperature = 0.1;  // Low temperature for deterministic JSON output
-  break;
+        systemPrompt = extractionSystemPrompt;
+        maxTokens = 500;
+        temperature = 0.1;
+        break;
 
-     case 'flow_block_setup':
-  // ISOLATED: No security instructions, no cue kernel, no pattern context
-  // Flow Block is an installer that needs strict protocol following
-  systemPrompt = flowBlockSystemPrompt;  // Raw prompt only
-  maxTokens = 2048;
-  temperature = 0.3;  // Lower temperature for deterministic behavior
-  break;
+      case 'flow_block_setup':
+        systemPrompt = flowBlockSystemPrompt;
+        maxTokens = 2048;
+        temperature = 0.3;
+        break;
 
-  case 'flow_block_extraction':
-  systemPrompt = flowBlockExtractionSystemPrompt;  // ADD THIS LINE
-  maxTokens = 500;
-  temperature = 0.2;
-  break;
+      case 'flow_block_extraction':
+        systemPrompt = flowBlockExtractionSystemPrompt;
+        maxTokens = 500;
+        temperature = 0.2;
+        break;
+
+      // ============================================
+      // NEW: RE-ENGAGEMENT CONTEXT HANDLING
+      // ============================================
+      case 're_engagement':
+      case 're_engagement_opening': {
+        // Build re-engagement context from additionalContext
+        const reEngagementData = additionalContext || {};
+        const stageRituals: { [key: number]: string } = {
+          1: '1. Resonance Breathing - 5 mins\n2. Awareness Rep - 2 mins',
+          2: '1. Resonance Breathing - 5 mins\n2. Somatic Flow - 3 mins\n3. Awareness Rep - 2 mins',
+          3: '1. Resonance Breathing - 5 mins\n2. Somatic Flow - 3 mins\n3. Awareness Rep - 2 mins\n4. Morning Micro-Action - 2-3 mins',
+          4: '1. Resonance Breathing - 5 mins\n2. Somatic Flow - 3 mins\n3. Awareness Rep - 2 mins\n4. Morning Micro-Action - 2-3 mins\n5. Flow Block - 60-90 mins',
+          5: '1. Resonance Breathing - 5 mins\n2. Somatic Flow - 3 mins\n3. Awareness Rep - 2 mins\n4. Morning Micro-Action - 2-3 mins\n5. Flow Block - 60-90 mins\n6. Co-Regulation - 3-5 mins',
+          6: '1. Resonance Breathing - 5 mins\n2. Somatic Flow - 3 mins\n3. Awareness Rep - 2 mins\n4. Morning Micro-Action - 2-3 mins\n5. Flow Block - 60-90 mins\n6. Co-Regulation - 3-5 mins\n7. Nightly Debrief - 2 mins',
+        };
+        
+        const currentStage = reEngagementData.currentStage || 1;
+        const ritualsList = stageRituals[currentStage] || stageRituals[1];
+        
+        const reEngagementContext = `
+## CURRENT RE-ENGAGEMENT CONTEXT
+- Days away: ${reEngagementData.daysAway || 'unknown'}
+- Intervention type: ${reEngagementData.interventionType || 'missed_days'}
+- Current stage: Stage ${currentStage} (${reEngagementData.stageName || ''})
+- User name: ${reEngagementData.userName || 'User'}
+- Current adherence: ${reEngagementData.adherence || 0}%
+${context === 're_engagement_opening' ? '- This is the OPENING message - generate the initial re-engagement prompt with 3 options' : ''}
+
+## USER'S CURRENT RITUALS (Stage ${currentStage})
+${ritualsList}
+
+## CRITICAL INSTRUCTION
+${context === 're_engagement_opening' 
+  ? 'Generate an opening re-engagement message that acknowledges the gap and offers 3 options: Continue, Talk About It, Reset. Use the IOS voice - direct, not harsh.' 
+  : 'You are IN an active re-engagement conversation. DO NOT loop back to the 3-option menu. Explore what the user shared and move the conversation FORWARD.'}
+`;
+        
+        systemPrompt = reEngagementSystemPrompt + reEngagementContext + patternContext;
+        maxTokens = 1024;
+        break;
+      }
 
       case 'weekly_check_in':
         maxTokens = 1024;
@@ -956,13 +1085,13 @@ export async function POST(req: Request) {
     }
 
     // STEP 6.5: INJECT TOOL-AWARE ATTRIBUTION RESET PROTOCOL IF DRIFT DETECTED
-    // Now that we know the context, get the appropriate tool-specific injection
     if (hasFrustration && latestUserMessage) {
       const attributionResetInjection = getAttributionResetInjection(latestUserMessage.content, context);
       if (attributionResetInjection) {
         systemPrompt += attributionResetInjection;
       }
     }
+    
     const hasSystemPrompt = messages.some((msg: Message) => msg.role === 'system');
     
     // Build properly typed messages array
@@ -974,27 +1103,27 @@ export async function POST(req: Request) {
       }));
 
     // STEP 7: MAKE API CALL
-  const response = await anthropic.messages.create({
-  model: 'claude-sonnet-4-20250514',
-  max_tokens: maxTokens,
-  temperature: temperature,  
-  system: (context === 'micro_action_extraction' || context === 'flow_block_extraction') 
-  ? systemPrompt 
-  : (hasSystemPrompt ? undefined : systemPrompt),
-  messages: conversationMessages,
-});
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: maxTokens,
+      temperature: temperature,  
+      system: (context === 'micro_action_extraction' || context === 'flow_block_extraction') 
+        ? systemPrompt 
+        : (hasSystemPrompt ? undefined : systemPrompt),
+      messages: conversationMessages,
+    });
 
     const responseText = response.content[0].type === 'text' 
       ? response.content[0].text 
       : '';
 
-// Skip cue prefix for extraction contexts (need clean JSON)
-const skipCuePrefix = context === 'micro_action_extraction' || context === 'flow_block_extraction';
+    // Skip cue prefix for extraction contexts (need clean JSON)
+    const skipCuePrefix = context === 'micro_action_extraction' || context === 'flow_block_extraction';
 
-return NextResponse.json({ 
-  response: skipCuePrefix ? responseText : cuePrefix + responseText,
-  context: context || 'general',
-});
+    return NextResponse.json({ 
+      response: skipCuePrefix ? responseText : cuePrefix + responseText,
+      context: context || 'general',
+    });
 
   } catch (error) {
     console.error('[API/Chat] Error:', error);
