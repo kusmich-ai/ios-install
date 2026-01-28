@@ -429,30 +429,6 @@ Ready to start? Use the toolbar or let me know what you need.`;
 }
 
 // ============================================
-// MISSED DAYS INTERVENTION MESSAGE
-// ============================================
-
-function getMissedDaysMessage(
-  daysMissed: number,
-  adherence: number,
-  userName: string,
-  currentStage: number
-): string {
-  const template = getMissedPracticeResponse(daysMissed, {
-    adherence,
-    stageName: getStageName(currentStage),
-    previousPattern: false
-  });
-  
-  return processTemplate(template, {
-    daysAway: daysMissed,
-    adherence: Math.round(adherence),
-    stageName: getStageName(currentStage),
-    userName: userName || ''
-  });
-}
-
-// ============================================
 // REGRESSION INTERVENTION MESSAGE
 // ============================================
 
