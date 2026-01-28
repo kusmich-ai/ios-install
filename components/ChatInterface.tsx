@@ -473,46 +473,6 @@ What sounds right?`;
 }
 
 // ============================================
-// SYSTEM RECOVERY MESSAGE (30+ Days Away)
-// ============================================
-
-function getSystemRecoveryMessage(
-  daysAway: number,
-  previousStage: number,
-  userName: string
-): string {
-  const previousStageName = getStageName(previousStage);
-  
-  // Calculate weeks for readability
-  const weeks = Math.floor(daysAway / 7);
-  const timeAwayText = weeks >= 4 
-    ? `${Math.floor(weeks / 4)} month${Math.floor(weeks / 4) > 1 ? 's' : ''}` 
-    : `${weeks} week${weeks > 1 ? 's' : ''}`;
-
-  return `Hey${userName ? `, ${userName}` : ''}.
-
-It's been **${daysAway} days** — about ${timeAwayText} — since your last practice.
-
-I'll be direct: at this point, much of the neural rewiring has likely faded. That's just how neuroplasticity works — use it or lose it. The pathways we built have weakened.
-
-But here's the good news: **reinstallation is faster the second time.** Your nervous system remembers the patterns, even if they've gone dormant. We're not starting from scratch — we're reactivating.
-
-You were at **Stage ${previousStage}: ${previousStageName}** before.
-
-**Three options:**
-
-1. **Full Reset** — Back to Stage 1, new baseline assessment, clean slate. Recommended if life has changed significantly.
-
-2. **Soft Reset** — Stay at Stage ${previousStage}, reset your streak, quick 2-minute check-in. Good if you want to pick up where you left off.
-
-3. **Continue As-Is** — Jump right back in with today's rituals. Only choose this if you've been practicing on your own.
-
-No judgment on the gap. What matters is you're back.
-
-What sounds right?`;
-}
-
-// ============================================
 // STAGE INTRO MESSAGE
 // ============================================
 
