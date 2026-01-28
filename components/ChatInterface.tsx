@@ -3827,43 +3827,78 @@ const sendMessage = async (e: React.FormEvent) => {
             )}
             
             {/* Missed Days Quick Replies */}
-            {missedDaysIntervention?.isActive && !loading && (
-              <div className="flex justify-center gap-3 flex-wrap">
-                <button
-                  onClick={() => {
-                    setMessages(prev => [...prev, { role: 'user', content: "Let's pick up where I left off" }]);
-                    handleMissedDaysResponse("let's pick up").then(response => {
-                      setMessages(prev => [...prev, { role: 'assistant', content: response }]);
-                    });
-                  }}
-                  className="px-5 py-2.5 bg-[#ff9e19] hover:bg-orange-600 text-white font-medium rounded-xl transition-all"
-                >
-                  Continue
-                </button>
-                <button
-                  onClick={() => {
-                    setMessages(prev => [...prev, { role: 'user', content: "Let's talk about what happened" }]);
-                    handleMissedDaysResponse("talk about it").then(response => {
-                      setMessages(prev => [...prev, { role: 'assistant', content: response }]);
-                    });
-                  }}
-                  className="px-5 py-2.5 bg-[#1a1a1a] border border-[#333] hover:border-[#ff9e19] text-white font-medium rounded-xl transition-all"
-                >
-                  Talk About It
-                </button>
-                <button
-                  onClick={() => {
-                    setMessages(prev => [...prev, { role: 'user', content: "Reset my stage" }]);
-                    handleMissedDaysResponse("reset stage").then(response => {
-                      setMessages(prev => [...prev, { role: 'assistant', content: response }]);
-                    });
-                  }}
-                  className="px-5 py-2.5 bg-[#1a1a1a] border border-[#333] hover:border-[#ff9e19] text-white font-medium rounded-xl transition-all"
-                >
-                  Reset Stage
-                </button>
-              </div>
-            )}
+{missedDaysIntervention?.isActive && !loading && (
+  <div className="flex justify-center gap-3 flex-wrap">
+    <button
+      onClick={async () => {
+        const userMsg = "Let's pick up where I left off";
+        setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+        setLoading(true);
+        
+        await handleReEngagementAction('continue', 'missed_days', { 
+          daysAway: missedDaysIntervention.daysMissed 
+        });
+        
+        const response = await sendReEngagementToAPI(
+          userMsg,
+          'missed_days',
+          { daysAway: missedDaysIntervention.daysMissed }
+        );
+        
+        setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+        setLoading(false);
+      }}
+      className="px-5 py-2.5 bg-[#ff9e19] hover:bg-orange-600 text-white font-medium rounded-xl transition-all"
+    >
+      Continue
+    </button>
+    
+    <button
+      onClick={async () => {
+        const userMsg = "Let's talk about what happened";
+        setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+        setLoading(true);
+        
+        const response = await sendReEngagementToAPI(
+          userMsg,
+          'missed_days',
+          { daysAway: missedDaysIntervention.daysMissed }
+        );
+        
+        setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+        // Keep intervention active for exploration - don't clear it here
+        setLoading(false);
+      }}
+      className="px-5 py-2.5 bg-[#1a1a1a] border border-[#333] hover:border-[#ff9e19] text-white font-medium rounded-xl transition-all"
+    >
+      Talk About It
+    </button>
+    
+    <button
+      onClick={async () => {
+        const userMsg = "Reset my stage";
+        setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+        setLoading(true);
+        
+        await handleReEngagementAction('reset', 'missed_days', { 
+          daysAway: missedDaysIntervention.daysMissed 
+        });
+        
+        const response = await sendReEngagementToAPI(
+          userMsg,
+          'missed_days',
+          { daysAway: missedDaysIntervention.daysMissed }
+        );
+        
+        setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+        setLoading(false);
+      }}
+      className="px-5 py-2.5 bg-[#1a1a1a] border border-[#333] hover:border-[#ff9e19] text-white font-medium rounded-xl transition-all"
+    >
+      Reset Stage
+    </button>
+  </div>
+)}
             
             {/* System Recovery Quick Replies (30+ days) */}
             {systemRecoveryIntervention?.isActive && !loading && (
