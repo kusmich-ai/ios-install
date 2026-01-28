@@ -3362,33 +3362,78 @@ const sendMessage = async (e: React.FormEvent) => {
       if (handled) return;
     }
     
-    // 0.4 System Recovery Flow (30+ days away)
-    if (systemRecoveryIntervention?.isActive) {
-      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
-      setLoading(true);
-      
-      const response = await handleSystemRecoveryResponse(userMessage);
-      
-      setTimeout(() => {
-        setMessages(prev => [...prev, { role: 'assistant', content: response }]);
-        setLoading(false);
-      }, 500);
-      return;
+  // 0.4 System Recovery Flow (30+ days away)
+if (systemRecoveryIntervention?.isActive) {
+  setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+  setLoading(true);
+  
+  const response = await sendReEngagementToAPI(
+    userMessage,
+    'system_recovery',
+    { 
+      daysAway: systemRecoveryIntervention.daysAway,
+      previousStage: systemRecoveryIntervention.previousStage
     }
+  );
+  
+  // Check if user chose a resolution option (clear intervention)
+  const lowerMsg = userMessage.toLowerCase();
+  if (lowerMsg.includes('reset') || lowerMsg.includes('continue')) {
+    if (lowerMsg.includes('full')) {
+      await handleReEngagementAction('full_reset', 'system_recovery', { 
+        daysAway: systemRecoveryIntervention.daysAway,
+        previousStage: systemRecoveryIntervention.previousStage
+      });
+    } else if (lowerMsg.includes('soft')) {
+      await handleReEngagementAction('soft_reset', 'system_recovery', { 
+        daysAway: systemRecoveryIntervention.daysAway,
+        previousStage: systemRecoveryIntervention.previousStage
+      });
+    } else if (lowerMsg.includes('continue') || lowerMsg.includes('as-is')) {
+      await handleReEngagementAction('continue_as_is', 'system_recovery', { 
+        daysAway: systemRecoveryIntervention.daysAway,
+        previousStage: systemRecoveryIntervention.previousStage
+      });
+    }
+  }
+  
+  setTimeout(() => {
+    setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+    setLoading(false);
+  }, 500);
+  return;
+}
     
     // 0.5 Missed Days Intervention Flow (2-29 days)
-    if (missedDaysIntervention?.isActive) {
-      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
-      setLoading(true);
-      
-      const response = await handleMissedDaysResponse(userMessage);
-      
-      setTimeout(async () => {
-        await postAssistantMessage(response);
-        setLoading(false);
-      }, 500);
-      return;
-    }
+if (missedDaysIntervention?.isActive) {
+  setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+  setLoading(true);
+  
+  const response = await sendReEngagementToAPI(
+    userMessage,
+    'missed_days',
+    { daysAway: missedDaysIntervention.daysMissed }
+  );
+  
+  // Check if user chose a resolution option (clear intervention)
+  const lowerMsg = userMessage.toLowerCase();
+  if (lowerMsg.includes('pick up') || lowerMsg.includes('continue') || lowerMsg.includes('let\'s go')) {
+    await handleReEngagementAction('continue', 'missed_days', { 
+      daysAway: missedDaysIntervention.daysMissed 
+    });
+  } else if (lowerMsg.includes('reset')) {
+    await handleReEngagementAction('reset', 'missed_days', { 
+      daysAway: missedDaysIntervention.daysMissed 
+    });
+  }
+  // If user says "talk" or anything else, keep intervention active for exploration
+  
+  setTimeout(async () => {
+    await postAssistantMessage(response);
+    setLoading(false);
+  }, 500);
+  return;
+}
     
     // 0.6 Regression Intervention Flow
     if (regressionIntervention?.isActive) {
