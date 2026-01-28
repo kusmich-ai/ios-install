@@ -1,4 +1,4 @@
-// app/api/chat/route.ts - UPDATED with Re-engagement Context Handling
+// app/api/chat/route.ts - UPDATED with Re-engagement and Regression Context Handling
 import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
 import { microActionSystemPrompt, extractionSystemPrompt } from '@/lib/microActionAPI';
@@ -442,7 +442,7 @@ Example responses:
 const mainSystemPrompt = withCueKernel(mainSystemPromptBase);
 
 // ============================================
-// RE-ENGAGEMENT SYSTEM PROMPT (NEW)
+// RE-ENGAGEMENT SYSTEM PROMPT
 // ============================================
 const reEngagementSystemPrompt = `${SECURITY_INSTRUCTIONS}
 
@@ -528,6 +528,117 @@ Stage 6: + Nightly Debrief (2 min)
 - Curious, not interrogating
 - Supportive without coddling
 - No fake positivity
+`;
+
+// ============================================
+// REGRESSION SYSTEM PROMPT
+// ============================================
+const regressionSystemPrompt = `${SECURITY_INSTRUCTIONS}
+
+# REGRESSION CONVERSATION HANDLER
+
+You are handling a regression conversation with a user whose progress has stalled or declined at their current stage.
+
+## CONTEXT
+The user has been flagged for potential regression because:
+- Their adherence dropped below threshold, AND/OR
+- Their delta scores declined (negative progress)
+
+This is a sensitive conversation. The user may feel like they're failing.
+
+## CRITICAL ANTI-LOOP RULES
+
+**NEVER:**
+- Return to the initial 2-option menu (Regress/Troubleshoot) once the user has made a choice
+- Repeat the same troubleshooting questions after they've answered
+- Make the user feel like a failure
+- Loop back to the beginning of the flow
+
+**ALWAYS:**
+- Acknowledge their choice and move FORWARD
+- Explore the root cause with curiosity, not judgment
+- Frame regression as recalibration, not failure
+- Offer concrete next steps
+
+## CONVERSATION PHASES
+
+### Phase 1: Initial Contact (Opening Message Only)
+The opening message (generated separately) presents:
+- What happened (adherence %, delta scores)
+- Two options: Regress or Troubleshoot
+
+### Phase 2A: Regression Path
+If user chooses to regress:
+- Acknowledge the choice without judgment
+- Explain what changes (rituals, stage)
+- Frame it positively: "recalibrating, not failing"
+- Offer encouragement to restart fresh
+
+### Phase 2B: Troubleshoot Path
+If user chooses to troubleshoot, explore ONE question at a time:
+
+**First question:**
+"A few patterns show up when a stage stalls:
+- **Time pressure** — The new practices don't fit your schedule
+- **Complexity overwhelm** — Too many moving parts
+- **Motivation fade** — Initial enthusiasm wore off
+- **Life interference** — Something external disrupted your rhythm
+- **Practice resistance** — One specific practice feels like a chore
+
+Which of these resonates? Or is it something else?"
+
+**Then based on their answer, explore deeper:**
+
+If TIME: "Let's look at your actual schedule. When are you trying to do the practices? What's competing for that time?"
+
+If COMPLEXITY: "Which specific practice feels like too much? Sometimes we can simplify the approach without losing the benefit."
+
+If MOTIVATION: "Motivation is unreliable fuel. What was working when you were consistent? What changed?"
+
+If LIFE: "Life happens. What disrupted your rhythm? Do you need to pause intentionally, or adapt the system to your new reality?"
+
+If RESISTANCE: "Which practice specifically? Sometimes resistance is information — let's look at what it's pointing to."
+
+### Phase 3: Resolution
+After exploration, offer concrete options:
+1. **Adapt the approach** — Modify timing, simplify practices
+2. **Intentional pause** — Take a planned break with a restart date
+3. **Regress now** — Go back a stage with new awareness
+4. **Push through** — Continue current stage with specific adjustments
+
+## HANDLING THE REGRESS ACTION
+
+When user confirms they want to regress, respond with:
+- Confirmation of the change
+- New stage name and rituals
+- Encouragement to start fresh
+- NO shame or failure language
+
+Example:
+"Done. You're now at Stage [X]: [Name].
+
+No shame in this — you're recalibrating, not failing. The nervous system learns at its own pace.
+
+Your rituals are now:
+[List rituals]
+
+We'll restabilize here, then try Stage [X+1] again when you're ready. Take a breath. Start fresh today."
+
+## VOICE
+- Direct but warm
+- Curious, not interrogating
+- Normalize the experience
+- No toxic positivity, but genuine support
+- Frame everything as data and recalibration
+
+## STAGE RITUALS REFERENCE
+
+Stage 1: Resonance Breathing (5 min) + Awareness Rep (2 min)
+Stage 2: + Somatic Flow (3 min)
+Stage 3: + Morning Micro-Action (2-3 min)
+Stage 4: + Flow Block (60-90 min)
+Stage 5: + Co-Regulation (3-5 min)
+Stage 6: + Nightly Debrief (2 min)
 `;
 
 // ============================================
@@ -994,7 +1105,7 @@ export async function POST(req: Request) {
         break;
 
       // ============================================
-      // NEW: RE-ENGAGEMENT CONTEXT HANDLING
+      // RE-ENGAGEMENT CONTEXT HANDLING
       // ============================================
       case 're_engagement':
       case 're_engagement_opening': {
@@ -1031,6 +1142,66 @@ ${context === 're_engagement_opening'
 `;
         
         systemPrompt = reEngagementSystemPrompt + reEngagementContext + patternContext;
+        maxTokens = 1024;
+        break;
+      }
+
+      // ============================================
+      // REGRESSION CONTEXT HANDLING
+      // ============================================
+      case 'regression':
+      case 'regression_opening': {
+        const regressionData = additionalContext || {};
+        const currentStage = regressionData.currentStage || 2;
+        const previousStage = currentStage - 1;
+        
+        const stageRituals: { [key: number]: string } = {
+          1: '1. Resonance Breathing - 5 mins\n2. Awareness Rep - 2 mins',
+          2: '1. Resonance Breathing - 5 mins\n2. Somatic Flow - 3 mins\n3. Awareness Rep - 2 mins',
+          3: '1. Resonance Breathing - 5 mins\n2. Somatic Flow - 3 mins\n3. Awareness Rep - 2 mins\n4. Morning Micro-Action - 2-3 mins',
+          4: '1. Resonance Breathing - 5 mins\n2. Somatic Flow - 3 mins\n3. Awareness Rep - 2 mins\n4. Morning Micro-Action - 2-3 mins\n5. Flow Block - 60-90 mins',
+          5: '1. Resonance Breathing - 5 mins\n2. Somatic Flow - 3 mins\n3. Awareness Rep - 2 mins\n4. Morning Micro-Action - 2-3 mins\n5. Flow Block - 60-90 mins\n6. Co-Regulation - 3-5 mins',
+          6: '1. Resonance Breathing - 5 mins\n2. Somatic Flow - 3 mins\n3. Awareness Rep - 2 mins\n4. Morning Micro-Action - 2-3 mins\n5. Flow Block - 60-90 mins\n6. Co-Regulation - 3-5 mins\n7. Nightly Debrief - 2 mins',
+        };
+        
+        const currentRituals = stageRituals[currentStage] || stageRituals[1];
+        const previousRituals = stageRituals[previousStage] || stageRituals[1];
+        
+        const getStageName = (stage: number): string => {
+          const names: { [key: number]: string } = {
+            1: 'Neural Priming',
+            2: 'Embodied Awareness',
+            3: 'Aligned Action Mode',
+            4: 'Flow Mode',
+            5: 'Relational Coherence',
+            6: 'Integration',
+          };
+          return names[stage] || 'Unknown';
+        };
+        
+        const regressionContext = `
+## CURRENT REGRESSION CONTEXT
+- Current stage: Stage ${currentStage} (${regressionData.stageName || getStageName(currentStage)})
+- Previous stage would be: Stage ${previousStage} (${getStageName(previousStage)})
+- Current adherence: ${regressionData.adherence || 0}%
+- Average delta: ${regressionData.avgDelta >= 0 ? '+' : ''}${regressionData.avgDelta?.toFixed(2) || '0.00'}
+- Reason flagged: ${regressionData.reason || 'unknown'}
+- User name: ${regressionData.userName || 'User'}
+${context === 'regression_opening' ? '- This is the OPENING message - generate the initial regression prompt with 2 options (Regress or Troubleshoot)' : ''}
+
+## CURRENT STAGE RITUALS (Stage ${currentStage})
+${currentRituals}
+
+## PREVIOUS STAGE RITUALS (Stage ${previousStage})
+${previousRituals}
+
+## CRITICAL INSTRUCTION
+${context === 'regression_opening' 
+  ? 'Generate an opening regression message that explains what happened (adherence/delta) and offers 2 options: Regress to previous stage OR Troubleshoot. Use the IOS voice - direct but supportive, no shame.' 
+  : 'You are IN an active regression conversation. DO NOT loop back to the 2-option menu. Explore what the user shared and help them find the right path forward.'}
+`;
+        
+        systemPrompt = regressionSystemPrompt + regressionContext + patternContext;
         maxTokens = 1024;
         break;
       }
