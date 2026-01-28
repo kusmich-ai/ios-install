@@ -1138,6 +1138,83 @@ const handleRegressionAction = async (
   // For troubleshoot, we keep the intervention active for exploration
   // It gets cleared when user chooses a resolution path
 };
+
+  };
+  
+// ============================================
+// STAGE 7 API HANDLER (Unified)
+// ============================================
+
+const sendStage7ToAPI = async (
+  userMessage: string,
+  phase: string,
+  isOpen?: boolean | null
+): Promise<string> => {
+  try {
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [
+          ...messages.map(m => ({ role: m.role, content: m.content })),
+          { role: 'user', content: userMessage }
+        ],
+        context: 'stage_7',
+        additionalContext: {
+          userName: getUserName(),
+          phase,
+          isOpen
+        }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('API request failed');
+    }
+
+    const data = await response.json();
+    return data.response || data.content || "Let me know if you'd like to learn more about Stage 7 or continue deepening your Stage 6 practices.";
+  } catch (error) {
+    console.error('Stage 7 API error:', error);
+    return "Something went wrong. Would you like to learn more about Stage 7, or continue with Stage 6?";
+  }
+};
+
+// ============================================
+// GET STAGE 7 OPENING FROM API
+// ============================================
+
+const getStage7OpeningFromAPI = async (): Promise<string> => {
+  try {
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [],
+        context: 'stage_7_opening',
+        additionalContext: {
+          userName: getUserName(),
+          phase: 'introduction',
+          isOpening: true
+        }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('API request failed');
+    }
+
+    const data = await response.json();
+    return data.response || data.content || stage7Templates.intro;
+  } catch (error) {
+    console.error('Stage 7 opening API error:', error);
+    return stage7Templates.intro; // Fallback to template
+  }
+};
+
+  // ============================================
+  // BUILD TEMPLATE CONTEXT
+  // ============================================
   
   // ============================================
   // BUILD TEMPLATE CONTEXT
@@ -3337,13 +3414,13 @@ const sendMessage = async (e: React.FormEvent) => {
   // ============================================
     
     // 0. Stage 7 Flow (highest priority when active)
-    if (stage7FlowState !== 'none' && stage7FlowState !== 'complete') {
-      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
-      setLoading(true);
-      const handled = processStage7Response(userMessage);
-      setLoading(false);
-      if (handled) return;
-    }
+ if (stage7FlowState !== 'none' && stage7FlowState !== 'complete') {
+  setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+  setLoading(true);
+  const handled = await processStage7Response(userMessage);
+  setLoading(false);
+  if (handled) return;
+}
     
   // 0.4 System Recovery Flow (30+ days away)
 if (systemRecoveryIntervention?.isActive) {
