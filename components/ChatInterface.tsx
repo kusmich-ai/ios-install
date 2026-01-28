@@ -2948,11 +2948,12 @@ ${avgDelta >= 0.3 ? '📈 Great progress! Your nervous system is responding to t
             })
             .eq('user_id', user.id);
           
-          openingMessage = getSystemRecoveryMessage(
-            daysSinceLastPractice,
-            currentStage,
-            userName
-          );
+       openingMessage = await getReEngagementOpeningFromAPI(
+  'system_recovery',
+  daysSinceLastPractice,
+  currentStage,
+  userName
+);
           setSystemRecoveryIntervention({
             isActive: true,
             daysAway: daysSinceLastPractice,
@@ -2978,12 +2979,12 @@ ${avgDelta >= 0.3 ? '📈 Great progress! Your nervous system is responding to t
             .update(updateData)
             .eq('user_id', user.id);
           
-          openingMessage = getMissedDaysMessage(
-            daysSinceLastPractice,
-            daysSinceLastPractice >= 7 ? 0 : (progressData?.adherence_percentage || 0),
-            userName,
-            currentStage
-          );
+          openingMessage = await getReEngagementOpeningFromAPI(
+  'missed_days',
+  daysSinceLastPractice,
+  currentStage,
+  userName
+);
           setMissedDaysIntervention({
             isActive: true,
             daysMissed: daysSinceLastPractice
