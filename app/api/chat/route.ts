@@ -1,4 +1,4 @@
-// app/api/chat/route.ts - UPDATED with Re-engagement and Regression Context Handling
+// app/api/chat/route.ts - UPDATED with Re-engagement, Regression, and Breakthrough/Resistance Context Handling
 import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
 import { microActionSystemPrompt, extractionSystemPrompt } from '@/lib/microActionAPI';
@@ -1116,6 +1116,86 @@ Test it: "Say it out loud. Does it land in your body or just your head?"
 - Keep responses SHORT — guide, don't lecture
 `;
 
+// ============================================
+// BREAKTHROUGH & RESISTANCE RESPONSE PROMPT
+// ============================================
+const breakthroughResistanceSystemPrompt = `${SECURITY_INSTRUCTIONS}
+
+# BREAKTHROUGH & RESISTANCE RESPONSE HANDLER
+
+You are generating responses to detected patterns - either breakthroughs (positive shifts) or resistance patterns (avoidance/blocks).
+
+## BREAKTHROUGH RESPONSES
+
+When a breakthrough is detected, acknowledge it WITHOUT:
+- Over-celebrating ("Amazing!" "Incredible!")
+- Making it seem like the tool did it ("See? It works!")
+- Diminishing it ("That's just the beginning")
+
+Instead:
+- Name what happened specifically
+- Connect to mechanism (what rewired)
+- Frame the user as the agent ("You noticed..." not "The practice gave you...")
+- Invite integration without demanding more
+
+### Breakthrough Types:
+
+**INSIGHT** - User realized something new
+Voice: "That's a real insight — not a concept, but lived recognition. Your nervous system just encoded something. The practice created the conditions; you did the noticing."
+
+**EMOTIONAL SHIFT** - User feels different (lighter, calmer, clearer)
+Voice: "That shift you're feeling — that's what regulation looks like from the inside. Your system found a gear it couldn't find before. Notice it. Don't chase it."
+
+**MILESTONE** - User hit a consistency streak
+Voice: "That's not just discipline — that's rewiring. After [X] consecutive days, the neural pathways are strengthening. The practices are becoming less effort and more default. Well done."
+
+## RESISTANCE RESPONSES
+
+When resistance patterns are surfaced, address them WITHOUT:
+- Shaming ("You're avoiding this")
+- Lecturing ("You really need to...")
+- Problem-solving immediately
+- Listing all possible reasons
+
+Instead:
+- Name the pattern directly but neutrally
+- Frame as data/information
+- Ask ONE diagnostic question
+- Wait for their response
+
+### Resistance Types:
+
+**EXCUSE PATTERNS** (time, energy, forgot)
+Voice: "I've noticed [pattern] coming up [X] times. Not judging — but that's a pattern now, not an incident. What's actually underneath it?"
+
+**AVOIDANCE** (skipping specific practices)
+Voice: "[Practice] keeps getting skipped. The resistance is information. What does that practice touch that other practices don't?"
+
+**SKEPTICISM** ("not working", "too simple")
+Voice: "You've mentioned this doesn't feel like it's working. Before we change anything — what were you expecting to feel? What would 'working' look like?"
+
+## RESPONSE STRUCTURE
+
+For breakthroughs:
+1. Brief acknowledgment (1-2 sentences)
+2. Mechanism connection (what's rewiring)
+3. User agency framing
+4. Optional: invitation to notice/integrate
+
+For resistance:
+1. Name the pattern (factual)
+2. Frame as data
+3. ONE diagnostic question
+4. Wait (don't solve yet)
+
+## VOICE
+- Direct, grounded
+- No cheerleading
+- No shaming
+- Curious, not interrogating
+- Scientific when relevant
+`;
+
 
 // ============================================
 // API ROUTE HANDLER
@@ -1418,7 +1498,39 @@ ${checkInData.declined
         break;
       }
 
-      case 'decentering_practice':
+      // ============================================
+      // BREAKTHROUGH/RESISTANCE CONTEXT HANDLING
+      // ============================================
+      case 'breakthrough_response':
+      case 'resistance_response': {
+        const patternData = additionalContext || {};
+        
+        const breakthroughResistanceContext = `
+## DETECTED PATTERN
+
+**Type:** ${context === 'breakthrough_response' ? 'Breakthrough' : 'Resistance'}
+**Subtype:** ${patternData.subType || patternData.type || 'general'}
+**User message that triggered detection:** "${patternData.userMessage || ''}"
+**Pattern details:**
+${patternData.type === 'insight' ? '- User expressed a realization or new understanding' : ''}
+${patternData.type === 'emotionalShift' ? '- User reported feeling different (lighter, calmer, clearer)' : ''}
+${patternData.type === 'milestone' ? `- User mentioned ${patternData.milestone || 'a consistency streak'}` : ''}
+${patternData.type === 'excuse' ? `- Excuse pattern detected: ${patternData.subType || 'general'} (occurred ${patternData.count || 'multiple'} times)` : ''}
+${patternData.type === 'avoidance' ? `- Avoidance of: ${patternData.subType || 'certain practices'}` : ''}
+${patternData.type === 'skepticism' ? '- User expressed doubt about effectiveness' : ''}
+
+**User name:** ${patternData.userName || 'User'}
+**Current stage:** ${patternData.currentStage || 1}
+**Adherence:** ${patternData.adherence || 0}%
+
+## INSTRUCTION
+Generate a response acknowledging this ${context === 'breakthrough_response' ? 'breakthrough' : 'resistance pattern'}. Follow the voice guidelines precisely. ${context === 'resistance_response' ? 'End with ONE diagnostic question.' : ''}
+`;
+        
+        systemPrompt = breakthroughResistanceSystemPrompt + breakthroughResistanceContext + patternContext;
+        maxTokens = 512;
+        break;
+      }
 
       case 'decentering_practice':
         systemPrompt = withToolLayers(decenteringSystemPrompt) + patternContext;
