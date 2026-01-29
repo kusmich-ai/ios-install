@@ -1105,8 +1105,6 @@ const handleRegressionAction = async (
   // For troubleshoot, we keep the intervention active for exploration
   // It gets cleared when user chooses a resolution path
 };
-
-  };
   
 // ============================================
 // STAGE 7 API HANDLER (Unified)
