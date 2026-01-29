@@ -2001,8 +2001,6 @@ const startStage7Introduction = useCallback(async () => {
   return true;
 }, [stage7FlowState, stage7OpenToProtocol, messages]);
 
-}, [stage7FlowState, stage7OpenToProtocol, messages]);
-
 const handleStage7QuickReply = useCallback(async (action: string) => {
   let userMsg = '';
   
