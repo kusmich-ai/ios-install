@@ -1282,6 +1282,13 @@ const getBreakthroughResponseFromAPI = async (
 const getResistanceResponseFromAPI = async (
   pattern: { type?: string; subType?: string; count?: number; intervention?: string }
 ): Promise<string> => {
+  // Ensure type has a default for fallback function
+  const safePattern = {
+    type: pattern.type || 'excuse',
+    subType: pattern.subType,
+    count: pattern.count
+  };
+  
   try {
     const response = await fetch('/api/chat', {
       method: 'POST',
@@ -1290,7 +1297,7 @@ const getResistanceResponseFromAPI = async (
         messages: [],
         context: 'resistance_response',
         additionalContext: {
-          type: pattern.type || 'excuse',
+          type: safePattern.type,
           subType: pattern.subType,
           count: pattern.count || 1,
           originalIntervention: pattern.intervention,
@@ -1309,10 +1316,10 @@ const getResistanceResponseFromAPI = async (
     }
 
     const data = await response.json();
-    return data.response || data.content || getResistanceTemplateMessage(pattern);
+    return data.response || data.content || getResistanceTemplateMessage(safePattern);
   } catch (error) {
     console.error('Resistance response API error:', error);
-    return getResistanceTemplateMessage(pattern); // Fallback to template
+    return getResistanceTemplateMessage(safePattern); // Fallback to template
   }
 };
 
