@@ -1179,10 +1179,68 @@ const getStage7OpeningFromAPI = async (): Promise<string> => {
   }
 };
 
-  // ============================================
-  // BUILD TEMPLATE CONTEXT
-  // ============================================
-  
+// ============================================
+// WEEKLY CHECK-IN RESULTS API HANDLER
+// ============================================
+
+const getWeeklyCheckInResultsFromAPI = async (
+  scores: { regulation: number; awareness: number; outlook: number; attention: number },
+  deltas: { regulation: number; awareness: number; outlook: number; attention: number },
+  avgDelta: number,
+  rewiredIndex: number,
+  adherence: number,
+  weekNumber: number,
+  declined: boolean = false,
+  weeksDeclined: number = 0
+): Promise<string> => {
+  try {
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [],
+        context: 'weekly_check_in_results',
+        additionalContext: {
+          userName: getUserName(),
+          currentStage: progress?.currentStage || 1,
+          scores,
+          deltas,
+          avgDelta,
+          rewiredIndex,
+          adherence,
+          weekNumber,
+          declined,
+          weeksDeclined
+        }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('API request failed');
+    }
+
+    const data = await response.json();
+    return data.response || data.content || getFallbackResultsMessage(avgDelta, scores);
+  } catch (error) {
+    console.error('Weekly check-in results API error:', error);
+    return getFallbackResultsMessage(avgDelta, scores);
+  }
+};
+
+const getFallbackResultsMessage = (
+  avgDelta: number, 
+  scores: { regulation: number; awareness: number; outlook: number; attention: number }
+): string => {
+  const bestDomain = Object.entries(scores).reduce((a, b) => a[1] > b[1] ? a : b)[0];
+  if (avgDelta >= 0.5) {
+    return `Solid progress this week. Your ${bestDomain} is particularly strong. Keep the momentum going.`;
+  } else if (avgDelta >= 0) {
+    return `Holding steady. The consistency matters more than dramatic jumps. What's one thing you want to focus on this week?`;
+  } else {
+    return `Some dips this week. That's data, not failure. What felt different about this week?`;
+  }
+};
+
   // ============================================
   // BUILD TEMPLATE CONTEXT
   // ============================================
