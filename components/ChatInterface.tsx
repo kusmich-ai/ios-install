@@ -4253,7 +4253,7 @@ if (regressionIntervention?.isActive) {
            {/* Stage 7 Application Link */}
             {stage7FlowState === 'complete' && stage7OpenToProtocol && !loading && (
               <div className="flex justify-center">
-                
+                <a
                   href="https://nicholaskusmich.typeform.com/beyond"
                   target="_blank"
                   rel="noopener noreferrer"
