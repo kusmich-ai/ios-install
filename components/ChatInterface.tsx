@@ -724,6 +724,43 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   const isMobile = useIsMobile();
   const { progress, loading: progressLoading, error: progressError, refetchProgress, isRefreshing } = useUserProgress();
 
+  // Computed: Is weekly check-in due?
+  const weeklyCheckInDue = useMemo(() => {
+    if (!progress) return false;
+    const extendedProgress = progress as any;
+    const lastCheckin = extendedProgress?.lastWeeklyCheckin;
+    const now = new Date();
+    const today = now.getDay();
+    
+    // Calculate days in stage
+    let daysInStage = 1;
+    if (extendedProgress?.stageStartDate) {
+      const startDate = new Date(extendedProgress.stageStartDate);
+      daysInStage = Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    }
+    
+    if (!lastCheckin) {
+      return daysInStage >= 7;
+    }
+    
+    const lastCheckinDate = new Date(lastCheckin);
+    const daysSinceCheckin = Math.floor((now.getTime() - lastCheckinDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (daysSinceCheckin >= 7) {
+      return true;
+    }
+    
+    // Sunday check
+    if (today === 0) {
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
+      return lastCheckinDate < startOfWeek;
+    }
+    
+    return false;
+  }, [progress]);
+
   // On-demand tool modals
   const { open: openDecentering, Modal: DecenteringModal } = useDecentering();
   const { open: openMetaReflection, Modal: MetaReflectionModal } = useMetaReflection();
@@ -1750,7 +1787,7 @@ const unlockMessages: { [key: number]: string } = {
     // Defer if any intervention is active (don't set hasChecked - retry later)
     if (
       weeklyCheckInActive ||
-      progress.weeklyCheckInDue ||
+      weeklyCheckInDue ||
       missedDaysIntervention?.isActive ||
       regressionIntervention?.isActive ||
       systemRecoveryIntervention?.isActive ||
@@ -1778,7 +1815,7 @@ Keep going - the real rewiring happens in weeks 2-4.`);
       // Not a milestone day - mark as checked so we don't keep re-checking
       hasCheckedWeeklyMilestone.current = true;
     }
-  }, [progress, progressLoading, weeklyCheckInActive, missedDaysIntervention?.isActive, regressionIntervention?.isActive, systemRecoveryIntervention?.isActive, sprintRenewalState.isActive, unlockFlowState]);
+  }, [progress, progressLoading, weeklyCheckInActive, weeklyCheckInDue, missedDaysIntervention?.isActive, regressionIntervention?.isActive, systemRecoveryIntervention?.isActive, sprintRenewalState.isActive, unlockFlowState]);
 
   // ============================================
   // EFFECT - Check for Evening Nightly Debrief (Stage 6+)
@@ -1810,7 +1847,7 @@ const debriefStatus = progress.dailyPractices?.find(p => p.id === 'nightly_debri
     }
     
     // If weekly check-in is DUE (but not yet active), also defer
-    if (progress.weeklyCheckInDue) {
+    if (weeklyCheckInDue) {
       // Don't set hasChecked - show this after weekly check-in completes
       return;
     }
@@ -1827,7 +1864,7 @@ It's getting late and you haven't done your Nightly Debrief yet.
 This 2-minute practice helps encode today's learning before sleep. Want to run it now?`
       }]);
     }, 2500);
-  }, [progress, progressLoading, sprintRenewalState.isActive, weeklyCheckInActive, unlockFlowState, missedDaysIntervention?.isActive, regressionIntervention?.isActive, systemRecoveryIntervention?.isActive]);
+  }, [progress, progressLoading, sprintRenewalState.isActive, weeklyCheckInActive, weeklyCheckInDue, unlockFlowState, missedDaysIntervention?.isActive, regressionIntervention?.isActive, systemRecoveryIntervention?.isActive]);
 
   // ============================================
   // EFFECT - Check for Stage 7 Eligibility (Auto-Notification)
@@ -1846,7 +1883,7 @@ This 2-minute practice helps encode today's learning before sleep. Want to run i
     if (
       sprintRenewalState.isActive || 
       weeklyCheckInActive || 
-      progress.weeklyCheckInDue ||
+      weeklyCheckInDue ||
       unlockFlowState !== 'none' ||
       microActionState.isActive ||
       flowBlockState.isActive ||
@@ -1874,7 +1911,7 @@ When you're ready to learn more, click the "Unlock Stage 7?" button in your dash
       }]);
     }, 2500);
     
-  }, [progress, progressLoading, sprintRenewalState.isActive, weeklyCheckInActive, unlockFlowState, microActionState.isActive, flowBlockState.isActive, stage7FlowState, missedDaysIntervention?.isActive, regressionIntervention?.isActive, systemRecoveryIntervention?.isActive]);
+  }, [progress, progressLoading, sprintRenewalState.isActive, weeklyCheckInActive, weeklyCheckInDue, unlockFlowState, microActionState.isActive, flowBlockState.isActive, stage7FlowState, missedDaysIntervention?.isActive, regressionIntervention?.isActive, systemRecoveryIntervention?.isActive]);
 
   // ============================================
   // HANDLE UNLOCK CONFIRMATION
@@ -3312,7 +3349,7 @@ Give me your four numbers (e.g., "4 3 4 5").`;
       // Defer if any intervention is active (don't set hasChecked - retry later)
       if (
         weeklyCheckInActive ||
-        progress.weeklyCheckInDue ||
+        weeklyCheckInDue ||
         missedDaysIntervention?.isActive ||
         regressionIntervention?.isActive ||
         systemRecoveryIntervention?.isActive ||
@@ -3342,7 +3379,7 @@ Give me your four numbers (e.g., "4 3 4 5").`;
     };
     
     checkSundayReflection();
-  }, [user?.id, progress, isInitializing, weeklyCheckInActive, missedDaysIntervention?.isActive, regressionIntervention?.isActive, systemRecoveryIntervention?.isActive, sprintRenewalState.isActive, unlockFlowState]);
+  }, [user?.id, progress, isInitializing, weeklyCheckInActive, weeklyCheckInDue, missedDaysIntervention?.isActive, regressionIntervention?.isActive, systemRecoveryIntervention?.isActive, sprintRenewalState.isActive, unlockFlowState]);
 
   // ============================================
   // EFFECT - Check Resistance Patterns
@@ -3364,7 +3401,7 @@ Give me your four numbers (e.g., "4 3 4 5").`;
       // Defer if any intervention is active (don't set hasChecked - retry later)
       if (
         weeklyCheckInActive ||
-        progress.weeklyCheckInDue ||
+        weeklyCheckInDue ||
         missedDaysIntervention?.isActive ||
         regressionIntervention?.isActive ||
         systemRecoveryIntervention?.isActive ||
@@ -3418,7 +3455,7 @@ Give me your four numbers (e.g., "4 3 4 5").`;
     };
     
     checkResistancePatterns();
-  }, [user?.id, progress, isInitializing, openingType, weeklyCheckInActive, missedDaysIntervention?.isActive, regressionIntervention?.isActive, systemRecoveryIntervention?.isActive, sprintRenewalState.isActive, microActionState.isActive, flowBlockState.isActive, unlockFlowState]);
+  }, [user?.id, progress, isInitializing, openingType, weeklyCheckInActive, weeklyCheckInDue, missedDaysIntervention?.isActive, regressionIntervention?.isActive, systemRecoveryIntervention?.isActive, sprintRenewalState.isActive, microActionState.isActive, flowBlockState.isActive, unlockFlowState]);
 
   // ============================================
   // MESSAGE HANDLERS
