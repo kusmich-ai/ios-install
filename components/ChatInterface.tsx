@@ -689,6 +689,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
     adherence: number;
     avgDelta: number;
     reason: 'low_adherence' | 'negative_delta' | 'both';
+    phase: 'initial' | 'exploring' | 'complete';
   } | null>(null);
 
   // System Recovery State (30+ days away)
@@ -3076,7 +3077,8 @@ setTimeout(async () => {
     currentStage,
     adherence,
     avgDelta,
-    reason
+    reason,
+    phase: 'initial'
   });
 }, 2000);
           }
@@ -3713,6 +3715,7 @@ if (systemRecoveryIntervention?.isActive) {
         previousStage: systemRecoveryIntervention.previousStage
       });
     }
+    setSystemRecoveryIntervention(null); // Clear intervention after action
   }
   
   setTimeout(() => {
@@ -3784,11 +3787,15 @@ if (regressionIntervention?.isActive) {
       avgDelta: regressionIntervention.avgDelta,
       reason: regressionIntervention.reason
     });
+    setRegressionIntervention(null); // Clear intervention
+  } else if (lowerMsg.includes('recommit') || lowerMsg.includes('i\'ll try') || lowerMsg.includes('let\'s do') || lowerMsg.includes('sounds good') || lowerMsg.includes('that helps')) {
+    // User found a resolution during troubleshooting
+    setRegressionIntervention(null); // Clear intervention
+  } else if (regressionIntervention.phase === 'initial') {
+    // User is exploring (troubleshooting) - move to exploring phase
+    setRegressionIntervention(prev => prev ? { ...prev, phase: 'exploring' } : null);
   }
-  // If they found a resolution during troubleshooting, clear the intervention
-  if (lowerMsg.includes('i\'ll try') || lowerMsg.includes('let\'s do') || lowerMsg.includes('sounds good') || lowerMsg.includes('that helps')) {
-    setRegressionIntervention(null);
-  }
+  // If already in exploring phase and no resolution keyword, stay in exploring
   
   setTimeout(async () => {
     await postAssistantMessage(response);
@@ -4380,6 +4387,7 @@ if (regressionIntervention?.isActive) {
         );
         
         setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+        setSystemRecoveryIntervention(null); // Clear after action
         setLoading(false);
       }}
       className="px-5 py-2.5 bg-[#1a1a1a] border border-[#333] hover:border-[#ff9e19] text-white font-medium rounded-xl transition-all"
@@ -4408,6 +4416,7 @@ if (regressionIntervention?.isActive) {
         );
         
         setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+        setSystemRecoveryIntervention(null); // Clear after action
         setLoading(false);
       }}
       className="px-5 py-2.5 bg-[#ff9e19] hover:bg-orange-600 text-white font-medium rounded-xl transition-all"
@@ -4436,6 +4445,7 @@ if (regressionIntervention?.isActive) {
         );
         
         setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+        setSystemRecoveryIntervention(null); // Clear after action
         setLoading(false);
       }}
       className="px-5 py-2.5 bg-[#1a1a1a] border border-[#333] hover:border-[#ff9e19] text-white font-medium rounded-xl transition-all"
@@ -4445,8 +4455,8 @@ if (regressionIntervention?.isActive) {
   </div>
 )}
             
-{/* Regression Quick Replies */}
-{regressionIntervention?.isActive && !loading && (
+{/* Regression Quick Replies - Phase Aware */}
+{regressionIntervention?.isActive && !loading && regressionIntervention.phase === 'initial' && (
   <div className="flex justify-center gap-3 flex-wrap">
     <button
       onClick={async () => {
@@ -4472,6 +4482,7 @@ if (regressionIntervention?.isActive) {
         );
         
         setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+        setRegressionIntervention(null); // Clear after regress
         setLoading(false);
       }}
       className="px-5 py-2.5 bg-[#1a1a1a] border border-[#333] hover:border-[#ff9e19] text-white font-medium rounded-xl transition-all"
@@ -4496,12 +4507,75 @@ if (regressionIntervention?.isActive) {
         );
         
         setMessages(prev => [...prev, { role: 'assistant', content: response }]);
-        // Keep intervention active for troubleshooting exploration
+        // Move to exploring phase - shows different buttons
+        setRegressionIntervention(prev => prev ? { ...prev, phase: 'exploring' } : null);
         setLoading(false);
       }}
       className="px-5 py-2.5 bg-[#ff9e19] hover:bg-orange-600 text-white font-medium rounded-xl transition-all"
     >
       Troubleshoot
+    </button>
+  </div>
+)}
+
+{/* Regression Exploring Phase - After "Troubleshoot" */}
+{regressionIntervention?.isActive && !loading && regressionIntervention.phase === 'exploring' && (
+  <div className="flex justify-center gap-3 flex-wrap">
+    <button
+      onClick={async () => {
+        const userMsg = "I'll recommit to the practices";
+        setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+        setLoading(true);
+        
+        const response = await sendRegressionToAPI(
+          userMsg,
+          {
+            currentStage: regressionIntervention.currentStage,
+            adherence: regressionIntervention.adherence,
+            avgDelta: regressionIntervention.avgDelta,
+            reason: regressionIntervention.reason
+          }
+        );
+        
+        setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+        setRegressionIntervention(null);
+        setLoading(false);
+      }}
+      className="px-5 py-2.5 bg-[#ff9e19] hover:bg-orange-600 text-white font-medium rounded-xl transition-all"
+    >
+      Recommit
+    </button>
+    
+    <button
+      onClick={async () => {
+        const userMsg = `Actually, let me regress to Stage ${regressionIntervention.currentStage - 1}`;
+        setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+        setLoading(true);
+        
+        await handleRegressionAction('regress', {
+          currentStage: regressionIntervention.currentStage,
+          adherence: regressionIntervention.adherence,
+          avgDelta: regressionIntervention.avgDelta,
+          reason: regressionIntervention.reason
+        });
+        
+        const response = await sendRegressionToAPI(
+          userMsg,
+          {
+            currentStage: regressionIntervention.currentStage,
+            adherence: regressionIntervention.adherence,
+            avgDelta: regressionIntervention.avgDelta,
+            reason: regressionIntervention.reason
+          }
+        );
+        
+        setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+        setRegressionIntervention(null);
+        setLoading(false);
+      }}
+      className="px-5 py-2.5 bg-[#1a1a1a] border border-[#333] hover:border-[#ff9e19] text-white font-medium rounded-xl transition-all"
+    >
+      Regress Instead
     </button>
   </div>
 )}
