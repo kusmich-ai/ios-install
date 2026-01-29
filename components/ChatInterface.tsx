@@ -1747,6 +1747,17 @@ const unlockMessages: { [key: number]: string } = {
   useEffect(() => {
     if (hasCheckedWeeklyMilestone.current || !progress || progressLoading) return;
     
+    // Don't show if any intervention is active
+    if (
+      weeklyCheckInActive ||
+      progress.weeklyCheckInDue ||
+      missedDaysIntervention?.isActive ||
+      regressionIntervention?.isActive ||
+      systemRecoveryIntervention?.isActive ||
+      sprintRenewalState.isActive ||
+      unlockFlowState !== 'none'
+    ) return;
+    
     const extendedProgress = progress as any;
     const consecutiveDays = extendedProgress?.consecutiveDays || 0;
     
@@ -1761,7 +1772,7 @@ You've completed a full week of consistent practice. Your nervous system is star
 Keep going - the real rewiring happens in weeks 2-4.`);
       }, 2000);
     }
-  }, [progress, progressLoading]);
+  }, [progress, progressLoading, weeklyCheckInActive, missedDaysIntervention?.isActive, regressionIntervention?.isActive, systemRecoveryIntervention?.isActive, sprintRenewalState.isActive, unlockFlowState]);
 
   // ============================================
   // EFFECT - Check for Evening Nightly Debrief (Stage 6+)
@@ -1778,7 +1789,16 @@ Keep going - the real rewiring happens in weeks 2-4.`);
 const debriefStatus = progress.dailyPractices?.find(p => p.id === 'nightly_debrief');
     if (debriefStatus?.completed) return;
     
-    if (sprintRenewalState.isActive || weeklyCheckInActive || unlockFlowState !== 'none' || missedDaysIntervention?.isActive) return;
+    // Don't show if any other intervention is active OR weekly check-in is due
+    if (
+      sprintRenewalState.isActive || 
+      weeklyCheckInActive || 
+      progress.weeklyCheckInDue ||
+      unlockFlowState !== 'none' || 
+      missedDaysIntervention?.isActive ||
+      regressionIntervention?.isActive ||
+      systemRecoveryIntervention?.isActive
+    ) return;
     
     hasCheckedEveningDebrief.current = true;
     
@@ -1792,7 +1812,7 @@ It's getting late and you haven't done your Nightly Debrief yet.
 This 2-minute practice helps encode today's learning before sleep. Want to run it now?`
       }]);
     }, 2500);
-  }, [progress, progressLoading, sprintRenewalState.isActive, weeklyCheckInActive, unlockFlowState, missedDaysIntervention?.isActive]);
+  }, [progress, progressLoading, sprintRenewalState.isActive, weeklyCheckInActive, unlockFlowState, missedDaysIntervention?.isActive, regressionIntervention?.isActive, systemRecoveryIntervention?.isActive]);
 
   // ============================================
   // EFFECT - Check for Stage 7 Eligibility (Auto-Notification)
@@ -1803,13 +1823,18 @@ This 2-minute practice helps encode today's learning before sleep. Want to run i
     
     if (progress.currentStage !== 6 || !progress.unlockEligible) return;
     
+    // Don't show if any intervention is active
     if (
       sprintRenewalState.isActive || 
       weeklyCheckInActive || 
+      progress.weeklyCheckInDue ||
       unlockFlowState !== 'none' ||
       microActionState.isActive ||
       flowBlockState.isActive ||
-      stage7FlowState !== 'none'
+      stage7FlowState !== 'none' ||
+      missedDaysIntervention?.isActive ||
+      regressionIntervention?.isActive ||
+      systemRecoveryIntervention?.isActive
     ) return;
     
     hasCheckedStage7Eligibility.current = true;
@@ -1827,7 +1852,7 @@ When you're ready to learn more, click the "Unlock Stage 7?" button in your dash
       }]);
     }, 2500);
     
-  }, [progress, progressLoading, sprintRenewalState.isActive, weeklyCheckInActive, unlockFlowState, microActionState.isActive, flowBlockState.isActive, stage7FlowState]);
+  }, [progress, progressLoading, sprintRenewalState.isActive, weeklyCheckInActive, unlockFlowState, microActionState.isActive, flowBlockState.isActive, stage7FlowState, missedDaysIntervention?.isActive, regressionIntervention?.isActive, systemRecoveryIntervention?.isActive]);
 
   // ============================================
   // HANDLE UNLOCK CONFIRMATION
@@ -3258,7 +3283,13 @@ Give me your four numbers (e.g., "4 3 4 5").`;
         !progress ||
         progress.currentStage < 2 ||
         !isSunday() ||
-        weeklyCheckInActive
+        weeklyCheckInActive ||
+        progress.weeklyCheckInDue ||
+        missedDaysIntervention?.isActive ||
+        regressionIntervention?.isActive ||
+        systemRecoveryIntervention?.isActive ||
+        sprintRenewalState.isActive ||
+        unlockFlowState !== 'none'
       ) {
         return;
       }
@@ -3282,7 +3313,7 @@ Give me your four numbers (e.g., "4 3 4 5").`;
     };
     
     checkSundayReflection();
-  }, [user?.id, progress, isInitializing, weeklyCheckInActive]);
+  }, [user?.id, progress, isInitializing, weeklyCheckInActive, missedDaysIntervention?.isActive, regressionIntervention?.isActive, systemRecoveryIntervention?.isActive, sprintRenewalState.isActive, unlockFlowState]);
 
   // ============================================
   // EFFECT - Check Resistance Patterns
@@ -3298,10 +3329,14 @@ Give me your four numbers (e.g., "4 3 4 5").`;
         !progress ||
         openingType === 'first_time' ||
         weeklyCheckInActive ||
+        progress.weeklyCheckInDue ||
         missedDaysIntervention?.isActive ||
+        regressionIntervention?.isActive ||
+        systemRecoveryIntervention?.isActive ||
         sprintRenewalState.isActive ||
         microActionState.isActive ||
-        flowBlockState.isActive
+        flowBlockState.isActive ||
+        unlockFlowState !== 'none'
       ) {
         return;
       }
@@ -3347,7 +3382,7 @@ Give me your four numbers (e.g., "4 3 4 5").`;
     };
     
     checkResistancePatterns();
-  }, [user?.id, progress, isInitializing, openingType, weeklyCheckInActive, missedDaysIntervention?.isActive, sprintRenewalState.isActive, microActionState.isActive, flowBlockState.isActive]);
+  }, [user?.id, progress, isInitializing, openingType, weeklyCheckInActive, missedDaysIntervention?.isActive, regressionIntervention?.isActive, systemRecoveryIntervention?.isActive, sprintRenewalState.isActive, microActionState.isActive, flowBlockState.isActive, unlockFlowState]);
 
   // ============================================
   // MESSAGE HANDLERS
