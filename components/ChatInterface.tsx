@@ -2979,6 +2979,33 @@ if (isCommitment) {
         .update({ last_weekly_checkin: new Date().toISOString() })
         .eq('user_id', user.id);
       
+      // Calculate week start date (Sunday of current week)
+      const now = new Date();
+      const weekStart = new Date(now);
+      weekStart.setDate(now.getDate() - now.getDay());
+      weekStart.setHours(0, 0, 0, 0);
+      const weekStartISO = weekStart.toISOString().split('T')[0];
+      
+      // Also save to weekly_deltas table so UI domain scores update
+      const { error: deltaError } = await supabase
+        .from('weekly_deltas')
+        .upsert({
+          user_id: user.id,
+          week_start_date: weekStartISO,
+          regulation_score: scores.regulation,
+          awareness_score: scores.awareness,
+          outlook_score: scores.outlook,
+          attention_score: scores.attention,
+          stage: progress?.currentStage || 1
+        }, {
+          onConflict: 'user_id,week_start_date'
+        });
+      
+      if (deltaError) {
+        console.error('Failed to save weekly delta:', deltaError);
+        // Don't throw - weekly_checkins was saved successfully
+      }
+      
       const regulationDelta = (scores.regulation || 0) - baselineData.domainScores.regulation;
       const awarenessDelta = (scores.awareness || 0) - baselineData.domainScores.awareness;
       const outlookDelta = (scores.outlook || 0) - baselineData.domainScores.outlook;
@@ -2992,7 +3019,6 @@ if (isCommitment) {
       let weekNumber = 1;
       if (progress?.stageStartDate) {
         const stageStart = new Date(progress.stageStartDate);
-        const now = new Date();
         weekNumber = Math.floor((now.getTime() - stageStart.getTime()) / (1000 * 60 * 60 * 24 * 7)) + 1;
       }
       
