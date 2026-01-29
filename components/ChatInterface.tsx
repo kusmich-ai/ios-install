@@ -471,39 +471,6 @@ function determineOpeningType(
 }
 
 // ============================================
-// DECLINE DETECTION & RESPONSE
-// ============================================
-
-function getDeclineResponse(
-  avgDelta: number,
-  previousAvgDelta: number,
-  weeksDeclined: number,
-  scores: { regulation: number; awareness: number; outlook: number; attention: number }
-): string | null {
-  // No decline
-  if (avgDelta >= 0) return null;
-  
-  // Sustained decline (3+ weeks)
-  if (weeksDeclined >= 3) {
-    return declineTemplates.deltaDecline.sustained;
-  }
-  
-  // Significant decline (more than -0.5)
-  if (avgDelta < -0.5) {
-    return declineTemplates.deltaDecline.significant
-      .replace('{{avgDelta}}', avgDelta.toFixed(2))
-      .replace('{{previousAvgDelta}}', previousAvgDelta.toFixed(2));
-  }
-  
-  // Mild decline
-  return declineTemplates.deltaDecline.mild
-    .replace('{{regulationDelta}}', (scores.regulation || 0).toFixed(1))
-    .replace('{{awarenessDelta}}', (scores.awareness || 0).toFixed(1))
-    .replace('{{outlookDelta}}', (scores.outlook || 0).toFixed(1))
-    .replace('{{attentionDelta}}', (scores.attention || 0).toFixed(1));
-}
-
-// ============================================
 // BREAKTHROUGH PATTERN DETECTION
 // ============================================
 
