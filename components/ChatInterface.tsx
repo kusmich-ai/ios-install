@@ -679,6 +679,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   const [missedDaysIntervention, setMissedDaysIntervention] = useState<{
     isActive: boolean;
     daysMissed: number;
+    phase: 'initial' | 'exploring' | 'complete';
   } | null>(null);
 
   // Regression Intervention State
@@ -1777,7 +1778,7 @@ Keep going - the real rewiring happens in weeks 2-4.`);
 const debriefStatus = progress.dailyPractices?.find(p => p.id === 'nightly_debrief');
     if (debriefStatus?.completed) return;
     
-    if (sprintRenewalState.isActive || weeklyCheckInActive || unlockFlowState !== 'none') return;
+    if (sprintRenewalState.isActive || weeklyCheckInActive || unlockFlowState !== 'none' || missedDaysIntervention?.isActive) return;
     
     hasCheckedEveningDebrief.current = true;
     
@@ -1791,7 +1792,7 @@ It's getting late and you haven't done your Nightly Debrief yet.
 This 2-minute practice helps encode today's learning before sleep. Want to run it now?`
       }]);
     }, 2500);
-  }, [progress, progressLoading, sprintRenewalState.isActive, weeklyCheckInActive, unlockFlowState]);
+  }, [progress, progressLoading, sprintRenewalState.isActive, weeklyCheckInActive, unlockFlowState, missedDaysIntervention?.isActive]);
 
   // ============================================
   // EFFECT - Check for Stage 7 Eligibility (Auto-Notification)
@@ -3193,7 +3194,8 @@ setTimeout(async () => {
 );
           setMissedDaysIntervention({
             isActive: true,
-            daysMissed: daysSinceLastPractice
+            daysMissed: daysSinceLastPractice,
+            phase: 'initial'
           });
           
           // Refetch to update UI
@@ -3625,16 +3627,23 @@ if (missedDaysIntervention?.isActive) {
   
   // Check if user chose a resolution option (clear intervention)
   const lowerMsg = userMessage.toLowerCase();
-  if (lowerMsg.includes('pick up') || lowerMsg.includes('continue') || lowerMsg.includes('let\'s go')) {
+  if (lowerMsg.includes('pick up') || lowerMsg.includes('continue') || lowerMsg.includes('let\'s go') || lowerMsg.includes('ready to continue')) {
     await handleReEngagementAction('continue', 'missed_days', { 
       daysAway: missedDaysIntervention.daysMissed 
     });
+    setMissedDaysIntervention(null); // Clear intervention
   } else if (lowerMsg.includes('reset')) {
     await handleReEngagementAction('reset', 'missed_days', { 
       daysAway: missedDaysIntervention.daysMissed 
     });
+    setMissedDaysIntervention(null); // Clear intervention
+  } else if (lowerMsg.includes('pause') || lowerMsg.includes('break')) {
+    setMissedDaysIntervention(null); // Clear intervention after pause request
+  } else if (missedDaysIntervention.phase === 'initial') {
+    // User is exploring - move to exploring phase
+    setMissedDaysIntervention(prev => prev ? { ...prev, phase: 'exploring' } : null);
   }
-  // If user says "talk" or anything else, keep intervention active for exploration
+  // If already in exploring phase and no resolution keyword, stay in exploring
   
   setTimeout(async () => {
     await postAssistantMessage(response);
@@ -4111,8 +4120,8 @@ if (regressionIntervention?.isActive) {
               </div>
             )}
             
-            {/* Missed Days Quick Replies */}
-{missedDaysIntervention?.isActive && !loading && (
+            {/* Missed Days Quick Replies - Phase Aware */}
+{missedDaysIntervention?.isActive && !loading && missedDaysIntervention.phase === 'initial' && (
   <div className="flex justify-center gap-3 flex-wrap">
     <button
       onClick={async () => {
@@ -4131,6 +4140,7 @@ if (regressionIntervention?.isActive) {
         );
         
         setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+        setMissedDaysIntervention(null); // Clear after continue
         setLoading(false);
       }}
       className="px-5 py-2.5 bg-[#ff9e19] hover:bg-orange-600 text-white font-medium rounded-xl transition-all"
@@ -4151,7 +4161,8 @@ if (regressionIntervention?.isActive) {
         );
         
         setMessages(prev => [...prev, { role: 'assistant', content: response }]);
-        // Keep intervention active for exploration - don't clear it here
+        // Move to exploring phase - shows different buttons
+        setMissedDaysIntervention(prev => prev ? { ...prev, phase: 'exploring' } : null);
         setLoading(false);
       }}
       className="px-5 py-2.5 bg-[#1a1a1a] border border-[#333] hover:border-[#ff9e19] text-white font-medium rounded-xl transition-all"
@@ -4176,11 +4187,63 @@ if (regressionIntervention?.isActive) {
         );
         
         setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+        setMissedDaysIntervention(null); // Clear after reset
         setLoading(false);
       }}
       className="px-5 py-2.5 bg-[#1a1a1a] border border-[#333] hover:border-[#ff9e19] text-white font-medium rounded-xl transition-all"
     >
       Reset Stage
+    </button>
+  </div>
+)}
+
+{/* Missed Days Exploring Phase - After "Talk About It" */}
+{missedDaysIntervention?.isActive && !loading && missedDaysIntervention.phase === 'exploring' && (
+  <div className="flex justify-center gap-3 flex-wrap">
+    <button
+      onClick={async () => {
+        const userMsg = "I'm ready to continue now";
+        setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+        setLoading(true);
+        
+        await handleReEngagementAction('continue', 'missed_days', { 
+          daysAway: missedDaysIntervention.daysMissed 
+        });
+        
+        const response = await sendReEngagementToAPI(
+          userMsg,
+          'missed_days',
+          { daysAway: missedDaysIntervention.daysMissed }
+        );
+        
+        setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+        setMissedDaysIntervention(null);
+        setLoading(false);
+      }}
+      className="px-5 py-2.5 bg-[#ff9e19] hover:bg-orange-600 text-white font-medium rounded-xl transition-all"
+    >
+      Ready to Continue
+    </button>
+    
+    <button
+      onClick={async () => {
+        const userMsg = "I need to take an intentional pause";
+        setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+        setLoading(true);
+        
+        const response = await sendReEngagementToAPI(
+          userMsg,
+          'missed_days',
+          { daysAway: missedDaysIntervention.daysMissed }
+        );
+        
+        setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+        setMissedDaysIntervention(null);
+        setLoading(false);
+      }}
+      className="px-5 py-2.5 bg-[#1a1a1a] border border-[#333] hover:border-[#ff9e19] text-white font-medium rounded-xl transition-all"
+    >
+      Take a Pause
     </button>
   </div>
 )}
