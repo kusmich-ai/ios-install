@@ -3714,9 +3714,9 @@ if (regressionIntervention?.isActive) {
     setMessages(prev => [...prev, { role: 'assistant', content: responseMessage }]);
     setLoading(false);
   }, 500);
-  return;
-}
-      
+      return;
+    } else {
+      // Handle non-affirmative responses during intro flow
       try {
         const response = await fetch('/api/chat', {
           method: 'POST',
@@ -3747,8 +3747,9 @@ if (regressionIntervention?.isActive) {
       setLoading(false);
       return;
     }
+  }
     
-    // Trigger Detection
+  // Trigger Detection
     const lowerMessage = userMessage.toLowerCase();
     
     if (lowerMessage.includes('weekly check-in') || lowerMessage.includes('weekly checkin') || lowerMessage.includes('check in')) {
