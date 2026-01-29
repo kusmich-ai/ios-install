@@ -4250,7 +4250,7 @@ if (regressionIntervention?.isActive) {
               </div>
             )}
             
-            {/* Stage 7 Application Link */}
+           {/* Stage 7 Application Link */}
             {stage7FlowState === 'complete' && stage7OpenToProtocol && !loading && (
               <div className="flex justify-center">
                 
@@ -4263,8 +4263,6 @@ if (regressionIntervention?.isActive) {
                 </a>
               </div>
             )}
-            
-            {/* Sprint Renewal Quick Replies */}
             
             {/* Sprint Renewal Quick Replies */}
             {sprintRenewalState.isActive && !sprintRenewalState.awaitingEvolutionInput && !loading && (
