@@ -1373,9 +1373,52 @@ ${context === 'stage_7_opening'
         break;
       }
 
+      // ============================================
+      // WEEKLY CHECK-IN CONTEXT HANDLING
+      // ============================================
       case 'weekly_check_in':
         maxTokens = 1024;
         break;
+
+      case 'weekly_check_in_results': {
+        const checkInData = additionalContext || {};
+        
+        const checkInContext = `
+## WEEKLY CHECK-IN RESULTS
+- User name: ${checkInData.userName || 'User'}
+- Current stage: Stage ${checkInData.currentStage || 1}
+
+## THIS WEEK'S SCORES (0-5 scale)
+- Regulation: ${checkInData.scores?.regulation ?? 'N/A'}
+- Awareness: ${checkInData.scores?.awareness ?? 'N/A'}
+- Outlook: ${checkInData.scores?.outlook ?? 'N/A'}
+- Attention: ${checkInData.scores?.attention ?? 'N/A'}
+
+## CHANGES FROM BASELINE (delta)
+- Regulation: ${checkInData.deltas?.regulation >= 0 ? '+' : ''}${checkInData.deltas?.regulation?.toFixed(1) ?? 'N/A'}
+- Awareness: ${checkInData.deltas?.awareness >= 0 ? '+' : ''}${checkInData.deltas?.awareness?.toFixed(1) ?? 'N/A'}
+- Outlook: ${checkInData.deltas?.outlook >= 0 ? '+' : ''}${checkInData.deltas?.outlook?.toFixed(1) ?? 'N/A'}
+- Attention: ${checkInData.deltas?.attention >= 0 ? '+' : ''}${checkInData.deltas?.attention?.toFixed(1) ?? 'N/A'}
+
+## SUMMARY
+- Average delta: ${checkInData.avgDelta >= 0 ? '+' : ''}${checkInData.avgDelta?.toFixed(2) ?? '0.00'}
+- REwired Index: ${checkInData.rewiredIndex ?? 'N/A'}/100
+- Current adherence: ${checkInData.adherence ?? 0}%
+- Weeks since baseline: ${checkInData.weekNumber ?? 1}
+${checkInData.weeksDeclined ? `- Consecutive weeks declined: ${checkInData.weeksDeclined}` : ''}
+
+## INSTRUCTION
+${checkInData.declined 
+  ? 'User declined the check-in. Ask ONE diagnostic question about what made it feel like too much. Do not immediately offer alternatives.' 
+  : 'Provide brief, personalized commentary on their results. Highlight the most significant pattern and connect it to their practice.'}
+`;
+        
+        systemPrompt = weeklyCheckInResultsSystemPrompt + checkInContext + patternContext;
+        maxTokens = 512;
+        break;
+      }
+
+      case 'decentering_practice':
 
       case 'decentering_practice':
         systemPrompt = withToolLayers(decenteringSystemPrompt) + patternContext;
