@@ -2033,10 +2033,6 @@ const handleStage7QuickReply = useCallback(async (action: string) => {
   // ============================================
   // MICRO-ACTION SETUP HANDLERS
   // ============================================
-
-  // ============================================
-  // MICRO-ACTION SETUP HANDLERS
-  // ============================================
   
   const startMicroActionSetup = useCallback(async () => {
     devLog('[MicroAction]', 'Starting setup flow (100% API)');
@@ -2810,24 +2806,42 @@ if (isCommitment) {
       const avgScore = ((scores.regulation || 0) + (scores.awareness || 0) + (scores.outlook || 0) + (scores.attention || 0)) / 4;
       const newRewiredIndex = Math.round(avgScore * 20);
       
+      // Calculate week number based on stage start date
+      let weekNumber = 1;
+      if (progress?.stageStartDate) {
+        const stageStart = new Date(progress.stageStartDate);
+        const now = new Date();
+        weekNumber = Math.floor((now.getTime() - stageStart.getTime()) / (1000 * 60 * 60 * 24 * 7)) + 1;
+      }
+      
       const deltaScores = {
-  regulation: regulationDelta,
-  awareness: awarenessDelta,
-  outlook: outlookDelta,
-  attention: attentionDelta
-};
+        regulation: regulationDelta,
+        awareness: awarenessDelta,
+        outlook: outlookDelta,
+        attention: attentionDelta
+      };
+      
+      // Prepare scores object with correct types for API
+      const apiScores = {
+        regulation: scores.regulation || 0,
+        awareness: scores.awareness || 0,
+        outlook: scores.outlook || 0,
+        attention: scores.attention || 0
+      };
 
-// Get personalized results from API (includes decline follow-up if needed)
-const resultMessage = await getWeeklyCheckInResultsFromAPI(
-  scores,
-  deltaScores,
-  avgDelta,
-  newRewiredIndex
-);
+      // Get personalized results from API
+      const resultMessage = await getWeeklyCheckInResultsFromAPI(
+        apiScores,
+        deltaScores,
+        avgDelta,
+        newRewiredIndex,
+        progress?.adherencePercentage || 0,
+        weekNumber
+      );
 
-setMessages(prev => [...prev, { role: 'assistant', content: resultMessage }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: resultMessage }]);
 
-// Note: Decline response is now included in the API response, no separate timeout needed
+      // Note: Decline response is now included in the API response, no separate timeout needed
       
       setWeeklyCheckInActive(false);
       setWeeklyCheckInStep(0);
