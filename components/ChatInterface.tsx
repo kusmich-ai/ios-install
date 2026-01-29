@@ -1747,7 +1747,7 @@ const unlockMessages: { [key: number]: string } = {
   useEffect(() => {
     if (hasCheckedWeeklyMilestone.current || !progress || progressLoading) return;
     
-    // Don't show if any intervention is active
+    // Defer if any intervention is active (don't set hasChecked - retry later)
     if (
       weeklyCheckInActive ||
       progress.weeklyCheckInDue ||
@@ -1756,7 +1756,10 @@ const unlockMessages: { [key: number]: string } = {
       systemRecoveryIntervention?.isActive ||
       sprintRenewalState.isActive ||
       unlockFlowState !== 'none'
-    ) return;
+    ) {
+      // Don't set hasChecked - we want to show this after interventions complete
+      return;
+    }
     
     const extendedProgress = progress as any;
     const consecutiveDays = extendedProgress?.consecutiveDays || 0;
@@ -1771,6 +1774,9 @@ You've completed a full week of consistent practice. Your nervous system is star
 
 Keep going - the real rewiring happens in weeks 2-4.`);
       }, 2000);
+    } else {
+      // Not a milestone day - mark as checked so we don't keep re-checking
+      hasCheckedWeeklyMilestone.current = true;
     }
   }, [progress, progressLoading, weeklyCheckInActive, missedDaysIntervention?.isActive, regressionIntervention?.isActive, systemRecoveryIntervention?.isActive, sprintRenewalState.isActive, unlockFlowState]);
 
@@ -1789,16 +1795,25 @@ Keep going - the real rewiring happens in weeks 2-4.`);
 const debriefStatus = progress.dailyPractices?.find(p => p.id === 'nightly_debrief');
     if (debriefStatus?.completed) return;
     
-    // Don't show if any other intervention is active OR weekly check-in is due
+    // Don't show if any intervention is ACTIVE - defer by returning without setting hasChecked
+    // This allows the effect to re-run after interventions complete
     if (
+      weeklyCheckInActive ||
       sprintRenewalState.isActive || 
-      weeklyCheckInActive || 
-      progress.weeklyCheckInDue ||
       unlockFlowState !== 'none' || 
       missedDaysIntervention?.isActive ||
       regressionIntervention?.isActive ||
       systemRecoveryIntervention?.isActive
-    ) return;
+    ) {
+      // Don't set hasChecked - we want to retry after these complete
+      return;
+    }
+    
+    // If weekly check-in is DUE (but not yet active), also defer
+    if (progress.weeklyCheckInDue) {
+      // Don't set hasChecked - show this after weekly check-in completes
+      return;
+    }
     
     hasCheckedEveningDebrief.current = true;
     
@@ -1821,9 +1836,13 @@ This 2-minute practice helps encode today's learning before sleep. Want to run i
   useEffect(() => {
     if (hasCheckedStage7Eligibility.current || !progress || progressLoading) return;
     
-    if (progress.currentStage !== 6 || !progress.unlockEligible) return;
+    // Not eligible - mark as checked
+    if (progress.currentStage !== 6 || !progress.unlockEligible) {
+      hasCheckedStage7Eligibility.current = true;
+      return;
+    }
     
-    // Don't show if any intervention is active
+    // Defer if any intervention is active (don't set hasChecked - retry later)
     if (
       sprintRenewalState.isActive || 
       weeklyCheckInActive || 
@@ -1835,7 +1854,10 @@ This 2-minute practice helps encode today's learning before sleep. Want to run i
       missedDaysIntervention?.isActive ||
       regressionIntervention?.isActive ||
       systemRecoveryIntervention?.isActive
-    ) return;
+    ) {
+      // Don't set hasChecked - we want to show this after interventions complete
+      return;
+    }
     
     hasCheckedStage7Eligibility.current = true;
     
@@ -3276,13 +3298,19 @@ Give me your four numbers (e.g., "4 3 4 5").`;
   
   useEffect(() => {
     const checkSundayReflection = async () => {
+      // Already checked or not ready
+      if (hasCheckedSundayReflection.current || isInitializing || !user?.id || !progress) {
+        return;
+      }
+      
+      // Not applicable today (not Sunday or stage too low) - mark as checked
+      if (progress.currentStage < 2 || !isSunday()) {
+        hasCheckedSundayReflection.current = true;
+        return;
+      }
+      
+      // Defer if any intervention is active (don't set hasChecked - retry later)
       if (
-        hasCheckedSundayReflection.current ||
-        isInitializing ||
-        !user?.id ||
-        !progress ||
-        progress.currentStage < 2 ||
-        !isSunday() ||
         weeklyCheckInActive ||
         progress.weeklyCheckInDue ||
         missedDaysIntervention?.isActive ||
@@ -3291,6 +3319,7 @@ Give me your four numbers (e.g., "4 3 4 5").`;
         sprintRenewalState.isActive ||
         unlockFlowState !== 'none'
       ) {
+        // Don't set hasChecked - we want to show this after interventions complete
         return;
       }
       
@@ -3321,13 +3350,19 @@ Give me your four numbers (e.g., "4 3 4 5").`;
   
   useEffect(() => {
     const checkResistancePatterns = async () => {
-      // Skip if already checked, initializing, or other flows active
+      // Already checked or not ready
+      if (hasCheckedResistance.current || isInitializing || !user?.id || !progress) {
+        return;
+      }
+      
+      // First-time users don't get resistance patterns - mark as checked
+      if (openingType === 'first_time') {
+        hasCheckedResistance.current = true;
+        return;
+      }
+      
+      // Defer if any intervention is active (don't set hasChecked - retry later)
       if (
-        hasCheckedResistance.current ||
-        isInitializing ||
-        !user?.id ||
-        !progress ||
-        openingType === 'first_time' ||
         weeklyCheckInActive ||
         progress.weeklyCheckInDue ||
         missedDaysIntervention?.isActive ||
@@ -3338,6 +3373,7 @@ Give me your four numbers (e.g., "4 3 4 5").`;
         flowBlockState.isActive ||
         unlockFlowState !== 'none'
       ) {
+        // Don't set hasChecked - we want to show this after interventions complete
         return;
       }
       
