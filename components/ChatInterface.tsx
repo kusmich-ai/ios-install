@@ -1105,7 +1105,7 @@ const handleRegressionAction = async (
   // For troubleshoot, we keep the intervention active for exploration
   // It gets cleared when user chooses a resolution path
 };
-  
+
 // ============================================
 // STAGE 7 API HANDLER (Unified)
 // ============================================
@@ -1222,6 +1222,97 @@ const getWeeklyCheckInResultsFromAPI = async (
   } catch (error) {
     console.error('Weekly check-in results API error:', error);
     return getFallbackResultsMessage(avgDelta, scores);
+  }
+};
+
+// ============================================
+// BREAKTHROUGH RESPONSE API HANDLER
+// ============================================
+
+const getBreakthroughResponseFromAPI = async (
+  type: 'insight' | 'emotionalShift' | 'milestone',
+  userMessage: string,
+  confidence: number
+): Promise<string> => {
+  try {
+    // Extract milestone details if applicable
+    let milestoneDetails = '';
+    if (type === 'milestone') {
+      const weekMatch = userMessage.match(/(\d+)\s*weeks?/i);
+      const dayMatch = userMessage.match(/(\d+)\s*days?/i);
+      if (weekMatch) milestoneDetails = `${weekMatch[1]} weeks`;
+      else if (dayMatch) milestoneDetails = `${dayMatch[1]} days`;
+    }
+
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [],
+        context: 'breakthrough_response',
+        additionalContext: {
+          type,
+          userMessage,
+          confidence,
+          milestoneDetails,
+          userName: getUserName(),
+          currentStage: progress?.currentStage || 1,
+          adherence: progress?.adherencePercentage || 0,
+          consecutiveDays: progress?.consecutiveDays || 0
+        }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('API request failed');
+    }
+
+    const data = await response.json();
+    return data.response || data.content || getBreakthroughResponse(type, userMessage);
+  } catch (error) {
+    console.error('Breakthrough response API error:', error);
+    return getBreakthroughResponse(type, userMessage); // Fallback to template
+  }
+};
+
+// ============================================
+// RESISTANCE RESPONSE API HANDLER
+// ============================================
+
+const getResistanceResponseFromAPI = async (
+  pattern: { type?: string; subType?: string; count?: number; intervention?: string }
+): Promise<string> => {
+  try {
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [],
+        context: 'resistance_response',
+        additionalContext: {
+          type: pattern.type || 'excuse',
+          subType: pattern.subType,
+          count: pattern.count || 1,
+          originalIntervention: pattern.intervention,
+          userName: getUserName(),
+          currentStage: progress?.currentStage || 1,
+          adherence: progress?.adherencePercentage || 0,
+          daysInStage: progress?.stageStartDate 
+            ? Math.floor((Date.now() - new Date(progress.stageStartDate).getTime()) / (1000 * 60 * 60 * 24))
+            : 0
+        }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('API request failed');
+    }
+
+    const data = await response.json();
+    return data.response || data.content || getResistanceTemplateMessage(pattern);
+  } catch (error) {
+    console.error('Resistance response API error:', error);
+    return getResistanceTemplateMessage(pattern); // Fallback to template
   }
 };
 
@@ -3214,29 +3305,31 @@ Give me your four numbers (e.g., "4 3 4 5").`;
         if (should && pattern) {
           devLog('[ResistanceTracking]', 'Surfacing pattern:', pattern);
           
-          // Try to get a template-based message first
+          // Get response from API (with template fallback)
           const patternData = pattern as { type?: string; subType?: string; count?: number; intervention?: string };
-          const templateMessage = getResistanceTemplateMessage({
-            type: patternData.type || 'excuse',
-            subType: patternData.subType,
-            count: patternData.count
-          });
-          
-          // Use template message if available, otherwise fall back to original
-          const messageContent = templateMessage || patternData.intervention || 'A pattern has been detected.';
           
           // Delay the pattern message so it doesn't override the opening
-          setTimeout(() => {
-            setMessages(prev => [...prev, {
-              role: 'assistant',
-              content: `---
-
-**A pattern I've noticed:**
-
-${messageContent}
-
-This isn't judgment — it's data. The resistance is telling you something. Want to explore it?`
-            }]);
+          setTimeout(async () => {
+            try {
+              const resistanceResponse = await getResistanceResponseFromAPI(patternData);
+              
+              setMessages(prev => [...prev, {
+                role: 'assistant',
+                content: `---\n\n${resistanceResponse}`
+              }]);
+            } catch (error) {
+              console.error('[ResistanceTracking] API error, using fallback:', error);
+              const fallbackMessage = getResistanceTemplateMessage({
+                type: patternData.type || 'excuse',
+                subType: patternData.subType,
+                count: patternData.count
+              }) || patternData.intervention || 'A pattern has been detected.';
+              
+              setMessages(prev => [...prev, {
+                role: 'assistant',
+                content: `---\n\n**A pattern I've noticed:**\n\n${fallbackMessage}\n\nThis isn't judgment — it's data. The resistance is telling you something. Want to explore it?`
+              }]);
+            }
           }, 3000);
         }
       } catch (error) {
@@ -3847,15 +3940,23 @@ if (regressionIntervention?.isActive) {
       
       setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
       
-      // If breakthrough detected with high confidence, add acknowledgment
+      // If breakthrough detected with high confidence, get response from API
       if (breakthroughDetection.type && breakthroughDetection.confidence >= 0.5) {
-        setTimeout(() => {
-          const breakthroughResponse = getBreakthroughResponse(breakthroughDetection.type!, userMessage);
-          if (breakthroughResponse) {
-            setMessages(prev => [...prev, { 
-              role: 'assistant', 
-              content: `---\n\n${breakthroughResponse}` 
-            }]);
+        setTimeout(async () => {
+          try {
+            const breakthroughResponse = await getBreakthroughResponseFromAPI(
+              breakthroughDetection.type!,
+              userMessage,
+              breakthroughDetection.confidence
+            );
+            if (breakthroughResponse) {
+              setMessages(prev => [...prev, { 
+                role: 'assistant', 
+                content: `---\n\n${breakthroughResponse}` 
+              }]);
+            }
+          } catch (error) {
+            console.error('Breakthrough response error:', error);
           }
         }, 1500);
       }
