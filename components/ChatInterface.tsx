@@ -2787,45 +2787,24 @@ if (isCommitment) {
       const avgScore = ((scores.regulation || 0) + (scores.awareness || 0) + (scores.outlook || 0) + (scores.attention || 0)) / 4;
       const newRewiredIndex = Math.round(avgScore * 20);
       
-      const resultMessage = `**Weekly Check-In Complete!**
+      const deltaScores = {
+  regulation: regulationDelta,
+  awareness: awarenessDelta,
+  outlook: outlookDelta,
+  attention: attentionDelta
+};
 
-**Your Scores:**
-- Regulation: ${scores.regulation}/5 (${regulationDelta >= 0 ? '+' : ''}${regulationDelta.toFixed(1)} from baseline)
-- Awareness: ${scores.awareness}/5 (${awarenessDelta >= 0 ? '+' : ''}${awarenessDelta.toFixed(1)} from baseline)
-- Outlook: ${scores.outlook}/5 (${outlookDelta >= 0 ? '+' : ''}${outlookDelta.toFixed(1)} from baseline)
-- Attention: ${scores.attention}/5 (${attentionDelta >= 0 ? '+' : ''}${attentionDelta.toFixed(1)} from baseline)
+// Get personalized results from API (includes decline follow-up if needed)
+const resultMessage = await getWeeklyCheckInResultsFromAPI(
+  scores,
+  deltaScores,
+  avgDelta,
+  newRewiredIndex
+);
 
-**Average Delta: ${avgDelta >= 0 ? '+' : ''}${avgDelta.toFixed(2)}**
-**Current REwired Index: ${newRewiredIndex}/100**
+setMessages(prev => [...prev, { role: 'assistant', content: resultMessage }]);
 
-${avgDelta >= 0.3 ? '📈 Great progress! Your nervous system is responding to the training. Keep the consistency going.' : avgDelta >= 0 ? '📊 Moving in the right direction. Steady progress compounds over time.' : '📉 Some regression this week. Let\'s look at what might be contributing.'}`;
-
-      setMessages(prev => [...prev, { role: 'assistant', content: resultMessage }]);
-      
-      // If declining, add follow-up with decline template after a delay
-      if (avgDelta < 0) {
-        const deltaScores = {
-          regulation: regulationDelta,
-          awareness: awarenessDelta,
-          outlook: outlookDelta,
-          attention: attentionDelta
-        };
-        
-        // Get previous avg delta from progress if available
-        const previousAvgDelta = (progress as any)?.previousAvgDelta || 0;
-        const weeksDeclined = (progress as any)?.weeksDeclined || (avgDelta < 0 ? 1 : 0);
-        
-        const declineResponse = getDeclineResponse(avgDelta, previousAvgDelta, weeksDeclined, deltaScores);
-        
-        if (declineResponse) {
-          setTimeout(() => {
-            setMessages(prev => [...prev, { 
-              role: 'assistant', 
-              content: `---\n\n${declineResponse}` 
-            }]);
-          }, 2500);
-        }
-      }
+// Note: Decline response is now included in the API response, no separate timeout needed
       
       setWeeklyCheckInActive(false);
       setWeeklyCheckInStep(0);
