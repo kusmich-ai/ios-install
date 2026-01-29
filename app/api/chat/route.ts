@@ -1505,26 +1505,78 @@ ${checkInData.declined
       case 'resistance_response': {
         const patternData = additionalContext || {};
         
+        // Build detailed context based on type
+        let patternDetails = '';
+        
+        if (context === 'breakthrough_response') {
+          // Breakthrough-specific details
+          if (patternData.type === 'insight') {
+            patternDetails = `- User expressed a realization or new understanding
+- Confidence level: ${(patternData.confidence * 100).toFixed(0)}%
+- This is a cognitive shift - acknowledge the noticing, not the content`;
+          } else if (patternData.type === 'emotionalShift') {
+            patternDetails = `- User reported feeling different (lighter, calmer, clearer)
+- Confidence level: ${(patternData.confidence * 100).toFixed(0)}%
+- This is a somatic/emotional shift - frame as nervous system finding new capacity`;
+          } else if (patternData.type === 'milestone') {
+            patternDetails = `- User mentioned a consistency streak: ${patternData.milestoneDetails || 'multiple days'}
+- Consecutive days tracked: ${patternData.consecutiveDays || 'unknown'}
+- Confidence level: ${(patternData.confidence * 100).toFixed(0)}%
+- Frame as rewiring/neural pathway strengthening, not just discipline`;
+          }
+        } else {
+          // Resistance-specific details
+          if (patternData.type === 'excuse') {
+            patternDetails = `- Excuse pattern detected: ${patternData.subType || 'general'}
+- Occurrence count: ${patternData.count || 1} times
+- Days in current stage: ${patternData.daysInStage || 'unknown'}
+- Frame as pattern/data, ask what's underneath`;
+          } else if (patternData.type === 'avoidance') {
+            patternDetails = `- Avoidance of: ${patternData.subType || 'certain practices'}
+- Occurrence count: ${patternData.count || 1} times
+- Days in current stage: ${patternData.daysInStage || 'unknown'}
+- The resistance is information - what does this practice touch?`;
+          } else if (patternData.type === 'skepticism') {
+            patternDetails = `- User expressed doubt about effectiveness
+- Occurrence count: ${patternData.count || 1} times
+- Don't defend the system - ask what "working" would look like`;
+          }
+        }
+        
         const breakthroughResistanceContext = `
 ## DETECTED PATTERN
 
-**Type:** ${context === 'breakthrough_response' ? 'Breakthrough' : 'Resistance'}
-**Subtype:** ${patternData.subType || patternData.type || 'general'}
-**User message that triggered detection:** "${patternData.userMessage || ''}"
-**Pattern details:**
-${patternData.type === 'insight' ? '- User expressed a realization or new understanding' : ''}
-${patternData.type === 'emotionalShift' ? '- User reported feeling different (lighter, calmer, clearer)' : ''}
-${patternData.type === 'milestone' ? `- User mentioned ${patternData.milestone || 'a consistency streak'}` : ''}
-${patternData.type === 'excuse' ? `- Excuse pattern detected: ${patternData.subType || 'general'} (occurred ${patternData.count || 'multiple'} times)` : ''}
-${patternData.type === 'avoidance' ? `- Avoidance of: ${patternData.subType || 'certain practices'}` : ''}
-${patternData.type === 'skepticism' ? '- User expressed doubt about effectiveness' : ''}
+**Category:** ${context === 'breakthrough_response' ? 'BREAKTHROUGH' : 'RESISTANCE'}
+**Type:** ${patternData.type || 'general'}
+${patternData.subType ? `**Subtype:** ${patternData.subType}` : ''}
 
+## USER CONTEXT
 **User name:** ${patternData.userName || 'User'}
-**Current stage:** ${patternData.currentStage || 1}
+**Current stage:** Stage ${patternData.currentStage || 1}
 **Adherence:** ${patternData.adherence || 0}%
+${patternData.consecutiveDays ? `**Consecutive days:** ${patternData.consecutiveDays}` : ''}
+${patternData.daysInStage ? `**Days in stage:** ${patternData.daysInStage}` : ''}
 
-## INSTRUCTION
-Generate a response acknowledging this ${context === 'breakthrough_response' ? 'breakthrough' : 'resistance pattern'}. Follow the voice guidelines precisely. ${context === 'resistance_response' ? 'End with ONE diagnostic question.' : ''}
+## TRIGGERING MESSAGE
+"${patternData.userMessage || ''}"
+
+## PATTERN DETAILS
+${patternDetails}
+
+## RESPONSE INSTRUCTIONS
+${context === 'breakthrough_response' 
+  ? `Generate a breakthrough acknowledgment that:
+1. Names what happened specifically (1-2 sentences)
+2. Connects to mechanism (what's rewiring in the nervous system)
+3. Frames the USER as the agent ("You noticed..." not "The practice gave you...")
+4. Does NOT over-celebrate or use cheerleader language
+5. Optionally invites integration without demanding more`
+  : `Generate a resistance response that:
+1. Names the pattern directly but neutrally (it's data, not judgment)
+2. Acknowledges this is the ${patternData.count || 'first'} time this has come up
+3. Frames resistance as information, not failure
+4. Ends with exactly ONE diagnostic question
+5. Does NOT shame, lecture, or immediately problem-solve`}
 `;
         
         systemPrompt = breakthroughResistanceSystemPrompt + breakthroughResistanceContext + patternContext;
