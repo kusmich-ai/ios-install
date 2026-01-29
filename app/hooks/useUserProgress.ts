@@ -206,14 +206,14 @@ export function useUserProgress() {
         throw progressError;
       }
       
-      // Fetch latest weekly delta
+      // FIXED: Fetch latest weekly delta - select BOTH scores AND deltas, order by week_of (not created_at)
       const { data: latestDelta } = await supabase
         .from('weekly_deltas')
-        .select('regulation_delta,awareness_delta,outlook_delta,attention_delta,qualitative_rating')
+        .select('regulation_score,awareness_score,outlook_score,attention_score,regulation_delta,awareness_delta,outlook_delta,attention_delta,average_delta,qualitative_rating')
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
+        .order('week_of', { ascending: false })
         .limit(1)
-       .single();
+        .single();
 
       // Fetch today's practice logs
       const { data: todayLogs } = await supabase
@@ -260,7 +260,7 @@ const flowBlockSprint = flowBlockSprintArray?.[0] || null;
       const identitySprintDay = calculateSprintDay(identitySprint?.start_date);
       const flowBlockSprintDay = calculateSprintDay(flowBlockSprint?.start_date);
 
-      // Calculate domain scores and deltas
+      // Calculate domain scores - FIXED: Use actual scores if available, fallback to baseline + delta
       const baselineScores = baselineDomainScores || {
         regulation: 2.5,
         awareness: 2.5,
@@ -268,32 +268,42 @@ const flowBlockSprint = flowBlockSprintArray?.[0] || null;
         attention: 2.5
       };
 
+      // FIXED: Prefer actual scores from weekly_deltas, fallback to baseline + delta calculation
       const domainScores = {
-        regulation: latestDelta?.regulation_delta !== undefined 
-          ? baselineScores.regulation + (latestDelta.regulation_delta || 0)
-          : baselineScores.regulation,
-        awareness: latestDelta?.awareness_delta !== undefined
-  ? baselineScores.awareness + (latestDelta.awareness_delta || 0)  
-          : baselineScores.awareness,
-        outlook: latestDelta?.outlook_delta !== undefined
-          ? baselineScores.outlook + (latestDelta.outlook_delta || 0)
-          : baselineScores.outlook,
-        attention: latestDelta?.attention_delta !== undefined
-          ? baselineScores.attention + (latestDelta.attention_delta || 0)
-          : baselineScores.attention
+        regulation: latestDelta?.regulation_score != null 
+          ? Number(latestDelta.regulation_score)
+          : latestDelta?.regulation_delta != null
+            ? baselineScores.regulation + Number(latestDelta.regulation_delta)
+            : baselineScores.regulation,
+        awareness: latestDelta?.awareness_score != null 
+          ? Number(latestDelta.awareness_score)
+          : latestDelta?.awareness_delta != null
+            ? baselineScores.awareness + Number(latestDelta.awareness_delta)
+            : baselineScores.awareness,
+        outlook: latestDelta?.outlook_score != null 
+          ? Number(latestDelta.outlook_score)
+          : latestDelta?.outlook_delta != null
+            ? baselineScores.outlook + Number(latestDelta.outlook_delta)
+            : baselineScores.outlook,
+        attention: latestDelta?.attention_score != null 
+          ? Number(latestDelta.attention_score)
+          : latestDelta?.attention_delta != null
+            ? baselineScores.attention + Number(latestDelta.attention_delta)
+            : baselineScores.attention
       };
 
+      // Calculate deltas (for unlock progress checking)
       const domainDeltas = {
-        regulation: latestDelta?.regulation_delta || 0,
-        awareness: latestDelta?.awareness_delta || 0,
-        outlook: latestDelta?.outlook_delta || 0,
-        attention: latestDelta?.attention_delta || 0,
-        average: latestDelta
-          ? ((latestDelta.regulation_delta || 0) + 
-             (latestDelta.awareness_delta || 0) + 
-             (latestDelta.outlook_delta || 0) + 
-             (latestDelta.attention_delta || 0)) / 4
-          : 0
+        regulation: latestDelta?.regulation_delta != null ? Number(latestDelta.regulation_delta) : domainScores.regulation - baselineScores.regulation,
+        awareness: latestDelta?.awareness_delta != null ? Number(latestDelta.awareness_delta) : domainScores.awareness - baselineScores.awareness,
+        outlook: latestDelta?.outlook_delta != null ? Number(latestDelta.outlook_delta) : domainScores.outlook - baselineScores.outlook,
+        attention: latestDelta?.attention_delta != null ? Number(latestDelta.attention_delta) : domainScores.attention - baselineScores.attention,
+        average: latestDelta?.average_delta != null 
+          ? Number(latestDelta.average_delta)
+          : ((domainScores.regulation - baselineScores.regulation) + 
+             (domainScores.awareness - baselineScores.awareness) + 
+             (domainScores.outlook - baselineScores.outlook) + 
+             (domainScores.attention - baselineScores.attention)) / 4
       };
 
       // Calculate REwired Index
@@ -311,7 +321,7 @@ const flowBlockSprint = flowBlockSprintArray?.[0] || null;
       const dailyPractices = buildDailyPractices(progressData.current_stage, completedIds);
 
       // Get latest qualitative rating
-      const latestQualitativeRating = latestDelta?.qualitative_rating || null;
+      const latestQualitativeRating = latestDelta?.qualitative_rating != null ? Number(latestDelta.qualitative_rating) : null;
 
       // Calculate days in stage
       const stageStartDate = progressData.stage_start_date 
@@ -413,7 +423,8 @@ const flowBlockSprint = flowBlockSprintArray?.[0] || null;
         microAction: newProgress.microAction,
         sprintDay: newProgress.sprintDay,
         adherence: newProgress.adherencePercentage,
-        unlockEligible: newProgress.unlockEligible
+        unlockEligible: newProgress.unlockEligible,
+        domainScores: newProgress.domainScores
       });
 
       setProgress(newProgress);
