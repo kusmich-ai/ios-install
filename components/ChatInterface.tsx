@@ -2979,6 +2979,13 @@ if (isCommitment) {
         .update({ last_weekly_checkin: new Date().toISOString() })
         .eq('user_id', user.id);
       
+      // Calculate deltas from baseline
+      const regulationDelta = (scores.regulation || 0) - baselineData.domainScores.regulation;
+      const awarenessDelta = (scores.awareness || 0) - baselineData.domainScores.awareness;
+      const outlookDelta = (scores.outlook || 0) - baselineData.domainScores.outlook;
+      const attentionDelta = (scores.attention || 0) - baselineData.domainScores.attention;
+      const avgDelta = (regulationDelta + awarenessDelta + outlookDelta + attentionDelta) / 4;
+      
       // Calculate week start date (Sunday of current week)
       const now = new Date();
       const weekStart = new Date(now);
@@ -2991,26 +2998,25 @@ if (isCommitment) {
         .from('weekly_deltas')
         .upsert({
           user_id: user.id,
-          week_start_date: weekStartISO,
+          week_of: weekStartISO,
           regulation_score: scores.regulation,
           awareness_score: scores.awareness,
           outlook_score: scores.outlook,
           attention_score: scores.attention,
-          stage: progress?.currentStage || 1
+          regulation_delta: regulationDelta,
+          awareness_delta: awarenessDelta,
+          outlook_delta: outlookDelta,
+          attention_delta: attentionDelta,
+          average_delta: avgDelta,
+          stage_at_checkin: progress?.currentStage || 1
         }, {
-          onConflict: 'user_id,week_start_date'
+          onConflict: 'user_id,week_of'
         });
       
       if (deltaError) {
         console.error('Failed to save weekly delta:', deltaError);
         // Don't throw - weekly_checkins was saved successfully
       }
-      
-      const regulationDelta = (scores.regulation || 0) - baselineData.domainScores.regulation;
-      const awarenessDelta = (scores.awareness || 0) - baselineData.domainScores.awareness;
-      const outlookDelta = (scores.outlook || 0) - baselineData.domainScores.outlook;
-      const attentionDelta = (scores.attention || 0) - baselineData.domainScores.attention;
-      const avgDelta = (regulationDelta + awarenessDelta + outlookDelta + attentionDelta) / 4;
       
       const avgScore = ((scores.regulation || 0) + (scores.awareness || 0) + (scores.outlook || 0) + (scores.attention || 0)) / 4;
       const newRewiredIndex = Math.round(avgScore * 20);
