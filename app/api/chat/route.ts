@@ -1316,7 +1316,7 @@ export async function POST(req: Request) {
         break;
 
       // ============================================
-      // RE-ENGAGEMENT CONTEXT HANDLING
+      // RE-ENGAGEMENT CONTEXT HANDLING (UPDATED WITH KEYWORD LOCKOUT)
       // ============================================
       case 're_engagement':
       case 're_engagement_opening': {
@@ -1333,23 +1333,73 @@ export async function POST(req: Request) {
         
         const currentStage = reEngagementData.currentStage || 1;
         const ritualsList = stageRituals[currentStage] || stageRituals[1];
+        const daysAway = reEngagementData.daysAway || 'unknown';
         
         const reEngagementContext = `
 ## CURRENT RE-ENGAGEMENT CONTEXT
-- Days away: ${reEngagementData.daysAway || 'unknown'}
+- Days away: ${daysAway}
 - Intervention type: ${reEngagementData.interventionType || 'missed_days'}
 - Current stage: Stage ${currentStage} (${reEngagementData.stageName || ''})
 - User name: ${reEngagementData.userName || 'User'}
 - Current adherence: ${reEngagementData.adherence || 0}%
-${context === 're_engagement_opening' ? '- This is the OPENING message - generate the initial re-engagement prompt with 3 options' : ''}
+${context === 're_engagement_opening' ? '- This is the OPENING message - generate the initial re-engagement prompt' : ''}
 
 ## USER'S CURRENT RITUALS (Stage ${currentStage})
 ${ritualsList}
 
 ## CRITICAL INSTRUCTION
 ${context === 're_engagement_opening' 
-  ? 'Generate an opening re-engagement message that acknowledges the gap and offers 3 options: Continue, Talk About It, Reset. Use the IOS voice - direct, not harsh.' 
-  : 'You are IN an active re-engagement conversation. DO NOT loop back to the 3-option menu. Explore what the user shared and move the conversation FORWARD.'}
+  ? `Generate an opening re-engagement message. The user will TYPE their response (no buttons will appear).
+
+Your opening should:
+1. Acknowledge the gap honestly (${daysAway} days)
+2. Present 3 possible explanations:
+   - Life blew up (legitimate pause needed)
+   - Resistance is running the show  
+   - The system isn't fitting their reality
+3. Ask which one it is - they will type their response
+
+Example format:
+"Hey [Name]. It's been ${daysAway} days. Let's be honest about what's happening.
+
+${typeof daysAway === 'number' && daysAway >= 7 ? "A week" : `${daysAway} days`} isn't 'I forgot' — it's either:
+1. Life blew up (legitimate pause needed)
+2. Resistance is running the show
+3. The system isn't fitting your reality right now
+
+Which is it? No judgment — just need accurate data to help you."
+
+Use the IOS voice - direct, not harsh.` 
+  : `You are IN an active re-engagement conversation. This is PURELY CONVERSATIONAL - no buttons appear.
+
+## CRITICAL RULES - READ CAREFULLY
+1. DO NOT loop back to the 3-option menu
+2. DO NOT offer "Continue | Talk | Reset" style choices
+3. Explore what the user shared and move the conversation FORWARD
+4. When user answers with things like "resistance", "energy mismatch", "2", etc. - these are ANSWERS to your questions, not triggers for other flows
+
+## KEYWORD LOCKOUT - CRITICAL
+During this re-engagement conversation, these words should NOT trigger their normal flows:
+- "awareness rep" → NOT a trigger for Awareness Rep practice  
+- "micro-action" / "aligned action" / "morning coherence" → NOT a trigger for Micro-Action setup
+- "flow block" → NOT a trigger for Flow Block setup
+- "resonance" / "breathing" → NOT a trigger for HRVB practice
+- "somatic" → NOT a trigger for Somatic Flow
+
+When user says things like "awareness rep and aligned action" - they are ANSWERING your question about which practices work for them. Acknowledge this as useful information and continue the re-engagement exploration.
+
+Example:
+You asked: "Which practices actually shift your state when you do them?"
+User says: "awareness rep and aligned action"
+CORRECT response: "Good - those are your leverage points. So even with low energy, those two give you the most return. What if we stripped back to just those two for a week?"
+WRONG response: "Let's set up your Morning Coherence Practice..."
+
+## CONTINUE EXPLORING UNTIL user explicitly chooses:
+- To continue practicing → Clear intervention, return to normal flow
+- To take a pause → Acknowledge and respect their decision
+- To reset → Process the reset action
+
+Then and ONLY then, offer resolution.`}
 `;
         
         systemPrompt = reEngagementSystemPrompt + reEngagementContext + patternContext;
