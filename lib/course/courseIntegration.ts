@@ -599,9 +599,7 @@ Example: [[VIDEO_SUGGESTION:3:4:This explains the nervous system side of what yo
 
 ### WHEN TO SUGGEST (Stage-Appropriate)
 - Module 1 (Foundations): Available to all users
-- Module 2 (Architecture of Suffering): Stage 2+ (except 2.3 which is Stage 7 only)
-- Module 3 (Practices That Rewire): Stage 2+ (except 3.3-3.4 which are Stage 5+)
-- Module 4 (Living as Liberation): Stage 6+
+- Modules 2-4: Stage 2+ only
 
 ### TRIGGER PATTERNS (Offer When You Sense)
 
