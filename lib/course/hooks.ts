@@ -4,7 +4,8 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useUser } from '@/lib/hooks/useUser';
+import { createClient } from '@/lib/supabase-client';
+import { useUserProgress } from '@/app/hooks/useUserProgress';
 import {
   getAllTutorials,
   getUserProgress,
@@ -49,17 +50,31 @@ interface UseCourseReturn {
 }
 
 export function useCourse(): UseCourseReturn {
-  const { user, userProgress } = useUser();
-  const currentStage = userProgress?.current_stage || 1;
+  // Get user progress from your existing hook
+  const { progress: userProgress } = useUserProgress();
+  const currentStage = userProgress?.currentStage || 1;
+  
+  // Get user ID from Supabase auth
+  const [userId, setUserId] = useState<string | null>(null);
+  const supabase = createClient();
   
   const [tutorials, setTutorials] = useState<CourseTutorial[]>([]);
-  const [progress, setProgress] = useState<Record<string, CourseProgress>>({});
+  const [courseProgress, setCourseProgress] = useState<Record<string, CourseProgress>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
+  // Get user ID on mount
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserId(user?.id || null);
+    };
+    getUser();
+  }, [supabase.auth]);
+
   // Fetch data
   const fetchData = useCallback(async () => {
-    if (!user?.id) return;
+    if (!userId) return;
     
     setLoading(true);
     setError(null);
@@ -67,7 +82,7 @@ export function useCourse(): UseCourseReturn {
     try {
       const [tutorialsData, progressData] = await Promise.all([
         getAllTutorials(),
-        getUserProgress(user.id)
+        getUserProgress(userId)
       ]);
       
       setTutorials(tutorialsData);
@@ -77,13 +92,13 @@ export function useCourse(): UseCourseReturn {
       for (const p of progressData) {
         progressMap[p.tutorial_id] = p;
       }
-      setProgress(progressMap);
+      setCourseProgress(progressMap);
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to fetch course data'));
     } finally {
       setLoading(false);
     }
-  }, [user?.id]);
+  }, [userId]);
 
   useEffect(() => {
     fetchData();
@@ -95,18 +110,18 @@ export function useCourse(): UseCourseReturn {
   }, [currentStage]);
 
   const isCompleted = useCallback((tutorialId: string): boolean => {
-    return progress[tutorialId]?.completed_at != null;
-  }, [progress]);
+    return courseProgress[tutorialId]?.completed_at != null;
+  }, [courseProgress]);
 
   // Enrich tutorials with progress and accessibility
   const tutorialsWithProgress = useMemo((): TutorialWithProgress[] => {
     return tutorials.map(tutorial => ({
       ...tutorial,
-      progress: progress[tutorial.id] || null,
+      progress: courseProgress[tutorial.id] || null,
       isCompleted: isCompleted(tutorial.id),
       isAccessible: canAccess(tutorial)
     }));
-  }, [tutorials, progress, isCompleted, canAccess]);
+  }, [tutorials, courseProgress, isCompleted, canAccess]);
 
   // Group tutorials into modules
   const modules = useMemo((): CourseModule[] => {
@@ -167,11 +182,11 @@ export function useCourse(): UseCourseReturn {
     tutorialId: string, 
     source: 'library' | 'ai_suggestion' | 'modal' = 'library'
   ) => {
-    if (!user?.id) return;
+    if (!userId) return;
     
     try {
-      const updatedProgress = await markTutorialComplete(user.id, tutorialId, source);
-      setProgress(prev => ({
+      const updatedProgress = await markTutorialComplete(userId, tutorialId, source);
+      setCourseProgress(prev => ({
         ...prev,
         [tutorialId]: updatedProgress
       }));
@@ -179,7 +194,7 @@ export function useCourse(): UseCourseReturn {
       console.error('Error marking tutorial complete:', err);
       throw err;
     }
-  }, [user?.id]);
+  }, [userId]);
 
   // Action: Update progress
   const updateProgressAction = useCallback(async (
@@ -187,17 +202,17 @@ export function useCourse(): UseCourseReturn {
     percentage: number,
     positionSeconds: number
   ) => {
-    if (!user?.id) return;
+    if (!userId) return;
     
     try {
       const updatedProgress = await updateWatchProgress(
-        user.id, 
+        userId, 
         tutorialId, 
         percentage, 
         positionSeconds,
         'library'
       );
-      setProgress(prev => ({
+      setCourseProgress(prev => ({
         ...prev,
         [tutorialId]: updatedProgress
       }));
@@ -205,12 +220,12 @@ export function useCourse(): UseCourseReturn {
       console.error('Error updating progress:', err);
       // Don't throw - this is called frequently during playback
     }
-  }, [user?.id]);
+  }, [userId]);
 
   return {
     tutorials: tutorialsWithProgress,
     modules,
-    progress,
+    progress: courseProgress,
     loading,
     error,
     stats,
@@ -275,8 +290,8 @@ interface UseAISuggestionReturn {
 }
 
 export function useAISuggestion(): UseAISuggestionReturn {
-  const { userProgress } = useUser();
-  const currentStage = userProgress?.current_stage || 1;
+  const { progress: userProgress } = useUserProgress();
+  const currentStage = userProgress?.currentStage || 1;
   
   const canSuggest = useCallback((tutorial: CourseTutorial): boolean => {
     return currentStage >= tutorial.unlock_stage;
@@ -321,24 +336,35 @@ interface UseCompletionStatsReturn {
 }
 
 export function useCompletionStats(): UseCompletionStatsReturn {
-  const { user } = useUser();
+  const [userId, setUserId] = useState<string | null>(null);
   const [stats, setStats] = useState<UseCompletionStatsReturn['stats']>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   
+  const supabase = createClient();
+  
+  // Get user ID on mount
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserId(user?.id || null);
+    };
+    getUser();
+  }, [supabase.auth]);
+  
   const fetchStats = useCallback(async () => {
-    if (!user?.id) return;
+    if (!userId) return;
     
     setLoading(true);
     try {
-      const data = await getUserCompletionStats(user.id);
+      const data = await getUserCompletionStats(userId);
       setStats(data);
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to fetch stats'));
     } finally {
       setLoading(false);
     }
-  }, [user?.id]);
+  }, [userId]);
   
   useEffect(() => {
     fetchStats();
