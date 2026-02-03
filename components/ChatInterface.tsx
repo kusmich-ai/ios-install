@@ -4227,10 +4227,24 @@ if (regressionIntervention?.isActive) {
                   {msg.role === 'user' ? (
                     <div className="whitespace-pre-wrap leading-relaxed">{msg.content}</div>
                   ) : (
-                    <div 
-                      className="leading-relaxed prose prose-invert prose-sm max-w-none"
-                      dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
-                    />
+                    <div className="leading-relaxed prose prose-invert prose-sm max-w-none">
+                      <div 
+                        dangerouslySetInnerHTML={{ 
+                          __html: renderMarkdown(
+                            msg.content.replace(/\[\[VIDEO_SUGGESTION:[^\]]+\]\]/g, '')
+                          ) 
+                        }}
+                      />
+                      {parseVideoSuggestions(msg.content).map((suggestion, vidIdx) => (
+                        <VideoSuggestionCard
+                          key={vidIdx}
+                          moduleNumber={suggestion.moduleNumber}
+                          tutorialNumber={suggestion.tutorialNumber}
+                          reason={suggestion.reason}
+                          onWatch={handleWatchVideo}
+                        />
+                      ))}
+                    </div>
                   )}
                 </div>
               </div>
