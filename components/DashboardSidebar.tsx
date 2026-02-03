@@ -13,6 +13,7 @@ import {
   Lock,
   Sparkles,
   Target,
+  BookOpen,
 } from 'lucide-react';
 import AwakenWithFiveCard from './AwakenWithFiveCard';
 
@@ -220,15 +221,23 @@ export default function DashboardSidebar({
             </div>
           </div>
           
-          <Link 
-            href="/profile/patterns"
-            className="inline-flex items-center gap-2 mt-2 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg text-xs font-medium transition-colors border border-amber-200/50"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            Pattern Profile & Transformation Map
-          </Link>
+          <div className="flex flex-col gap-2 mt-2">
+            <Link 
+              href="/profile/patterns"
+              className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg text-xs font-medium transition-colors border border-amber-200/50"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Pattern Profile & Transformation Map
+            </Link>
+            <Link 
+              href="/library"
+              className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-medium transition-colors border border-blue-200/50"
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              Course Library
+            </Link>
+          </div>
         </div>
-
         {/* ==========================================
             REWIRED INDEX
             ========================================== */}
