@@ -3,7 +3,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ArrowLeft, BookOpen, Play, Lock, CheckCircle, Clock, ChevronDown, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
@@ -14,9 +14,37 @@ import VideoPlayer from '@/components/library/VideoPlayer';
 import VideoModal from '@/components/library/VideoModal';
 import { useCourseStore } from '@/stores/courseStore';
 
-export default function LibraryPage() {
+// Wrapper component to handle Suspense boundary for useSearchParams
+function LibraryContent() {
   const searchParams = useSearchParams();
   const tutorialParam = searchParams.get('tutorial');
+  
+  return <LibraryPageInner tutorialParam={tutorialParam} />;
+}
+
+// Loading fallback
+function LibraryLoading() {
+  return (
+    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+      <div className="text-center">
+        <div className="w-8 h-8 border-2 border-[#ff9e19] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-gray-400">Loading library...</p>
+      </div>
+    </div>
+  );
+}
+
+// Main export with Suspense wrapper
+export default function LibraryPage() {
+  return (
+    <Suspense fallback={<LibraryLoading />}>
+      <LibraryContent />
+    </Suspense>
+  );
+}
+
+// Inner component with all the logic
+function LibraryPageInner({ tutorialParam }: { tutorialParam: string | null }) {
   
   const { 
     tutorials, 
