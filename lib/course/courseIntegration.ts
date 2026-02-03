@@ -781,8 +781,10 @@ export function canAccessTutorial(
   tutorialNumber: number, 
   userStage: number
 ): boolean {
-  const module = COURSE_MODULES[moduleNumber as keyof typeof COURSE_MODULES];
-  if (!module) return false;
+  // Simple rule: Module 1 = Stage 1+, Everything else = Stage 2+
+  if (moduleNumber === 1) return true;
+  return userStage >= 2;
+}
   
   const tutorial = module.tutorials.find(t => t.number === tutorialNumber);
   if (!tutorial) return false;
