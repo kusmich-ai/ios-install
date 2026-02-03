@@ -152,7 +152,7 @@ export async function findTutorialByKeywords(keywords: string[]): Promise<Course
   });
   
   // Return highest scoring tutorial (if any matches)
-  const best = scored.filter(s => s.score > 0).sort((a, b) => b.score - a.score)[0];
+  const best = scored.filter((s: { tutorial: CourseTutorial; score: number }) => s.score > 0).sort((a: { tutorial: CourseTutorial; score: number }, b: { tutorial: CourseTutorial; score: number }) => b.score - a.score)[0];
   return best?.tutorial || null;
 }
 
