@@ -135,7 +135,7 @@ export async function findTutorialByKeywords(keywords: string[]): Promise<Course
   if (!data) return null;
   
   // Score each tutorial based on keyword matches
-  const scored = data.map(tutorial => {
+  const scored = data.map((tutorial: CourseTutorial) => {
     const tutorialKeywords = tutorial.ai_trigger_keywords as string[];
     let score = 0;
     
