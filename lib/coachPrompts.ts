@@ -2,6 +2,10 @@
 // Comprehensive coaching system prompts for Nic and Fehren
 // Nic persona extracted from 231 conversations + UNBECOMING content + Interview transcript
 import { withCueKernel } from '@/lib/prompts/withCueKernel';
+import { 
+  NIC_COURSE_KNOWLEDGE, 
+  FEHREN_COURSE_KNOWLEDGE 
+} from '@/lib/course/courseIntegration';
 
 // ============================================
 // SHARED SECURITY INSTRUCTIONS
