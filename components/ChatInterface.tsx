@@ -3535,7 +3535,16 @@ Give me your four numbers (e.g., "4 3 4 5").`;
     }, 500);
   };
 
+// ============================================
+  // VIDEO SUGGESTION HANDLER
   // ============================================
+  
+  const handleWatchVideo = useCallback((moduleNumber: number, tutorialNumber: number) => {
+    // Navigate to course library with the specific tutorial
+    window.location.href = `/course?module=${moduleNumber}&tutorial=${tutorialNumber}`;
+  }, []);
+
+    // ============================================
   // PRACTICE CLICK HANDLER
   // ============================================
   
