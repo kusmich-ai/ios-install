@@ -333,7 +333,7 @@ export async function getUserCompletionStats(userId: string): Promise<{
     };
   }
   
-  const completedIds = new Set((progress || []).map(p => p.tutorial_id));
+  const completedIds = new Set((progress || []).map((p: { tutorial_id: string; source: string }) => p.tutorial_id));
   
   // Calculate by module
   const byModule: Record<number, { completed: number; total: number }> = {};
@@ -349,7 +349,7 @@ export async function getUserCompletionStats(userId: string): Promise<{
   
   // Calculate by source
   const bySource: Record<string, number> = {};
-  for (const p of progress || []) {
+  for (const p of (progress || []) as Array<{ tutorial_id: string; source: string }>) {
     bySource[p.source] = (bySource[p.source] || 0) + 1;
   }
   
@@ -393,7 +393,7 @@ export async function getAISuggestionStats(userId: string): Promise<{
   return {
     suggestedCount: data?.length || 0, // Would need separate tracking for shown vs accepted
     acceptedCount: data?.length || 0,
-    tutorials: (data || []).map(d => ({
+    tutorials: (data || []).map((d: { tutorial_id: string; completed_at: string | null; course_tutorials: { title: string } | null }) => ({
       tutorialId: d.tutorial_id,
       title: (d.course_tutorials as any)?.title || 'Unknown',
       completedAt: d.completed_at!
