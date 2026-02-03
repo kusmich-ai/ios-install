@@ -28,6 +28,7 @@
     "eslint": "^8",
     "eslint-config-next": "16.0.1",
     "@vimeo/player": "^2.24.0",
+    "zustand": "^4.5.0",
     "typescript": "^5"
   }
 }
