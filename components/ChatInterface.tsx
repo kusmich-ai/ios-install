@@ -17,6 +17,7 @@ import { Zap, Heart } from 'lucide-react';
 import StageAttributionModal, { StageId } from '@/components/StageAttributionModal';
 import { useReorientation } from '@/components/ReorientationModal';
 import ReorientationModal from '@/components/ReorientationModal';
+import { parseVideoSuggestions, VideoSuggestionCard } from '@/components/VideoSuggestionCard';
 
 // ============================================
 // TEMPLATE SYSTEM IMPORTS
