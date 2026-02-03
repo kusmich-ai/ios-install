@@ -35,27 +35,27 @@ export const COURSE_MODULES = {
   },
   2: {
     title: "The Architecture of Suffering",
-    stageRequired: 2, // Except 2.3 which requires Stage 7
+    stageRequired: 2,
     tutorials: [
       { number: 1, title: "The Loop of Seeking and Resistance", duration: "15 min" },
       { number: 2, title: "Identity as Construct: The Stories We Tell", duration: "13 min" },
-      { number: 3, title: "The Role of Psychedelics in Neural Liberation", duration: "18 min", stageRequired: 7 },
+      { number: 3, title: "The Role of Psychedelics in Neural Liberation", duration: "18 min" },
       { number: 4, title: "From Survival to Thriving: Reprogramming the NOS", duration: "16 min" },
     ]
   },
   3: {
     title: "Practices That Rewire",
-    stageRequired: 2, // Except 3.3-3.4 which require Stage 5
+    stageRequired: 2,
     tutorials: [
       { number: 1, title: "Resonance Breathing: The Foundation Practice", duration: "11 min" },
       { number: 2, title: "The Awareness Rep: Training Meta-Cognition", duration: "9 min" },
-      { number: 3, title: "Somatic Flow & Embodied Awareness", duration: "14 min", stageRequired: 5 },
-      { number: 4, title: "Co-Regulation: The Relational Nervous System", duration: "12 min", stageRequired: 5 },
+      { number: 3, title: "Somatic Flow & Embodied Awareness", duration: "14 min" },
+      { number: 4, title: "Co-Regulation: The Relational Nervous System", duration: "12 min" },
     ]
   },
   4: {
     title: "Living as Liberation",
-    stageRequired: 6,
+    stageRequired: 2,
     tutorials: [
       { number: 1, title: "Integration: From Insight to Trait", duration: "13 min" },
       { number: 2, title: "The Nightly Debrief: Encoding Daily Wisdom", duration: "8 min" },
