@@ -878,19 +878,19 @@ export default function PatternProfilePage() {
           {activeTab === 'patterns' && renderPatternsBreakdown()}
         </div>
 
-        {/* Re-run Option */}
-        <div className="text-center pt-8 border-t border-white/[0.06]">
-          <p className="text-zinc-500 text-sm mb-4">
-            Have more ChatGPT history now? You can re-run The Mirror for deeper insights.
-          </p>
-          <button
-            onClick={handleRerunMirror}
-            className="px-6 py-3 bg-[#222222] text-zinc-400 rounded-xl hover:text-white hover:bg-[#2a2a2a] transition-all flex items-center gap-2 mx-auto border border-white/[0.06]"
-          >
-            <RefreshCw size={18} />
-            Re-run The Mirror
-          </button>
-        </div>
+{/* Re-run Option - Using anchor tag for better mobile support */}
+<div className="text-center pt-8 border-t border-white/[0.06]">
+  <p className="text-zinc-500 text-sm mb-4">
+    Have more ChatGPT history now? You can re-run The Mirror for deeper insights.
+  </p>
+  <a
+    href="/mirror?rerun=true"
+    className="inline-flex items-center justify-center gap-2 px-6 py-4 bg-[#222222] text-zinc-400 rounded-xl hover:text-white hover:bg-[#2a2a2a] active:bg-[#333333] transition-all border border-white/[0.06] cursor-pointer min-h-[48px] min-w-[200px]"
+  >
+    <RefreshCw size={18} />
+    Re-run The Mirror
+  </a>
+</div>
       </div>
     </div>
   );
