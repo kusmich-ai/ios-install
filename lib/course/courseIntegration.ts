@@ -781,20 +781,6 @@ export function canAccessTutorial(
   if (moduleNumber === 1) return true;
   return userStage >= 2;
 }
-  
-  const tutorial = module.tutorials.find(t => t.number === tutorialNumber);
-  if (!tutorial) return false;
-  
-  // Check tutorial-specific stage requirement first
-  const tutorialKey = `${moduleNumber}.${tutorialNumber}`;
-  const triggerInfo = TUTORIAL_TRIGGERS[tutorialKey as keyof typeof TUTORIAL_TRIGGERS];
-  if (triggerInfo && 'stageRequired' in triggerInfo) {
-    return userStage >= (triggerInfo as any).stageRequired;
-  }
-  
-  // Fall back to module requirement
-  return userStage >= module.stageRequired;
-}
 
 // ============================================
 // HELPER FUNCTION: Get tutorial info
