@@ -18,8 +18,16 @@ import { useCourseStore } from '@/stores/courseStore';
 function LibraryContent() {
   const searchParams = useSearchParams();
   const tutorialParam = searchParams.get('tutorial');
+  const moduleParam = searchParams.get('module');
+  const tutorialNumParam = searchParams.get('tutorialNum');
   
-  return <LibraryPageInner tutorialParam={tutorialParam} />;
+  return (
+    <LibraryPageInner 
+      tutorialParam={tutorialParam}
+      moduleNumber={moduleParam ? parseInt(moduleParam) : null}
+      tutorialNumber={tutorialNumParam ? parseInt(tutorialNumParam) : null}
+    />
+  );
 }
 
 // Loading fallback
@@ -44,7 +52,15 @@ export default function LibraryPage() {
 }
 
 // Inner component with all the logic
-function LibraryPageInner({ tutorialParam }: { tutorialParam: string | null }) {
+function LibraryPageInner({ 
+  tutorialParam,
+  moduleNumber,
+  tutorialNumber 
+}: { 
+  tutorialParam: string | null;
+  moduleNumber: number | null;
+  tutorialNumber: number | null;
+}) {
   
   const { 
     tutorials, 
@@ -68,15 +84,29 @@ function LibraryPageInner({ tutorialParam }: { tutorialParam: string | null }) {
   const [selectedTutorial, setSelectedTutorial] = useState<TutorialWithProgress | null>(null);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
-  // Handle tutorial param from URL
-  useEffect(() => {
-    if (tutorialParam && tutorials.length > 0) {
-      const tutorial = getTutorialById(tutorialParam);
-      if (tutorial) {
-        setSelectedTutorial(tutorial);
-      }
+// Handle tutorial param from URL (supports both ?tutorial=id AND ?module=X&tutorialNum=Y)
+useEffect(() => {
+  if (tutorials.length === 0) return;
+  
+  // Method 1: Direct tutorial ID
+  if (tutorialParam) {
+    const tutorial = getTutorialById(tutorialParam);
+    if (tutorial) {
+      setSelectedTutorial(tutorial);
+      return;
     }
-  }, [tutorialParam, tutorials, getTutorialById]);
+  }
+  
+  // Method 2: Module + Tutorial number (from AI coach suggestions)
+  if (moduleNumber && tutorialNumber) {
+    const tutorial = tutorials.find(
+      t => t.module_number === moduleNumber && t.tutorial_number === tutorialNumber
+    );
+    if (tutorial) {
+      setSelectedTutorial(tutorial);
+    }
+  }
+}, [tutorialParam, moduleNumber, tutorialNumber, tutorials, getTutorialById]);
 
   // Auto-select first accessible tutorial if none selected
   useEffect(() => {
