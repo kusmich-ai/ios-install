@@ -572,7 +572,27 @@ export default function MobileDashboard({
               sprintDay={flowBlockSprintDay} 
             />
           )}
-
+{/* ==========================================
+              COURSE LIBRARY
+              ========================================== */}
+          <Link 
+            href="/library"
+            onClick={() => setIsOpen(false)}
+            className="block bg-white rounded-xl p-4 border border-zinc-200/80 shadow-sm hover:border-amber-300/60 hover:shadow-md transition-all"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-100 to-orange-50 flex items-center justify-center">
+                <BookOpen className="w-4.5 h-4.5 text-amber-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-zinc-800">Course Library</h3>
+                <p className="text-xs text-zinc-500">The Science of Neural Liberation</p>
+              </div>
+              <svg className="w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </Link>
           {/* ==========================================
               AWAKEN WITH 5 CTA
               ========================================== */}
