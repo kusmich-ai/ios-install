@@ -5,7 +5,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Menu, X, User, TrendingUp, TrendingDown, Zap, Sparkles, Target } from 'lucide-react';
+import { Menu, X, User, TrendingUp, TrendingDown, Zap, Sparkles, Target, BookOpen } from 'lucide-react';
 import AwakenWithFiveCard from './AwakenWithFiveCard';
 
 // ============================================
