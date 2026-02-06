@@ -1,13 +1,15 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase-client'
 import Link from 'next/link'
 
-export default function SignUp() {
+function SignUpForm() {
   const router = useRouter()
   const supabase = createClient()
+  const searchParams = useSearchParams()
+  const referralSource = searchParams.get('ref') || null
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
@@ -70,6 +72,7 @@ export default function SignUp() {
             full_name: fullName,
             first_name: firstName.trim(),
             last_name: lastName.trim(),
+            referral_source: referralSource,
           }
         },
       })
@@ -85,6 +88,7 @@ export default function SignUp() {
             first_name: firstName.trim(),
             last_name: lastName.trim(),
             full_name: fullName,
+            referral_source: referralSource,
             updated_at: new Date().toISOString(),
           })
         
@@ -328,5 +332,18 @@ export default function SignUp() {
         </p>
       </div>
     </div>
+  )
+}
+
+// Suspense boundary required for useSearchParams() in Next.js App Router
+export default function SignUp() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0a0a0a' }}>
+        <div className="text-gray-400">Loading...</div>
+      </div>
+    }>
+      <SignUpForm />
+    </Suspense>
   )
 }
