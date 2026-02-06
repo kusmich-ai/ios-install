@@ -194,18 +194,18 @@ function ConversionFunnel({ data }: { data: DashboardData['funnelMetrics'] }) {
   if (!data) return null;
 
   const stages = [
-    { label: 'Started', count: data.started, rate: 100 },
-    { label: 'Stage 1 → 2', count: data.completed_stage_1, rate: data.rate_1_to_2 },
-    { label: 'Stage 2 → 3', count: data.completed_stage_2, rate: data.rate_2_to_3 },
-    { label: 'Stage 3 → 4', count: data.completed_stage_3, rate: data.rate_3_to_4 },
-    { label: 'Stage 4 → 5', count: data.completed_stage_4, rate: data.rate_4_to_5 },
-    { label: 'Stage 5 → 6', count: data.completed_stage_5, rate: data.rate_5_to_6 },
-    { label: 'Stage 6 → 7', count: data.completed_stage_6, rate: data.rate_6_to_7 },
+    { label: 'Total Users', count: data.started, rate: 100 },
+    { label: 'Stage 1', count: data.completed_stage_1, rate: data.rate_1_to_2 },
+    { label: 'Stage 2', count: data.completed_stage_2, rate: data.rate_2_to_3 },
+    { label: 'Stage 3', count: data.completed_stage_3, rate: data.rate_3_to_4 },
+    { label: 'Stage 4', count: data.completed_stage_4, rate: data.rate_4_to_5 },
+    { label: 'Stage 5', count: data.completed_stage_5, rate: data.rate_5_to_6 },
+    { label: 'Stage 6', count: data.completed_stage_6, rate: data.rate_6_to_7 },
   ];
 
   return (
     <div className="bg-[#111111] border border-[#1a1a1a] rounded-lg p-6">
-      <h3 className="text-lg font-semibold text-white mb-4">Stage Progression Funnel</h3>
+      <h3 className="text-lg font-semibold text-white mb-4">Current Stage Distribution</h3>
       <div className="space-y-3">
         {stages.map((stage, index) => (
           <div key={stage.label} className="flex items-center gap-4">
