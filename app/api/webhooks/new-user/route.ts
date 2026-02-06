@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-// Supabase sends webhook payloads with this structure
 interface WebhookPayload {
   type: 'INSERT' | 'UPDATE' | 'DELETE'
   table: string
@@ -18,7 +17,6 @@ interface WebhookPayload {
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify the webhook secret (optional but recommended)
     const webhookSecret = request.headers.get('x-webhook-secret')
     if (process.env.SUPABASE_WEBHOOK_SECRET && webhookSecret !== process.env.SUPABASE_WEBHOOK_SECRET) {
       console.error('Invalid webhook secret')
@@ -27,16 +25,32 @@ export async function POST(request: NextRequest) {
 
     const payload: WebhookPayload = await request.json()
 
-    // Only process INSERT events on profiles table
-   if (payload.type !== 'INSERT' || payload.table !== 'user_profiles') {
+    if (payload.table !== 'user_profiles') {
       return NextResponse.json({ message: 'Ignored' }, { status: 200 })
     }
 
-    const { record } = payload
+    const { record, old_record } = payload
+
+    // Skip if no name yet (trigger-created empty row)
+    if (!record.full_name && !record.first_name) {
+      console.log('Skipping - no name data yet')
+      return NextResponse.json({ message: 'Skipped - awaiting data' }, { status: 200 })
+    }
+
+    // For UPDATE events, only notify if this is the first time name is being set
+    // (prevents duplicate notifications on every profile update)
+    if (payload.type === 'UPDATE') {
+      const hadNameBefore = old_record?.full_name || old_record?.first_name
+      if (hadNameBefore) {
+        console.log('Skipping - name already existed, not a new signup')
+        return NextResponse.json({ message: 'Skipped - not new signup' }, { status: 200 })
+      }
+    }
+
     const name = record.full_name || [record.first_name, record.last_name].filter(Boolean).join(' ') || 'Unknown'
     const source = record.referral_source || 'Organic'
     const createdAt = new Date(record.created_at).toLocaleString('en-US', {
-      timeZone: 'America/Edmonton', // Calgary timezone
+      timeZone: 'America/Edmonton',
       month: 'short',
       day: 'numeric',
       year: 'numeric',
@@ -44,12 +58,10 @@ export async function POST(request: NextRequest) {
       minute: '2-digit',
     })
 
-    // Determine emoji and label based on source
     const isAwaken5 = source.toLowerCase().includes('awaken5')
     const sourceEmoji = isAwaken5 ? '🔮' : '🌐'
     const sourceLabel = isAwaken5 ? 'Awaken with 5' : source.charAt(0).toUpperCase() + source.slice(1)
 
-    // Build Slack message
     const slackMessage = {
       blocks: [
         {
@@ -63,32 +75,20 @@ export async function POST(request: NextRequest) {
         {
           type: 'section',
           fields: [
-            {
-              type: 'mrkdwn',
-              text: `*Name:*\n${name}`,
-            },
-            {
-              type: 'mrkdwn',
-              text: `*Source:*\n${sourceEmoji} ${sourceLabel}`,
-            },
+            { type: 'mrkdwn', text: `*Name:*\n${name}` },
+            { type: 'mrkdwn', text: `*Source:*\n${sourceEmoji} ${sourceLabel}` },
           ],
         },
         {
           type: 'section',
           fields: [
-            {
-              type: 'mrkdwn',
-              text: `*Signed Up:*\n${createdAt}`,
-            },
+            { type: 'mrkdwn', text: `*Signed Up:*\n${createdAt}` },
           ],
         },
-        {
-          type: 'divider',
-        },
+        { type: 'divider' },
       ],
     }
 
-    // Send to Slack
     const slackWebhookUrl = process.env.SLACK_WEBHOOK_URL
     if (!slackWebhookUrl) {
       console.error('SLACK_WEBHOOK_URL not configured')
