@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     const payload: WebhookPayload = await request.json()
 
     // Only process INSERT events on profiles table
-    if (payload.type !== 'INSERT' || payload.table !== 'profiles') {
+   if (payload.type !== 'INSERT' || payload.table !== 'user_profiles') {
       return NextResponse.json({ message: 'Ignored' }, { status: 200 })
     }
 
