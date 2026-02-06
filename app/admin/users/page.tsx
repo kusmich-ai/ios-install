@@ -21,6 +21,7 @@ interface User {
   user_id: string;
   first_name: string;
   email: string;
+  referral_source: string;
   current_stage: number;
   stage_start_date: string;
   adherence_percentage: number;
@@ -99,7 +100,14 @@ function UserDetailModal({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-[#1a1a1a]">
           <div>
-            <h3 className="text-xl font-bold text-white">{user.first_name || 'Unknown User'}</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-xl font-bold text-white">{user.first_name || 'Unknown User'}</h3>
+              {user.referral_source && user.referral_source !== 'organic' && (
+                <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-purple-500/20 text-purple-400 border border-purple-500/30 uppercase">
+                  {user.referral_source === 'awaken5' ? 'AW5' : user.referral_source}
+                </span>
+              )}
+            </div>
             <p className="text-sm text-gray-400">{user.email}</p>
           </div>
           <button 
@@ -138,9 +146,9 @@ function UserDetailModal({
                 </div>
               </div>
 
-              {/* Subscription Status */}
+              {/* Subscription & Source */}
               <div className="bg-[#0a0a0a] rounded-lg p-4">
-                <h4 className="text-sm font-medium text-gray-400 mb-2">Subscription</h4>
+                <h4 className="text-sm font-medium text-gray-400 mb-2">Subscription & Source</h4>
                 <div className="flex items-center gap-4">
                   <span className={`px-3 py-1 rounded-full text-sm ${
                     user.is_paid 
@@ -152,6 +160,11 @@ function UserDetailModal({
                   {user.plan_id && (
                     <span className="text-sm text-gray-400">Plan: {user.plan_id}</span>
                   )}
+                  <span className="text-sm text-gray-500">
+                    Source: {user.referral_source && user.referral_source !== 'organic' 
+                      ? user.referral_source === 'awaken5' ? 'Awaken with 5' : user.referral_source
+                      : 'Organic'}
+                  </span>
                 </div>
               </div>
 
@@ -265,6 +278,7 @@ export default function AdminUsersPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [stageFilter, setStageFilter] = useState<number | 'all'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'paid' | 'free'>('all');
+  const [referralFilter, setReferralFilter] = useState<'all' | 'awaken5' | 'organic'>('all');
   
   // Sorting
   const [sortField, setSortField] = useState<SortField>('joined_at');
@@ -316,6 +330,15 @@ export default function AdminUsersPage() {
       );
     }
 
+    // Referral filter
+    if (referralFilter !== 'all') {
+      result = result.filter(user => 
+        referralFilter === 'awaken5' 
+          ? user.referral_source && user.referral_source !== 'organic'
+          : !user.referral_source || user.referral_source === 'organic'
+      );
+    }
+
     // Sort
     result.sort((a, b) => {
       let aVal = a[sortField];
@@ -337,7 +360,7 @@ export default function AdminUsersPage() {
     });
 
     return result;
-  }, [users, searchQuery, stageFilter, statusFilter, sortField, sortDirection]);
+  }, [users, searchQuery, stageFilter, statusFilter, referralFilter, sortField, sortDirection]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -417,6 +440,17 @@ export default function AdminUsersPage() {
           <option value="paid">Paid</option>
           <option value="free">Free</option>
         </select>
+
+        {/* Referral Filter */}
+        <select
+          value={referralFilter}
+          onChange={(e) => setReferralFilter(e.target.value as 'all' | 'awaken5' | 'organic')}
+          className="px-4 py-2 bg-[#111111] border border-[#1a1a1a] rounded-lg text-white focus:outline-none focus:border-[#ff9e19]"
+        >
+          <option value="all">All Sources</option>
+          <option value="awaken5">Awaken with 5</option>
+          <option value="organic">Organic</option>
+        </select>
       </div>
 
       {/* Table */}
@@ -489,9 +523,16 @@ export default function AdminUsersPage() {
                 >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
-                      <p className="text-sm font-medium text-white">
-                        {user.first_name || 'Unknown'}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-white">
+                          {user.first_name || 'Unknown'}
+                        </p>
+                        {user.referral_source && user.referral_source !== 'organic' && (
+                          <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-purple-500/20 text-purple-400 border border-purple-500/30 uppercase">
+                            {user.referral_source === 'awaken5' ? 'AW5' : user.referral_source}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-gray-500">{user.email}</p>
                     </div>
                   </td>
