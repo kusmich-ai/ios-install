@@ -66,6 +66,7 @@ interface DashboardData {
     user_id: string;
     first_name: string;
     email: string;
+    referral_source: string;
     current_stage: number;
     adherence_percentage: number;
     consecutive_days: number;
@@ -324,7 +325,14 @@ function RecentUsersTable({ users }: { users: DashboardData['recentUsers'] }) {
               <tr key={user.user_id} className="hover:bg-[#1a1a1a]/50 transition-colors">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div>
-                    <p className="text-sm font-medium text-white">{user.first_name || 'Unknown'}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-white">{user.first_name || 'Unknown'}</p>
+                      {user.referral_source && user.referral_source !== 'organic' && (
+                        <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-purple-500/20 text-purple-400 border border-purple-500/30 uppercase">
+                          {user.referral_source === 'awaken5' ? 'AW5' : user.referral_source}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-gray-500">{user.email}</p>
                   </div>
                 </td>
