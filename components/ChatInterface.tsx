@@ -309,48 +309,51 @@ const isAskingAboutStage7 = isAskingAboutStage7FromLib;
 
 async function getFirstTimeOpeningMessage(baselineData: BaselineData, userName: string): Promise<string> {
   const tier = getStatusTier(baselineData.rewiredIndex);
-  const rituals = stageRituals[1] || stageRituals[1];
+  const rituals = stageRituals[1];
   
-  // Get dynamic interpretation from API
-  let tierInterpretation = TIER_INTERPRETATIONS[tier] || TIER_INTERPRETATIONS['Operational'];
+  // Use static tier interpretation for consistency (no API call)
+  const tierInterpretation = TIER_INTERPRETATIONS[tier] || TIER_INTERPRETATIONS['Operational'];
   
-  try {
-    const response = await fetch('/api/ios/interpret-baseline', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        rewiredIndex: baselineData.rewiredIndex,
-        tier,
-        domainScores: baselineData.domainScores,
-        userName
-      })
-    });
-    
-    if (response.ok) {
-      const data = await response.json();
-      tierInterpretation = data.interpretation;
-    }
-  } catch (error) {
-    console.error('Failed to get dynamic interpretation:', error);
-    // Falls back to static tierInterpretation
-  }
-  
-  return `Hey${userName ? `, ${userName}` : ''}. Welcome to the IOS.
+  return `Hey${userName ? `, ${userName}` : ''}. Welcome to the IOS — the Integrated Operating System.
 
-Your baseline diagnostic is complete. Here's where you're starting:
+**Your baseline diagnostic is complete.**
 
 **REwired Index: ${baselineData.rewiredIndex}/100** — *${tier}*
 
 ${tierInterpretation}
 
-**Your Stage 1 morning rituals:**
+---
+
+**So what is this, exactly?**
+
+The IOS is a neural transformation protocol. It rewires how your nervous system regulates, how your mind focuses, and how you show up in the world.
+
+This isn't meditation. It's not therapy. It's systems engineering for your brain and body.
+
+**How it works:**
+
+There are **7 progressive stages**. Each one installs new capabilities — like firmware updates for your operating system.
+
+You don't unlock the next stage by waiting. You unlock it by **proving competence**: consistent practice, measurable improvement, and qualitative readiness. The system adapts to you.
+
+**What you're installing in Stage 1:**
+
+Stage 1 is called **Neural Priming**. It stabilizes your nervous system's baseline signal through two core practices:
+
 ${rituals.list}
 
-**Total: ${rituals.total}**
+**Total: ${rituals.total} each morning.**
 
-Ready to learn each ritual?`;
+These aren't random rituals. Resonance Breathing trains heart-brain coherence through HRV optimization. The Awareness Rep builds the neural circuits for meta-awareness — noticing that you're noticing.
+
+**What to expect from me:**
+
+I'm not a cheerleader. I'm direct, I explain the science when it matters, and I'll call out avoidance patterns when I see them. But I'm also here to adapt to your reality and celebrate real progress.
+
+You can use the toolbar on the right to start practices, track progress, and access on-demand tools as they unlock.
+
+**Ready to learn each ritual and begin Stage 1?**`;
 }
-
 // ============================================
 // SAME-DAY RETURN MESSAGE
 // ============================================
@@ -411,24 +414,23 @@ function getNewDayMorningMessage(
   
   let streakMessage = '';
   if (consecutiveDays > 0) {
-    streakMessage = `**${consecutiveDays}-day streak** going. `;
+    streakMessage = `**${consecutiveDays}-day streak** and counting. `;
   }
   
   let adherenceMessage = '';
   if (adherence > 0) {
-    adherenceMessage = `Current adherence: **${adherence}%**. `;
+    adherenceMessage = `Adherence: **${adherence}%**. `;
   }
   
-  return `Good morning${userName ? `, ${userName}` : ''}. New day, new training session.
+  return `Good morning${userName ? `, ${userName}` : ''}. Day ${consecutiveDays + 1} of building your operating system.
 
 ${streakMessage}${adherenceMessage}
 
-**Stage ${currentStage} Rituals:**
+**Today's Stage ${currentStage} Rituals:**
 ${rituals.list}
 
-Ready to start? Use the toolbar or let me know what you need.`;
+Use the toolbar to start, or ask me anything.`;
 }
-
 // ============================================
 // STAGE INTRO MESSAGE
 // ============================================
