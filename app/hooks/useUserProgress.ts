@@ -55,6 +55,9 @@ export interface UserProgress {
   flowBlockSprintStart: string | null;
   flowBlockSprintDay: number | null;
   
+  // Practice completion counts (for adaptive UI - e.g. video-mandatory vs self-guided)
+  somaticFlowCompletions: number;
+  
   // Progress tracking
   daysInStage: number;
   unlockProgress: {
@@ -221,6 +224,18 @@ export function useUserProgress() {
         .select('practice_type')
         .eq('user_id', user.id)
         .eq('practice_date', today);
+
+      // Fetch total somatic_flow completions (for video-mandatory vs self-guided threshold)
+      const { count: somaticFlowCount, error: sfCountError } = await supabase
+        .from('practice_logs')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('practice_type', 'somatic_flow')
+        .eq('completed', true);
+
+      if (sfCountError) {
+        console.error('Error fetching somatic flow count:', sfCountError);
+      }
 
       // ============================================
       // FETCH ACTIVE IDENTITY SPRINT
@@ -403,6 +418,9 @@ const flowBlockSprint = flowBlockSprintArray?.[0] || null;
         flowBlockSprintStart: flowBlockSprint?.start_date || null,
         flowBlockSprintDay: flowBlockSprintDay,
         
+        // Practice completion counts (for adaptive UI thresholds)
+        somaticFlowCompletions: somaticFlowCount ?? 0,
+        
         // Progress tracking fields
         daysInStage,
         unlockProgress,
@@ -424,7 +442,8 @@ const flowBlockSprint = flowBlockSprintArray?.[0] || null;
         sprintDay: newProgress.sprintDay,
         adherence: newProgress.adherencePercentage,
         unlockEligible: newProgress.unlockEligible,
-        domainScores: newProgress.domainScores
+        domainScores: newProgress.domainScores,
+        somaticFlowCompletions: newProgress.somaticFlowCompletions
       });
 
       setProgress(newProgress);
