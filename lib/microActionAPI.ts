@@ -303,7 +303,7 @@ export function buildAPIMessages(
 // EXTRACTION SYSTEM
 // ============================================
 
-const extractionSystemPrompt = `You are a data extraction system. Extract the selected IOS Cue and loop from this conversation.
+export const extractionSystemPrompt = `You are a data extraction system. Extract the selected IOS Cue and loop from this conversation.
 
 Output ONLY valid JSON:
 {
