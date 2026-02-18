@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 // ============================================================================
 // CO-REGULATION PRACTICE COMPONENT
 // 3-5 minute compassion practice with 5-day rotation
-// Two paths: Guided (with audio) or Self-Guided
+// Two paths: Guided (with audio) or Self-Guided (simple instructions)
 // ============================================================================
 
 const CO_REG_ROTATION = [
@@ -29,17 +29,14 @@ function CoRegulationPractice({ onComplete }: CoRegulationPracticeProps) {
   const [phase, setPhase] = useState<'intro' | 'guided' | 'self-guided' | 'reflection' | 'complete'>('intro');
   const [reflection, setReflection] = useState('');
   const [breathPhase, setBreathPhase] = useState<'inhale' | 'exhale'>('inhale');
-  const [breathCount, setBreathCount] = useState(0);
   const breathRef = useRef<NodeJS.Timeout | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const todaysTarget = getTodaysTarget();
 
-  const SELF_GUIDED_BREATHS = 5; // 5 full breath cycles for self-guided
-
-  // Breath cycle: 4s inhale, 6s exhale (used in both modes)
+  // Breath cycle for guided mode only
   useEffect(() => {
-    if (phase === 'guided' || phase === 'self-guided') {
+    if (phase === 'guided') {
       const breathCycle = () => {
         setBreathPhase('inhale');
         setTimeout(() => setBreathPhase('exhale'), 4000);
@@ -52,31 +49,11 @@ function CoRegulationPractice({ onComplete }: CoRegulationPracticeProps) {
     }
   }, [phase]);
 
-  // Track breath count for self-guided mode
-  useEffect(() => {
-    if (phase !== 'self-guided') return;
-
-    // Count each full breath cycle (triggered on each inhale after the first)
-    const countBreaths = () => {
-      setBreathCount(prev => prev + 1);
-    };
-
-    // Start counting after first full cycle (10s)
-    const initialDelay = setTimeout(() => {
-      countBreaths(); // Count breath 1 after first full cycle
-      const counter = setInterval(countBreaths, 10000);
-      return () => clearInterval(counter);
-    }, 10000);
-
-    return () => clearTimeout(initialDelay);
-  }, [phase]);
-
   const startGuided = () => {
     setPhase('guided');
   };
 
   const startSelfGuided = () => {
-    setBreathCount(0);
     setPhase('self-guided');
   };
 
@@ -230,7 +207,6 @@ function CoRegulationPractice({ onComplete }: CoRegulationPracticeProps) {
       {/* ── GUIDED PHASE (with audio) ────────────────────── */}
       {phase === 'guided' && (
         <div style={{ textAlign: 'center', maxWidth: '400px' }}>
-          {/* Audio Player */}
           <audio
             ref={audioRef}
             autoPlay
@@ -242,7 +218,6 @@ function CoRegulationPractice({ onComplete }: CoRegulationPracticeProps) {
             }}
           />
 
-          {/* Breath Guide */}
           <div style={{ marginBottom: '3rem' }}>
             <div style={{
               width: '150px',
@@ -262,7 +237,6 @@ function CoRegulationPractice({ onComplete }: CoRegulationPracticeProps) {
               <span style={{ fontSize: '3rem' }}>💞</span>
             </div>
             
-            {/* Breath Instructions */}
             <div style={{
               fontSize: '1.1rem',
               color: 'rgba(245, 242, 236, 0.9)',
@@ -278,7 +252,6 @@ function CoRegulationPractice({ onComplete }: CoRegulationPracticeProps) {
             </div>
           </div>
 
-          {/* Target Reminder */}
           <div style={{
             fontSize: '0.9rem',
             color: 'rgba(245, 242, 236, 0.6)',
@@ -287,7 +260,6 @@ function CoRegulationPractice({ onComplete }: CoRegulationPracticeProps) {
             <span style={{ color: 'rgba(245, 242, 236, 0.4)' }}>Focus:</span> {todaysTarget.target}
           </div>
 
-          {/* End Early Button */}
           <button
             onClick={skipToReflection}
             style={{
@@ -305,99 +277,84 @@ function CoRegulationPractice({ onComplete }: CoRegulationPracticeProps) {
         </div>
       )}
 
-      {/* ── SELF-GUIDED PHASE ────────────────────────────── */}
+      {/* ── SELF-GUIDED PHASE (simple instructions) ──────── */}
       {phase === 'self-guided' && (
         <div style={{ textAlign: 'center', maxWidth: '420px' }}>
-          {/* Breathing Circle */}
-          <div style={{
-            width: '150px',
-            height: '150px',
-            margin: '0 auto 2rem',
-            borderRadius: '50%',
-            backgroundColor: breathPhase === 'inhale' 
-              ? 'rgba(255, 158, 25, 0.2)' 
-              : 'rgba(255, 158, 25, 0.1)',
-            border: '2px solid #ff9e19',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'all 0.8s ease',
-            transform: breathPhase === 'inhale' ? 'scale(1.15)' : 'scale(0.95)',
-          }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ 
-                fontSize: '1.1rem', 
-                fontWeight: 600,
-                color: '#ff9e19',
-                transition: 'opacity 0.4s ease',
-              }}>
-                {breathPhase === 'inhale' ? 'Inhale' : 'Exhale'}
-              </div>
-              <div style={{ 
-                fontSize: '0.75rem', 
-                color: 'rgba(245, 242, 236, 0.6)',
-                marginTop: '0.25rem',
-              }}>
-                {breathPhase === 'inhale' ? '4 seconds' : '6 seconds'}
-              </div>
-            </div>
-          </div>
-
-          {/* Phrase Display */}
-          <div style={{
+          {/* Title */}
+          <h2 style={{
             fontSize: '1.25rem',
             fontWeight: 300,
+            letterSpacing: '0.15em',
+            textTransform: 'uppercase',
             color: '#F5F2EC',
-            marginBottom: '0.5rem',
-            minHeight: '2rem',
-            transition: 'opacity 0.4s ease',
+            marginBottom: '0.25rem',
           }}>
-            {breathPhase === 'inhale' 
-              ? '"Be Blessed"' 
-              : '"I wish you peace and love"'
-            }
-          </div>
-
-          {/* Target Reminder */}
-          <div style={{
-            fontSize: '0.85rem',
-            color: 'rgba(245, 242, 236, 0.4)',
-            marginBottom: '2.5rem',
+            Co-Regulation
+          </h2>
+          <p style={{
+            fontSize: '0.8rem',
+            color: 'rgba(245, 242, 236, 0.5)',
+            marginBottom: '2rem',
+            letterSpacing: '0.05em',
           }}>
-            Focus: <span style={{ color: 'rgba(245, 242, 236, 0.6)' }}>{todaysTarget.target}</span>
-          </div>
+            Self-Guided Practice
+          </p>
 
-          {/* Breath Counter */}
+          {/* Today's Target - compact pill */}
           <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            padding: '0.5rem 1rem',
-            backgroundColor: 'rgba(255, 255, 255, 0.04)',
+            display: 'inline-block',
+            padding: '0.4rem 1rem',
+            backgroundColor: 'rgba(255, 158, 25, 0.1)',
+            border: '1px solid rgba(255, 158, 25, 0.25)',
             borderRadius: '20px',
+            fontSize: '0.8rem',
+            color: '#ff9e19',
             marginBottom: '2rem',
           }}>
-            {Array.from({ length: SELF_GUIDED_BREATHS }).map((_, i) => (
-              <div
-                key={i}
-                style={{
-                  width: '8px',
-                  height: '8px',
-                  borderRadius: '50%',
-                  backgroundColor: i < breathCount 
-                    ? '#ff9e19' 
-                    : 'rgba(245, 242, 236, 0.15)',
-                  transition: 'background-color 0.3s ease',
-                }}
-              />
-            ))}
-            <span style={{
-              fontSize: '0.7rem',
-              color: 'rgba(245, 242, 236, 0.4)',
-              marginLeft: '0.25rem',
+            Day {todaysTarget.day} · Focus: {todaysTarget.target}
+          </div>
+
+          {/* Instructions Card */}
+          <div style={{
+            width: '100%',
+            padding: '1.75rem 1.5rem',
+            backgroundColor: 'rgba(245, 242, 236, 0.04)',
+            border: '1px solid rgba(245, 242, 236, 0.1)',
+            borderRadius: '16px',
+            textAlign: 'left',
+            marginBottom: '2rem',
+          }}>
+            <div style={{
+              fontSize: '0.85rem',
+              color: 'rgba(245, 242, 236, 0.7)',
+              lineHeight: 1.9,
             }}>
-              {breathCount}/{SELF_GUIDED_BREATHS}
-            </span>
+              <div style={{ marginBottom: '0.5rem' }}>
+                Bring <strong style={{ color: '#F5F2EC' }}>{todaysTarget.target.toLowerCase()}</strong> to mind. Hand on chest.
+              </div>
+
+              <div style={{ height: '1px', backgroundColor: 'rgba(245, 242, 236, 0.08)', margin: '0.75rem 0' }} />
+
+              <div style={{ marginBottom: '0.35rem' }}>
+                <span style={{ color: 'rgba(255, 158, 25, 0.9)' }}>Inhale →</span>{" "}
+                "Be blessed"
+              </div>
+              <div>
+                <span style={{ color: 'rgba(255, 158, 25, 0.9)' }}>Exhale →</span>{" "}
+                "I wish you peace and love"
+              </div>
+
+              <div style={{ height: '1px', backgroundColor: 'rgba(245, 242, 236, 0.08)', margin: '0.75rem 0' }} />
+
+              <div style={{ 
+                fontSize: '0.8rem', 
+                color: 'rgba(245, 242, 236, 0.4)',
+                fontStyle: 'italic',
+                textAlign: 'center',
+              }}>
+                Repeat 3–5 times · Notice any warmth or softness
+              </div>
+            </div>
           </div>
 
           {/* Action Buttons */}
@@ -407,35 +364,27 @@ function CoRegulationPractice({ onComplete }: CoRegulationPracticeProps) {
             alignItems: 'center',
             gap: '0.75rem',
           }}>
-            {/* Complete button - always visible, becomes prominent after enough breaths */}
             <button
               onClick={skipToReflection}
               style={{
                 width: '100%',
-                maxWidth: '280px',
-                padding: '0.875rem 2rem',
+                maxWidth: '320px',
+                padding: '1rem 2rem',
                 fontSize: '0.9rem',
                 fontWeight: 500,
-                backgroundColor: breathCount >= SELF_GUIDED_BREATHS ? '#ff9e19' : 'transparent',
-                border: breathCount >= SELF_GUIDED_BREATHS 
-                  ? 'none' 
-                  : '1px solid rgba(245, 242, 236, 0.2)',
-                borderRadius: '10px',
-                color: breathCount >= SELF_GUIDED_BREATHS ? '#0a0a0a' : 'rgba(245, 242, 236, 0.5)',
+                color: '#0a0a0a',
+                backgroundColor: '#ff9e19',
+                border: 'none',
+                borderRadius: '12px',
                 cursor: 'pointer',
-                transition: 'all 0.4s ease',
+                transition: 'all 0.3s ease',
               }}
             >
-              {breathCount >= SELF_GUIDED_BREATHS ? 'Complete Ritual' : 'Finish Early'}
+              Complete Ritual
             </button>
 
-            {/* Switch to audio option */}
             <button
-              onClick={() => {
-                if (breathRef.current) clearInterval(breathRef.current);
-                setBreathCount(0);
-                startGuided();
-              }}
+              onClick={startGuided}
               style={{
                 padding: '0.5rem 1rem',
                 fontSize: '0.75rem',
