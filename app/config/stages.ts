@@ -87,8 +87,8 @@ export const STAGES: Stage[] = [
   },
   {
     number: 3,
-    name: 'Aligned Action Mode',
-    tagline: 'Act from coherence.',
+    name: 'Cue Training',
+    tagline: 'Catch patterns before they become you.',
     practices: [
       {
         id: 'hrvb',
@@ -116,11 +116,11 @@ export const STAGES: Stage[] = [
       },
       {
         id: 'micro_action',
-        name: 'Aligned Action',
-        shortName: 'Micro',
-        duration: 1,
+        name: 'IOS Cue',
+        shortName: 'Cue',
+        duration: 2,
         icon: '⚡',
-        description: 'Daily coherence training'
+        description: 'RAS detection training'
       }
     ],
     unlockCriteria: {
@@ -160,11 +160,11 @@ export const STAGES: Stage[] = [
       },
       {
         id: 'micro_action',
-        name: 'Aligned Action',
-        shortName: 'Micro',
-        duration: 1,
+        name: 'IOS Cue',
+        shortName: 'Cue',
+        duration: 2,
         icon: '⚡',
-        description: 'Daily coherence training'
+        description: 'RAS detection training'
       },
       {
         id: 'flow_block',
@@ -212,11 +212,11 @@ export const STAGES: Stage[] = [
       },
       {
         id: 'micro_action',
-        name: 'Aligned Action',
-        shortName: 'Micro',
-        duration: 1,
+        name: 'IOS Cue',
+        shortName: 'Cue',
+        duration: 2,
         icon: '⚡',
-        description: 'Daily coherence training'
+        description: 'RAS detection training'
       },
       {
         id: 'flow_block',
@@ -272,11 +272,11 @@ export const STAGES: Stage[] = [
       },
       {
         id: 'micro_action',
-        name: 'Aligned Action',
-        shortName: 'Micro',
-        duration: 1,
+        name: 'IOS Cue',
+        shortName: 'Cue',
+        duration: 2,
         icon: '⚡',
-        description: 'Daily coherence training'
+        description: 'RAS detection training'
       },
       {
         id: 'flow_block',
