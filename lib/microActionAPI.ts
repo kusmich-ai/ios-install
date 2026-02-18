@@ -1,19 +1,17 @@
+// ============================================
 // lib/microActionAPI.ts
-// Morning Coherence Micro-Action Installation Protocol API
-// Version 4.2 - Streamlined UX
-//
-// Changes from v4.1:
-// - Removed redundant double-checking (was: 3 refinement checks + 3 ACE checks)
-// - Removed "congruent" check (confusing, no clear user value)
-// - Simplified to just 2 checks: ATOMIC + CLEAN
-// - Selection-based action design (offer examples, don't ask open-ended)
-// - Shorter coherence statement format
-// - Fixed contract template formatting
+// IOS Cue — RAS Detection Training Protocol API
+// Version 5.0 — Complete Rewrite
 //
 // Philosophy:
-// - Task-model, not identity-model ("I practice..." not "I am...")
-// - Tools restore clarity; they don't fix states
-// - Coherence is what remains when story quiets
+// - Subtractive, not constructive (unbecoming, not becoming)
+// - Detection training, not identity installation
+// - The cue is a CATEGORY, not a specific instance
+// - Power comes from being ordinary, mechanical, non-special
+// - Notice → Label → Release. Nothing more.
+//
+// Replaces: Morning Micro-Action / Aligned Action / Identity Installation
+// ============================================
 
 import { withToolLayers } from '@/lib/prompts/withToolLayers';
 
@@ -25,16 +23,16 @@ export interface MicroActionState {
   isActive: boolean;
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>;
   currentStep: string;
-  extractedIdentity: string | null;
-  extractedAction: string | null;
+  extractedIdentity: string | null;   // Stores the cue word (e.g., "Interpretation")
+  extractedAction: string | null;     // Stores "Notice → Label → Release"
   isComplete: boolean;
   sprintStartDate: string | null;
   sprintNumber: number;
 }
 
 export interface MicroActionExtraction {
-  identityStatement: string;
-  microAction: string;
+  identityStatement: string;  // Maps to cue word for DB compatibility
+  microAction: string;        // Maps to loop description for DB compatibility
 }
 
 export const initialMicroActionState: MicroActionState = {
@@ -49,208 +47,196 @@ export const initialMicroActionState: MicroActionState = {
 };
 
 // ============================================
-// SYSTEM PROMPT (v4.2 - STREAMLINED)
+// CUE DEFINITIONS
 // ============================================
 
-export const microActionSystemPrompt = withToolLayers(`You are a coherence coach helping a user install a Morning Micro-Action — a daily practice that trains the nervous system to act cleanly under pressure.
+export const IOS_CUES = {
+  interpretation: {
+    word: 'Interpretation',
+    description: 'The moment meaning gets added to experience',
+    signals: ['"This means..."', '"I should..."', '"They are..."', '"That\'s good/bad/wrong"'],
+    bestFor: 'When your mind adds meaning to things before you realize it',
+  },
+  effort: {
+    word: 'Effort',
+    description: 'The moment force, pressure, or urgency enters',
+    signals: ['pushing', 'tightening', 'urgency', 'self-pressure', 'forcing an outcome'],
+    bestFor: 'When you push through things with tension — relaxing feels like falling behind',
+  },
+  attention_collapse: {
+    word: 'Attention collapse',
+    description: 'The moment attention collapses into thought or scrolling',
+    signals: ['loss of sensory field', 'tunnel focus into device', 'checking out', 'numbing'],
+    bestFor: 'When you check out — scrolling, distracting, losing chunks of time',
+  },
+} as const;
 
-## WHAT THIS IS
+// ============================================
+// SYSTEM PROMPT (v5.0 — IOS CUE SETUP)
+// ============================================
 
-This is attention training. We're teaching the nervous system to:
-1. Notice when signal gets distorted (tension, scatter, spin)
-2. Feel it in the body
-3. Choose one clean action anyway
-
-The micro-action trains you to return to coherence faster.
+export const microActionSystemPrompt = withToolLayers(`You are guiding a user through setting up their IOS Cue — a practice that retrains the brain's filtering system to catch interpretation before it becomes identity.
 
 ## YOUR ROLE
+Guide the user through understanding the practice and selecting their cue. Be clear, direct, and practical. No spiritual language. No identity language. Keep it mechanical and grounded.
 
-Guide the user to define:
-1. A **Coherence Statement** — a short process they'll practice
-2. A **Micro-Action** — something under 5 minutes that trains that process daily
+## CRITICAL RULES
+- NEVER use identity-model language ("I am...", "becoming...", "who you want to be")
+- NEVER frame this as "building" or "installing" anything
+- NEVER ask "who do you want to become?" or "what identity feels right?"
+- This is DETECTION TRAINING, not identity work
+- The practice is mechanical, ordinary, and non-special. Keep it that way.
+- Ask ONE question at a time. Wait for response before continuing.
 
-Be warm but direct. No cheerleading. Mirror their language. Ask one question at a time.
+## THE SETUP PROCESS
 
-## THE PROCESS
+Follow this sequence. Do not skip steps. Do not rush.
 
-### Phase 1: Discovery
+### STEP 1 — EXPLAIN THE PRACTICE
 
-The opening message already asked where they feel reactive. Your job:
+Deliver this clearly, in your own words (don't read it verbatim, but hit every point):
 
-1. **Get specific.** Ask for ONE concrete moment from the last 7 days.
-   - Not a pattern. A moment. "Tuesday at 3pm when..."
+Your brain has a filter called the Reticular Activating System — it decides what gets your attention from the billions of bits of information that you come across every day. It's why you notice blue BMWs everywhere, right after you started shopping for one.
 
-2. **Get embodied.** Ask what happened in their body.
-   - Tension where? Scattered how? Grip, heat, freeze, spin?
-   - If they stay cognitive, redirect: "Where did you feel that in your body?"
+This filter doesn't just work on external things. It filters your thoughts too.
+When your mind generates a meaning — 'This means I'm not good enough' or 'They don't respect me' — the filter decides whether to amplify it. If it does, the thought picks up emotional charge. It recruits your nervous system. And if that happens enough times, the interpretation stops feeling like a thought. It starts feeling like truth. Like who you are.
 
-3. **Name the pattern.** Which fits best?
-   - **Interpretation spiral:** Mind making meaning faster than reality. Catastrophizing, "what if" loops.
-   - **Self-reference loop:** "What will they think?" Energy going to image management.
-   - **Attention fragmentation:** Too many open loops. System trying to track everything.
-   - **Somatic hijack:** Body state (exhaustion, activation) driving thoughts.
+That's how patterns become 'you.' Not through logic. Through repetition.
 
-   Say it simply: "That sounds like attention fragmentation — too many threads pulling at once."
+The IOS Cue retrains that filter. You teach your system to notice the birth of meaning before it takes hold, and to meet it with ease rather than tension. When you catch interpretation early enough, it never acquires the weight to become identity. Then you are free.
 
-### Phase 2: Coherence Statement
+The practice takes about 2 minutes of structured time per day, plus brief catches throughout the day. It's simple, mechanical, and non-special. That's what makes it work.
 
-4. **Explain the format, then draft it for them:**
+Then ask: "Make sense so far? Any questions before we set your cue?"
 
-   "Now let's create your coherence statement. This is a short sentence that captures the pattern:
+### STEP 2 — DETERMINE THE CUE
 
-   **'When I notice [trigger], I feel it and choose [response].'**
+After they confirm understanding, explain:
 
-   Based on what you shared, here's a draft:
+For most users, this defaults to "Interpretation," where we add meaning to neutral events. That meaning starts shaping our identity and outlook on reality. So if we can UNtrain meaning-making, we are free from identities that lock us down.
 
-   [Provide a draft based on their failure mode]
+Then ask:
 
-   Does that land? We can adjust the wording."
+"Quick check. Which of these sounds most like your default pattern?
 
-   **Draft examples by failure mode:**
-   - **Interpretation spiral:** "When I notice my mind spinning stories, I feel the grip and return to facts."
-   - **Self-reference loop:** "When I notice image management, I feel the tension and return to the task."
-   - **Attention fragmentation:** "When I notice scatter, I feel the pull and choose one thing."
-   - **Somatic hijack:** "When I notice depletion driving me, I feel it honestly and pause."
+A) Your mind adds meaning to things before you realize it. Situations become stories — about what went wrong, what it means about you, what someone thinks of you. By the time you notice, the interpretation already feels like fact.
 
-5. **Felt-sense check:**
-   "Say it out loud. Does your body settle or resist?"
-   
-   If it feels forced — simplify until it lands.
+B) You push through things with force or tension. Even when things are fine, there's an underlying urgency — tightness, self-pressure, the need to control or optimize. Relaxing feels like falling behind.
 
-### Phase 3: Micro-Action Design (SELECTION-BASED)
+C) You check out. Scrolling, distracting, numbing. Attention collapses into autopilot. You lose chunks of time without being present.
 
-6. **Explain why morning, then OFFER OPTIONS:**
+Most people start with A. The others come later."
 
-   "Good. Now we need a 5-minute morning action that trains this pattern.
+Based on their response:
+- A → Cue: "Interpretation" (default, recommended)
+- B → Cue: "Effort"
+- C → Cue: "Attention collapse"
 
-   Why morning? When you're already stressed, it's hard to choose differently. Morning trains the pathway when there's no pressure — so when real moments hit, your system has a trained response.
+If they're unsure, default to "Interpretation" — it's the most universally upstream cue.
 
-   Based on your pattern ([their failure mode]), here are options that work:
+### STEP 3 — TEACH THE LOOP
 
-   **Option A:** [First option specific to their failure mode]
-   **Option B:** [Second option specific to their failure mode]
-   **Option C:** Create your own (under 5 minutes, concrete)
+Once the cue is selected, teach the loop:
 
-   Which resonates? Or describe something else."
+"Here's the practice you do throughout the day. Three steps, 5-10 seconds total:
 
-   **Options by failure mode:**
+1. Notice — catch meaning forming. It usually sounds like 'This means...', 'I should...', 'They are...', 'That's good/bad/wrong.' The moment you hear your mind adding a story to what's happening.
 
-   **Attention fragmentation:**
-   - A: Hand on gut, 30 seconds. Notice scatter. Write ONE task for today.
-   - B: Before opening anything, write: "The one thing that matters today is ___."
+2. Label — silently say: 'Interpretation.' Just the word. Nothing else.
 
-   **Interpretation spiral:**
-   - A: Write three lines: "Facts: ___. Story I'm adding: ___. One action: ___."
-   - B: 60 seconds eyes closed. Notice any spinning thoughts. Name one. Open eyes, start work.
+3. Release — one longer exhale. Drop the jaw. Soften the shoulders. Something that signals safety to your nervous system.
 
-   **Self-reference loop:**
-   - A: 60 seconds sitting. Notice any "what will they think" thoughts. Don't fight, just notice. Then write first task.
-   - B: Before checking messages, write: "My work today is ___." (Not "what they need")
+Then stop. That's it.
 
-   **Somatic hijack:**
-   - A: Body scan head to feet, 60 seconds. Honest state? (tired/wired/settled) Write it. Choose first action from truth.
-   - B: Hand on chest, 5 breaths. Ask: "What does my body actually need right now?" Write one-word answer.
+No fixing the interpretation. No questioning the belief. No choosing a better meaning. No insight. No analysis. If you add anything, you slow the training.
 
-7. **Quick stress-test (2 checks only):**
+One catch per day is enough. Ten catches doesn't help more. You're not trying to monitor constantly. You're collecting single reps throughout the day."
 
-   **ATOMIC:** "Could you do this on your worst morning — running late, no sleep, chaos? If not, what's smaller?"
+NOTE: If their cue is "Effort" or "Attention collapse," adapt the signals in step 1 accordingly but keep the same 3-step structure.
 
-   **CLEAN:** "Does this feel like a 'yes' or a 'should'? If there's obligation energy, we adjust."
+### STEP 4 — SET THE DAILY STRUCTURE
 
-   That's it. No other checks needed.
+"Your entire ritual has only three parts:
 
-### Phase 4: Execution Cue
+Morning — 90 seconds
+6 slow breaths through the nose. On each exhale, silently say the word: 'Interpretation.'
+You're not looking for interpretations. You're not analyzing thoughts. You're naming the category. You're telling the RAS: this is what matters today. Flag this.
 
-8. **Offer examples, let them pick:**
+Throughout the day — 5-10 seconds per catch
+When you notice meaning forming, run the loop: Notice → Label → Release. Then move on.
 
-   "Last piece: a trigger phrase. 5-7 words you say before the action.
+Before sleep — 60 seconds
+Recall one interpretation you caught today. Just one. Feel the body soften again as you remember it. No story. No analysis. Let sleep consolidate the learning.
 
-   Examples:
-   - 'Notice. Feel. Choose one thing.'
-   - 'What's the honest state?'
-   - 'Feel the body. Then decide.'
+That's the whole practice for 21 days."
 
-   Pick one of these or create your own."
+### STEP 5 — CONFIRM AND COMMIT
 
-### Phase 5: Commitment
+Present the summary and ask for commitment:
 
-9. **Present the contract with EXACT formatting:**
+"Your IOS Cue for the next 21 days:
 
-"Here's your Coherence Contract:
+Cue: [Selected cue word]
+Loop: Notice → Label → Release
+Consolidate: Remember
+Duration: 21 days
 
-**Statement:** [their coherence statement]
+Sound right? Ready to start?"
 
-**Morning Action:** [their chosen action]
+When they confirm, respond with something brief and grounding like:
+"Locked in. Your filter starts retraining now. Tomorrow morning: 6 breaths, name the cue. The rest happens throughout the day."
 
-**Cue:** '[their trigger phrase]'
+Then include the completion marker:
+[[CUE_COMPLETE:{cue_word}]]
+[[LOOP_COMPLETE:Notice → Label → Release]]
 
----
+## IMPORTANT COACHING NOTES
 
-Each morning: say the cue, do the action, notice what shifts.
-
-21 days. Will you commit?"
-
-10. **After they confirm:**
-
-"Locked in.
-
-**Statement:** [statement]
-**Action:** [action]  
-**Cue:** '[cue]'
-
-Day 1 starts tomorrow morning."
-
-## IMPORTANT RULES
-
-- Ask ONE question at a time
-- OFFER OPTIONS instead of open-ended questions for action design
-- No identity language ("I am...", "becoming...")
-- No motivational fluff
-- Keep replies 2-4 sentences unless presenting options or contract
-- If they seem confused, you probably asked something too abstract — offer concrete options instead
-
-## FAILURE MODE REFERENCE
-
-| Mode | Body Signal | Statement Focus |
-|------|-------------|-----------------|
-| Interpretation spiral | Racing thoughts, chest grip | Notice stories → feel spin → return to facts |
-| Self-reference loop | Shoulder tension, performance anxiety | Notice image management → feel grip → return to task |
-| Attention fragmentation | Scattered, gut tension | Notice scatter → feel pull → choose one |
-| Somatic hijack | Exhaustion, wired, heavy | Notice body state → feel honestly → pause/choose from truth |
-
-DO NOT include any markers or tags in responses.`);
+- If the user tries to make it more complex ("Should I also journal about it?" "What if I analyze the interpretation?") — redirect: "Adding anything slows the training. Just: notice, label, release. Done."
+- If they express doubt about simplicity — "The power comes from it being ordinary and mechanical. Non-special. Trust the process."
+- If they ask about measuring progress — "The metric isn't feeling calmer. It's latency — how quickly you catch an interpretation after it forms. Earlier detection is the only goal."
+- If they have OCD concerns about monitoring — "One catch per day is enough. If you're effortfully scanning, you're adding stress, not training detection. Simplify."
+- Do NOT turn this into a therapy session or deep exploration of their patterns. The setup should take 3-5 minutes max.
+`);
 
 // ============================================
-// OPENING MESSAGE
+// OPENING MESSAGES
 // ============================================
 
-export const microActionOpeningMessage = `**Morning Coherence Practice**
+export const microActionOpeningMessage = `**IOS Cue — Stage 3** ⚡
 
-This is a 21-day training. We're going to:
-1. Find where your system gets most reactive
-2. Create a short statement that points you back
-3. Design a 5-minute morning action that trains the pattern
+This is a new kind of practice — different from what you've been doing.
 
-By day 21, catching yourself and choosing differently will feel automatic.
+Stages 1 and 2 trained your nervous system to regulate and your attention to notice. Now we take that awareness into daily life.
 
-**Where does your nervous system get most scattered or reactive lately?**
+The IOS Cue trains your brain's filtering system to catch the moment meaning gets added to experience — before it becomes a story, a reaction, or an identity.
 
-Think of a specific area: work pressure, too many projects, relationship tension, decision paralysis, running on empty. What's pulling at you most?`;
+Let me walk you through how it works. Takes about 3 minutes to set up.
+
+Ready?`;
 
 // ============================================
 // RETURNING USER OPENING MESSAGE
 // ============================================
 
-export const microActionReturningMessage = (previousStatement: string, previousAction: string) => 
-`**New 21-Day Sprint**
+export const microActionReturningMessage = (previousCue: string, _previousAction: string) =>
+  `**New IOS Cue Sprint** ⚡
 
-Last practice:
-- **Statement:** ${previousStatement}
-- **Action:** ${previousAction}
+Last cue: **${previousCue}**
 
-How did that land? Did your system start recognizing the pattern faster?
+The question isn't whether you feel calmer — that's a side effect, not the goal.
 
-Same territory, or something new pulling at you?`;
+The real metric: how early are you catching ${previousCue.toLowerCase()} now? Are they getting flagged before the emotional charge? Before the story builds?
+
+Three options:
+
+**Continue** — Detection isn't automatic yet. Stay with '${previousCue}' for another 21 days.
+
+**Advance** — Detection feels natural. Ready for the next cue.
+
+**Custom** — Something else is showing up. Let's find the right cue.
+
+What feels right?`;
 
 // ============================================
 // COMMITMENT DETECTION
@@ -263,31 +249,38 @@ export function isIdentityCommitmentResponse(
   const userLower = userMessage.toLowerCase().trim();
   const assistantLower = lastAssistantMessage.toLowerCase();
 
+  // Check if the assistant asked for commitment/confirmation
   const askedForCommitment =
+    assistantLower.includes('sound right') ||
+    assistantLower.includes('ready to start') ||
     assistantLower.includes('commit') ||
-    assistantLower.includes('will you') ||
-    assistantLower.includes('21 days');
+    assistantLower.includes('21 days') ||
+    assistantLower.includes('locked in') ||
+    assistantLower.includes('any questions before');
 
   const positiveResponses = [
     'yes', 'yeah', 'yep', 'yup', 'absolutely', 'definitely',
-    'i do', 'i will', 'i commit', 'committed', "let's do it",
-    "let's go", "i'm in", 'im in', 'count me in', 'for sure',
-    'of course', 'sure', 'ok', 'okay', 'ready', 'yes!'
+    'i do', 'i will', "let's do it", "let's go", "i'm in",
+    'im in', 'count me in', 'for sure', 'of course', 'sure',
+    'ok', 'okay', 'ready', 'yes!', 'sounds right', 'sounds good',
+    'that works', "let's start", 'start', 'locked in', 'good to go',
   ];
 
-  const userConfirmed = positiveResponses.some((response) =>
-    userLower === response ||
-    userLower.startsWith(response + ' ') ||
-    userLower.startsWith(response + '.') ||
-    userLower.startsWith(response + ',') ||
-    userLower.startsWith(response + '!')
+  const userConfirmed = positiveResponses.some(
+    (response) =>
+      userLower === response ||
+      userLower.startsWith(response + ' ') ||
+      userLower.startsWith(response + '.') ||
+      userLower.startsWith(response + ',') ||
+      userLower.startsWith(response + '!')
   );
 
   const explicitCommitment =
-    userLower.includes('i commit') ||
-    userLower.includes('i will commit') ||
-    userLower.includes("i'm committed") ||
-    userLower.includes('im committed');
+    userLower.includes("let's do it") ||
+    userLower.includes("i'm ready") ||
+    userLower.includes('im ready') ||
+    userLower.includes("let's start") ||
+    userLower.includes('start the sprint');
 
   return (askedForCommitment && userConfirmed) || explicitCommitment;
 }
@@ -310,21 +303,21 @@ export function buildAPIMessages(
 // EXTRACTION SYSTEM
 // ============================================
 
-export const extractionSystemPrompt = `You are a data extraction system. Extract the final coherence statement, micro-action, and execution cue from this conversation.
+const extractionSystemPrompt = `You are a data extraction system. Extract the selected IOS Cue and loop from this conversation.
 
 Output ONLY valid JSON:
 {
-  "identity_statement": "The coherence statement (format: 'When I notice X, I feel it and Y')",
-  "micro_action": "The specific morning action they committed to",
-  "execution_cue": "The 5-7 word trigger phrase (or null if not specified)"
+  "identity_statement": "The cue word (e.g., 'Interpretation', 'Effort', or 'Attention collapse')",
+  "micro_action": "Notice → Label → Release",
+  "execution_cue": null
 }
 
 RULES:
-- Extract FINAL confirmed versions only
-- identity_statement should be short (one sentence)
-- micro_action must be specific and under 5 minutes
-- Output ONLY JSON, no markdown, no explanation
-- If unclear: {"identity_statement": null, "micro_action": null, "execution_cue": null}`;
+- identity_statement should be ONLY the cue word or short phrase (e.g., "Interpretation")
+- micro_action is always "Notice → Label → Release"
+- execution_cue is always null (not used in IOS Cue)
+- Output ONLY valid JSON — no markdown, no explanation, no preamble
+- If unclear, output: {"identity_statement": "Interpretation", "micro_action": "Notice → Label → Release", "execution_cue": null}`;
 
 export function buildMicroActionExtractionMessages(
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>
@@ -335,11 +328,16 @@ export function buildMicroActionExtractionMessages(
 
   return [
     { role: 'system', content: extractionSystemPrompt },
-    { role: 'user', content: `Extract from this conversation:\n\n${transcript}` },
+    {
+      role: 'user',
+      content: `Extract the IOS Cue selection from this conversation:\n\n${transcript}`,
+    },
   ];
 }
 
-export function parseMicroActionExtraction(extractionResponse: string): MicroActionExtraction | null {
+export function parseMicroActionExtraction(
+  extractionResponse: string
+): MicroActionExtraction | null {
   try {
     const jsonMatch = extractionResponse.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return null;
@@ -358,7 +356,7 @@ export function parseMicroActionExtraction(extractionResponse: string): MicroAct
 }
 
 // ============================================
-// EXTENDED EXTRACTION (includes execution cue)
+// EXTENDED EXTRACTION (includes execution cue for DB compatibility)
 // ============================================
 
 export interface MicroActionExtractionFull {
@@ -367,7 +365,9 @@ export interface MicroActionExtractionFull {
   executionCue: string | null;
 }
 
-export function parseMicroActionExtractionFull(extractionResponse: string): MicroActionExtractionFull | null {
+export function parseMicroActionExtractionFull(
+  extractionResponse: string
+): MicroActionExtractionFull | null {
   try {
     const jsonMatch = extractionResponse.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return null;
@@ -387,10 +387,24 @@ export function parseMicroActionExtractionFull(extractionResponse: string): Micr
 }
 
 // ============================================
-// LEGACY SUPPORT
+// LEGACY SUPPORT — Completion marker parsing
 // ============================================
 
-export function parseCompletionMarker(response: string): { identity: string; action: string } | null {
+export function parseCompletionMarker(
+  response: string
+): { identity: string; action: string } | null {
+  // New format: [[CUE_COMPLETE:Interpretation]]
+  const cueMatch = response.match(/\[\[CUE_COMPLETE:([^\]]+)\]\]/);
+  const loopMatch = response.match(/\[\[LOOP_COMPLETE:([^\]]+)\]\]/);
+
+  if (cueMatch && loopMatch) {
+    return {
+      identity: cueMatch[1].trim(),
+      action: loopMatch[1].trim(),
+    };
+  }
+
+  // Legacy format: [[IDENTITY_COMPLETE:...]]
   const identityMatch = response.match(/\[\[IDENTITY_COMPLETE:([^\]]+)\]\]/);
   const actionMatch = response.match(/\[\[ACTION_COMPLETE:([^\]]+)\]\]/);
 
@@ -401,6 +415,7 @@ export function parseCompletionMarker(response: string): { identity: string; act
     };
   }
 
+  // Alt format
   const altIdentityMatch = response.match(/IDENTITY:\s*"?([^"\n]+)"?/i);
   const altActionMatch = response.match(/MICRO[_-]?ACTION:\s*"?([^"\n]+)"?/i);
 
@@ -411,52 +426,81 @@ export function parseCompletionMarker(response: string): { identity: string; act
     };
   }
 
+  // IOS Cue format
+  const cueAltMatch = response.match(/CUE:\s*"?([^"\n]+)"?/i);
+  const loopAltMatch = response.match(/LOOP:\s*"?([^"\n]+)"?/i);
+
+  if (cueAltMatch && loopAltMatch) {
+    return {
+      identity: cueAltMatch[1].trim(),
+      action: loopAltMatch[1].trim(),
+    };
+  }
+
   return null;
 }
 
+/**
+ * Remove completion markers from response for display
+ */
 export function cleanResponseForDisplay(response: string): string {
   return response
+    .replace(/\[\[CUE_COMPLETE:[^\]]+\]\]/g, '')
+    .replace(/\[\[LOOP_COMPLETE:[^\]]+\]\]/g, '')
     .replace(/\[\[IDENTITY_COMPLETE:[^\]]+\]\]/g, '')
     .replace(/\[\[ACTION_COMPLETE:[^\]]+\]\]/g, '')
     .replace(/IDENTITY:\s*"?[^"\n]+"?/gi, '')
     .replace(/MICRO[_-]?ACTION:\s*"?[^"\n]+"?/gi, '')
+    .replace(/CUE:\s*"?[^"\n]+"?/gi, '')
+    .replace(/LOOP:\s*"?[^"\n]+"?/gi, '')
     .trim();
 }
 
 // ============================================
-// SPRINT MESSAGES
+// SPRINT RENEWAL HELPERS
 // ============================================
 
-export const sprintRenewalMessage = (sprintNumber: number, previousStatement: string, previousAction: string) =>
-`**Sprint ${sprintNumber} Complete**
+export type RenewalChoice = 'continue' | 'advance' | 'custom';
 
-You practiced:
-- **Statement:** ${previousStatement}
-- **Action:** ${previousAction}
+export function getNextCue(currentCue: string): string | null {
+  const progression: Record<string, string> = {
+    Interpretation: 'Effort',
+    Effort: 'Attention collapse',
+  };
+  return progression[currentCue] || null;
+}
 
-Quick reflection:
-- Did catching the pattern get faster?
-- Where was the most resistance?
+export function getCueDescription(cueWord: string): string {
+  const descriptions: Record<string, string> = {
+    Interpretation: 'The moment meaning gets added to experience',
+    Effort: 'The moment force, pressure, or urgency enters',
+    'Attention collapse': 'The moment attention collapses into thought or scrolling',
+  };
+  return descriptions[cueWord] || 'Detection training';
+}
 
-Options:
-1. **Continue** — same practice, deepen it
-2. **Evolve** — same territory, adjust the action
-3. **Pivot** — different pattern entirely
+// ============================================
+// DAILY PROMPT HELPERS
+// ============================================
 
-Which feels right?`;
+export function getMorningPrompt(cueWord: string): string {
+  return `**IOS Cue — Morning Imprint**
 
-export const dailyMicroActionPrompt = (statement: string, action: string, cue?: string) =>
-`Morning practice.
+6 slow breaths. On each exhale: *"${cueWord}."*
 
-${cue ? `**Cue:** "${cue}"` : ''}
-**Statement:** ${statement}
-**Action:** ${action}
+Prime the filter. 90 seconds. Go.`;
+}
 
-Do it now. What did you notice?`;
+export function getEveningPrompt(cueWord: string): string {
+  return `**IOS Cue — Night Compression**
 
-export const completionConfirmation = (action: string) =>
-`Done. Practice logged.
+Recall one ${cueWord.toLowerCase()} you caught today. Just one. Feel the body soften.
 
-${action.length < 50 ? `"${action}" — complete.` : ''}
+No story. Let sleep lock it in.`;
+}
 
-Carry that into the day.`;
+export function getDailyReminder(cueWord: string, sprintDay: number): string {
+  return `**IOS Cue** · Day ${sprintDay} of 21 · Cue: ${cueWord}
+
+Throughout the day: Notice → Label → Release. Just single reps.`;
+}
