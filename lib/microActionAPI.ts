@@ -504,3 +504,17 @@ export function getDailyReminder(cueWord: string, sprintDay: number): string {
 
 Throughout the day: Notice → Label → Release. Just single reps.`;
 }
+
+// ============================================
+// LEGACY EXPORT ALIASES (ChatInterface.tsx compatibility)
+// ============================================
+
+export const sprintRenewalMessage = microActionReturningMessage;
+
+export function dailyMicroActionPrompt(identity: string, action: string, day: number): string {
+  return getMorningPrompt(identity);
+}
+
+export function completionConfirmation(identity: string, action: string): string {
+  return `Locked in. Your filter starts retraining now. Tomorrow morning: 6 breaths, name the cue. The rest happens throughout the day.`;
+}
