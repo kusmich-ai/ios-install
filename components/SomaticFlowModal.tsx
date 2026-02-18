@@ -4,20 +4,20 @@ import SomaticFlow from "./SomaticFlow";
 
 // ============================================================================
 // SOMATIC FLOW MODAL
-// Wrapper component that shows the video practice in a full-screen overlay
-// Matches the AwarenessRepModal pattern for consistency
+// Wrapper component that shows the practice in a full-screen overlay
+// Passes completionCount to SomaticFlow for video-mandatory vs self-guided routing
 // ============================================================================
 
 interface SomaticFlowModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onComplete?: () => void; // Called when practice finishes (for auto-logging)
+  onComplete?: () => void;
+  completionCount?: number; // Pass from parent (practice log query)
 }
 
-export function SomaticFlowModal({ isOpen, onClose, onComplete }: SomaticFlowModalProps) {
+export function SomaticFlowModal({ isOpen, onClose, onComplete, completionCount = 0 }: SomaticFlowModalProps) {
   const hasCompletedRef = useRef(false);
 
-  // Reset completion flag when modal opens/closes
   useEffect(() => {
     if (!isOpen) {
       hasCompletedRef.current = false;
@@ -27,37 +27,25 @@ export function SomaticFlowModal({ isOpen, onClose, onComplete }: SomaticFlowMod
   if (!isOpen) return null;
 
   const handleSessionComplete = () => {
-    // Prevent double-calling
-    if (hasCompletedRef.current) {
-      console.log('[SomaticFlowModal] Already completed, skipping');
-      return;
-    }
+    if (hasCompletedRef.current) return;
     hasCompletedRef.current = true;
 
-    console.log('[SomaticFlowModal] Session complete, calling onComplete');
-    
-    // Call the onComplete callback (this triggers auto-logging)
     if (onComplete) {
       onComplete();
     }
-    
-    // Auto-close after 2 seconds to show completion state
+
     setTimeout(() => {
-      console.log('[SomaticFlowModal] Auto-closing modal');
       onClose();
     }, 2000);
   };
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 9999,
-      }}
-    >
-      <SomaticFlow onComplete={handleSessionComplete} />
-      
+    <div style={{ position: "fixed", inset: 0, zIndex: 9999 }}>
+      <SomaticFlow
+        onComplete={handleSessionComplete}
+        completionCount={completionCount}
+      />
+
       {/* Close button - top right */}
       <button
         onClick={onClose}
@@ -106,7 +94,6 @@ export function SomaticFlowModal({ isOpen, onClose, onComplete }: SomaticFlowMod
 
 // ============================================================================
 // HOOK FOR EASY USAGE
-// Use this hook in your parent component to control the modal
 // ============================================================================
 
 export function useSomaticFlow() {
@@ -121,14 +108,19 @@ export function useSomaticFlow() {
     open,
     close,
     toggle,
-    Modal: ({ onComplete }: { onComplete?: () => void }) => (
-      <SomaticFlowModal isOpen={isOpen} onClose={close} onComplete={onComplete} />
+    Modal: ({ onComplete, completionCount }: { onComplete?: () => void; completionCount?: number }) => (
+      <SomaticFlowModal
+        isOpen={isOpen}
+        onClose={close}
+        onComplete={onComplete}
+        completionCount={completionCount}
+      />
     ),
   };
 }
 
 // ============================================================================
-// EXAMPLE TRIGGER BUTTON (optional - use your own button styling)
+// EXAMPLE TRIGGER BUTTON
 // ============================================================================
 
 export function SomaticFlowTriggerButton() {
