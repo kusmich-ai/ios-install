@@ -224,8 +224,9 @@ const getPracticeStatus = (practiceId: string): 'completed' | 'pending' => {
         onComplete={() => handleModalComplete('nightly_debrief', 'Nightly Debrief')} 
       />
       <SomaticFlowModal 
-        onComplete={() => handleModalComplete('somatic_flow', 'Somatic Flow')} 
-      />
+  onComplete={() => handleModalComplete('somatic_flow', 'Somatic Flow')}
+  completionCount={progress.somaticFlowCompletions}
+/>
       <LoopDeLoopingModal />
 
       {/* Overlay - RESTYLED */}
