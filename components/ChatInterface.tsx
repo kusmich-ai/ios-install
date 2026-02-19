@@ -4388,67 +4388,9 @@ if (regressionIntervention?.isActive) {
   </div>
 )}
 
-{/* Regression Exploring Phase - After "Troubleshoot" */}
-{regressionIntervention?.isActive && !loading && regressionIntervention.phase === 'exploring' && (
-  <div className="flex justify-center gap-3 flex-wrap">
-    <button
-      onClick={async () => {
-        const userMsg = "I'll recommit to the practices";
-        setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
-        setLoading(true);
-        
-        const response = await sendRegressionToAPI(
-          userMsg,
-          {
-            currentStage: regressionIntervention.currentStage,
-            adherence: regressionIntervention.adherence,
-            avgDelta: regressionIntervention.avgDelta,
-            reason: regressionIntervention.reason
-          }
-        );
-        
-        setMessages(prev => [...prev, { role: 'assistant', content: response }]);
-        setRegressionIntervention(null);
-        setLoading(false);
-      }}
-      className="px-5 py-2.5 bg-[#ff9e19] hover:bg-orange-600 text-white font-medium rounded-xl transition-all"
-    >
-      Recommit
-    </button>
-    
-    <button
-      onClick={async () => {
-        const userMsg = `Actually, let me regress to Stage ${regressionIntervention.currentStage - 1}`;
-        setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
-        setLoading(true);
-        
-        await handleRegressionAction('regress', {
-          currentStage: regressionIntervention.currentStage,
-          adherence: regressionIntervention.adherence,
-          avgDelta: regressionIntervention.avgDelta,
-          reason: regressionIntervention.reason
-        });
-        
-        const response = await sendRegressionToAPI(
-          userMsg,
-          {
-            currentStage: regressionIntervention.currentStage,
-            adherence: regressionIntervention.adherence,
-            avgDelta: regressionIntervention.avgDelta,
-            reason: regressionIntervention.reason
-          }
-        );
-        
-        setMessages(prev => [...prev, { role: 'assistant', content: response }]);
-        setRegressionIntervention(null);
-        setLoading(false);
-      }}
-      className="px-5 py-2.5 bg-[#1a1a1a] border border-[#333] hover:border-[#ff9e19] text-white font-medium rounded-xl transition-all"
-    >
-      Regress Instead
-    </button>
-  </div>
-)}
+{/* Regression Exploring Phase - No buttons during diagnostic conversation.
+    User responds via text. Keywords like "recommit", "regress", "go back" 
+    in sendMessage handler will resolve the intervention. */}
             
             {/* Stage 7 Quick Replies */}
             {stage7FlowState === 'intro_shown' && !loading && (
