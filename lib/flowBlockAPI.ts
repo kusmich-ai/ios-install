@@ -493,8 +493,13 @@ export interface FlowBlockCompletion {
 // Check if user message is a commitment response
 export function isCommitmentResponse(
   userMessage: string, 
-  lastAssistantMessage: string
+  lastAssistantMessage: string,
+  conversationLength: number = 0
 ): boolean {
+  // Need at least 10 exchanges (5 user + 5 assistant) before commitment can trigger
+  // This prevents false positives on early "ready" / "yes" responses
+  if (conversationLength < 10) return false;
+  
   const normalizedMessage = userMessage.trim().toLowerCase();
   
   const commitmentPatterns = [
