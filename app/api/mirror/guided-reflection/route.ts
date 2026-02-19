@@ -135,16 +135,49 @@ export async function POST(request: Request) {
     }
 
     // Store in database
+   // Map patterns to individual category columns
+    const categoryMap: Record<string, any[]> = {
+      nervous_system_patterns: [],
+      awareness_blind_spots: [],
+      identity_loops: [],
+      attention_leaks: [],
+      relational_patterns: [],
+      emotional_outlook: [],
+      shadow_material: []
+    };
+
+    // Distribute patterns by ios_stage
+    (patternProfile.patterns || []).forEach((pattern: any) => {
+      const wrapped = { patterns: [] as any[] };
+      switch (pattern.ios_stage) {
+        case 1: categoryMap.nervous_system_patterns.push(pattern); break;
+        case 2: categoryMap.awareness_blind_spots.push(pattern); break;
+        case 3: categoryMap.identity_loops.push(pattern); break;
+        case 4: categoryMap.attention_leaks.push(pattern); break;
+        case 5: categoryMap.relational_patterns.push(pattern); break;
+        case 6: categoryMap.emotional_outlook.push(pattern); break;
+        default: categoryMap.shadow_material.push(pattern); break;
+      }
+    });
+
     const { error: dbError } = await supabase
       .from('pattern_profiles')
       .upsert({
         user_id: user.id,
         source: 'guided_reflection',
-        patterns: patternProfile.patterns,
+        nervous_system_patterns: { patterns: categoryMap.nervous_system_patterns },
+        awareness_blind_spots: { patterns: categoryMap.awareness_blind_spots },
+        identity_loops: { patterns: categoryMap.identity_loops },
+        attention_leaks: { patterns: categoryMap.attention_leaks },
+        relational_patterns: { patterns: categoryMap.relational_patterns },
+        emotional_outlook: { patterns: categoryMap.emotional_outlook },
+        shadow_material: { patterns: categoryMap.shadow_material },
         core_pattern: patternProfile.core_pattern,
         ios_roadmap: patternProfile.roadmap,
-        quality_score: patternProfile.quality_score || 3,
-        raw_input: responses,
+        mirror_quality_score: patternProfile.quality_score || 3,
+        raw_gpt_output: JSON.stringify(responses),
+        skipped: false,
+        processed_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }, {
