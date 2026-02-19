@@ -1872,7 +1872,7 @@ ${context === 'breakthrough_response'
         }
         break;
       }
-
+    }
     // STEP 6.5: INJECT TOOL-AWARE ATTRIBUTION RESET PROTOCOL IF DRIFT DETECTED
     if (hasFrustration && latestUserMessage) {
       const attributionResetInjection = getAttributionResetInjection(latestUserMessage.content, context);
