@@ -3708,6 +3708,72 @@ microActionState.extractedAction || 'Notice → Label → Release',
     }
   }, [refetchProgress]);
 
+  // ============================================
+  // POST-RITUAL AUTO CHECK-IN (Stage 1 Enhancements)
+  // ============================================
+
+  // Reset auto-trigger flag when the day changes
+  useEffect(() => {
+    hasAutoTriggeredToday.current = false;
+  }, [progress?.dataDate]);
+
+  // Detect when all rituals are completed via toolbar and auto-trigger Claude
+  useEffect(() => {
+    if (!justCompletedViaButton.current) return;
+    if (hasAutoTriggeredToday.current) return;
+    if (!progress?.currentStage) return;
+
+    justCompletedViaButton.current = false;
+
+    const required = getStagePracticeIds(progress.currentStage);
+    const allComplete = required.every(p => practicesCompletedToday.includes(p));
+
+    if (allComplete && practicesCompletedToday.length > 0) {
+      hasAutoTriggeredToday.current = true;
+      // Brief delay so completion messages appear first
+      setTimeout(() => triggerPostRitualCheckin(), 1500);
+    }
+  }, [practicesCompletedToday, progress?.currentStage]);
+
+  const triggerPostRitualCheckin = async () => {
+    if (loading) return;
+
+    setLoading(true);
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: messages.map(m => ({ role: m.role, content: m.content })),
+          context: 'ritual_completion',
+          additionalContext: {
+            currentStage: progress?.currentStage || 1,
+            daysInStage: progress?.stageStartDate
+              ? Math.floor((Date.now() - new Date(progress.stageStartDate).getTime()) / (1000 * 60 * 60 * 24))
+              : 0,
+            adherence: progress?.adherencePercentage || 0,
+            userName: getUserName(),
+            consecutiveDays: progress?.consecutiveDays || 0
+          }
+        })
+      });
+
+      if (!response.ok) throw new Error('Post-ritual checkin failed');
+
+      const data = await response.json();
+      const aiResponse = data.response || data.content || '';
+
+      if (aiResponse) {
+        setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
+      }
+    } catch (error) {
+      console.error('[ChatInterface] Post-ritual checkin error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
 // ============================================
 // SEND MESSAGE
 // ============================================
