@@ -537,7 +537,7 @@ export default function MobileDashboard({
             <div className="bg-white rounded-xl p-4 border border-zinc-200/80 shadow-sm">
               <div className="flex items-center gap-2 mb-2">
                 <Zap className="w-4 h-4 text-amber-500" />
-                <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider">My Aligned Action</h3>
+                <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider">My IOS Cue</h3>
               </div>
               {displayStatement && (
                 <p className="text-sm text-zinc-700 leading-relaxed">{displayStatement}</p>
