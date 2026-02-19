@@ -2240,7 +2240,7 @@ const handleStage7QuickReply = useCallback(async (action: string) => {
       role: 'assistant',
       content: microActionOpeningMessage
     }]);
-  }, []);
+  }, [weeklyCheckInActive]);
 
   const processMicroActionResponse = useCallback(async (userResponse: string) => {
 
@@ -2653,7 +2653,7 @@ info?.microAction || 'Notice → Label → Release'
       role: 'assistant',
       content: flowBlockOpeningMessage
     }]);
-  }, []);
+  }, [weeklyCheckInActive]);
 
   const processFlowBlockResponse = useCallback(async (userResponse: string) => {
     if (!flowBlockState.isActive) return;
