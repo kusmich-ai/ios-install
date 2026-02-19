@@ -1864,9 +1864,14 @@ ${context === 'breakthrough_response'
         maxTokens = 1024;
         break;
 
-      default:
+      default: {
+        // Inject user context for general conversations (enables Stage 1 enhancements)
+        if (additionalContext?.currentStage) {
+          const stageName = ['', 'Neural Priming', 'Embodied Awareness', 'Identity Mode', 'Flow Mode', 'Relational Coherence', 'Integration', 'Accelerated Expansion'][additionalContext.currentStage] || 'Unknown';
+          systemPrompt += `\n\n## USER SESSION CONTEXT\n- Current stage: Stage ${additionalContext.currentStage} (${stageName})\n- Days in stage: ${additionalContext.daysInStage ?? 'unknown'}\n- Adherence: ${additionalContext.adherence ?? 0}%\n- User name: ${additionalContext.userName || 'User'}`;
+        }
         break;
-    }
+      }
 
     // STEP 6.5: INJECT TOOL-AWARE ATTRIBUTION RESET PROTOCOL IF DRIFT DETECTED
     if (hasFrustration && latestUserMessage) {
