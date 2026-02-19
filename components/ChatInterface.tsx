@@ -241,14 +241,14 @@ const stageRituals: { [key: number]: { list: string; total: string } } = {
     list: `1. **Resonance Breathing** - 5 mins
 2. **Somatic Flow** - 3 mins
 3. **Awareness Rep** - 2 mins
-4. **Morning Micro-Action** - 2-3 mins`,
+4. 4. **IOS Cue** - 2 mins,
     total: '12-13 minutes'
   },
   4: {
     list: `1. **Resonance Breathing** - 5 mins
 2. **Somatic Flow** - 3 mins
 3. **Awareness Rep** - 2 mins
-4. **Morning Micro-Action** - 2-3 mins
+4. **IOS Cue** - 2 mins
 5. **Flow Block** - 60-90 mins (scheduled)`,
     total: '12-13 minutes morning + Flow Block'
   },
@@ -256,7 +256,7 @@ const stageRituals: { [key: number]: { list: string; total: string } } = {
     list: `1. **Resonance Breathing** - 5 mins
 2. **Somatic Flow** - 3 mins
 3. **Awareness Rep** - 2 mins
-4. **Morning Micro-Action** - 2-3 mins
+4. **IOS Cue** - 2 mins
 5. **Flow Block** - 60-90 mins (scheduled)
 6. **Co-Regulation Practice** - 3-5 mins (evening)`,
     total: '12-13 minutes morning + Flow Block + evening practice'
@@ -265,7 +265,7 @@ const stageRituals: { [key: number]: { list: string; total: string } } = {
     list: `1. **Resonance Breathing** - 5 mins
 2. **Somatic Flow** - 3 mins
 3. **Awareness Rep** - 2 mins
-4. **Morning Micro-Action** - 2-3 mins
+4. **IOS Cue** - 2 mins
 5. **Flow Block** - 60-90 mins (scheduled)
 6. **Co-Regulation Practice** - 3-5 mins (evening)
 7. **Nightly Debrief** - 2 mins (before sleep)`,
@@ -383,7 +383,7 @@ What else can I help you with?`;
       'hrvb': 'Resonance Breathing',
       'awareness_rep': 'Awareness Rep',
       'somatic_flow': 'Somatic Flow',
-      'micro_action': 'Morning Micro-Action',
+      'micro_action': 'IOS Cue',
       'flow_block': 'Flow Block',
       'co_regulation': 'Co-Regulation Practice',
       'nightly_debrief': 'Nightly Debrief'
@@ -2333,7 +2333,7 @@ const handleStage7QuickReply = useCallback(async (action: string) => {
             setMicroActionState(initialMicroActionState);
             setMessages(prev => [...prev, { 
               role: 'assistant', 
-              content: "I had trouble saving your coherence practice. Let's try setting it up again - just say 'set up aligned action' when you're ready." 
+              content: "I had trouble saving your coherence practice. Let's try setting it up again - just say 'set up ios cue' when you're ready." 
             }]);
           }
         } else {
@@ -2342,7 +2342,7 @@ const handleStage7QuickReply = useCallback(async (action: string) => {
           setMicroActionState(initialMicroActionState);
           setMessages(prev => [...prev, { 
             role: 'assistant', 
-            content: "I had trouble saving your coherence practice. Let's try setting it up again - just say 'set up aligned action' when you're ready." 
+            content: "I had trouble saving your IOS Cue. Let's try setting it up again - just say 'set up ios cue' when you're ready." 
           }]);
         }
       } else {
@@ -2358,7 +2358,7 @@ const handleStage7QuickReply = useCallback(async (action: string) => {
       setMicroActionState(initialMicroActionState);
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: "I had trouble processing that. Let's start fresh - say 'set up aligned action' when you're ready to try again." 
+        content: "I had trouble processing that. Let's start fresh - just say 'set up ios cue' when you're ready." 
       }]);
     }
     
@@ -2404,8 +2404,8 @@ const updateUserProgressCoherence = async (coherenceStatement: string, microActi
       
       if (result.success) {
         const message = getIdentityContinueMessage(
-          info?.identity || 'your coherence statement',
-          info?.microAction || 'your micro-action'
+          info?.identity || 'your current cue',
+info?.microAction || 'Notice → Label → Release'
         );
         
         setTimeout(async () => {
@@ -2423,7 +2423,7 @@ const updateUserProgressCoherence = async (coherenceStatement: string, microActi
       }
       
     } else if (option === 'evolve') {
-      const message = getIdentityEvolvePrompt(info?.identity || 'your previous coherence statement');
+      const message = getIdentityEvolvePrompt(info?.identity || 'your previous cue');
       
       setTimeout(async () => {
         await postAssistantMessage(message);
@@ -2510,13 +2510,13 @@ const updateUserProgressCoherence = async (coherenceStatement: string, microActi
 
   const handleEvolutionInput = async (userInput: string) => {
     if (sprintRenewalState.renewalType === 'identity') {
-      const previousCoherence = sprintRenewalState.completedSprintInfo?.identity || 'previous coherence statement';
+      const previousCoherence = sprintRenewalState.completedSprintInfo?.identity || 'previous cue';
       
       await completeMicroActionSprint(user.id);
       
       setSprintRenewalState(initialSprintRenewalState);
       
-      const evolutionContext = `The user is evolving their coherence statement from "${previousCoherence}". They want to evolve it to: "${userInput}". Help them refine the evolved coherence statement and design a new micro-action that proves this evolved commitment. Use the 4-C filter naturally (Concrete, Coherent, Challenging, Chunked) but don't announce it. Then help them design the ACE micro-action (Atomic, Congruent, Emotionally Clean).`;
+      cconst evolutionContext = `The user is advancing their IOS Cue from "${previousCoherence}" to a new cue. They said: "${userInput}". Help them select the next cue word using the decision tree: A) Interpretation (meaning-making), B) Effort (force/pressure/urgency), C) Attention collapse (checking out/scrolling). Confirm the cue and remind them of the loop: Notice → Label → Release.`;
       
       setMicroActionState(prev => ({
         ...prev,
@@ -2556,7 +2556,7 @@ const updateUserProgressCoherence = async (coherenceStatement: string, microActi
         console.error('[SprintRenewal] Evolution API error:', error);
         setMessages(prev => [...prev, {
           role: 'assistant',
-          content: "Let's continue refining your evolved coherence statement. What would the new statement be? Try phrasing it as 'For the next 21 days, I will...'"
+          content: "Let's continue selecting your next cue. Which pattern is showing up most? A) Meaning-making, B) Force/pressure, or C) Checking out?"
         }]);
       }
       
@@ -3581,8 +3581,8 @@ await postAssistantMessage(`Starting **${practiceName}**...\n\nThe practice wind
           });
           
           const message = getIdentitySprintCompleteMessage(
-            microActionState.extractedIdentity || 'your coherence statement',
-            microActionState.extractedAction || 'your micro-action',
+            microActionState.extractedIdentity || 'your current cue',
+microActionState.extractedAction || 'Notice → Label → Release',
             microActionState.sprintNumber || 1
           );
           await postAssistantMessage(message);
@@ -3695,8 +3695,8 @@ const sendMessage = async (e: React.FormEvent) => {
     'micro action', 'micro-action', 'microaction',
     'run the micro', 'start micro', 'do micro',
     'morning micro', 'aligned action',
-    'coherence installation', 'run micro', 'setup micro',
-    'morning aligned'
+    'ios cue', 'set up cue', 'setup cue', 'start cue',
+    'run cue', 'cue training', 'run micro', 'setup micro'
   ];
   
   const isMicroActionRequest = microActionTriggers.some(trigger => 
@@ -3883,7 +3883,7 @@ if (regressionIntervention?.isActive) {
         setAwaitingMicroActionStart(false);
         setMessages(prev => [...prev, { 
           role: 'assistant', 
-          content: "No problem. You can set up your aligned action anytime by clicking the ⚡ icon or saying 'run micro action'." 
+          content: "No problem. You can set up your IOS Cue anytime by clicking the ⚡ icon or saying 'set up ios cue'."
         }]);
       }
       return;
@@ -4539,7 +4539,7 @@ if (regressionIntervention?.isActive) {
                   onClick={handleStartNewStageIntro}
                   className="px-6 py-3 bg-[#ff9e19] hover:bg-orange-600 text-white font-semibold rounded-xl transition-colors shadow-lg"
                 >
-                  {pendingUnlockStage === 3 ? 'Start Aligned Action Installation' :
+                  {pendingUnlockStage === 3 ? 'Start IOS Cue Training' :
                    pendingUnlockStage === 4 ? 'Set Up Flow Blocks' :
                    pendingUnlockStage === 5 ? 'Learn Co-Regulation Practice' :
                    pendingUnlockStage === 6 ? 'Learn Nightly Debrief' :
@@ -4588,7 +4588,7 @@ if (regressionIntervention?.isActive) {
             </form>
             <p className="text-xs text-gray-500 mt-2 text-center">
               {microActionState.isActive
-                ? "Setting up your Aligned Action - type your responses"
+                ? "Setting up your IOS Cue - type your responses"
                 : flowBlockState.isActive
                   ? "Setting up your Flow Blocks - type your responses"
                   : currentQuickReply 
