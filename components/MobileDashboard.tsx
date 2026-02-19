@@ -544,7 +544,7 @@ export default function MobileDashboard({
               )}
               {microAction && (
                 <p className="text-xs text-amber-600 font-medium mt-2">
-                  Daily practice: {microAction}
+                  Loop: {microAction}
                 </p>
               )}
               {displaySprintDay && (
