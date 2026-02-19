@@ -495,7 +495,16 @@ export function isCommitmentResponse(
   // Also check if the previous assistant message asked for commitment
   const askedForCommitment = lastAssistantMessage.toLowerCase().includes('are you in') ||
                               lastAssistantMessage.toLowerCase().includes('do you commit') ||
-                              lastAssistantMessage.toLowerCase().includes('ready to commit');
+                              lastAssistantMessage.toLowerCase().includes('ready to commit') ||
+                              lastAssistantMessage.toLowerCase().includes('sound right') ||
+                              lastAssistantMessage.toLowerCase().includes('sound good') ||
+                              lastAssistantMessage.toLowerCase().includes('look right') ||
+                              lastAssistantMessage.toLowerCase().includes('look good') ||
+                              lastAssistantMessage.toLowerCase().includes('ready to start') ||
+                              lastAssistantMessage.toLowerCase().includes('want to adjust') ||
+                              lastAssistantMessage.toLowerCase().includes('locked in') ||
+                              lastAssistantMessage.toLowerCase().includes('does this work') ||
+                              lastAssistantMessage.toLowerCase().includes('shall we lock');
 
   return isCommitment && askedForCommitment;
 }
