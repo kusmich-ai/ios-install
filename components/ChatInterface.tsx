@@ -3692,11 +3692,6 @@ microActionState.extractedAction || 'Notice → Label → Release',
     justCompletedViaButton.current = true;
     
     setPracticesCompletedToday(prev => {
-      role: 'assistant', 
-      content: `**${practiceName}** completed! ✓\n\nNice work. Your progress has been logged.` 
-    }]);
-    
-    setPracticesCompletedToday(prev => {
       if (!prev.includes(normalizedId)) {
         return [...prev, normalizedId];
       }
