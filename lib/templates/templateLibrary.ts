@@ -150,18 +150,18 @@ These movements mobilize the vagus nerve along the spine, enhance cerebrospinal 
   },
 
   // ALIGNED ACTION (Stage 3+)
-  micro_action: {
-    startPrompt: `Time for your **Morning Aligned Action**.
+  startPrompt: `Time for your **IOS Cue**.
 
-Today's action: **{{microAction}}**
+Your cue: **{{currentIdentity}}**
+Your loop: **Notice → Label → Release**
 
-Treat this as execution only. No evaluation. No story about what it means.
+Run your 90-second morning imprint, then carry the cue through your day.
 
-Complete the action, then click **"Done"** in the {{toolbarReference}}.`,
+Click **"Done"** in the {{toolbarReference}} when your morning imprint is complete.`,
 
-    completionResponse: `Aligned Action logged. ✓
+    completionResponse: `IOS Cue logged. ✓
 
-Day {{identityDayInCycle}} of 21. You're not chasing perfection — you're training consistency. 
+Day {{identityDayInCycle}} of 21. Morning imprint set — now carry the cue through your day. Notice → Label → Release.
 
 {{nextPracticePrompt}}`,
 
