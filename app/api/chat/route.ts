@@ -1,4 +1,4 @@
-// app/api/chat/route.ts - UPDATED with Re-engagement, Regression, and Breakthrough/Resistance Context Handling
+// app/api/chat/route.ts - UPDATED with Stage 1 Enhancement Tools, Re-engagement, Regression, and Breakthrough/Resistance Context Handling
 import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
 import { microActionSystemPrompt, extractionSystemPrompt } from '@/lib/microActionAPI';
@@ -1886,8 +1886,19 @@ ${context === 'breakthrough_response'
         content: cleanMessageContent(msg.content),
       }));
 
-    // STEP 7: MAKE API CALL
-    const response = await anthropic.messages.create({
+    // STEP 7: DETERMINE IF TOOLS SHOULD BE INCLUDED
+    // Tools are included for general chat contexts (Stage 1 enhancements)
+    // NOT included for extraction, specialized protocols, or opening generators
+    const noToolContexts = [
+      'micro_action_extraction', 'flow_block_extraction',
+      'micro_action_setup', 'flow_block_setup',
+      're_engagement_opening', 'regression_opening', 'stage_7_opening',
+      'breakthrough_response', 'resistance_response'
+    ];
+    const includeEnhancementTools = !context || !noToolContexts.includes(context);
+
+    // STEP 8: MAKE API CALL (with tool loop)
+    let response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: maxTokens,
       temperature: temperature,  
@@ -1895,11 +1906,59 @@ ${context === 'breakthrough_response'
         ? systemPrompt 
         : (hasSystemPrompt ? undefined : systemPrompt),
       messages: conversationMessages,
+      ...(includeEnhancementTools ? { tools: STAGE1_ENHANCEMENT_TOOLS } : {}),
     });
 
-    const responseText = response.content[0].type === 'text' 
-      ? response.content[0].text 
-      : '';
+    // Handle tool use loop (for signal checks, milestones, etc.)
+    let toolLoopCount = 0;
+    const maxToolLoops = 5; // Safety limit
+    
+    while (response.stop_reason === 'tool_use' && toolLoopCount < maxToolLoops) {
+      toolLoopCount++;
+      const toolUseBlocks = response.content.filter(
+        (block): block is Anthropic.ToolUseBlock => block.type === 'tool_use'
+      );
+      
+      const toolResults: Anthropic.ToolResultBlockParam[] = [];
+
+      for (const toolUse of toolUseBlocks) {
+        console.log(`[Enhancement Tool] Executing: ${toolUse.name}`, toolUse.input);
+        const result = await executeEnhancementTool(
+          toolUse.name, 
+          toolUse.input as Record<string, unknown>, 
+          userId
+        );
+        console.log(`[Enhancement Tool] Result:`, result);
+
+        toolResults.push({
+          type: 'tool_result',
+          tool_use_id: toolUse.id,
+          content: JSON.stringify(result)
+        });
+      }
+
+      // Continue conversation with tool results
+      response = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: maxTokens,
+        temperature: temperature,
+        system: (context === 'micro_action_extraction' || context === 'flow_block_extraction') 
+          ? systemPrompt 
+          : (hasSystemPrompt ? undefined : systemPrompt),
+        messages: [
+          ...conversationMessages,
+          { role: 'assistant' as const, content: response.content },
+          { role: 'user' as const, content: toolResults }
+        ],
+        ...(includeEnhancementTools ? { tools: STAGE1_ENHANCEMENT_TOOLS } : {}),
+      });
+    }
+
+    // Extract text from response (may have mixed content blocks after tool use)
+    const responseText = response.content
+      .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+      .map(block => block.text)
+      .join('');
 
     // Skip cue prefix for extraction contexts (need clean JSON)
     const skipCuePrefix = context === 'micro_action_extraction' || context === 'flow_block_extraction';
