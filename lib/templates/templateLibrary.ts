@@ -599,7 +599,7 @@ You've proven consistency and transformation:
 
 **Embodiment achieved.** The body is now connected awareness.
 
-Before we unlock **Stage 3: Coherent Action Mode**, quick reflection:
+Before we unlock **Stage 3: Cue Training**, quick reflection:
 
 **What did you notice about awareness during Somatic Flow? Did it stay present through the movement, or did it drift?**
 
@@ -614,17 +614,17 @@ Current status vs unlock criteria:
 
 Your body is learning. Keep the practice consistent.`,
 
-      confirmation: `**🎉 Stage 3 Unlocked: Identity Mode**
+      confirmation: `**🎉 Stage 3 Unlocked: Cue Training**
 
-You've embodied awareness. Now we anchor it into who you are.
+You've embodied awareness. Now we train it to catch patterns before they become you.
 
 ---
 
 **NEW RITUAL UNLOCKING:**
 
-**Morning Aligned Action** — One small action taken without narrative or self-definition. Not to become someone - but to notice when identity is no longer required and to train your nervous system in how to respond.
+**IOS Cue** — A detection training system for your nervous system. You'll select one cue word targeting your dominant unconscious pattern, then train a simple recognition loop: Notice → Label → Release.
 
-We'll run the Coherant Action Coherence Protocol to define a 21-day action and track what remains consistent without interpretation.
+We'll run the IOS Cue setup to select your cue and install the loop. Takes about 2-3 minutes.
 
 ---
 
@@ -645,48 +645,47 @@ Use it whenever an interpretation is amplifying the signal. Access it via {{tool
 
 ---
 
-Ready to run the Action Coherence Protocol?`
+Ready to set up your IOS Cue?`
     }
   },
 
   // STAGE 3: Algined Action Mode
   3: {
     ritualIntro: {
-      intro: `Welcome to **Stage 3: Aligned Action Mode**.
+      intro: `Welcome to **Stage 3: Cue Training**.
 
-**Tagline:** *Action without interpretation. Behaviour without a story.*
+**Tagline:** *Catch patterns before they become you.*
 
-Awareness is now consistent enough to guide action directly. This stage uses action to reveal coherence, not to define who you are.
+Your awareness is now stable enough to detect what used to run on autopilot. This stage trains your nervous system to catch unconscious patterns in real time using a simple detection loop.
 
-**New practice unlocking:** Action Coherence Protocol
+**New practice unlocking:** IOS Cue
 
 Your updated morning ritual:
 ${getRitualListForStage(3)}
 
 **Total: ${getMorningRitualTime(3)}**
 
-Before we begin, we'll identify a consistent action and observe what stabilizes without interpretation.
+We'll select your first cue and install the recognition loop. Takes about 2-3 minutes.
 
-Ready to run the Action Coherence Protocol?`,
+Ready to set up your IOS Cue?`,
 
       practices: {
-        micro_action: `**NEW RITUAL: Action Coherence Protocol — 2 MINS**
+        micro_action: `**NEW RITUAL: IOS CUE — 2 MINS**
 
 **What it does:**
-Removes reliance on self-concept by acting without narrative. Each completed action demonstrates functionality without interpretation.
+Trains your RAS (reticular activating system) to detect unconscious patterns — the same system that makes you notice blue BMWs after you think about buying one. Except instead of cars, it filters your thoughts too.
 
 **When:** After Awareness Rep, as the final morning practice.
 
 **How:**
-1. We define a 21-day action experiment
-2. We choose one minimal, repeatable behaviour
-3. Each morning, you execute it cleanly
-4. Consistency replaces identity inference
+1. We select a cue word targeting your dominant pattern
+2. You run a 90-second morning imprint to prime detection
+3. Throughout the day, you catch the pattern: Notice → Label → Release
+4. Before sleep, 60 seconds to consolidate what you caught
 
-By day 21, the action no longer requires effort or justification.
-It simply occurs.
+By day 21, detection becomes automatic. You see the pattern before it runs you.
 
-**First:** We'll run the Action Coherence Protocol to define the action and remove narrative from its execution.
+**First:** We'll select your cue and install the loop.
 
 Ready to begin?`
       },
@@ -696,56 +695,56 @@ Ready to begin?`
 1. Resonance Breathing — 5 mins
 2. Somatic Flow — 3 mins
 3. Awareness Rep — 2 mins
-4. **Morning Aligned Action — 1 min** (new)
+4. **IOS Cue — 2 mins** (new)
 
 **Total: ${getMorningRitualTime(3)}**
 
-Coherence Statement: **{{currentIdentity}}**
-Aligned Action: **{{microAction}}**
-Cue:** **{{executionCue}}**
+Cue: **{{currentIdentity}}**
+Loop: **Notice → Label → Release**
 
-Every 21 days, we'll reassess and either evolve or modify the action.
+Every 21 days, your cue progresses to train deeper detection.
 
 **Remember:** The **Reframe Protocol** is now available in your {{toolbarReference}} under "On-Demand Tools" for when triggers arise.
 
-Starting tomorrow — full sequence + your micro-action. You're now training identity, not just awareness.`
+Starting tomorrow — full sequence + your morning imprint. You're now training detection, not just awareness.`
     },
 
     dailyPrompts: {
-      firstDay: `{{greeting}}{{userName}}.
+     firstDay: `{{greeting}}{{userName}}.
 
-**Stage 3: Aligned Action Mode** — Day 1
+**Stage 3: Cue Training** — Day 1
 
-Your daily action: **{{microAction}}**
+Your cue: **{{currentIdentity}}**
+Your loop: **Notice → Label → Release**
 
 ${getRitualListForStage(3)}
 
 **Total: ${getMorningRitualTime(3)}**
 
-Ready to act without identity?`,
+Ready to start detecting?`,
 
       standard: `{{greeting}}{{userName}}.
 
-**Stage 3: Aligned Action Mode** — Day {{daysInStage}}
-**Action:** {{microAction}} (Day {{identityDayInCycle}}/21)
+**Stage 3: Cue Training** — Day {{daysInStage}}
+**Cue:** {{currentIdentity}} (Day {{identityDayInCycle}}/21)
 **Adherence:** {{adherence}}%{{streakMessage}}
 
 **Today's rituals:**
 ${getRitualListForStage(3)}
 
-Ready to act without a story?`,
+Ready to detect?`,
 
       allComplete: `All practices complete for today. ✓
 
-Action: {{currentIdentity}}
-Evidence: logged.
+Cue: {{currentIdentity}}
+Detection: active.
 
 **Current status:**
 - Day {{daysInStage}} of Stage 3
-- Action Day {{identityDayInCycle}} of 21
+- Cue Day {{identityDayInCycle}} of 21
 - {{adherence}}% adherence
 
-You're not chasing perfection — you're training consistency.`
+Every catch rewires the pattern. Keep detecting.`
     },
 
     unlock: {
@@ -756,7 +755,7 @@ You've proven consistency and transformation:
 - +{{avgDelta}} average delta improvement ✓
 - {{consecutiveDays}} day streak ✓
 
-**Coherant Action installed.** You now act from awareness, not toward it.
+**Cue Training complete.** You now catch patterns before they run you.
 
 Before we unlock **Stage 4: Flow Mode**, quick reflection:
 
