@@ -26,11 +26,11 @@ export async function POST() {
       .upsert({
         user_id: user.id,
         source: 'skipped',
-        patterns: null,
+        skipped: true,
         core_pattern: null,
         ios_roadmap: null,
-        quality_score: null,
-        raw_input: null,
+        mirror_quality_score: null,
+        raw_gpt_output: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }, {
