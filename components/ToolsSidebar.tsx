@@ -387,8 +387,8 @@ const getPracticeStatus = (practiceId: string): 'completed' | 'pending' | 'locke
                           
                           {/* Show identity for Micro-Action if set - UNCHANGED LOGIC */}
                           {isMicroAction && hasIdentity && (
-                            <div className="text-xs text-amber-600/80 mb-1 truncate" title={currentIdentity}>
-                              {currentIdentity}
+                          <div className="text-xs text-amber-600/80 mb-1 truncate" title={currentIdentity}>
+                              Cue: {currentIdentity}
                             </div>
                           )}
                           
