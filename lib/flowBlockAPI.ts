@@ -384,7 +384,10 @@ STOP. Wait for confirmation.
 - Multitasking / notifications → Reinforce setup requirements
 - Working from stress state → Suggest breathing reset first
 - Too many Goal blocks → Rebalance toward Growth/Gratitude
-- All blocks in one domain → Redistribute across domains`;
+- All blocks in one domain → Redistribute across domains
+
+## FINAL REMINDER — THIS IS THE MOST IMPORTANT RULE
+ASK EXACTLY ONE QUESTION PER MESSAGE. THEN STOP. DO NOT INCLUDE A SECOND QUESTION, FOLLOW-UP PROMPT, OR BULLET LIST OF THINGS TO CONSIDER. ONE QUESTION. STOP. WAIT.`;
 
 // ============================================
 // EXTRACTION SYSTEM PROMPT (for route.ts)
