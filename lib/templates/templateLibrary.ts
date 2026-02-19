@@ -166,13 +166,13 @@ Day {{identityDayInCycle}} of 21. Morning imprint set — now carry the cue thro
 {{nextPracticePrompt}}`,
 
     // Special: When action needs to be set (new sprint or first time)
-    identityNeeded: `Time to set your **21-day aligned action**.
+    identityNeeded: `Time to set your **21-day IOS Cue**.
 
-Before starting your Morning Aligned Action, we'll choose one clear action to run consistently for the next 21 days.
+We'll select one detection cue and install the recognition loop your nervous system will train for the next 21 days.
 
-This takes about 5 minutes and removes guesswork from your mornings. Ready to begin?
+This takes about 2-3 minutes. Ready to begin?
 
-Type "yes" to start the Action Coherence Protocol.`
+Type "yes" to start.`
   },
 
   // FLOW BLOCK (Stage 4+)
