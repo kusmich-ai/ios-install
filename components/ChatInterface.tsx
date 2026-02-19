@@ -4119,7 +4119,15 @@ if (regressionIntervention?.isActive) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: messages.map(m => ({ role: m.role, content: m.content })).concat([{ role: 'user', content: userMessage }]),
-          context: 'general'
+          context: 'general',
+          additionalContext: {
+            currentStage: progress?.currentStage || 1,
+            daysInStage: progress?.stageStartDate 
+              ? Math.floor((Date.now() - new Date(progress.stageStartDate).getTime()) / (1000 * 60 * 60 * 24))
+              : 0,
+            adherence: progress?.adherencePercentage || 0,
+            userName: getUserName()
+          }
         })
       });
       
