@@ -2516,7 +2516,7 @@ info?.microAction || 'Notice → Label → Release'
       
       setSprintRenewalState(initialSprintRenewalState);
       
-      cconst evolutionContext = `The user is advancing their IOS Cue from "${previousCoherence}" to a new cue. They said: "${userInput}". Help them select the next cue word using the decision tree: A) Interpretation (meaning-making), B) Effort (force/pressure/urgency), C) Attention collapse (checking out/scrolling). Confirm the cue and remind them of the loop: Notice → Label → Release.`;
+      const evolutionContext = `The user is advancing their IOS Cue from "${previousCoherence}" to a new cue. They said: "${userInput}". Help them select the next cue word using the decision tree: A) Interpretation (meaning-making), B) Effort (force/pressure/urgency), C) Attention collapse (checking out/scrolling). Confirm the cue and remind them of the loop: Notice → Label → Release.`;
       
       setMicroActionState(prev => ({
         ...prev,
