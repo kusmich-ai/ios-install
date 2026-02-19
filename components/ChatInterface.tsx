@@ -241,7 +241,7 @@ const stageRituals: { [key: number]: { list: string; total: string } } = {
     list: `1. **Resonance Breathing** - 5 mins
 2. **Somatic Flow** - 3 mins
 3. **Awareness Rep** - 2 mins
-4. 4. **IOS Cue** - 2 mins,
+4. **IOS Cue** - 2 mins`,
     total: '12-13 minutes'
   },
   4: {
