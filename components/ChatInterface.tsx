@@ -2222,6 +2222,14 @@ const handleStage7QuickReply = useCallback(async (action: string) => {
   const startMicroActionSetup = useCallback(async () => {
     devLog('[MicroAction]', 'Starting setup flow (100% API)');
     
+    // Pause weekly check-in if active — setup takes priority
+    if (weeklyCheckInActive) {
+      devLog('[MicroAction]', 'Pausing weekly check-in for setup');
+      setWeeklyCheckInActive(false);
+      setWeeklyCheckInStep(0);
+      setWeeklyCheckInScores({ regulation: null, awareness: null, outlook: null, attention: null, qualitative: null });
+    }
+    
     setMicroActionState(prev => ({
       ...prev,
       isActive: true,
@@ -2618,6 +2626,14 @@ info?.microAction || 'Notice → Label → Release'
   
   const startFlowBlockSetup = useCallback(() => {
     devLog('[FlowBlock]', 'Starting setup flow (API-DRIVEN)');
+    
+    // Pause weekly check-in if active — setup takes priority
+    if (weeklyCheckInActive) {
+      devLog('[FlowBlock]', 'Pausing weekly check-in for setup');
+      setWeeklyCheckInActive(false);
+      setWeeklyCheckInStep(0);
+      setWeeklyCheckInScores({ regulation: null, awareness: null, outlook: null, attention: null, qualitative: null });
+    }
     
     // Reset state for new setup
     setFlowBlockState(prev => ({
@@ -3847,24 +3863,24 @@ if (regressionIntervention?.isActive) {
   return;
 }
     
-    // 1. Weekly Check-In Flow
-    if (weeklyCheckInActive) {
-      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
-      setLoading(true);
-      await processWeeklyCheckInResponse(userMessage);
-      setLoading(false);
-      return;
-    }
-    
-    // 2. Micro-Action Setup Flow
+    // 1. Micro-Action Setup Flow (user-initiated, takes priority)
     if (microActionState.isActive) {
       await processMicroActionResponse(userMessage);
       return;
     }
     
-    // 3. Flow Block Setup Flow
+    // 2. Flow Block Setup Flow (user-initiated, takes priority)
     if (flowBlockState.isActive) {
       await processFlowBlockResponse(userMessage);
+      return;
+    }
+    
+    // 3. Weekly Check-In Flow
+    if (weeklyCheckInActive) {
+      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+      setLoading(true);
+      await processWeeklyCheckInResponse(userMessage);
+      setLoading(false);
       return;
     }
     
