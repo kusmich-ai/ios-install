@@ -477,8 +477,8 @@ export default function DashboardSidebar({
             </div>
             <p className="text-sm text-zinc-700 leading-relaxed">{displayStatement}</p>
             {microAction && (
-              <p className="text-xs text-amber-600 font-medium mt-2">
-                Daily practice: {microAction}
+             <p className="text-xs text-amber-600 font-medium mt-2">
+                Loop: {microAction}
               </p>
             )}
             {displaySprintDay && (
