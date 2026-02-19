@@ -3688,6 +3688,14 @@ microActionState.extractedAction || 'Notice → Label → Release',
       content: `**${practiceName}** completed! ✓\n\nNice work. Your progress has been logged.` 
     }]);
     
+    // Flag that this completion came from a button tap (not DB load)
+    justCompletedViaButton.current = true;
+    
+    setPracticesCompletedToday(prev => {
+      role: 'assistant', 
+      content: `**${practiceName}** completed! ✓\n\nNice work. Your progress has been logged.` 
+    }]);
+    
     setPracticesCompletedToday(prev => {
       if (!prev.includes(normalizedId)) {
         return [...prev, normalizedId];
