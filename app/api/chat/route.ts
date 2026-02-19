@@ -1492,10 +1492,10 @@ export async function POST(req: Request) {
         temperature = 0.1;
         break;
 
-      case 'flow_block_setup':
+    case 'flow_block_setup':
         systemPrompt = flowBlockSystemPrompt;
         maxTokens = 2048;
-        temperature = 0.3;
+        temperature = 0.1;
         break;
 
       case 'flow_block_extraction':
