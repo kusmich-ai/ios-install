@@ -149,8 +149,9 @@ These movements mobilize the vagus nerve along the spine, enhance cerebrospinal 
 **Guided video:** [Somatic Flow](https://www.unbecoming.app/somatic)`
   },
 
-  // ALIGNED ACTION (Stage 3+)
-  startPrompt: `Time for your **IOS Cue**.
+  // IOS CUE (Stage 3+)
+  micro_action: {
+    startPrompt: `Time for your **IOS Cue**.
 
 Your cue: **{{currentIdentity}}**
 Your loop: **Notice → Label → Release**
