@@ -2504,6 +2504,10 @@ info?.microAction || 'Notice → Label → Release'
         await postAssistantMessage(message);
       }, 300);
       
+      const previousMap = sprintRenewalState.completedSprintInfo?.weeklyMap;
+      const previousDomains = sprintRenewalState.completedSprintInfo?.domains;
+      const previousContext = previousMap ? `[Context: User is pivoting away from previous setup — Domains: ${previousDomains?.join(', ') || 'unknown'}, Map: ${JSON.stringify(previousMap)}. This is for your reference only — run the full discovery fresh.]` : '';
+      
       await completeFlowBlockSprint(user.id);
       
       setSprintRenewalState(initialSprintRenewalState);
@@ -2511,7 +2515,7 @@ info?.microAction || 'Notice → Label → Release'
       setFlowBlockState(prev => ({
         ...prev,
         isActive: true,
-        conversationHistory: []
+        conversationHistory: previousContext ? [{ role: 'user', content: previousContext }] : []
       }));
     }
   };
