@@ -2572,8 +2572,9 @@ info?.microAction || 'Notice → Label → Release'
         }]);
       }
       
-    } else if (sprintRenewalState.renewalType === 'flow_block') {
-      await completeFlowBlockSprint(user.id);
+} else if (sprintRenewalState.renewalType === 'flow_block') {
+      // DON'T complete old sprint yet — wait until new sprint saves successfully
+      // completeFlowBlockSprint will be called in processFlowBlockResponse after extraction succeeds
       
       setSprintRenewalState(initialSprintRenewalState);
       
