@@ -92,7 +92,7 @@ function getStageName(stage: number): string {
   const names: { [key: number]: string } = {
     1: 'Neural Priming',
     2: 'Embodied Awareness',
-    3: 'Aligned Action Mode',
+    3: 'Cue Training',
     4: 'Flow Mode',
     5: 'Relational Coherence',
     6: 'Integration',
