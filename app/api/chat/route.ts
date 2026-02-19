@@ -1864,6 +1864,17 @@ ${context === 'breakthrough_response'
         maxTokens = 1024;
         break;
 
+        case 'ritual_completion': {
+        const ritualData = additionalContext || {};
+        const currentStage = ritualData.currentStage || 1;
+        const stageNameMap = ['', 'Neural Priming', 'Embodied Awareness', 'Identity Mode', 'Flow Mode', 'Relational Coherence', 'Integration', 'Accelerated Expansion'];
+        const ritualStageName = stageNameMap[currentStage] || 'Unknown';
+
+        systemPrompt += `\n\n## POST-RITUAL AUTO CHECK-IN\n\nThe user just completed ALL their daily rituals via the toolbar buttons. They did NOT type a message — this is an automatic check-in triggered by ritual completion.\n\n## USER SESSION CONTEXT\n- Current stage: Stage ${currentStage} (${ritualStageName})\n- Days in stage: ${ritualData.daysInStage ?? 'unknown'}\n- Adherence: ${ritualData.adherence ?? 0}%\n- User name: ${ritualData.userName || 'User'}\n- Consecutive days: ${ritualData.consecutiveDays ?? 0}\n\n## YOUR TASK\n1. Acknowledge the completed rituals briefly (1 sentence max)\n2. Run the Daily Signal Check: Ask for calm (0-5) and presence (0-5) ratings\n3. Apply any day-appropriate Stage 1 enhancements per the STAGE 1 EXPERIENCE LAYER instructions\n4. Keep it concise — the user just tapped buttons, they didn't initiate a conversation\n\nDo NOT ask "did you complete your practices?" — they already did. Go straight to the signal check.`;
+        maxTokens = 1024;
+        break;
+      }
+        
       default: {
         // Inject user context for general conversations (enables Stage 1 enhancements)
         if (additionalContext?.currentStage) {
