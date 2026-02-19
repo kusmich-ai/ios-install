@@ -269,7 +269,7 @@ const flowBlockSprint = flowBlockSprintArray?.[0] || null;
         const now = new Date();
         const diffTime = now.getTime() - start.getTime();
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-        return Math.min(Math.max(diffDays, 1), 21);
+        return Math.max(diffDays, 1); // No cap — renewal check needs day 22+
       };
 
       const identitySprintDay = calculateSprintDay(identitySprint?.start_date);
