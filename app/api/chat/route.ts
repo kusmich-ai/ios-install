@@ -1492,10 +1492,12 @@ export async function POST(req: Request) {
         temperature = 0.1;
         break;
 
-    case 'flow_block_setup':
+  case 'flow_block_setup':
         systemPrompt = flowBlockSystemPrompt;
         maxTokens = 2048;
         temperature = 0.1;
+        console.log('[DEBUG] Flow block setup - model will be Opus, temp 0.1');
+        console.log('[DEBUG] System prompt starts with:', systemPrompt.substring(0, 100));
         break;
 
       case 'flow_block_extraction':
