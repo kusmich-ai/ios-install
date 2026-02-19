@@ -451,8 +451,6 @@ export function cleanResponseForDisplay(response: string): string {
     .replace(/\[\[ACTION_COMPLETE:[^\]]+\]\]/g, '')
     .replace(/IDENTITY:\s*"?[^"\n]+"?/gi, '')
     .replace(/MICRO[_-]?ACTION:\s*"?[^"\n]+"?/gi, '')
-    .replace(/CUE:\s*"?[^"\n]+"?/gi, '')
-    .replace(/LOOP:\s*"?[^"\n]+"?/gi, '')
     .trim();
 }
 
