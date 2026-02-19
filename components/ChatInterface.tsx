@@ -2582,7 +2582,7 @@ info?.microAction || 'Notice → Label → Release'
       const currentFocusType = sprintRenewalState.completedSprintInfo?.focusType;
       const mapContext = currentMap ? `\n\nCurrent Weekly Map:\n${JSON.stringify(currentMap, null, 2)}\nDomains: ${currentDomains?.join(', ') || 'unknown'}\nFocus Type: ${currentFocusType || 'unknown'}` : '';
       
-      const evolutionContext = `The user is evolving their Flow Block system. They want to make these changes: "${userInput}". Help them refine their Flow Menu and Weekly Map based on this feedback. Skip the full discovery phase and focus on the specific changes they want to make. Ask clarifying questions if needed, then help them finalize the updated configuration.${mapContext}`;
+      const evolutionContext = `The user is evolving their Flow Block system. They want to make these changes: "${userInput}". Help them refine their Flow Menu and Weekly Map based on this feedback. Skip the full discovery phase and focus on the specific changes they want to make. Ask clarifying questions if needed, then help them finalize the updated configuration. IMPORTANT: When presenting the final updated Weekly Map, always end by asking "Are you in?" to confirm commitment.${mapContext}`;
       
       setFlowBlockState(prev => ({
         ...prev,
