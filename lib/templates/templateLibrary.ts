@@ -1065,7 +1065,7 @@ You now have the complete IOS toolkit:
 - Resonance Breathing (regulation)
 - Somatic Flow (embodiment)  
 - Awareness Rep (meta-awareness)
-- Morning Aligned Action (coherent action)
+- IOS Cue (pattern detection)
 - Flow Block (performance)
 - Co-Regulation (relationship)
 - Nightly Debrief (integration)
