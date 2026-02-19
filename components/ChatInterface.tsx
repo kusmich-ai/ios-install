@@ -647,6 +647,8 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   const [openingType, setOpeningType] = useState<'first_time' | 'same_day' | 'new_day'>('first_time');
   const [introStep, setIntroStep] = useState<number>(0);
   const [practicesCompletedToday, setPracticesCompletedToday] = useState<string[]>([]);
+  const hasAutoTriggeredToday = useRef(false);
+  const justCompletedViaButton = useRef(false);
   const [unlockFlowState, setUnlockFlowState] = useState<'none' | 'eligible_shown' | 'confirmed' | 'intro_started'>('none');
   const [pendingUnlockStage, setPendingUnlockStage] = useState<number | null>(null);
   const [microActionState, setMicroActionState] = useState<MicroActionState>(initialMicroActionState);
