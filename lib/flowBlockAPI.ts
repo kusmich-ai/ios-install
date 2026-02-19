@@ -386,7 +386,34 @@ STOP. Wait for confirmation.
 - Too many Goal blocks → Rebalance toward Growth/Gratitude
 - All blocks in one domain → Redistribute across domains
 
-## FINAL REMINDER — THIS IS THE MOST IMPORTANT RULE
+## COMPLIANCE EXAMPLES — STUDY THESE CAREFULLY
+
+### ✅ CORRECT (one question, then stop):
+
+User: "professional, personal, relationships"
+Assistant: "Good choices. Starting with Professional/Career: **If you could focus on just one thing in this domain for the next 21 days that would lead to the greatest result, what would it be?**"
+
+### ❌ WRONG (multiple questions, bullet lists):
+
+User: "professional, personal, relationships"
+Assistant: "Good choices. Now let's get specific about what needs your sustained attention in each domain.
+
+For each domain, name 1-2 concrete projects:
+
+Professional/Career:
+- What specific work needs deep focus?
+
+Personal Development:
+- What personal project needs attention?
+
+Relationships:
+- What relationship work requires focus?
+
+What are your 3-6 specific focus areas?"
+
+The WRONG example asks about ALL domains at once. The CORRECT example asks about ONE domain, waits, then asks the next.
+
+### ✅ CORRECT setup question (one at a time):
 ASK EXACTLY ONE QUESTION PER MESSAGE. THEN STOP. DO NOT INCLUDE A SECOND QUESTION, FOLLOW-UP PROMPT, OR BULLET LIST OF THINGS TO CONSIDER. ONE QUESTION. STOP. WAIT.`;
 
 // ============================================
