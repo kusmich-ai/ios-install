@@ -1906,6 +1906,8 @@ ${context === 'breakthrough_response'
 
     // STEP 8: MAKE API CALL (with tool loop)
     const model = context === 'flow_block_setup' ? 'claude-opus-4-20250514' : 'claude-sonnet-4-20250514';
+
+console.log('[DEBUG] Final API call - context:', context, '| model:', model, '| temp:', temperature);
     
     let response = await anthropic.messages.create({
       model,
