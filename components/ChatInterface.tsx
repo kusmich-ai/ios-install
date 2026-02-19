@@ -2685,7 +2685,7 @@ info?.microAction || 'Notice → Label → Release'
       const lastAssistantMessage = flowBlockState.conversationHistory.length > 0
         ? flowBlockState.conversationHistory[flowBlockState.conversationHistory.length - 1]?.content || ''
         : '';
-      const isCommitment = isCommitmentResponse(userResponse, lastAssistantMessage);
+      const isCommitment = isCommitmentResponse(userResponse, lastAssistantMessage, updatedHistory.length);
       
       devLog('[FlowBlock]', 'Commitment check:', { isCommitment, lastAssistantMessage: lastAssistantMessage.substring(0, 50) });
       
