@@ -649,7 +649,7 @@ Ready to set up your IOS Cue?`
     }
   },
 
-  // STAGE 3: Algined Action Mode
+  // STAGE 3: Cue Training
   3: {
     ritualIntro: {
       intro: `Welcome to **Stage 3: Cue Training**.
