@@ -1339,7 +1339,7 @@ export const weeklyCheckInTemplates = {
   stageQuestions: {
     1: "How easily can you return to calm when stressed?",
     2: "Does awareness stay present during movement?",
-    3: "Is your aligned action feeling more automatic?",
+    3: "Are you catching patterns faster throughout the day?",
     4: "Can you drop into focused flow reliably?",
     5: "Do you stay regulated in difficult conversations?",
     6: "Is awareness stable across all life contexts?",
