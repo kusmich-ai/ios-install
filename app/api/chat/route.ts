@@ -1903,10 +1903,12 @@ ${context === 'breakthrough_response'
     const includeEnhancementTools = !context || !noToolContexts.includes(context);
 
     // STEP 8: MAKE API CALL (with tool loop)
+    const model = context === 'flow_block_setup' ? 'claude-opus-4-20250514' : 'claude-sonnet-4-20250514';
+    
     let response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model,
       max_tokens: maxTokens,
-      temperature: temperature,  
+      temperature: temperature,
       system: (context === 'micro_action_extraction' || context === 'flow_block_extraction') 
         ? systemPrompt 
         : (hasSystemPrompt ? undefined : systemPrompt),
@@ -1944,7 +1946,7 @@ ${context === 'breakthrough_response'
 
       // Continue conversation with tool results
       response = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model,
         max_tokens: maxTokens,
         temperature: temperature,
         system: (context === 'micro_action_extraction' || context === 'flow_block_extraction') 
