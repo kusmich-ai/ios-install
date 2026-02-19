@@ -1133,7 +1133,7 @@ Make sense?`
 1. Resonance Breathing — 5 mins
 2. Somatic Flow — 3 mins
 3. Awareness Rep — 2 mins
-4. Morning Aligned Action — 1 min
+4. IOS Cue — 2 mins
 
 **Daily:**
 5. Flow Block — 60-90 mins
@@ -1153,7 +1153,7 @@ This is the complete system. You're now running the full IOS.
       standard: `{{greeting}}{{userName}}.
 
 **Stage 6: Integration** — Day {{daysInStage}}
-**Morning Action:** {{microAction}} (Day {{identityDayInCycle}}/21)
+**Cue:** {{currentIdentity}} (Day {{identityDayInCycle}}/21)
 **Adherence:** {{adherence}}%{{streakMessage}}
 
 **Today's practices:**
