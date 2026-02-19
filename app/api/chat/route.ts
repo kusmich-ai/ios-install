@@ -1196,6 +1196,195 @@ For resistance:
 - Scientific when relevant
 `;
 
+// ============================================
+// STAGE 1 ENHANCEMENT TOOLS
+// ============================================
+const STAGE1_ENHANCEMENT_TOOLS: Anthropic.Tool[] = [
+  {
+    name: "record_signal_check",
+    description: "Record the user's post-practice calm and presence scores (1-5 scale). Call this IMMEDIATELY after the user provides their signal check ratings.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        calm_score: { type: "integer", description: "Calm rating 1-5" },
+        presence_score: { type: "integer", description: "Presence rating 1-5" }
+      },
+      required: ["calm_score", "presence_score"]
+    }
+  },
+  {
+    name: "get_signal_trends",
+    description: "Retrieve the user's signal check history, rolling averages, and cross-domain patterns. Call this when narrating trends (Day 3+) or during the Day 7 Mirror.",
+    input_schema: {
+      type: "object" as const,
+      properties: {},
+      required: []
+    }
+  },
+  {
+    name: "record_milestone",
+    description: "Mark a Stage 1 milestone as delivered so it won't repeat. Call this AFTER you deliver a milestone message to the user.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        milestone_key: { 
+          type: "string", 
+          description: "One of: first_completion, 3_day_streak, first_calm_4, 7_day_streak, first_presence_4, 50_pct_adherence, 10_day_streak, 80_pct_adherence" 
+        }
+      },
+      required: ["milestone_key"]
+    }
+  },
+  {
+    name: "check_milestones",
+    description: "Check which Stage 1 milestones have been delivered and which are still available. Call this at the start of a Stage 1 conversation to know what to celebrate.",
+    input_schema: {
+      type: "object" as const,
+      properties: {},
+      required: []
+    }
+  }
+];
+
+// ============================================
+// ENHANCEMENT TOOL EXECUTION
+// ============================================
+async function executeEnhancementTool(
+  toolName: string, 
+  toolInput: Record<string, unknown>, 
+  userId: string
+): Promise<Record<string, unknown>> {
+  const supabase = await createSupabaseClient();
+  
+  switch (toolName) {
+    case 'record_signal_check': {
+      const { error } = await supabase
+        .from('signal_checks')
+        .insert({
+          user_id: userId,
+          calm_score: toolInput.calm_score,
+          presence_score: toolInput.presence_score,
+          stage: 1
+        });
+      
+      if (error) {
+        console.error('[Signal Check] Insert error:', error);
+        return { success: false, error: error.message };
+      }
+      return { 
+        success: true, 
+        message: `Signal check recorded: calm=${toolInput.calm_score}, presence=${toolInput.presence_score}` 
+      };
+    }
+    
+    case 'get_signal_trends': {
+      const { data, error } = await supabase
+        .from('signal_checks')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: true });
+      
+      if (error || !data || data.length === 0) {
+        return { success: true, total_checks: 0, message: "No signal checks recorded yet." };
+      }
+      
+      const total = data.length;
+      const calmAvg = data.reduce((s: number, d: { calm_score: number }) => s + d.calm_score, 0) / total;
+      const presenceAvg = data.reduce((s: number, d: { presence_score: number }) => s + d.presence_score, 0) / total;
+      
+      // Early vs recent comparison
+      const earlyCount = Math.min(3, total);
+      const first3 = data.slice(0, earlyCount);
+      const last3 = data.slice(-earlyCount);
+      
+      const first3Calm = first3.reduce((s: number, d: { calm_score: number }) => s + d.calm_score, 0) / first3.length;
+      const last3Calm = last3.reduce((s: number, d: { calm_score: number }) => s + d.calm_score, 0) / last3.length;
+      const first3Presence = first3.reduce((s: number, d: { presence_score: number }) => s + d.presence_score, 0) / first3.length;
+      const last3Presence = last3.reduce((s: number, d: { presence_score: number }) => s + d.presence_score, 0) / last3.length;
+      
+      // Cross-domain: do high-calm days correlate with higher presence?
+      const highCalmDays = data.filter((d: { calm_score: number }) => d.calm_score >= 4);
+      const highCalmPresenceAvg = highCalmDays.length > 0 
+        ? highCalmDays.reduce((s: number, d: { presence_score: number }) => s + d.presence_score, 0) / highCalmDays.length 
+        : null;
+      
+      return {
+        success: true,
+        total_checks: total,
+        overall_averages: {
+          calm: Number(calmAvg.toFixed(1)),
+          presence: Number(presenceAvg.toFixed(1))
+        },
+        trend: {
+          early_calm_avg: Number(first3Calm.toFixed(1)),
+          recent_calm_avg: Number(last3Calm.toFixed(1)),
+          calm_change: Number((last3Calm - first3Calm).toFixed(1)),
+          early_presence_avg: Number(first3Presence.toFixed(1)),
+          recent_presence_avg: Number(last3Presence.toFixed(1)),
+          presence_change: Number((last3Presence - first3Presence).toFixed(1))
+        },
+        cross_domain: highCalmPresenceAvg !== null ? {
+          high_calm_days_count: highCalmDays.length,
+          avg_presence_on_high_calm_days: Number(highCalmPresenceAvg.toFixed(1)),
+          avg_presence_overall: Number(presenceAvg.toFixed(1)),
+          correlation_insight: highCalmPresenceAvg > presenceAvg 
+            ? "Presence scores are higher on days with calm 4+. Regulation is creating conditions for awareness."
+            : null
+        } : null,
+        latest: {
+          calm: data[data.length - 1].calm_score,
+          presence: data[data.length - 1].presence_score,
+          date: data[data.length - 1].created_at
+        }
+      };
+    }
+    
+    case 'record_milestone': {
+      const { error } = await supabase
+        .from('milestones')
+        .upsert({
+          user_id: userId,
+          milestone_key: toolInput.milestone_key as string,
+          delivered_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id,milestone_key'
+        });
+      
+      if (error) {
+        console.error('[Milestone] Insert error:', error);
+        return { success: false, error: error.message };
+      }
+      return { success: true, message: `Milestone '${toolInput.milestone_key}' recorded.` };
+    }
+    
+    case 'check_milestones': {
+      const { data, error } = await supabase
+        .from('milestones')
+        .select('milestone_key, delivered_at')
+        .eq('user_id', userId);
+      
+      if (error) {
+        return { success: false, error: error.message };
+      }
+      
+      const delivered = (data || []).map((m: { milestone_key: string }) => m.milestone_key);
+      const allMilestones = [
+        'first_completion', '3_day_streak', 'first_calm_4', '7_day_streak',
+        'first_presence_4', '50_pct_adherence', '10_day_streak', '80_pct_adherence'
+      ];
+      const available = allMilestones.filter(m => !delivered.includes(m));
+      
+      return {
+        success: true,
+        delivered_milestones: delivered,
+        available_milestones: available
+      };
+    }
+    
+    default:
+      return { success: false, error: `Unknown tool: ${toolName}` };
+  }
+}
 
 // ============================================
 // API ROUTE HANDLER
