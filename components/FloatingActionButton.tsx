@@ -1,5 +1,6 @@
 // components/FloatingActionButton.tsx
-// LUXURY VISUAL UPGRADE - 100% logic preserved, only styling changed
+// v2.3: Top-right pill button (replaces bottom-right FAB)
+// White pill with amber icon - contrasts with dark chat bg AND amber chat bubbles
 'use client';
 
 import { useState } from 'react';
@@ -12,16 +13,15 @@ import {
   RotateCcw,
   Clock,
   Flame,
-  // Lucide icons replacing emojis
-  Wind,           // Breathing
-  Eye,            // Awareness
-  Activity,       // Somatic Flow
-  Target,         // Flow block
-  Heart,          // Co-regulation
-  Moon,           // Nightly debrief
-  Layers,         // Decentering
-  Compass,        // Meta-reflection
-  Sparkles,       // Thought hygiene / Loop dissolver
+  Wind,
+  Eye,
+  Activity,
+  Target,
+  Heart,
+  Moon,
+  Layers,
+  Compass,
+  Sparkles,
 } from 'lucide-react';
 import { getStagePractices, getUnlockedOnDemandTools } from '@/app/config/stages';
 import type { UserProgress } from '@/app/hooks/useUserProgress';
@@ -53,7 +53,7 @@ const PRACTICE_ID_MAP: { [key: string]: string } = {
   'nightly_debrief': 'nightly_debrief',
 };
 
-// Lucide icon mapping (replaces emoji icons)
+// Lucide icon mapping
 const PRACTICE_ICONS: { [key: string]: React.ComponentType<{ className?: string }> } = {
   'hrvb': Wind,
   'awareness_rep': Eye,
@@ -98,13 +98,12 @@ export default function FloatingActionButton({
   const unlockedTools = getUnlockedOnDemandTools(progress.currentStage);
 
   // UNCHANGED: getPracticeStatus
-  // CORRECT:
-const getPracticeStatus = (practiceId: string): 'completed' | 'pending' => {
-  const mappedId = PRACTICE_ID_MAP[practiceId] || practiceId;
-  const practiceData = progress.dailyPractices?.find(p => p.id === practiceId || p.id === mappedId);
-  if (practiceData?.completed) return 'completed';
-  return 'pending';
-};
+  const getPracticeStatus = (practiceId: string): 'completed' | 'pending' => {
+    const mappedId = PRACTICE_ID_MAP[practiceId] || practiceId;
+    const practiceData = progress.dailyPractices?.find(p => p.id === practiceId || p.id === mappedId);
+    if (practiceData?.completed) return 'completed';
+    return 'pending';
+  };
 
   // UNCHANGED: handleStartPractice
   const handleStartPractice = (practiceId: string) => {
@@ -224,12 +223,12 @@ const getPracticeStatus = (practiceId: string): 'completed' | 'pending' => {
         onComplete={() => handleModalComplete('nightly_debrief', 'Nightly Debrief')} 
       />
       <SomaticFlowModal 
-  onComplete={() => handleModalComplete('somatic_flow', 'Somatic Flow')}
-  completionCount={progress.somaticFlowCompletions}
-/>
+        onComplete={() => handleModalComplete('somatic_flow', 'Somatic Flow')}
+        completionCount={progress.somaticFlowCompletions}
+      />
       <LoopDeLoopingModal />
 
-      {/* Overlay - RESTYLED */}
+      {/* Overlay */}
       {isOpen && (
         <div 
           className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
@@ -238,12 +237,12 @@ const getPracticeStatus = (practiceId: string): 'completed' | 'pending' => {
       )}
 
       {/* =============================================
-          LUXURY VISUAL STYLING - Floating Menu
+          DROPDOWN MENU - Now drops DOWN from top-right
           ============================================= */}
       {isOpen && (
-        <div className="fixed bottom-24 right-4 w-80 max-h-[70vh] overflow-y-auto bg-[#f5f4f2] border border-black/10 rounded-2xl shadow-2xl z-50">
+        <div className="fixed top-14 right-3 w-80 max-w-[calc(100vw-1.5rem)] max-h-[75vh] overflow-y-auto bg-[#f5f4f2] border border-black/10 rounded-2xl shadow-2xl z-50">
           <div className="p-4">
-            {/* Header - RESTYLED */}
+            {/* Header */}
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-sm font-semibold text-zinc-800 uppercase tracking-wider">Tools</h3>
@@ -257,14 +256,14 @@ const getPracticeStatus = (practiceId: string): 'completed' | 'pending' => {
               </button>
             </div>
 
-            {/* Progress Summary - RESTYLED */}
+            {/* Progress Summary */}
             <div className={`mb-4 p-4 rounded-xl border ${
               allComplete 
                 ? 'bg-gradient-to-br from-emerald-50 to-white border-emerald-200/60' 
                 : 'bg-white border-black/[0.04]'
             }`}>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-zinc-500">Today's Progress</span>
+                <span className="text-xs font-medium text-zinc-500">Today&apos;s Progress</span>
                 <span className={`text-sm font-bold ${allComplete ? 'text-emerald-600' : 'text-amber-600'}`}>
                   {completedCount}/{totalCount}
                 </span>
@@ -284,14 +283,14 @@ const getPracticeStatus = (practiceId: string): 'completed' | 'pending' => {
               )}
             </div>
 
-            {/* Error Display - RESTYLED */}
+            {/* Error Display */}
             {completionError && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
                 <p className="text-xs text-red-600">{completionError}</p>
               </div>
             )}
 
-            {/* Daily Rituals - RESTYLED */}
+            {/* Daily Rituals */}
             <div className="mb-4">
               <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
                 DAILY RITUALS
@@ -302,7 +301,6 @@ const getPracticeStatus = (practiceId: string): 'completed' | 'pending' => {
                   const isCompleted = status === 'completed';
                   const isCompleting = completing === practice.id;
                   
-                  // Get Lucide icon
                   const PracticeIcon = PRACTICE_ICONS[practice.id] || Zap;
                   
                   // Special handling - UNCHANGED LOGIC
@@ -325,7 +323,6 @@ const getPracticeStatus = (practiceId: string): 'completed' | 'pending' => {
                       }`}
                     >
                       <div className="flex items-center gap-3 mb-2">
-                        {/* Lucide Icon */}
                         <div className={`
                           w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0
                           ${isCompleted 
@@ -352,10 +349,9 @@ const getPracticeStatus = (practiceId: string): 'completed' | 'pending' => {
                         </span>
                       </div>
                       
-                      {/* Action Buttons - ALL LOGIC UNCHANGED, only restyled */}
+                      {/* Action Buttons - ALL LOGIC UNCHANGED */}
                       <div className="flex gap-2">
                         {isMicroAction ? (
-                          // MICRO-ACTION SPECIAL BUTTONS - UNCHANGED LOGIC
                           hasIdentity ? (
                             <>
                               {!isCompleted && (
@@ -398,7 +394,6 @@ const getPracticeStatus = (practiceId: string): 'completed' | 'pending' => {
                             </button>
                           )
                         ) : isFlowBlock ? (
-                          // FLOW BLOCK SPECIAL BUTTONS - UNCHANGED LOGIC
                           hasFlowBlockConfig ? (
                             <>
                               {!isCompleted && (
@@ -441,7 +436,6 @@ const getPracticeStatus = (practiceId: string): 'completed' | 'pending' => {
                             </button>
                           )
                         ) : isCoRegulation || isNightlyDebrief ? (
-                          // CO-REGULATION AND NIGHTLY DEBRIEF - UNCHANGED LOGIC
                           <>
                             {!isCompleted && (
                               <button
@@ -467,7 +461,6 @@ const getPracticeStatus = (practiceId: string): 'completed' | 'pending' => {
                             )}
                           </>
                         ) : (
-                          // NORMAL PRACTICE BUTTONS - UNCHANGED LOGIC
                           (() => {
                             const hasWorkingModal = practice.id === 'hrvb' || practice.id === 'awareness_rep' || practice.id === 'somatic_flow';
                             
@@ -520,16 +513,15 @@ const getPracticeStatus = (practiceId: string): 'completed' | 'pending' => {
               </div>
             </div>
 
-            {/* ON-DEMAND TOOLS - RESTYLED */}
-            {/* On-Demand Tools */}
-<div>
-  <div className="text-xs font-semibold text-gray-400 mb-2">
-    ON-DEMAND TOOLS
-  </div>
-  <p className="text-xs text-gray-500 italic mb-3">
-    Tools don't fix states. They restore clarity when interpretation is distorting signal.
-  </p>
-  <div className="space-y-2">
+            {/* ON-DEMAND TOOLS */}
+            <div>
+              <div className="text-xs font-semibold text-gray-400 mb-2">
+                ON-DEMAND TOOLS
+              </div>
+              <p className="text-xs text-gray-500 italic mb-3">
+                Tools don&apos;t fix states. They restore clarity when interpretation is distorting signal.
+              </p>
+              <div className="space-y-2">
                 {unlockedTools.map((tool) => {
                   const ToolIcon = TOOL_ICONS[tool.id] || Sparkles;
                   
@@ -544,18 +536,18 @@ const getPracticeStatus = (practiceId: string): 'completed' | 'pending' => {
                           <ToolIcon className="w-4 h-4" />
                         </div>
                         <div className="flex-1 min-w-0">
-  <span className="text-sm font-medium text-zinc-700 group-hover:text-zinc-900 block">
-    {tool.name}
-  </span>
-  <div className="text-xs text-zinc-500 mt-0.5">
-    {tool.description}
-  </div>
-  {tool.when && (
-    <div className="text-xs text-amber-600/70 mt-1 italic">
-      {tool.when}
-    </div>
-  )}
-</div>
+                          <span className="text-sm font-medium text-zinc-700 group-hover:text-zinc-900 block">
+                            {tool.name}
+                          </span>
+                          <div className="text-xs text-zinc-500 mt-0.5">
+                            {tool.description}
+                          </div>
+                          {tool.when && (
+                            <div className="text-xs text-amber-600/70 mt-1 italic">
+                              {tool.when}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </button>
                   );
@@ -566,27 +558,32 @@ const getPracticeStatus = (practiceId: string): 'completed' | 'pending' => {
         </div>
       )}
 
-      {/* FAB Button - RESTYLED */}
-<button
-  onClick={() => setIsOpen(!isOpen)}
-  className={`
-    fixed bottom-20 right-4 h-14 rounded-full shadow-xl flex items-center justify-center z-30
-    transition-all duration-300
-    ${isOpen 
-      ? 'bg-zinc-800 w-14' 
-      : 'bg-gradient-to-br from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 shadow-amber-500/30 px-5 gap-2'
-    }
-  `}
->
-  {isOpen ? (
-    <X className="w-6 h-6 text-white" />
-  ) : (
-    <>
-      <Zap className="w-5 h-5 text-white" />
-      <span className="text-sm font-semibold text-white">Rituals</span>
-    </>
-  )}
-</button>
+      {/* =============================================
+          PILL BUTTON - Top right, white with amber icon
+          Sits in the header strip area, right-aligned
+          ============================================= */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={`
+          fixed top-1.5 right-3 z-30 h-8 rounded-full flex items-center justify-center
+          transition-all duration-300 md:hidden
+          ${isOpen 
+            ? 'bg-zinc-800 w-8 shadow-lg' 
+            : 'bg-white/95 backdrop-blur-sm border border-white/20 shadow-lg shadow-black/20 pl-2.5 pr-3 gap-1.5'
+          }
+        `}
+      >
+        {isOpen ? (
+          <X className="w-4 h-4 text-white" />
+        ) : (
+          <>
+            <Zap className="w-3.5 h-3.5 text-amber-500" />
+            <span className="text-xs font-semibold text-zinc-700">
+              {completedCount}/{totalCount}
+            </span>
+          </>
+        )}
+      </button>
     </>
   );
 }
