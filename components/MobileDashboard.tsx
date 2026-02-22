@@ -1,11 +1,11 @@
 // components/MobileDashboard.tsx
 // Mobile dashboard drawer with luxury cream styling (matches DashboardSidebar)
-// v2.1: Added Flow Block Schedule section with instant tooltip
+// v2.2: Thin header strip instead of floating button
 'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Menu, X, User, TrendingUp, TrendingDown, Zap, Sparkles, Target, BookOpen } from 'lucide-react';
+import { X, User, TrendingUp, TrendingDown, Zap, Sparkles, Target, BookOpen, ChevronRight } from 'lucide-react';
 import AwakenWithFiveCard from './AwakenWithFiveCard';
 
 // ============================================
@@ -306,14 +306,42 @@ export default function MobileDashboard({
 
   return (
     <>
-      {/* Hamburger Button - Fixed top left on mobile */}
+      {/* ==========================================
+          HEADER STRIP - Fixed top bar (replaces floating button)
+          ========================================== */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed top-4 left-4 z-30 h-10 px-3 bg-white border border-amber-200/60 rounded-lg flex items-center gap-1.5 hover:border-amber-400 hover:shadow-md transition-all md:hidden shadow-sm"
+        className="fixed top-0 left-0 right-0 z-30 md:hidden"
         aria-label="Open dashboard"
       >
-        <Menu className="w-5 h-5 text-zinc-700" />
-        <span className="text-xs font-medium text-zinc-600">Dashboard</span>
+        <div className="bg-[#0a0a0a]/90 backdrop-blur-md border-b border-white/[0.06]">
+          <div className="flex items-center justify-between px-4 py-2.5">
+            {/* Left: Stage info */}
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className={`w-2 h-2 rounded-full flex-shrink-0 ${getProgressBarColor(currentRewiredIndex)}`} />
+              <span className="text-xs font-medium text-zinc-400 truncate">
+                Stage {currentStage}
+              </span>
+              <span className="text-white/20">·</span>
+              <span className="text-xs text-zinc-500 truncate">
+                {getStageName(currentStage)}
+              </span>
+            </div>
+            
+            {/* Right: REwired Index + chevron */}
+            <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+              <span className={`text-sm font-bold ${getStatusColor(currentRewiredIndex)}`}>
+                {currentRewiredIndex}
+              </span>
+              {rewiredDelta > 0 && (
+                <span className="text-xs text-emerald-500 font-medium">
+                  +{rewiredDelta}
+                </span>
+              )}
+              <ChevronRight className="w-3.5 h-3.5 text-zinc-600" />
+            </div>
+          </div>
+        </div>
       </button>
 
       {/* Overlay */}
@@ -440,9 +468,9 @@ export default function MobileDashboard({
               ========================================== */}
           {currentStage === 6 && unlockEligible && onStage7Unlock && (
             <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300/50 rounded-xl p-4 shadow-sm">
-              <h3 className="text-sm font-medium text-amber-800 mb-2">🔓 Final Stage Available</h3>
+              <h3 className="text-sm font-medium text-amber-800 mb-2">Final Stage Available</h3>
               <p className="text-xs text-amber-700/80 mb-3">
-                You've demonstrated mastery at Stage 6. Ready to explore what's beyond?
+                You&apos;ve demonstrated mastery at Stage 6. Ready to explore what&apos;s beyond?
               </p>
               <button
                 onClick={() => {
@@ -572,7 +600,8 @@ export default function MobileDashboard({
               sprintDay={flowBlockSprintDay} 
             />
           )}
-{/* ==========================================
+
+          {/* ==========================================
               COURSE LIBRARY
               ========================================== */}
           <Link 
@@ -593,6 +622,7 @@ export default function MobileDashboard({
               </svg>
             </div>
           </Link>
+
           {/* ==========================================
               AWAKEN WITH 5 CTA
               ========================================== */}
