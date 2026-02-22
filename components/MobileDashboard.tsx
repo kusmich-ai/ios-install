@@ -224,11 +224,11 @@ export default function MobileDashboard({
           ========================================== */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-28 left-3 z-30 h-9 pl-2.5 pr-3.5 bg-zinc-900/90 backdrop-blur-sm border border-white/10 rounded-full flex items-center gap-2 active:bg-zinc-800 transition-all md:hidden shadow-lg shadow-black/30"
+        className="fixed top-14 left-3 z-30 h-9 pl-2.5 pr-3.5 bg-white/95 backdrop-blur-sm border border-white/20 rounded-full flex items-center gap-2 active:bg-zinc-100 transition-all md:hidden shadow-lg shadow-black/30"
         aria-label="Open dashboard"
       >
-        <Menu className="w-4 h-4 text-zinc-400" />
-        <span className="text-xs font-medium text-zinc-300">Dashboard</span>
+        <Menu className="w-4 h-4 text-amber-500" />
+        <span className="text-xs font-semibold text-zinc-700">Dashboard</span>
       </button>
 
       {/* Overlay */}
