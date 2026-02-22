@@ -143,7 +143,7 @@ export default function FloatingActionButton({
           DROPDOWN MENU - Opens UPWARD from button
           ============================================= */}
       {isOpen && (
-        <div className="fixed bottom-36 right-3 w-80 max-w-[calc(100vw-1.5rem)] max-h-[60vh] overflow-y-auto bg-[#f5f4f2] border border-black/10 rounded-2xl shadow-2xl z-50">
+        <div className="fixed top-24 right-3 w-80 max-w-[calc(100vw-1.5rem)] max-h-[65vh] overflow-y-auto bg-[#f5f4f2] border border-black/10 rounded-2xl shadow-2xl z-50">
           <div className="p-4">
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
@@ -333,13 +333,13 @@ export default function FloatingActionButton({
 
       {/* =============================================
           RITUALS PILL BUTTON
-          Bottom-right, above the input area (bottom-28)
+          Top-right, same height as Dashboard pill
           White pill = pops on dark bg, distinct from amber
           ============================================= */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={`
-          fixed bottom-28 right-3 z-30 h-9 rounded-full flex items-center justify-center
+          fixed top-14 right-3 z-30 h-9 rounded-full flex items-center justify-center
           transition-all duration-300 md:hidden
           ${isOpen 
             ? 'bg-zinc-800 w-9 shadow-lg border border-white/10' 
