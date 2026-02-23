@@ -1038,7 +1038,20 @@ Pure sensory data. No interpretation, no story.`;
               </div>
             </div>
           ))}
-
+{session.phase === 'physiological_interrupt' && (
+            <div className="flex justify-start">
+              <div className="max-w-[85%] w-full rounded-2xl px-5 py-3 bg-gray-800/80 border border-gray-700/50">
+                <BreathPacer
+                  duration={120}
+                  inhaleSeconds={4}
+                  exhaleSeconds={6}
+                  onComplete={handleBreathingComplete}
+                  title="Resonance Breathing"
+                  subtitle="Follow the circle. Breathe through your nose."
+                />
+              </div>
+            </div>
+          )}
           {loading && (
             <div className="flex justify-start">
               <div className="bg-gray-800/80 border border-gray-700/50 rounded-2xl px-5 py-3">
@@ -1067,21 +1080,23 @@ Pure sensory data. No interpretation, no story.`;
                 }
               }}
               placeholder={getPlaceholder()}
-              disabled={loading || session.phase === 'complete'}
+              disabled={loading || session.phase === 'complete' || session.phase === 'physiological_interrupt'}
               rows={1}
               className="flex-1 bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#ff9e19]/50 focus:border-[#ff9e19]/50 disabled:opacity-50 resize-none min-h-[48px] max-h-[120px] transition-all"
             />
             <button
               type="submit"
-              disabled={!input.trim() || loading || session.phase === 'complete'}
+             disabled={!input.trim() || loading || session.phase === 'complete' || session.phase === 'physiological_interrupt'}
               className="px-5 py-3 bg-[#ff9e19] text-white rounded-xl font-medium hover:bg-orange-500 disabled:opacity-50 disabled:hover:bg-[#ff9e19] transition-colors shadow-lg shadow-[#ff9e19]/20"
             >
               Send
             </button>
           </form>
           <p className="text-xs text-gray-500 mt-2 text-center">
-            {session.phase === 'complete'
+         {session.phase === 'complete'
               ? 'Session complete • Click "End Session" to close'
+              : session.phase === 'physiological_interrupt'
+              ? 'Follow the breath pacer above'
               : 'Press Enter to send • Follow each step exactly'
             }
           </p>
