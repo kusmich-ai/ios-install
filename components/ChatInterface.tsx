@@ -12,6 +12,7 @@ import MobileDashboard from '@/components/MobileDashboard';
 import { createClient } from '@/lib/supabase-client';
 import Link from 'next/link';
 import AwakenWithFiveCard from './AwakenWithFiveCard';
+import PromptStarters from '@/components/PromptStarters';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import { Zap, Heart } from 'lucide-react';
 import StageAttributionModal, { StageId } from '@/components/StageAttributionModal';
@@ -647,6 +648,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   const [openingType, setOpeningType] = useState<'first_time' | 'same_day' | 'new_day'>('first_time');
   const [introStep, setIntroStep] = useState<number>(0);
   const [practicesCompletedToday, setPracticesCompletedToday] = useState<string[]>([]);
+  const [showPromptStarters, setShowPromptStarters] = useState(true);
   const hasAutoTriggeredToday = useRef(false);
   const justCompletedViaButton = useRef(false);
   const [unlockFlowState, setUnlockFlowState] = useState<'none' | 'eligible_shown' | 'confirmed' | 'intro_started'>('none');
@@ -3689,6 +3691,15 @@ microActionState.extractedAction || 'Notice → Label → Release',
     }
   }, [refetchProgress]);
 
+  // ============================================
+  // PROMPT STARTER HANDLER
+  // ============================================
+  
+  const handlePromptStarterSelect = useCallback((prompt: string) => {
+    setInput(prompt);
+    setShowPromptStarters(false);
+  }, []);
+  
   // ============================================
   // PRACTICE COMPLETED HANDLER
   // ============================================
