@@ -3,6 +3,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { X } from 'lucide-react';
+import BreathPacer from '@/components/BreathPacer';
 import { createClient } from '@/lib/supabase-client';
 import { toolUniversalFrame, lowResultFrame } from '@/lib/toolFraming';
 
@@ -120,14 +121,7 @@ Reply in this format:
 
 const breathingInstruction = `Worry loops are sustained by autonomic arousal. This step is non-negotiable.
 
-**Resonance Breathing Protocol**
-• Inhale 6 seconds
-• Exhale 6 seconds
-• Duration: 2 minutes
-• Nose only
-• Slow, silent, no force
-
-Complete this now. Type **"done"** when finished.`;
+Follow the breath pacer below. Nose only, slow and silent.`;
 
 const deIdentificationInstruction = `Good. Now break fusion (Signal vs Interpretation).
 
