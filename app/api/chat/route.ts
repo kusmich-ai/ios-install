@@ -1417,9 +1417,6 @@ async function executeEnhancementTool(
       }
       return { success: true, message: `Journal entry '${toolInput.title}' logged.` };
     }
-```
-
----
 
     default:
       return { success: false, error: `Unknown tool: ${toolName}` };
