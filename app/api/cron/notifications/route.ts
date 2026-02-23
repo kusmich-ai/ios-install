@@ -131,4 +131,193 @@ async function getUserPracticeData(
   return {
     completedToday,
     completedYesterday,
-    consecutiveM
+    consecutiveMissed,
+    completedDaysLast7,
+    totalDays: 7,
+  };
+}
+
+// Get user's adherence percentage
+async function getUserAdherence(
+  supabase: any,
+  userId: string
+): Promise<number> {
+  const { data } = await supabase
+    .from('user_progress')
+    .select('adherence_percentage')
+    .eq('user_id', userId)
+    .single();
+
+  return data?.adherence_percentage || 0;
+}
+
+// Get signal check trend direction
+async function getSignalTrend(
+  supabase: any,
+  userId: string
+): Promise<'up' | 'down' | 'stable'> {
+  const { data } = await supabase
+    .from('signal_checks')
+    .select('calm_score, created_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(7);
+
+  if (!data || data.length < 3) return 'stable';
+
+  const recent = data.slice(0, 3).reduce((s: number, d: { calm_score: number }) => s + d.calm_score, 0) / 3;
+  const earlier = data.slice(-3).reduce((s: number, d: { calm_score: number }) => s + d.calm_score, 0) / Math.min(3, data.slice(-3).length);
+
+  if (recent - earlier >= 0.5) return 'up';
+  if (earlier - recent >= 0.5) return 'down';
+  return 'stable';
+}
+
+export async function GET(req: Request) {
+  // Verify this is a legitimate cron call
+  if (!verifyCronSecret(req)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  // Get all users with notification preferences who haven't unsubscribed
+  const { data: users, error } = await (supabase
+    .from('notification_preferences') as any)
+    .select('*')
+    .eq('unsubscribed', false);
+
+  if (error || !users) {
+    console.error('[Cron] Failed to fetch users:', error);
+    return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
+  }
+
+  const results = {
+    processed: 0,
+    morning_sent: 0,
+    missed_day_sent: 0,
+    absence_sent: 0,
+    weekly_sent: 0,
+    errors: 0,
+  };
+
+  for (const user of users) {
+    results.processed++;
+
+    try {
+      const hour = getCurrentHourInTimezone(user.timezone || 'America/New_York');
+      const timezone = user.timezone || 'America/New_York';
+      const userName = '';
+      const unsubscribeUrl = `https://unbecoming.app/api/notifications/unsubscribe?uid=${user.user_id}`;
+
+      // Get practice data
+      const practice = await getUserPracticeData(supabase, user.user_id, 7, timezone);
+
+      // ============================================
+      // MORNING REMINDER — 7am local, if not yet practiced today
+      // ============================================
+      if (hour === 7 && user.morning_reminder && !practice.completedToday) {
+        const alreadySent = await wasAlreadySentToday(supabase, user.user_id, 'morning_reminder', timezone);
+        
+        if (!alreadySent) {
+          const email = morningReminder(userName, unsubscribeUrl);
+          const result = await sendEmail(user.email, email.subject, email.html);
+          
+          if (result.success) {
+            await logNotification(supabase, user.user_id, 'morning_reminder');
+            results.morning_sent++;
+          } else {
+            results.errors++;
+          }
+        }
+      }
+
+      // ============================================
+      // MISSED DAY NUDGE — 10am local, if yesterday was missed
+      // ============================================
+      if (hour === 10 && user.missed_day_nudge && !practice.completedYesterday && practice.consecutiveMissed >= 1) {
+        const alreadySent = await wasAlreadySentToday(supabase, user.user_id, 'missed_day', timezone);
+        
+        if (!alreadySent) {
+          const adherence = await getUserAdherence(supabase, user.user_id);
+          const email = missedDay(userName, adherence, practice.consecutiveMissed, unsubscribeUrl);
+          const result = await sendEmail(user.email, email.subject, email.html);
+          
+          if (result.success) {
+            await logNotification(supabase, user.user_id, 'missed_day', { consecutiveMissed: practice.consecutiveMissed });
+            results.missed_day_sent++;
+          } else {
+            results.errors++;
+          }
+        }
+      }
+
+      // ============================================
+      // 3-DAY ABSENCE — 10am local, if 3+ days missed
+      // ============================================
+      if (hour === 10 && user.missed_day_nudge && practice.consecutiveMissed >= 3) {
+        const alreadySent = await wasAlreadySentToday(supabase, user.user_id, '3_day_absence', timezone);
+        
+        if (!alreadySent) {
+          const email = threeDayAbsence(userName, practice.consecutiveMissed, unsubscribeUrl);
+          const result = await sendEmail(user.email, email.subject, email.html);
+          
+          if (result.success) {
+            await logNotification(supabase, user.user_id, '3_day_absence', { daysAway: practice.consecutiveMissed });
+            results.absence_sent++;
+          } else {
+            results.errors++;
+          }
+        }
+      }
+
+      // ============================================
+      // WEEKLY SUMMARY — Sunday 6pm local
+      // ============================================
+      const dayOfWeek = new Date().toLocaleDateString('en-US', { timeZone: timezone, weekday: 'long' });
+      
+      if (dayOfWeek === 'Sunday' && hour === 18 && user.weekly_summary) {
+        const alreadySent = await wasAlreadySentToday(supabase, user.user_id, 'weekly_summary', timezone);
+        
+        if (!alreadySent) {
+          const adherence = await getUserAdherence(supabase, user.user_id);
+          const trend = await getSignalTrend(supabase, user.user_id);
+          
+          const trendInsight = trend === 'up'
+            ? 'Your calm scores are climbing. The nervous system is responding to the training.'
+            : trend === 'down'
+              ? 'Calm scores dipped this week. Not a crisis — but consistency matters. Next week, recommit.'
+              : 'Calm scores holding steady. Stability is progress too — the foundation is setting.';
+
+          const email = weeklySummary(
+            userName,
+            practice.completedDaysLast7,
+            practice.totalDays,
+            adherence,
+            trend,
+            trendInsight,
+            unsubscribeUrl
+          );
+          const result = await sendEmail(user.email, email.subject, email.html);
+          
+          if (result.success) {
+            await logNotification(supabase, user.user_id, 'weekly_summary');
+            results.weekly_sent++;
+          } else {
+            results.errors++;
+          }
+        }
+      }
+
+    } catch (err) {
+      console.error(`[Cron] Error processing user ${user.user_id}:`, err);
+      results.errors++;
+    }
+  }
+
+  console.log('[Cron] Notification run complete:', results);
+  return NextResponse.json(results);
+}
