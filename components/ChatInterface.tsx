@@ -4628,11 +4628,22 @@ if (regressionIntervention?.isActive) {
 
         <div className="border-t border-white/[0.06] bg-[#1a1a1a]">
           <div className="max-w-4xl mx-auto px-4 py-4">
+            <PromptStarters
+              stage={progress?.currentStage || 1}
+              daysInStage={progress?.stageStartDate 
+                ? Math.floor((Date.now() - new Date(progress.stageStartDate).getTime()) / (1000 * 60 * 60 * 24))
+                : 0}
+              onPromptSelect={handlePromptStarterSelect}
+              visible={showPromptStarters && !loading && !isStreaming && messages.length > 0 && messages[messages.length - 1]?.role === 'assistant'}
+            />
             <form onSubmit={sendMessage} className="flex gap-3">
               <textarea
                 ref={textareaRef}
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+               onChange={(e) => {
+                  setInput(e.target.value);
+                  if (showPromptStarters && e.target.value.length > 0) setShowPromptStarters(false);
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
