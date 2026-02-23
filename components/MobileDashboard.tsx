@@ -399,7 +399,22 @@ export default function MobileDashboard({
               </svg>
             </div>
           </Link>
-
+{/* IOS JOURNAL */}
+          <Link href="/journal" onClick={() => setIsOpen(false)}
+            className="block bg-white rounded-xl p-4 border border-zinc-200/80 shadow-sm hover:border-purple-300/60 hover:shadow-md transition-all">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center">
+                <TrendingUp className="w-4.5 h-4.5 text-purple-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-zinc-800">IOS Journal</h3>
+                <p className="text-xs text-zinc-500">Your transformation timeline</p>
+              </div>
+              <svg className="w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </Link>
           <AwakenWithFiveCard />
         </div>
       </div>
