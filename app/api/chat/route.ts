@@ -1244,6 +1244,23 @@ const STAGE1_ENHANCEMENT_TOOLS: Anthropic.Tool[] = [
       required: []
     }
   }
+  {
+    name: "log_journal_entry",
+    description: "Log a meaningful moment to the user's IOS Journal for long-term tracking. Call this AFTER delivering: milestones, science drips, trend narrations, micro-decentering moments, Day 7 Mirror reflections, weekly narratives, pattern surfacing insights, reframe anchors, nightly debrief lessons, or coach guest moments. Do NOT call for routine signal checks or simple confirmations.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        entry_type: { 
+          type: "string", 
+          description: "Type: milestone, science_drip, signal_trend, micro_decentering, day7_mirror, weekly_narrative, pattern_surfacing, reframe_anchor, debrief_lesson, coach_guest" 
+        },
+        title: { type: "string", description: "Short label for the entry (e.g. '3-Day Streak', 'Day 7 Mirror', 'Vagal Tone Science')" },
+        content: { type: "string", description: "The insight or message delivered to the user" },
+        day_in_stage: { type: "integer", description: "Current day in stage" }
+      },
+      required: ["entry_type", "title", "content"]
+    }
+  }
 ];
 
 // ============================================
@@ -1380,7 +1397,35 @@ async function executeEnhancementTool(
         available_milestones: available
       };
     }
-    
+    case 'log_journal_entry': {
+      const stage = typeof toolInput.stage === 'number' ? toolInput.stage : 1;
+      const { error } = await (supabase
+        .from('journal_entries') as any)
+        .insert({
+          user_id: userId,
+          entry_type: toolInput.entry_type,
+          stage: stage,
+          day_in_stage: toolInput.day_in_stage || null,
+          title: toolInput.title,
+          content: toolInput.content,
+          metadata: {}
+        });
+      
+      if (error) {
+        console.error('[Journal] Insert error:', error);
+        return { success: false, error: error.message };
+      }
+      return { success: true, message: `Journal entry '${toolInput.title}' logged.` };
+    }
+```
+
+---
+
+**Step 4: Add journal instruction to system prompt**
+
+In your system-prompt.txt, find the `STAGE 1 EXPERIENCE LAYER — SESSION FLOW` section near the bottom of the enhancement layer. Find the `**ALWAYS:**` rules list. Add this line to it:
+```
+- Log meaningful moments to the journal using `log_journal_entry` tool after delivering: milestones, science drips, trend narrations, micro-decentering moments, Day 7 Mirror, weekly narratives, pattern surfacing, reframe anchors, debrief lessons, or coach guest moments. Do NOT journal routine signal checks or simple "see you tomorrow" messages.
     default:
       return { success: false, error: `Unknown tool: ${toolName}` };
   }
