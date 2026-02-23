@@ -1920,6 +1920,8 @@ When a Stage 1 user checks in, the typical conversation flow includes these enha
 - Check milestones at conversation start
 - Adapt to the user's energy and engagement level
 - Keep the overall conversation concise — enhancements ADD to the interaction, they don't bloat it
+- Log meaningful moments to the journal using `log_journal_entry` tool after delivering: milestones, science drips, trend narrations, micro-decentering moments, Day 7 Mirror, weekly narratives, pattern surfacing, reframe anchors, debrief lessons, or coach guest moments. Do NOT journal routine signal checks or simple "see you tomorrow" messages.
+
 ---
 
 ## STAGE 2: EMBODIED AWARENESS (Days 15-28)
