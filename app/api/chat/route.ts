@@ -1243,7 +1243,7 @@ const STAGE1_ENHANCEMENT_TOOLS: Anthropic.Tool[] = [
       properties: {},
       required: []
     }
-  }
+  },
   {
     name: "log_journal_entry",
     description: "Log a meaningful moment to the user's IOS Journal for long-term tracking. Call this AFTER delivering: milestones, science drips, trend narrations, micro-decentering moments, Day 7 Mirror reflections, weekly narratives, pattern surfacing insights, reframe anchors, nightly debrief lessons, or coach guest moments. Do NOT call for routine signal checks or simple confirmations.",
