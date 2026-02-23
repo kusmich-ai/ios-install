@@ -647,17 +647,10 @@ Mechanisms:
         break;
       }
 
-      case 'physiological_interrupt': {
-        if (isConfirmation(userMessage)) {
-          nextPhase = 'de_identification';
-          response = deIdentificationInstruction;
-        } else {
-          response = `The breathing step is required first.
-
-**Inhale 6 seconds. Exhale 6 seconds. 2 minutes. Nose only.**
-
-Type **"done"** when complete.`;
-        }
+     case 'physiological_interrupt': {
+        // Breathing is handled by the BreathPacer component
+        // If user types during breathing, gently redirect
+        response = `Complete the breathing exercise below first. Follow the pacer — it will advance automatically when done.`;
         break;
       }
 
