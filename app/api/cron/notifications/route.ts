@@ -30,7 +30,7 @@ function getCurrentHourInTimezone(timezone: string): number {
     const timeStr = now.toLocaleString('en-US', { timeZone: timezone, hour: 'numeric', hour12: false });
     return parseInt(timeStr, 10);
   } catch {
-    return -1; // Invalid timezone
+    return -1;
   }
 }
 
@@ -38,7 +38,7 @@ function getCurrentHourInTimezone(timezone: string): number {
 function getDateInTimezone(timezone: string, daysAgo: number = 0): string {
   const now = new Date();
   now.setDate(now.getDate() - daysAgo);
-  return now.toLocaleDateString('en-CA', { timeZone: timezone }); // en-CA gives YYYY-MM-DD
+  return now.toLocaleDateString('en-CA', { timeZone: timezone });
 }
 
 // Check if a notification was already sent today
@@ -89,8 +89,8 @@ async function getUserPracticeData(
     dates.push(getDateInTimezone(timezone, i));
   }
 
-  const { data: practices } = await supabase
-    .from('practice_logs')
+  const { data: practices } = await (supabase
+    .from('practice_logs') as any)
     .select('practice_date, practice_type')
     .eq('user_id', userId)
     .in('practice_date', dates);
@@ -105,7 +105,7 @@ async function getUserPracticeData(
   const today = getDateInTimezone(timezone);
   const yesterday = getDateInTimezone(timezone, 1);
 
-  const completedToday = (byDate[today] || []).length >= 2; // Stage 1: 2 practices
+  const completedToday = (byDate[today] || []).length >= 2;
   const completedYesterday = (byDate[yesterday] || []).length >= 2;
 
   // Count consecutive missed days (not counting today)
@@ -142,8 +142,8 @@ async function getUserAdherence(
   supabase: ReturnType<typeof createClient>,
   userId: string
 ): Promise<number> {
-  const { data } = await supabase
-    .from('user_progress')
+  const { data } = await (supabase
+    .from('user_progress') as any)
     .select('adherence_percentage')
     .eq('user_id', userId)
     .single();
@@ -156,8 +156,8 @@ async function getSignalTrend(
   supabase: ReturnType<typeof createClient>,
   userId: string
 ): Promise<'up' | 'down' | 'stable'> {
-  const { data } = await supabase
-    .from('signal_checks')
+  const { data } = await (supabase
+    .from('signal_checks') as any)
     .select('calm_score, created_at')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
@@ -185,8 +185,8 @@ export async function GET(req: Request) {
   );
 
   // Get all users with notification preferences who haven't unsubscribed
-  const { data: users, error } = await supabase
-    .from('notification_preferences')
+  const { data: users, error } = await (supabase
+    .from('notification_preferences') as any)
     .select('*')
     .eq('unsubscribed', false);
 
@@ -210,7 +210,7 @@ export async function GET(req: Request) {
     try {
       const hour = getCurrentHourInTimezone(user.timezone || 'America/New_York');
       const timezone = user.timezone || 'America/New_York';
-      const userName = ''; // We'll get this from auth if needed
+      const userName = '';
       const unsubscribeUrl = `https://unbecoming.app/api/notifications/unsubscribe?uid=${user.user_id}`;
 
       // Get practice data
