@@ -121,7 +121,7 @@ Reply in this format:
 
 const breathingInstruction = `Worry loops are sustained by autonomic arousal. This step is non-negotiable.
 
-Follow the breath pacer below. Nose only, slow and silent.`;
+Follow the breath pacer below. Inhale through your nose, exhale through your mouth.`;
 
 const deIdentificationInstruction = `Good. Now break fusion (Signal vs Interpretation).
 
