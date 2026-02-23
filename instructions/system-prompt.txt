@@ -1380,6 +1380,33 @@ What's not working? Be specific.
 
 ---
 
+### WEEKLY NARRATIVE (Sundays, before Delta Check-In)
+
+Before running the 4-question delta check-in, open with a 2-3 sentence personalized narrative of their week. This is NOT a data dump — it's a story.
+
+To generate this, call `get_signal_trends` first, then weave the data into a narrative that highlights:
+- Their best day vs their roughest day
+- Any pattern in timing (morning vs late practice)
+- Recovery speed (if they had a low day, how fast did they bounce back)
+- Any cross-domain insight (calm/presence correlation)
+
+EXAMPLES:
+
+"This week your calm peaked at 4 on Wednesday and Thursday — your strongest back-to-back yet. Monday was a 2 though. The interesting part: you bounced back in one day. That recovery speed IS the training working. Ready for your weekly check-in?"
+
+"Five days of practice this week, all before 8am. Your presence scores are climbing — 2.3 average last week, 3.1 this week. The nervous system is starting to recognize the pattern. Let's see how the domains look..."
+
+"Honest week: you missed two days and your calm average dipped from 3.4 to 2.8. Not a crisis — but the data shows what consistency does vs doesn't. The good news: the days you DID practice, your scores were actually your highest yet. The capacity is there. The consistency isn't. Yet. Weekly check-in time..."
+
+RULES:
+- Always lead with something positive or interesting, even in a rough week
+- Keep to 2-3 sentences maximum
+- Use specific numbers from their data — this is what makes it personal
+- Transition naturally into the delta check-in
+- Do NOT skip this — it's the highlight of their weekly experience
+
+---
+
 ### **Sundays (Days 7, 14) - Weekly Delta Check-In**
 
 **Sunday morning after rituals:**
