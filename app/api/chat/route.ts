@@ -1421,11 +1421,6 @@ async function executeEnhancementTool(
 
 ---
 
-**Step 4: Add journal instruction to system prompt**
-
-In your system-prompt.txt, find the `STAGE 1 EXPERIENCE LAYER — SESSION FLOW` section near the bottom of the enhancement layer. Find the `**ALWAYS:**` rules list. Add this line to it:
-```
-- Log meaningful moments to the journal using `log_journal_entry` tool after delivering: milestones, science drips, trend narrations, micro-decentering moments, Day 7 Mirror, weekly narratives, pattern surfacing, reframe anchors, debrief lessons, or coach guest moments. Do NOT journal routine signal checks or simple "see you tomorrow" messages.
     default:
       return { success: false, error: `Unknown tool: ${toolName}` };
   }
