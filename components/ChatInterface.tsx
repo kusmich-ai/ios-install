@@ -1520,9 +1520,10 @@ const getFallbackResultsMessage = (
     }
     
     // Finalize: move streaming message to permanent messages array
-    setMessages(prev => [...prev, { role: 'assistant', content: message }]);
+   setMessages(prev => [...prev, { role: 'assistant', content: message }]);
     setStreamingMessage('');
     setIsStreaming(false);
+    setShowPromptStarters(true);
     
     if (onComplete) onComplete();
   }, []);
