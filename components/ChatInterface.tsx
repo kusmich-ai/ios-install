@@ -3395,6 +3395,22 @@ Give me your four numbers (e.g., "4 3 4 5").`;
   }, [user, baselineData, progressLoading, progress]);
 
   // ============================================
+  // EFFECT - Register notification preferences (once)
+  // ============================================
+  useEffect(() => {
+    if (user?.email && !isInitializing) {
+      fetch('/api/notifications/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: user.email,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        })
+      }).catch(() => {});
+    }
+  }, [user?.email, isInitializing]);
+
+  // ============================================
   // EFFECT - Sunday Meta-Reflection Prompt
   // ============================================
   
