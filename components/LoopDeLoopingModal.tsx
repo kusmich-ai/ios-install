@@ -567,6 +567,24 @@ function LoopDeLoopingModalComponent({ isOpen, onClose, userId }: LoopDeLoopingM
     setMessages([{ role: 'assistant', content: openingMessage }]);
   };
 
+  const handleBreathingComplete = useCallback(() => {
+    const nextMessage = deIdentificationInstruction;
+    setSession(prev => ({
+      ...prev,
+      phase: 'de_identification',
+      conversationHistory: [
+        ...prev.conversationHistory,
+        { role: 'assistant', content: '✅ Breathing complete. Nervous system reset.' },
+        { role: 'assistant', content: nextMessage }
+      ]
+    }));
+    setMessages(prev => [
+      ...prev,
+      { role: 'assistant', content: '✅ Breathing complete. Nervous system reset.' },
+      { role: 'assistant', content: nextMessage }
+    ]);
+  }, []);
+  
   const addMessages = (newMessages: Array<{ role: 'user' | 'assistant'; content: string }>) => {
     setMessages(prev => [...prev, ...newMessages]);
     setSession(prev => ({
