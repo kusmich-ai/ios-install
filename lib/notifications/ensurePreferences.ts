@@ -7,16 +7,16 @@ export async function ensureNotificationPreferences(userId: string, email: strin
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  const { data: existing } = await supabase
-    .from('notification_preferences')
+  const { data: existing } = await (supabase
+    .from('notification_preferences') as any)
     .select('id')
     .eq('user_id', userId)
     .single();
 
   if (existing) return; // Already exists
 
-  const { error } = await supabase
-    .from('notification_preferences')
+  const { error } = await (supabase
+    .from('notification_preferences') as any)
     .insert({
       user_id: userId,
       email: email,
