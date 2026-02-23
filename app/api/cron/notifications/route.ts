@@ -50,8 +50,8 @@ async function wasAlreadySentToday(
 ): Promise<boolean> {
   const todayStart = getDateInTimezone(timezone) + 'T00:00:00';
   
-  const { data } = await supabase
-    .from('notification_log')
+  const { data } = await (supabase
+    .from('notification_log') as any)
     .select('id')
     .eq('user_id', userId)
     .eq('notification_type', notificationType)
@@ -68,8 +68,8 @@ async function logNotification(
   notificationType: string,
   metadata?: Record<string, unknown>
 ) {
-  await supabase
-    .from('notification_log')
+  await (supabase
+    .from('notification_log') as any)
     .insert({
       user_id: userId,
       notification_type: notificationType,
