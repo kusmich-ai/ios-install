@@ -11,11 +11,12 @@ export async function sendEmail(
   html: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const { error } = await resend.emails.send({
+   const { error } = await resend.emails.send({
       from: FROM_ADDRESS,
       to,
       subject,
       html,
+      reply_to: 'hello@nicholaskusmich.com',
     });
 
     if (error) {
