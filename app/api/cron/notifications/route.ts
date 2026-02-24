@@ -219,7 +219,7 @@ export async function GET(req: Request) {
       // ============================================
       // MORNING REMINDER — 7am local, if not yet practiced today
       // ============================================
-      if (user.morning_reminder && !practice.completedToday) {
+     if (true) {
         const alreadySent = await wasAlreadySentToday(supabase, user.user_id, 'morning_reminder', timezone);
         
         if (!alreadySent) {
