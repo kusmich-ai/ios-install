@@ -207,7 +207,7 @@ export default function FloatingActionButton({
                           await handleMarkComplete('micro_action', 'IOS Cue');
                         }}
                         onProgressUpdate={onProgressUpdate}
-                        sprintDay={identityDay}
+                        sprintDay={identityDay ?? undefined}
                         currentCue={currentIdentity}
                       />
                     );
