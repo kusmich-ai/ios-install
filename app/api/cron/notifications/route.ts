@@ -211,6 +211,14 @@ export async function GET(req: Request) {
       const hour = getCurrentHourInTimezone(user.timezone || 'America/New_York');
       const timezone = user.timezone || 'America/New_York';
       const userName = '';
+      
+      // Get user's current stage
+      const { data: progressData } = await (supabase
+        .from('user_progress') as any)
+        .select('current_stage')
+        .eq('user_id', user.user_id)
+        .single();
+      const userStage = progressData?.current_stage || 1;
       const unsubscribeUrl = `https://unbecoming.app/api/notifications/unsubscribe?uid=${user.user_id}`;
 
       // Get practice data
@@ -223,7 +231,7 @@ export async function GET(req: Request) {
         const alreadySent = await wasAlreadySentToday(supabase, user.user_id, 'morning_reminder', timezone);
         
         if (!alreadySent) {
-          const email = morningReminder(userName, unsubscribeUrl);
+          const email = morningReminder(userName, userStage, unsubscribeUrl);
           const result = await sendEmail(user.email, email.subject, email.html);
           
           if (result.success) {
