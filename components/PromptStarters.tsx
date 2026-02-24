@@ -73,6 +73,86 @@ const PROMPT_LIBRARY: Record<number, Record<string, string[]>> = {
       "What patterns are showing up in my data?",
     ],
   },
+  4: {
+    morning: [
+      "Help me think through a challenge I'm facing",
+      "I need to prep mentally for my Flow Block",
+      "Something's blocking my focus today — help me clear it",
+      "Run me through Thought Hygiene before I start deep work",
+    ],
+    afternoon: [
+      "My Flow Block felt off today — help me figure out why",
+      "I need a thinking partner for a big decision",
+      "Something triggered me — run the Reframe Protocol",
+      "Help me process what came up during deep work",
+    ],
+    evening: [
+      "Help me wind down and process today",
+      "I want to reflect on my Flow Block patterns this week",
+      "Run me through a decentering practice",
+      "Something's looping — help me clear it before bed",
+    ],
+  },
+  5: {
+    morning: [
+      "Help me think through a relationship dynamic",
+      "I'm noticing tension with someone — help me see the pattern",
+      "Something's been on my mind about a conversation I had",
+      "Help me prepare for a difficult interaction today",
+    ],
+    afternoon: [
+      "I need to reframe something that happened with someone",
+      "Help me think through how I'm showing up in my relationships",
+      "I'm feeling reactive toward someone — help me work with it",
+      "I need a thinking partner for a personal decision",
+    ],
+    evening: [
+      "Help me process a relational moment from today",
+      "Run me through a decentering around a role I'm stuck in",
+      "I want to reflect on how I showed up in connection today",
+      "Something's weighing on me — help me see it clearly",
+    ],
+  },
+  6: {
+    morning: [
+      "Help me think through something I'm integrating",
+      "I noticed a pattern this week — help me go deeper",
+      "Something shifted and I want to understand what changed",
+      "Help me prepare for today with intention",
+    ],
+    afternoon: [
+      "I need a thinking partner for a complex situation",
+      "Something old resurfaced — help me reframe it",
+      "Help me see what reality is teaching me right now",
+      "I want to do an identity audit",
+    ],
+    evening: [
+      "Help me with tonight's debrief — something significant happened",
+      "I want to do a deep meta-reflection",
+      "What patterns are showing up across my whole journey?",
+      "Help me integrate what I'm learning into who I'm becoming",
+    ],
+  },
+  7: {
+    morning: [
+      "Help me think through my expansion protocol",
+      "I want to explore what's emerging at this stage",
+      "Something profound shifted — help me articulate it",
+      "Help me design today's practice with intention",
+    ],
+    afternoon: [
+      "I need to process an insight from today's practice",
+      "Help me think through integration of a recent experience",
+      "I'm noticing awareness operating differently — let's explore",
+      "I want to go deep on a pattern that's dissolving",
+    ],
+    evening: [
+      "Help me integrate today before sleep",
+      "What is awareness teaching me right now?",
+      "I want to reflect on the whole system operating",
+      "Something wants to be seen — help me look",
+    ],
+  },
 };
 
 function getTimeOfDay(): 'morning' | 'afternoon' | 'evening' {
