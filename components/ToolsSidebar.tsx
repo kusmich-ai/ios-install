@@ -1,5 +1,6 @@
 // components/ToolsSidebar.tsx
 // LUXURY VISUAL UPGRADE - 100% logic preserved, only styling changed
+// v2.5: CuePhaseCard integration for 3-phase Cue ritual
 'use client';
 
 import { useState } from 'react';
@@ -30,6 +31,7 @@ import type { UserProgress } from '@/app/hooks/useUserProgress';
 import { useResonanceBreathing } from '@/components/ResonanceModal';
 import { useAwarenessRep } from '@/components/AwarenessRepModal';
 import { useSomaticFlow } from '@/components/SomaticFlowModal';
+import CuePhaseCard from './CuePhaseCard';
 import { useCoRegulation } from '@/components/CoRegulationModal';
 import { useNightlyDebrief } from '@/components/NightlyDebriefModal';
 import { useLoopDeLooping } from '@/components/LoopDeLoopingModal';
@@ -110,8 +112,6 @@ const getPracticeStatus = (practiceId: string): 'completed' | 'pending' | 'locke
   if (practiceData?.completed) return 'completed';
   return 'pending';
 };
-
-  // REMOVED: getStatusIcon - no longer using emoji status icons
 
   // UNCHANGED: handleStartPractice
   const handleStartPractice = (practiceId: string) => {
@@ -350,6 +350,23 @@ const getPracticeStatus = (practiceId: string): 'completed' | 'pending' | 'locke
                   
                   // Special handling for Nightly Debrief - UNCHANGED LOGIC
                   const isNightlyDebrief = practice.id === 'nightly_debrief';
+
+                  // ★ CUE PHASE CARD: When sprint is active, render 3-phase card
+                  if (isMicroAction && hasIdentity) {
+                    return (
+                      <CuePhaseCard
+                        key={practice.id}
+                        userId={userId}
+                        isCompleted={isCompleted}
+                        onFullComplete={async () => {
+                          await handleMarkComplete('micro_action', 'IOS Cue');
+                        }}
+                        onProgressUpdate={onProgressUpdate}
+                        sprintDay={identityDay}
+                        currentCue={currentIdentity}
+                      />
+                    );
+                  }
                   
                   return (
                     <div
@@ -385,20 +402,11 @@ const getPracticeStatus = (practiceId: string): 'completed' | 'pending' | 'locke
                             </span>
                           </div>
                           
-                          {/* Show identity for Micro-Action if set - UNCHANGED LOGIC */}
-                          {isMicroAction && hasIdentity && (
-                          <div className="text-xs text-amber-600/80 mb-1 truncate" title={currentIdentity}>
-                              Cue: {currentIdentity}
-                            </div>
-                          )}
-                          
                           {/* Duration/Info line - RESTYLED */}
                           <div className="text-xs text-zinc-500 mb-3 flex items-center gap-1">
                             <Clock className="w-3 h-3" />
                             {isMicroAction 
-                              ? (hasIdentity 
-                                  ? `Day ${identityDay} of 21 • 2-5 min` 
-                                  : 'Setup required')
+                              ? 'Setup required'
                               : isFlowBlock
                                 ? (hasFlowBlockConfig 
                                     ? `Day ${flowBlockDay} of 21 • 60-90 min` 
@@ -414,42 +422,14 @@ const getPracticeStatus = (practiceId: string): 'completed' | 'pending' | 'locke
                           {/* Action Buttons - ALL LOGIC UNCHANGED, only restyled */}
                           <div className="flex gap-2">
                             {isMicroAction ? (
-                              // MICRO-ACTION SPECIAL BUTTONS - UNCHANGED LOGIC
-                              hasIdentity ? (
-                                <>
-                                  {!isCompleted && (
-                                    <button
-                                      onClick={(e) => handleMarkComplete(practice.id, practice.name, e)}
-                                      disabled={isCompleting}
-                                      className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 ${
-                                        isCompleting
-                                          ? 'bg-zinc-100 text-zinc-400 cursor-wait'
-                                          : 'bg-amber-500 text-white hover:bg-amber-600 shadow-sm shadow-amber-500/20'
-                                      }`}
-                                    >
-                                      {isCompleting ? (
-                                        <Loader2 className="w-3 h-3 animate-spin" />
-                                      ) : (
-                                        <Check className="w-3 h-3" />
-                                      )}
-                                      Mark Done
-                                    </button>
-                                  )}
-                                  {isCompleted && (
-                                    <span className="flex-1 px-3 py-2 text-xs text-emerald-600 font-medium flex items-center justify-center gap-1.5">
-                                      <Check className="w-3 h-3" />
-                                      Done for today
-                                    </span>
-                                  )}
-                                </>
-                              ) : (
-                                <button
-                                  onClick={() => handleStartPractice(practice.id)}
-                                  className="flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 bg-amber-500 text-white hover:bg-amber-600 shadow-sm shadow-amber-500/20"
-                                >
-                                  Set Up IOS Cue
-                                </button>
-                              )
+                              // MICRO-ACTION WITHOUT SPRINT - Show setup button
+                              // (hasIdentity case is handled above by CuePhaseCard)
+                              <button
+                                onClick={() => handleStartPractice(practice.id)}
+                                className="flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 bg-amber-500 text-white hover:bg-amber-600 shadow-sm shadow-amber-500/20"
+                              >
+                                Set Up IOS Cue
+                              </button>
                             ) : isFlowBlock ? (
                               // FLOW BLOCK SPECIAL BUTTONS - UNCHANGED LOGIC
                               hasFlowBlockConfig ? (
