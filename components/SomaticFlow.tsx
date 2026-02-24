@@ -380,7 +380,7 @@ function SelfGuidedView({ onComplete, completionCount }: SomaticFlowProps) {
           {/* Action Buttons */}
           <div style={{
             display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem",
-            paddingBottom: "0.5rem", width: "90%",
+            paddingBottom: "2.5rem", width: "90%",
           }}>
             {/* Mark Complete */}
             <button
