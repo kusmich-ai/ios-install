@@ -75,7 +75,8 @@ function CoRegulationPractice({ onComplete }: CoRegulationPracticeProps) {
 
   return (
     <div style={{
-      minHeight: '100vh',
+     minHeight: '0',
+      height: '100dvh',
       backgroundColor: '#0a0a0a',
       color: '#F5F2EC',
       display: 'flex',
@@ -83,11 +84,12 @@ function CoRegulationPractice({ onComplete }: CoRegulationPracticeProps) {
       alignItems: 'center',
       justifyContent: 'center',
       padding: '2rem',
+      overflow: 'auto',
       fontFamily: "'Inter', -apple-system, sans-serif",
     }}>
       {/* ── INTRO PHASE ─────────────────────────────────── */}
       {phase === 'intro' && (
-        <div style={{ maxWidth: '500px', textAlign: 'center' }}>
+        <div style={{ maxWidth: '500px', textAlign: 'center', paddingBottom: '2.5rem' }}>
           <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>💞</div>
           <h1 style={{ 
             fontSize: '1.75rem', 
