@@ -270,10 +270,16 @@ function SelfGuidedView({ onComplete, completionCount }: SomaticFlowProps) {
         </>
       ) : (
         /* ── Self-Guided Text Mode ────────────────────────── */
-        <>
+        <div style={{
+          display: "flex", flexDirection: "column", alignItems: "center",
+          justifyContent: "space-between",
+          width: "100%", height: "100%", minHeight: "100vh",
+          padding: "env(safe-area-inset-top, 1.5rem) 0 env(safe-area-inset-bottom, 1.5rem)",
+          boxSizing: "border-box",
+        }}>
           {/* Title */}
           <div style={{
-            position: "absolute", top: "5%", left: 0, right: 0, textAlign: "center",
+            textAlign: "center", paddingTop: "1.5rem",
           }}>
             <h1 style={{
               fontSize: "1.25rem", fontWeight: 300, letterSpacing: "0.2em",
@@ -372,8 +378,8 @@ function SelfGuidedView({ onComplete, completionCount }: SomaticFlowProps) {
 
           {/* Action Buttons */}
           <div style={{
-            position: "absolute", bottom: "8%", left: "5%", right: "5%",
             display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem",
+            paddingBottom: "1.5rem", width: "90%",
           }}>
             {/* Mark Complete */}
             <button
@@ -411,7 +417,7 @@ function SelfGuidedView({ onComplete, completionCount }: SomaticFlowProps) {
               Play Video Guide
             </button>
           </div>
-        </>
+        </div>
       )}
     </div>
   );
