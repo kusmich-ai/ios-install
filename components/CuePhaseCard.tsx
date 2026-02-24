@@ -17,15 +17,15 @@ interface CuePhase {
 
 interface CuePhaseCardProps {
   userId: string;
-  isCompleted: boolean;              // Overall practice completion from parent
-  onFullComplete: () => Promise<void>; // Called when all 3 phases are done
+  isCompleted: boolean;
+  onFullComplete: () => Promise<void>;
   onProgressUpdate?: () => void;
   sprintDay?: number;
-  currentCue?: string;               // e.g. "Interpretation" or "Effort"
+  currentCue?: string;
 }
 
 // ============================================
-// PHASE DEFINITIONS
+// DYNAMIC PHASE DEFINITIONS
 // ============================================
 
 function getCuePhases(currentCue: string): CuePhase[] {
@@ -97,6 +97,37 @@ function savePhaseState(userId: string, state: PhaseState): void {
   }
 }
 
+/**
+ * Cleanup stale localStorage entries from previous days.
+ * Runs once on mount. Removes any cue_phases_ keys that don't match today's date.
+ */
+function cleanupStalePhaseEntries(userId: string): void {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    const todayKey = getStorageKey(userId);
+    const prefix = `cue_phases_${userId}_`;
+    const keysToRemove: string[] = [];
+    
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(prefix) && key !== todayKey) {
+        keysToRemove.push(key);
+      }
+    }
+    
+    keysToRemove.forEach(key => {
+      localStorage.removeItem(key);
+    });
+    
+    if (keysToRemove.length > 0) {
+      console.log(`[CuePhaseCard] Cleaned up ${keysToRemove.length} stale phase entries`);
+    }
+  } catch (e) {
+    console.error('[CuePhaseCard] Error cleaning up stale entries:', e);
+  }
+}
+
 // ============================================
 // CUE PHASE CARD COMPONENT
 // ============================================
@@ -113,10 +144,11 @@ export default function CuePhaseCard({
   const [isLogging, setIsLogging] = useState(false);
   const [allDone, setAllDone] = useState(false);
 
-  // Load saved phase state on mount
+  // Load saved phase state on mount + cleanup stale entries
   useEffect(() => {
+    cleanupStalePhaseEntries(userId);
+    
     if (isCompleted) {
-      // If already marked complete in DB, mark all phases done
       setPhases({ morning: true, midday: true, evening: true });
       setAllDone(true);
     } else {
@@ -134,7 +166,6 @@ export default function CuePhaseCard({
         await onFullComplete();
       } catch (err) {
         console.error('[CuePhaseCard] Error logging full completion:', err);
-        // Revert allDone on error so user can retry
         setAllDone(false);
       } finally {
         setIsLogging(false);
@@ -142,21 +173,18 @@ export default function CuePhaseCard({
     }
   }, [isCompleted, allDone, onFullComplete]);
 
-  // Toggle a phase
   const handleTogglePhase = (phaseId: 'morning' | 'midday' | 'evening') => {
-    if (isCompleted || allDone) return; // Already fully complete
+    if (isCompleted || allDone) return;
     
     const newPhases = { ...phases, [phaseId]: !phases[phaseId] };
     setPhases(newPhases);
     savePhaseState(userId, newPhases);
     
-    // If toggling ON and all are now complete, trigger full completion
     if (newPhases[phaseId]) {
       checkAllComplete(newPhases);
     }
   };
 
-  // Reset all phases (for "Again" functionality)
   const handleReset = () => {
     const resetState = { morning: false, midday: false, evening: false };
     setPhases(resetState);
@@ -171,36 +199,35 @@ export default function CuePhaseCard({
   return (
     <div className={`rounded-xl border transition-all duration-300 overflow-hidden ${
       isFullyDone 
-        ? 'border-emerald-200 bg-emerald-50/50' 
-        : 'border-zinc-200/60 bg-white'
+        ? 'bg-gradient-to-br from-emerald-50/80 to-white border-emerald-200/60' 
+        : 'bg-white border-black/[0.04] hover:border-amber-400/30 hover:shadow-lg hover:shadow-amber-500/5'
     }`}>
       
       {/* Card Header */}
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2.5">
-          {isFullyDone ? (
-            <div className="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center">
-              <Check className="w-4 h-4 text-emerald-600" />
-            </div>
-          ) : (
-            <div className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center">
-              <Zap className="w-4 h-4 text-amber-500" />
-            </div>
-          )}
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+            isFullyDone ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-50 text-amber-600'
+          }`}>
+            {isFullyDone ? (
+              <Check className="w-5 h-5" strokeWidth={2.5} />
+            ) : (
+              <Zap className="w-5 h-5" />
+            )}
+          </div>
           <div>
-            <span className={`text-sm font-semibold ${isFullyDone ? 'text-emerald-700' : 'text-zinc-900'}`}>
+            <span className={`text-sm font-semibold ${isFullyDone ? 'text-emerald-700' : 'text-zinc-800'}`}>
               Cue
             </span>
             {sprintDay && (
-              <span className="text-[10px] text-zinc-400 ml-2">
-                Day {sprintDay}
+              <span className="text-xs text-zinc-400 ml-2">
+                Day {sprintDay} of 21
               </span>
             )}
           </div>
         </div>
         
         <div className="flex items-center gap-2">
-          {/* Phase counter */}
           <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
             isFullyDone 
               ? 'bg-emerald-100 text-emerald-600' 
@@ -208,11 +235,7 @@ export default function CuePhaseCard({
           }`}>
             {completedCount}/3
           </span>
-          
-          {/* Time hint */}
-          <span className="text-[10px] text-zinc-400">
-            ⏱ All day
-          </span>
+          <span className="text-[10px] text-zinc-400">⏱ All day</span>
         </div>
       </div>
 
@@ -226,14 +249,13 @@ export default function CuePhaseCard({
             <button
               key={phase.id}
               onClick={() => handleTogglePhase(phase.id)}
-              disabled={isFullyDone && !isDone}
+              disabled={isFullyDone}
               className={`w-full flex items-start gap-2.5 px-3 py-2.5 rounded-lg transition-all duration-200 text-left group ${
                 isDone
                   ? 'bg-emerald-50/80'
                   : 'bg-zinc-50/80 hover:bg-zinc-100/80 active:scale-[0.99]'
               } ${isFullyDone ? 'cursor-default' : 'cursor-pointer'}`}
             >
-              {/* Checkbox circle */}
               <div className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200 ${
                 isDone
                   ? 'border-emerald-500 bg-emerald-500'
@@ -242,7 +264,6 @@ export default function CuePhaseCard({
                 {isDone && <Check className="w-3 h-3 text-white" />}
               </div>
               
-              {/* Phase content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                   <PhaseIcon className={`w-3 h-3 flex-shrink-0 ${isDone ? 'text-emerald-500' : 'text-zinc-400'}`} />
@@ -266,7 +287,6 @@ export default function CuePhaseCard({
         })}
       </div>
 
-      {/* Loading indicator when logging completion */}
       {isLogging && (
         <div className="px-4 pb-3 flex items-center justify-center gap-2 text-xs text-amber-600">
           <Loader2 className="w-3 h-3 animate-spin" />
@@ -274,7 +294,6 @@ export default function CuePhaseCard({
         </div>
       )}
 
-      {/* Reset button when fully complete */}
       {isFullyDone && !isLogging && (
         <div className="px-3 pb-3">
           <button
