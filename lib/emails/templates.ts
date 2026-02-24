@@ -59,12 +59,24 @@ function ctaButton(text: string, url: string): string {
     </table>`;
 }
 
-export function morningReminder(userName: string, unsubscribeUrl: string): { subject: string; html: string } {
+export function morningReminder(userName: string, stage: number, unsubscribeUrl: string): { subject: string; html: string } {
+  const stageContent: Record<number, { rituals: string; time: string }> = {
+    1: { rituals: 'Resonance Breathing + Awareness Rep', time: '7 minutes' },
+    2: { rituals: 'Resonance Breathing + Somatic Flow + Awareness Rep', time: '10 minutes' },
+    3: { rituals: 'Resonance Breathing + Somatic Flow + Awareness Rep + IOS Cue', time: '12 minutes' },
+    4: { rituals: 'Morning stack + Flow Block', time: '75-90 minutes' },
+    5: { rituals: 'Morning stack + Flow Block + Co-Regulation', time: '80-105 minutes' },
+    6: { rituals: 'Full stack + Nightly Debrief', time: 'Your full daily rhythm' },
+    7: { rituals: 'Your full IOS protocol', time: 'Your full daily rhythm' },
+  };
+
+  const content = stageContent[stage] || stageContent[1];
+
   return {
-    subject: '7 minutes. Two rituals.',
+    subject: stage <= 2 ? '7 minutes. Two rituals.' : 'Your rituals are waiting.',
     html: emailWrapper(`
       <p style="margin:0 0 16px 0;">Morning${userName ? `, ${userName}` : ''}.</p>
-      <p style="margin:0 0 16px 0;">Your two rituals are waiting. Resonance Breathing + Awareness Rep. 7 minutes total.</p>
+      <p style="margin:0 0 16px 0;">Your rituals are waiting. ${content.rituals}. ${content.time} total.</p>
       <p style="margin:0 0 8px 0;">Your nervous system learns from repetition. Today's rep matters.</p>
       ${ctaButton('Open IOS', 'https://unbecoming.app/chat')}
     `, unsubscribeUrl)
