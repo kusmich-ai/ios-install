@@ -1,5 +1,6 @@
 // components/FloatingActionButton.tsx
-// v2.4: Bottom-right pill ABOVE input area, says "Rituals"
+// v2.5: CuePhaseCard integration for 3-phase Cue ritual
+// Bottom-right pill ABOVE input area, says "Rituals"
 // White pill with amber icon - pops against dark bg, distinct from amber chat elements
 'use client';
 
@@ -13,6 +14,7 @@ import type { UserProgress } from '@/app/hooks/useUserProgress';
 import { useResonanceBreathing } from '@/components/ResonanceModal';
 import { useAwarenessRep } from '@/components/AwarenessRepModal';
 import { useSomaticFlow } from '@/components/SomaticFlowModal';
+import CuePhaseCard from './CuePhaseCard';
 import { useCoRegulation } from '@/components/CoRegulationModal';
 import { useNightlyDebrief } from '@/components/NightlyDebriefModal';
 import { useLoopDeLooping } from '@/components/LoopDeLoopingModal';
@@ -187,10 +189,29 @@ export default function FloatingActionButton({
                   const PracticeIcon = PRACTICE_ICONS[practice.id] || Zap;
                   const isMicroAction = practice.id === 'micro_action';
                   const hasIdentity = isMicroAction && !!(progress.currentIdentity);
+                  const currentIdentity = progress.currentIdentity || '';
+                  const identityDay = progress.identitySprintDay;
                   const isFlowBlock = practice.id === 'flow_block';
                   const hasFlowBlockConfig = isFlowBlock && !!(progress.hasFlowBlockConfig);
                   const isCoRegulation = practice.id === 'co_regulation';
                   const isNightlyDebrief = practice.id === 'nightly_debrief';
+
+                  // ★ CUE PHASE CARD: When sprint is active, render 3-phase card
+                  if (isMicroAction && hasIdentity) {
+                    return (
+                      <CuePhaseCard
+                        key={practice.id}
+                        userId={userId}
+                        isCompleted={isCompleted}
+                        onFullComplete={async () => {
+                          await handleMarkComplete('micro_action', 'IOS Cue');
+                        }}
+                        onProgressUpdate={onProgressUpdate}
+                        sprintDay={identityDay}
+                        currentCue={currentIdentity}
+                      />
+                    );
+                  }
                   
                   return (
                     <div key={practice.id}
@@ -209,26 +230,12 @@ export default function FloatingActionButton({
                       {/* Action Buttons - ALL LOGIC UNCHANGED */}
                       <div className="flex gap-2">
                         {isMicroAction ? (
-                          hasIdentity ? (
-                            <>
-                              {!isCompleted && (
-                                <button onClick={(e) => { handleMarkComplete(practice.id, practice.name, e); setIsOpen(false); }}
-                                  disabled={isCompleting}
-                                  className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 ${isCompleting ? 'bg-zinc-100 text-zinc-400 cursor-wait' : 'bg-amber-500 text-white hover:bg-amber-600 shadow-sm shadow-amber-500/20'}`}>
-                                  {isCompleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
-                                  Mark Done
-                                </button>
-                              )}
-                              {isCompleted && (
-                                <span className="flex-1 px-3 py-2 text-xs text-emerald-600 font-medium flex items-center justify-center gap-1.5"><Check className="w-3 h-3" /> Done</span>
-                              )}
-                            </>
-                          ) : (
-                            <button onClick={() => { handleStartPractice(practice.id); setIsOpen(false); }}
-                              className="flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 bg-amber-500 text-white hover:bg-amber-600 shadow-sm shadow-amber-500/20">
-                              Set Up IOS Cue
-                            </button>
-                          )
+                          // MICRO-ACTION WITHOUT SPRINT - Show setup button
+                          // (hasIdentity case is handled above by CuePhaseCard)
+                          <button onClick={() => { handleStartPractice(practice.id); setIsOpen(false); }}
+                            className="flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 bg-amber-500 text-white hover:bg-amber-600 shadow-sm shadow-amber-500/20">
+                            Set Up IOS Cue
+                          </button>
                         ) : isFlowBlock ? (
                           hasFlowBlockConfig ? (
                             <>
