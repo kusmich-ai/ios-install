@@ -3758,9 +3758,14 @@ microActionState.extractedAction || 'Notice → Label → Release',
     }
   }, [practicesCompletedToday, progress?.currentStage]);
 
-  const triggerPostRitualCheckin = async () => {
-    if (loading) return;
-
+  const triggerPostRitualCheckin = async (retryCount = 0) => {
+    if (loading) {
+      // If something else is loading, retry after a short delay (up to 3 retries)
+      if (retryCount < 3) {
+        setTimeout(() => triggerPostRitualCheckin(retryCount + 1), 1000);
+      }
+      return;
+    }
     setLoading(true);
 
     try {
