@@ -99,15 +99,44 @@ export async function POST(request: Request) {
       formattedResponses
     );
 
-    // Call Claude for synthesis
-    const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 2000,
-      messages: [{
-        role: 'user',
-        content: prompt
-      }]
-    });
+  // Call Claude for synthesis (with retry for 529 overload)
+    let message;
+    const maxRetries = 3;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        message = await anthropic.messages.create({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 2000,
+          messages: [{
+            role: 'user',
+            content: prompt
+          }]
+        });
+        break; // Success - exit retry loop
+      } catch (apiError: any) {
+        const isOverloaded = apiError?.status === 529 || 
+                             apiError?.error?.type === 'overloaded_error' ||
+                             apiError?.message?.includes('overloaded') ||
+                             apiError?.message?.includes('529');
+        
+        if (isOverloaded && attempt < maxRetries) {
+          console.log(`[Guided Reflection] Claude overloaded, retry ${attempt}/${maxRetries}...`);
+          await new Promise(r => setTimeout(r, attempt * 2000)); // 2s, 4s backoff
+          continue;
+        }
+        
+        // Not overloaded or final attempt - throw clean error
+        if (isOverloaded) {
+          throw new Error('Our AI is temporarily at capacity. Please try again in a moment.');
+        }
+        throw apiError;
+      }
+    }
+    
+    if (!message) {
+      throw new Error('Failed to get response after retries. Please try again.');
+    }
 
     // Extract text response
     const responseText = message.content[0].type === 'text' 
