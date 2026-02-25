@@ -16,7 +16,7 @@ export async function sendEmail(
       to,
       subject,
       html,
-      reply_to: 'hello@nicholaskusmich.com',
+      replyTo: 'hello@nicholaskusmich.com',
     });
 
     if (error) {
