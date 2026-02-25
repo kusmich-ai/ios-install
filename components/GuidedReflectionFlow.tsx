@@ -143,12 +143,18 @@ export default function GuidedReflectionFlow({
       } else {
         throw new Error('Invalid response from server');
       }
-    } catch (error) {
+   } catch (error) {
       console.error('Processing error:', error);
+      const errorMessage = error instanceof Error ? error.message : '';
+      
+      const isOverloaded = errorMessage.includes('overloaded') || 
+                           errorMessage.includes('529') ||
+                           errorMessage.includes('capacity');
+      
       setProcessingError(
-        error instanceof Error 
-          ? error.message 
-          : 'Something went wrong. Please try again.'
+        isOverloaded
+          ? 'Our AI is temporarily busy. Tap "Try Again" — this usually resolves in a few seconds.'
+          : 'Something went wrong processing your reflection. Please try again.'
       );
       setIsProcessing(false);
     }
