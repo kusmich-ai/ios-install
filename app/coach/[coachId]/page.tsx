@@ -993,7 +993,7 @@ export default function CoachChatPage() {
       {mobileSidebarOpen && <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setMobileSidebarOpen(false)} />}
 
       {/* Sidebar */}
-      <div className={`${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 ${sidebarOpen ? 'md:w-64' : 'md:w-0'} fixed md:relative inset-y-0 left-0 z-50 md:z-auto w-64 bg-[#0f0f0f] border-r border-gray-800 transition-all duration-300 ease-in-out flex flex-col`}>
+      <div className={`${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 ${sidebarOpen ? 'md:w-64' : 'md:w-0 md:overflow-hidden md:border-0'} fixed md:relative inset-y-0 left-0 z-50 md:z-auto w-64 bg-[#0f0f0f] border-r border-gray-800 transition-all duration-300 ease-in-out flex flex-col`}>
         <div className="p-4 border-b border-gray-800 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span style={{ color: accentColor }}>{coach.icon}</span>
