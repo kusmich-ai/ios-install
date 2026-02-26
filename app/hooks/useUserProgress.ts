@@ -83,8 +83,23 @@ export interface UserProgress {
 // CONSTANTS
 // ============================================
 
-const UNLOCK_THRESHOLDS: { [stage: number]: { adherence: number; days: number; delta: number; qualitative: number } } = {
-  1: { adherence: 80, days: 14, delta: 0.3, qualitative: 3 },
+// Accelerated path thresholds (optional per stage)
+interface AcceleratedThreshold {
+  adherence: number;
+  days: number;
+  delta: number;
+  qualitative: number;
+}
+
+const UNLOCK_THRESHOLDS: { [stage: number]: {
+  adherence: number; days: number; delta: number; qualitative: number;
+  accelerated?: AcceleratedThreshold;
+} } = {
+  1: {
+    adherence: 80, days: 14, delta: 0.3, qualitative: 3,
+    // Accelerated: unlock at Day 10 for exceptional performers
+    accelerated: { adherence: 95, days: 10, delta: 0.5, qualitative: 4 }
+  },
   2: { adherence: 80, days: 14, delta: 0.5, qualitative: 3 },
   3: { adherence: 80, days: 14, delta: 0.5, qualitative: 3 },
   4: { adherence: 80, days: 14, delta: 0.6, qualitative: 3 },
@@ -132,7 +147,21 @@ function checkBasicUnlockEligibility(
   if (!threshold) return false;
   
   const COMPETENCE_THRESHOLD = 4.0;
-  
+
+  // --- CHECK ACCELERATED PATH FIRST ---
+  if (threshold.accelerated) {
+    const accel = threshold.accelerated;
+    const accelAdherence = adherence >= accel.adherence;
+    const accelDays = daysInStage >= accel.days;
+    const accelDelta = avgDelta >= accel.delta || avgScore >= COMPETENCE_THRESHOLD;
+    const accelQual = qualitativeRating !== null && qualitativeRating >= accel.qualitative;
+
+    if (accelAdherence && accelDays && accelDelta && accelQual) {
+      return true;
+    }
+  }
+
+  // --- STANDARD PATH ---
   const adherenceMet = adherence >= threshold.adherence;
   const daysMet = daysInStage >= threshold.days;
   const deltaMet = avgDelta >= threshold.delta || avgScore >= COMPETENCE_THRESHOLD;
