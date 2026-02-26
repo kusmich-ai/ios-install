@@ -19,6 +19,8 @@ import StageAttributionModal, { StageId } from '@/components/StageAttributionMod
 import { useReorientation } from '@/components/ReorientationModal';
 import ReorientationModal from '@/components/ReorientationModal';
 import { parseVideoSuggestions, VideoSuggestionCard } from '@/components/VideoSuggestionCard';
+import VideoModal from '@/components/library/VideoModal';
+import { useCourseStore } from '@/stores/courseStore';
 
 // ============================================
 // TEMPLATE SYSTEM IMPORTS
@@ -3599,9 +3601,29 @@ Give me your four numbers (e.g., "4 3 4 5").`;
   // VIDEO SUGGESTION HANDLER
   // ============================================
   
- const handleWatchVideo = useCallback((moduleNumber: number, tutorialNumber: number) => {
-  window.location.href = `/library?module=${moduleNumber}&tutorialNum=${tutorialNumber}`;
-}, []);
+ const { videoModal, openVideoModal, closeVideoModal } = useCourseStore();
+
+ const handleWatchVideo = useCallback(async (moduleNumber: number, tutorialNumber: number) => {
+  try {
+    const supabase = createClient();
+    const { data: tutorial } = await supabase
+      .from('course_tutorials')
+      .select('*')
+      .eq('module_number', moduleNumber)
+      .eq('tutorial_number', tutorialNumber)
+      .single();
+    
+    if (tutorial) {
+      openVideoModal(tutorial, 'ai_suggestion');
+    } else {
+      // Fallback: navigate to library if tutorial not found in DB
+      window.location.href = `/library?module=${moduleNumber}&tutorialNum=${tutorialNumber}`;
+    }
+  } catch {
+    // Fallback on error
+    window.location.href = `/library?module=${moduleNumber}&tutorialNum=${tutorialNumber}`;
+  }
+}, [openVideoModal]);
 
     // ============================================
   // PRACTICE CLICK HANDLER
@@ -4786,6 +4808,13 @@ if (regressionIntervention?.isActive) {
         body={reorientationContent?.body || ''}
         onDismiss={dismissReorientation}
       />
+      {/* Video Modal (from AI coach suggestions) */}
+{videoModal.isOpen && videoModal.tutorial && (
+  <VideoModal
+    tutorial={videoModal.tutorial}
+    onClose={closeVideoModal}
+  />
+)}
     </div>
   );
 }
