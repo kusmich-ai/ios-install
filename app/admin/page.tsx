@@ -1,22 +1,15 @@
-// app/admin/page.tsx
+// app/admin/page.tsx — ADMIN DASHBOARD V2
+// Full metrics dashboard with survival curve, signal trends, enhancement tracking,
+// time-to-unlock, tool usage, engagement depth, and baseline completion
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { 
-  Users, 
-  TrendingUp, 
-  TrendingDown,
-  DollarSign, 
-  Activity,
-  RefreshCw,
-  ChevronRight,
-  AlertCircle,
-  AlertTriangle,
-  CheckCircle2,
-  Clock,
-  UserX,
-  Zap,
-  Minus
+  Users, TrendingUp, TrendingDown, DollarSign, Activity,
+  RefreshCw, ChevronRight, AlertCircle, AlertTriangle,
+  CheckCircle2, Clock, UserX, Zap, Minus, BarChart3,
+  Brain, Target, BookOpen, MessageSquare, Layers,
+  ArrowDown, ArrowUp
 } from 'lucide-react';
 
 // ============================================
@@ -75,6 +68,94 @@ interface UserTrendRow {
   weekly_rate: number;
 }
 
+// NEW V2 types
+interface SurvivalRow {
+  day_num: number;
+  total_started: number;
+  active_on_day: number;
+  survival_rate: number;
+  day_over_day_change: number;
+}
+
+interface SignalTrendRow {
+  day_in_stage: number;
+  check_count: number;
+  unique_users: number;
+  avg_calm: number;
+  avg_presence: number;
+  stddev_calm: number;
+  stddev_presence: number;
+}
+
+interface EnhancementRow {
+  milestone_key: string;
+  users_received: number;
+  total_eligible: number;
+  delivery_rate: number;
+}
+
+interface TimeToUnlockRow {
+  stage_number: number;
+  unlock_count: number;
+  avg_days: number;
+  min_days: number;
+  max_days: number;
+  median_days: number;
+  unlocked_by_day_10: number;
+  unlocked_by_day_14: number;
+  unlocked_by_day_21: number;
+  unlocked_after_day_21: number;
+}
+
+interface ToolUsageRow {
+  tool_type: string;
+  total_sessions: number;
+  unique_users: number;
+  avg_duration_min: number;
+  sessions_last_7d: number;
+  sessions_last_30d: number;
+}
+
+interface JournalStatRow {
+  entry_type: string;
+  total_entries: number;
+  unique_users: number;
+  entries_last_7d: number;
+}
+
+interface WeeklyCheckinStats {
+  users_with_checkins: number;
+  total_checkins: number;
+  avg_qualitative: number;
+  avg_delta: number;
+  checkins_last_7d: number;
+  checkins_last_30d: number;
+  total_users: number;
+  checkin_participation_rate: number;
+}
+
+interface EngagementSummary {
+  practicing_users_7d: number;
+  total_practices_7d: number;
+  avg_practices_per_active_user_7d: number;
+  signal_checks_7d: number;
+  journal_entries_7d: number;
+  tool_sessions_7d: number;
+  weekly_checkins_7d: number;
+  resistance_events_7d: number;
+}
+
+interface BaselineCompletion {
+  total_users: number;
+  completed_baseline: number;
+  completion_rate: number;
+  avg_rewired_index: number;
+  avg_regulation: number;
+  avg_awareness: number;
+  avg_outlook: number;
+  avg_attention: number;
+}
+
 interface DashboardData {
   overview: {
     total_users: number;
@@ -115,10 +196,7 @@ interface DashboardData {
     pending_cancellations: number;
     in_trial: number;
   };
-  dailySignups: Array<{
-    signup_date: string;
-    signups: number;
-  }>;
+  dailySignups: Array<{ signup_date: string; signups: number }>;
   recentUsers: Array<{
     user_id: string;
     first_name: string;
@@ -134,53 +212,89 @@ interface DashboardData {
     last_active: string;
     days_in_stage: number;
   }>;
-  // NEW data
   userAlerts: UserAlert[] | null;
   practiceCompletion: PracticeRow[] | null;
   practiceSummary: PracticeSummaryRow[] | null;
   cohortMetrics: CohortRow[] | null;
   userTrends: UserTrendRow[] | null;
+  // NEW V2
+  stage1Survival: SurvivalRow[] | null;
+  signalCheckTrends: SignalTrendRow[] | null;
+  enhancementDelivery: EnhancementRow[] | null;
+  timeToUnlock: TimeToUnlockRow[] | null;
+  toolUsage: ToolUsageRow[] | null;
+  journalStats: JournalStatRow[] | null;
+  weeklyCheckinStats: WeeklyCheckinStats | null;
+  engagementSummary: EngagementSummary | null;
+  baselineCompletion: BaselineCompletion | null;
 }
 
 // ============================================
 // CONSTANTS
 // ============================================
 const STAGE_NAMES: { [key: number]: string } = {
-  1: 'Neural Priming',
-  2: 'Embodied Awareness',
-  3: 'Identity Mode',
-  4: 'Flow Mode',
-  5: 'Relational Coherence',
-  6: 'Integration',
-  7: 'Accelerated Expansion'
+  1: 'Neural Priming', 2: 'Embodied Awareness', 3: 'Identity Mode',
+  4: 'Flow Mode', 5: 'Relational Coherence', 6: 'Integration', 7: 'Accelerated Expansion'
 };
 
 const PRACTICE_LABELS: { [key: string]: string } = {
-  'hrvb_breathing': 'HRVB Breathing',
-  'awareness_rep': 'Awareness Rep',
-  'somatic_flow': 'Somatic Flow',
-  'micro_action': 'Micro-Action',
-  'flow_block': 'Flow Block',
-  'co_regulation': 'Co-Regulation',
-  'nightly_debrief': 'Nightly Debrief',
-  'thought_hygiene': 'Thought Hygiene',
-  'decentering': 'Decentering',
-  'meta_reflection': 'Meta-Reflection',
-  'reframe': 'Reframe Protocol',
+  'hrvb_breathing': 'HRVB Breathing', 'hrvb': 'HRVB Breathing',
+  'awareness_rep': 'Awareness Rep', 'somatic_flow': 'Somatic Flow',
+  'micro_action': 'Micro-Action', 'flow_block': 'Flow Block',
+  'co_regulation': 'Co-Regulation', 'nightly_debrief': 'Nightly Debrief',
+  'thought_hygiene': 'Thought Hygiene', 'decentering': 'Decentering',
+  'meta_reflection': 'Meta-Reflection', 'reframe': 'Reframe Protocol',
+  'worry_loop': 'Worry Loop Dissolver',
 };
+
+const MILESTONE_LABELS: { [key: string]: string } = {
+  'first_completion': 'First Completion',
+  '3_day_streak': '3-Day Streak',
+  'first_calm_4': 'First Calm 4+',
+  '7_day_streak': '7-Day Streak',
+  'first_presence_4': 'First Presence 4+',
+  '50_pct_adherence': '50% Adherence',
+  '10_day_streak': '10-Day Streak',
+  '80_pct_adherence': '80% Adherence',
+  'day_10_progress': 'Day 10 Report',
+  'system_map_delivered': 'System Map',
+};
+
+const JOURNAL_TYPE_LABELS: { [key: string]: string } = {
+  'milestone': 'Milestone', 'science_drip': 'Science Drip',
+  'signal_trend': 'Signal Trend', 'micro_decentering': 'Micro-Decentering',
+  'day7_mirror': 'Day 7 Mirror', 'weekly_narrative': 'Weekly Narrative',
+  'pattern_surfacing': 'Pattern Surfacing', 'reframe_anchor': 'Reframe Anchor',
+  'debrief_lesson': 'Debrief Lesson', 'coach_guest': 'Coach Guest',
+};
+
+// ============================================
+// SECTION HEADER COMPONENT
+// ============================================
+function SectionHeader({ title, subtitle, icon: Icon }: { title: string; subtitle?: string; icon?: React.ElementType }) {
+  return (
+    <div className="flex items-center gap-3 mb-4">
+      {Icon && (
+        <div className="p-2 rounded-lg bg-[#ff9e19]/10">
+          <Icon className="w-5 h-5 text-[#ff9e19]" />
+        </div>
+      )}
+      <div>
+        <h3 className="text-lg font-semibold text-white">{title}</h3>
+        {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
+      </div>
+    </div>
+  );
+}
 
 // ============================================
 // METRIC CARD
 // ============================================
 function MetricCard({ 
-  title, value, subtitle, icon: Icon, trend, color = 'orange'
+  title, value, subtitle, icon: Icon, color = 'orange'
 }: { 
-  title: string;
-  value: string | number;
-  subtitle?: string;
-  icon: React.ElementType;
-  trend?: { value: number; label: string };
-  color?: 'orange' | 'green' | 'blue' | 'red';
+  title: string; value: string | number; subtitle?: string;
+  icon: React.ElementType; color?: 'orange' | 'green' | 'blue' | 'red';
 }) {
   const colorClasses = {
     orange: 'text-[#ff9e19] bg-[#ff9e19]/10',
@@ -189,20 +303,15 @@ function MetricCard({
     red: 'text-red-500 bg-red-500/10'
   };
   return (
-    <div className="bg-[#111111] border border-[#1a1a1a] rounded-lg p-6">
+    <div className="bg-[#111111] border border-[#1a1a1a] rounded-lg p-5">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm text-gray-400 mb-1">{title}</p>
-          <p className="text-3xl font-bold text-white">{value}</p>
-          {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
-          {trend && (
-            <p className={`text-sm mt-2 ${trend.value >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-              {trend.value >= 0 ? '↑' : '↓'} {Math.abs(trend.value)}% {trend.label}
-            </p>
-          )}
+          <p className="text-xs text-gray-400 mb-1">{title}</p>
+          <p className="text-2xl font-bold text-white">{value}</p>
+          {subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
         </div>
-        <div className={`p-3 rounded-lg ${colorClasses[color]}`}>
-          <Icon className="w-6 h-6" />
+        <div className={`p-2.5 rounded-lg ${colorClasses[color]}`}>
+          <Icon className="w-5 h-5" />
         </div>
       </div>
     </div>
@@ -210,18 +319,27 @@ function MetricCard({
 }
 
 // ============================================
-// NEEDS ATTENTION PANEL (NEW)
+// MINI STAT (for compact inline stats)
+// ============================================
+function MiniStat({ label, value, color = 'white' }: { label: string; value: string | number; color?: string }) {
+  return (
+    <div className="text-center">
+      <p className={`text-lg font-bold ${color === 'orange' ? 'text-[#ff9e19]' : color === 'green' ? 'text-emerald-500' : color === 'red' ? 'text-red-500' : 'text-white'}`}>{value}</p>
+      <p className="text-[10px] text-gray-500 uppercase tracking-wider">{label}</p>
+    </div>
+  );
+}
+
+// ============================================
+// NEEDS ATTENTION PANEL
 // ============================================
 function NeedsAttentionPanel({ alerts }: { alerts: UserAlert[] | null }) {
   if (!alerts || alerts.length === 0) {
     return (
-      <div className="bg-[#111111] border border-[#1a1a1a] rounded-lg p-6">
-        <div className="flex items-center gap-3 mb-4">
+      <div className="bg-[#111111] border border-emerald-500/20 rounded-lg p-5">
+        <div className="flex items-center gap-3">
           <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-          <h3 className="text-lg font-semibold text-white">Needs Attention</h3>
-        </div>
-        <div className="text-center py-4">
-          <p className="text-gray-400 text-sm">All users are on track. Nothing requires your attention right now.</p>
+          <span className="text-sm text-emerald-400">All users on track — nothing requires attention.</span>
         </div>
       </div>
     );
@@ -231,33 +349,20 @@ function NeedsAttentionPanel({ alerts }: { alerts: UserAlert[] | null }) {
   const stalling = alerts.filter(a => a.alert_type === 'stalling');
   const ready = alerts.filter(a => a.alert_type === 'ready_to_unlock');
 
-  const AlertCard = ({ 
-    user, borderColor, textColor, bgColor 
-  }: { 
-    user: UserAlert; borderColor: string; textColor: string; bgColor: string;
+  const AlertCard = ({ user, textColor, bgColor, borderColor }: { 
+    user: UserAlert; textColor: string; bgColor: string; borderColor: string;
   }) => (
     <div className={`${bgColor} border ${borderColor} rounded-lg p-3`}>
       <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-white">{user.first_name}</span>
-          {user.referral_source !== 'organic' && (
-            <span className="px-1 py-0.5 text-[9px] font-semibold rounded bg-purple-500/20 text-purple-400 uppercase">
-              AW5
-            </span>
-          )}
-        </div>
+        <span className="text-sm font-medium text-white">{user.first_name}</span>
         <span className="text-[10px] text-gray-500">Stage {user.current_stage}</span>
       </div>
       <p className={`text-xs ${textColor}`}>{user.alert_reason}</p>
       {user.adherence_trend !== 0 && (
         <div className="flex items-center gap-1 mt-1.5">
-          {user.adherence_trend < 0 ? (
-            <TrendingDown className="w-3 h-3 text-red-500" />
-          ) : (
-            <TrendingUp className="w-3 h-3 text-emerald-500" />
-          )}
+          {user.adherence_trend < 0 ? <TrendingDown className="w-3 h-3 text-red-500" /> : <TrendingUp className="w-3 h-3 text-emerald-500" />}
           <span className={`text-[10px] ${user.adherence_trend < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
-            {user.adherence_trend > 0 ? '+' : ''}{user.adherence_trend}% week-over-week
+            {user.adherence_trend > 0 ? '+' : ''}{user.adherence_trend}% WoW
           </span>
         </div>
       )}
@@ -266,65 +371,33 @@ function NeedsAttentionPanel({ alerts }: { alerts: UserAlert[] | null }) {
 
   return (
     <div className="bg-[#111111] border border-[#1a1a1a] rounded-lg p-6">
-      <h3 className="text-lg font-semibold text-white mb-4">Needs Attention</h3>
+      <SectionHeader title="Needs Attention" icon={AlertCircle} />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* At Risk Column */}
         <div>
           <div className="flex items-center gap-2 mb-3">
             <AlertCircle className="w-4 h-4 text-red-500" />
             <span className="text-sm font-medium text-red-500">At Risk ({atRisk.length})</span>
           </div>
-          {atRisk.length === 0 ? (
-            <p className="text-xs text-gray-600 italic">None</p>
-          ) : (
-            <div className="space-y-2">
-              {atRisk.map(user => (
-                <AlertCard 
-                  key={user.user_id} user={user}
-                  borderColor="border-red-500/20" textColor="text-red-400" bgColor="bg-red-500/5"
-                />
-              ))}
-            </div>
+          {atRisk.length === 0 ? <p className="text-xs text-gray-600 italic">None</p> : (
+            <div className="space-y-2">{atRisk.map(u => <AlertCard key={u.user_id} user={u} textColor="text-red-400" bgColor="bg-red-500/5" borderColor="border-red-500/20" />)}</div>
           )}
         </div>
-
-        {/* Stalling Column */}
         <div>
           <div className="flex items-center gap-2 mb-3">
             <AlertTriangle className="w-4 h-4 text-yellow-500" />
             <span className="text-sm font-medium text-yellow-500">Stalling ({stalling.length})</span>
           </div>
-          {stalling.length === 0 ? (
-            <p className="text-xs text-gray-600 italic">None</p>
-          ) : (
-            <div className="space-y-2">
-              {stalling.map(user => (
-                <AlertCard 
-                  key={user.user_id} user={user}
-                  borderColor="border-yellow-500/20" textColor="text-yellow-400" bgColor="bg-yellow-500/5"
-                />
-              ))}
-            </div>
+          {stalling.length === 0 ? <p className="text-xs text-gray-600 italic">None</p> : (
+            <div className="space-y-2">{stalling.map(u => <AlertCard key={u.user_id} user={u} textColor="text-yellow-400" bgColor="bg-yellow-500/5" borderColor="border-yellow-500/20" />)}</div>
           )}
         </div>
-
-        {/* Ready to Unlock Column */}
         <div>
           <div className="flex items-center gap-2 mb-3">
             <Zap className="w-4 h-4 text-emerald-500" />
             <span className="text-sm font-medium text-emerald-500">Ready to Unlock ({ready.length})</span>
           </div>
-          {ready.length === 0 ? (
-            <p className="text-xs text-gray-600 italic">None</p>
-          ) : (
-            <div className="space-y-2">
-              {ready.map(user => (
-                <AlertCard 
-                  key={user.user_id} user={user}
-                  borderColor="border-emerald-500/20" textColor="text-emerald-400" bgColor="bg-emerald-500/5"
-                />
-              ))}
-            </div>
+          {ready.length === 0 ? <p className="text-xs text-gray-600 italic">None</p> : (
+            <div className="space-y-2">{ready.map(u => <AlertCard key={u.user_id} user={u} textColor="text-emerald-400" bgColor="bg-emerald-500/5" borderColor="border-emerald-500/20" />)}</div>
           )}
         </div>
       </div>
@@ -333,40 +406,395 @@ function NeedsAttentionPanel({ alerts }: { alerts: UserAlert[] | null }) {
 }
 
 // ============================================
-// PRACTICE HEATMAP (NEW)
+// STAGE 1 SURVIVAL CURVE (NEW)
 // ============================================
-function PracticeHeatmap({ 
-  data, summary 
-}: { 
-  data: PracticeRow[] | null; 
-  summary: PracticeSummaryRow[] | null;
-}) {
+function SurvivalCurve({ data }: { data: SurvivalRow[] | null }) {
+  if (!data || data.length === 0) {
+    return (
+      <div className="bg-[#111111] border border-[#1a1a1a] rounded-lg p-6">
+        <SectionHeader title="Stage 1 Survival Curve" subtitle="Day-by-day retention through Stage 1" icon={BarChart3} />
+        <p className="text-sm text-gray-500 text-center py-6">No data yet — needs users completing Stage 1 practices</p>
+      </div>
+    );
+  }
+
+  const maxRate = 100;
+  const criticalDays = data.filter(d => (d.day_over_day_change || 0) < -5);
+  const biggestDrop = criticalDays.sort((a, b) => (a.day_over_day_change || 0) - (b.day_over_day_change || 0))[0];
+
+  return (
+    <div className="bg-[#111111] border border-[#1a1a1a] rounded-lg p-6">
+      <SectionHeader title="Stage 1 Survival Curve" subtitle="Day-by-day retention — where do users drop off?" icon={BarChart3} />
+      
+      {/* Insight callout */}
+      {biggestDrop && (
+        <div className="mb-4 p-3 bg-red-500/5 border border-red-500/20 rounded-lg">
+          <p className="text-xs text-red-400">
+            ⚠️ Biggest drop: <strong>Day {biggestDrop.day_num}</strong> ({biggestDrop.day_over_day_change}% change). 
+            This is where intervention is most needed.
+          </p>
+        </div>
+      )}
+      
+      {/* Bar chart */}
+      <div className="flex items-end gap-1 h-40 mb-2">
+        {data.slice(0, 14).map((d) => {
+          const height = (d.survival_rate / maxRate) * 100;
+          const isDropDay = (d.day_over_day_change || 0) < -5;
+          return (
+            <div key={d.day_num} className="flex-1 flex flex-col items-center gap-1" title={`Day ${d.day_num}: ${d.active_on_day}/${d.total_started} users (${d.survival_rate}%)`}>
+              <span className="text-[9px] text-gray-500">{d.survival_rate}%</span>
+              <div className="w-full relative" style={{ height: `${height}%`, minHeight: '4px' }}>
+                <div className={`w-full h-full rounded-t transition-all ${
+                  isDropDay ? 'bg-red-500' : d.survival_rate >= 70 ? 'bg-emerald-500' : d.survival_rate >= 40 ? 'bg-yellow-500' : 'bg-red-500/60'
+                }`} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex gap-1 mb-4">
+        {data.slice(0, 14).map(d => (
+          <div key={d.day_num} className="flex-1 text-center">
+            <span className="text-[9px] text-gray-600">D{d.day_num}</span>
+          </div>
+        ))}
+      </div>
+      
+      {/* Key stats */}
+      <div className="grid grid-cols-4 gap-4 pt-4 border-t border-[#1a1a1a]">
+        <MiniStat label="Day 1" value={`${data[0]?.survival_rate || 0}%`} color="green" />
+        <MiniStat label="Day 7" value={`${data[6]?.survival_rate || 0}%`} color={data[6]?.survival_rate >= 50 ? 'green' : 'red'} />
+        <MiniStat label="Day 10" value={`${data[9]?.survival_rate || 0}%`} color={data[9]?.survival_rate >= 40 ? 'green' : 'red'} />
+        <MiniStat label="Day 14" value={`${data[13]?.survival_rate || 0}%`} color={data[13]?.survival_rate >= 30 ? 'green' : 'red'} />
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// SIGNAL CHECK TRENDS (NEW)
+// ============================================
+function SignalCheckTrends({ data }: { data: SignalTrendRow[] | null }) {
+  if (!data || data.length === 0) {
+    return (
+      <div className="bg-[#111111] border border-[#1a1a1a] rounded-lg p-6">
+        <SectionHeader title="Signal Check Trends" subtitle="Average calm & presence scores by day-in-stage" icon={Brain} />
+        <p className="text-sm text-gray-500 text-center py-6">No signal check data yet</p>
+      </div>
+    );
+  }
+
+  const firstDay = data[0];
+  const lastDay = data[data.length - 1];
+  const calmDelta = lastDay && firstDay ? (lastDay.avg_calm - firstDay.avg_calm).toFixed(2) : '0';
+  const presenceDelta = lastDay && firstDay ? (lastDay.avg_presence - firstDay.avg_presence).toFixed(2) : '0';
+
+  return (
+    <div className="bg-[#111111] border border-[#1a1a1a] rounded-lg p-6">
+      <SectionHeader title="Signal Check Trends" subtitle="Are practices producing measurable shifts?" icon={Brain} />
+      
+      {/* Dual line chart as bars */}
+      <div className="space-y-4">
+        {/* Calm */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-blue-400 font-medium">Calm (avg across all users)</span>
+            <span className={`text-xs font-medium ${Number(calmDelta) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              {Number(calmDelta) >= 0 ? '+' : ''}{calmDelta} overall
+            </span>
+          </div>
+          <div className="flex items-end gap-0.5 h-16">
+            {data.map(d => (
+              <div key={`c-${d.day_in_stage}`} className="flex-1" title={`Day ${d.day_in_stage}: ${d.avg_calm}/5 (${d.unique_users} users)`}>
+                <div className="w-full bg-blue-500/80 rounded-t" style={{ height: `${(d.avg_calm / 5) * 100}%`, minHeight: '2px' }} />
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        {/* Presence */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-purple-400 font-medium">Presence (avg across all users)</span>
+            <span className={`text-xs font-medium ${Number(presenceDelta) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              {Number(presenceDelta) >= 0 ? '+' : ''}{presenceDelta} overall
+            </span>
+          </div>
+          <div className="flex items-end gap-0.5 h-16">
+            {data.map(d => (
+              <div key={`p-${d.day_in_stage}`} className="flex-1" title={`Day ${d.day_in_stage}: ${d.avg_presence}/5 (${d.unique_users} users)`}>
+                <div className="w-full bg-purple-500/80 rounded-t" style={{ height: `${(d.avg_presence / 5) * 100}%`, minHeight: '2px' }} />
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        {/* Day labels */}
+        <div className="flex gap-0.5">
+          {data.map(d => (
+            <div key={`l-${d.day_in_stage}`} className="flex-1 text-center">
+              <span className="text-[8px] text-gray-600">D{d.day_in_stage}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// ENHANCEMENT DELIVERY (NEW)
+// ============================================
+function EnhancementDelivery({ data }: { data: EnhancementRow[] | null }) {
+  if (!data || data.length === 0) {
+    return (
+      <div className="bg-[#111111] border border-[#1a1a1a] rounded-lg p-6">
+        <SectionHeader title="Enhancement Delivery" subtitle="Stage 1 experience layer — what's been delivered?" icon={Layers} />
+        <p className="text-sm text-gray-500 text-center py-6">No enhancement data yet</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-[#111111] border border-[#1a1a1a] rounded-lg p-6">
+      <SectionHeader title="Enhancement Delivery" subtitle="Stage 1 milestones & enhancements — are they firing?" icon={Layers} />
+      <div className="space-y-2">
+        {data.map(row => (
+          <div key={row.milestone_key} className="flex items-center gap-3">
+            <span className="text-xs text-gray-300 w-36 shrink-0">
+              {MILESTONE_LABELS[row.milestone_key] || row.milestone_key.replace(/_/g, ' ')}
+            </span>
+            <div className="flex-1 h-5 bg-[#1a1a1a] rounded-full overflow-hidden relative">
+              <div 
+                className={`h-full rounded-full transition-all ${
+                  row.delivery_rate >= 70 ? 'bg-emerald-500' : row.delivery_rate >= 40 ? 'bg-yellow-500' : 'bg-red-500/60'
+                }`}
+                style={{ width: `${Math.min(row.delivery_rate, 100)}%` }}
+              />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-[9px] font-medium text-white/80">
+                  {row.users_received}/{row.total_eligible}
+                </span>
+              </div>
+            </div>
+            <span className={`text-xs font-medium w-12 text-right ${
+              row.delivery_rate >= 70 ? 'text-emerald-500' : row.delivery_rate >= 40 ? 'text-yellow-500' : 'text-red-500'
+            }`}>
+              {row.delivery_rate}%
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// TIME TO UNLOCK (NEW)
+// ============================================
+function TimeToUnlock({ data }: { data: TimeToUnlockRow[] | null }) {
+  if (!data || data.length === 0) {
+    return (
+      <div className="bg-[#111111] border border-[#1a1a1a] rounded-lg p-6">
+        <SectionHeader title="Time to Unlock" subtitle="How long does each stage take?" icon={Clock} />
+        <p className="text-sm text-gray-500 text-center py-6">No unlock data yet — needs users completing stages</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-[#111111] border border-[#1a1a1a] rounded-lg p-6">
+      <SectionHeader title="Time to Unlock" subtitle="Distribution of days to complete each stage" icon={Clock} />
+      <div className="space-y-4">
+        {data.map(row => (
+          <div key={row.stage_number} className="p-3 bg-[#0a0a0a] rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-white">Stage {row.stage_number} → {row.stage_number + 1}</span>
+              <span className="text-xs text-gray-400">{row.unlock_count} unlocks</span>
+            </div>
+            <div className="grid grid-cols-4 gap-3 mb-2">
+              <MiniStat label="Median" value={`${row.median_days}d`} color="orange" />
+              <MiniStat label="Avg" value={`${row.avg_days}d`} />
+              <MiniStat label="Fastest" value={`${row.min_days}d`} color="green" />
+              <MiniStat label="Slowest" value={`${row.max_days}d`} color="red" />
+            </div>
+            {row.stage_number === 1 && (
+              <div className="flex items-center gap-3 pt-2 border-t border-[#1a1a1a]">
+                <div className="flex items-center gap-1">
+                  <Zap className="w-3 h-3 text-[#ff9e19]" />
+                  <span className="text-[10px] text-gray-400">By Day 10: <span className="text-white font-medium">{row.unlocked_by_day_10}</span></span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-gray-400">By Day 14: <span className="text-white font-medium">{row.unlocked_by_day_14}</span></span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-gray-400">After Day 21: <span className={`font-medium ${row.unlocked_after_day_21 > 0 ? 'text-yellow-500' : 'text-gray-500'}`}>{row.unlocked_after_day_21}</span></span>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// TOOL USAGE (NEW)
+// ============================================
+function ToolUsagePanel({ data }: { data: ToolUsageRow[] | null }) {
+  if (!data || data.length === 0) {
+    return (
+      <div className="bg-[#111111] border border-[#1a1a1a] rounded-lg p-6">
+        <SectionHeader title="On-Demand Tool Usage" subtitle="Which tools are being used?" icon={Target} />
+        <p className="text-sm text-gray-500 text-center py-6">No tool usage data yet</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-[#111111] border border-[#1a1a1a] rounded-lg p-6">
+      <SectionHeader title="On-Demand Tool Usage" subtitle="Tool sessions — are they being offered and accepted?" icon={Target} />
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-[#1a1a1a]">
+              <th className="text-left text-xs text-gray-400 pb-2 font-medium">Tool</th>
+              <th className="text-right text-xs text-gray-400 pb-2 font-medium">Total</th>
+              <th className="text-right text-xs text-gray-400 pb-2 font-medium">Users</th>
+              <th className="text-right text-xs text-gray-400 pb-2 font-medium">Last 7d</th>
+              <th className="text-right text-xs text-gray-400 pb-2 font-medium">Avg Min</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map(row => (
+              <tr key={row.tool_type} className="border-b border-[#1a1a1a]/50">
+                <td className="text-sm text-gray-300 py-2">{PRACTICE_LABELS[row.tool_type] || row.tool_type.replace(/_/g, ' ')}</td>
+                <td className="text-sm text-white text-right py-2 font-medium">{row.total_sessions}</td>
+                <td className="text-sm text-gray-400 text-right py-2">{row.unique_users}</td>
+                <td className="text-sm text-right py-2">
+                  <span className={row.sessions_last_7d > 0 ? 'text-emerald-400' : 'text-gray-600'}>{row.sessions_last_7d}</span>
+                </td>
+                <td className="text-sm text-gray-400 text-right py-2">{row.avg_duration_min || '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// ENGAGEMENT DEPTH (NEW)
+// ============================================
+function EngagementDepth({ data, checkins }: { data: EngagementSummary | null; checkins: WeeklyCheckinStats | null }) {
+  if (!data) return null;
+
+  const items = [
+    { label: 'Practices (7d)', value: data.total_practices_7d || 0, icon: Activity, color: 'text-emerald-500' },
+    { label: 'Signal Checks (7d)', value: data.signal_checks_7d || 0, icon: BarChart3, color: 'text-blue-500' },
+    { label: 'Journal Entries (7d)', value: data.journal_entries_7d || 0, icon: BookOpen, color: 'text-purple-500' },
+    { label: 'Tool Sessions (7d)', value: data.tool_sessions_7d || 0, icon: Target, color: 'text-[#ff9e19]' },
+    { label: 'Weekly Check-ins (7d)', value: data.weekly_checkins_7d || 0, icon: CheckCircle2, color: 'text-cyan-500' },
+    { label: 'Resistance Events (7d)', value: data.resistance_events_7d || 0, icon: AlertTriangle, color: 'text-red-500' },
+  ];
+
+  return (
+    <div className="bg-[#111111] border border-[#1a1a1a] rounded-lg p-6">
+      <SectionHeader title="Engagement Depth (Last 7 Days)" subtitle="How deeply are users using the system?" icon={MessageSquare} />
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-4">
+        {items.map(item => (
+          <div key={item.label} className="text-center p-3 bg-[#0a0a0a] rounded-lg">
+            <item.icon className={`w-4 h-4 mx-auto mb-1 ${item.color}`} />
+            <p className="text-xl font-bold text-white">{item.value}</p>
+            <p className="text-[10px] text-gray-500">{item.label}</p>
+          </div>
+        ))}
+      </div>
+      
+      {/* Quick stats row */}
+      <div className="flex items-center gap-6 pt-3 border-t border-[#1a1a1a]">
+        <div className="text-xs text-gray-400">
+          Active users (7d): <span className="text-white font-medium">{data.practicing_users_7d || 0}</span>
+        </div>
+        <div className="text-xs text-gray-400">
+          Avg practices/user: <span className="text-white font-medium">{data.avg_practices_per_active_user_7d || 0}</span>
+        </div>
+        {checkins && (
+          <>
+            <div className="text-xs text-gray-400">
+              Check-in participation: <span className="text-white font-medium">{checkins.checkin_participation_rate || 0}%</span>
+            </div>
+            <div className="text-xs text-gray-400">
+              Avg qualitative: <span className="text-[#ff9e19] font-medium">{checkins.avg_qualitative || 0}/5</span>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// BASELINE COMPLETION (NEW)
+// ============================================
+function BaselinePanel({ data }: { data: BaselineCompletion | null }) {
+  if (!data) return null;
+  return (
+    <div className="bg-[#111111] border border-[#1a1a1a] rounded-lg p-6">
+      <SectionHeader title="Baseline Diagnostics" subtitle="Onboarding completion & starting scores" icon={BarChart3} />
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+        <div className="text-center p-3 bg-[#0a0a0a] rounded-lg col-span-2 md:col-span-1">
+          <p className="text-xl font-bold text-[#ff9e19]">{data.completion_rate}%</p>
+          <p className="text-[10px] text-gray-500">Completed</p>
+          <p className="text-[10px] text-gray-600">{data.completed_baseline}/{data.total_users}</p>
+        </div>
+        <div className="text-center p-3 bg-[#0a0a0a] rounded-lg">
+          <p className="text-lg font-bold text-white">{data.avg_rewired_index}</p>
+          <p className="text-[10px] text-gray-500">Avg REwired</p>
+        </div>
+        <div className="text-center p-3 bg-[#0a0a0a] rounded-lg">
+          <p className="text-lg font-bold text-[#22c55e]">{data.avg_regulation}</p>
+          <p className="text-[10px] text-gray-500">Avg Regulation</p>
+        </div>
+        <div className="text-center p-3 bg-[#0a0a0a] rounded-lg">
+          <p className="text-lg font-bold text-[#10b981]">{data.avg_awareness}</p>
+          <p className="text-[10px] text-gray-500">Avg Awareness</p>
+        </div>
+        <div className="text-center p-3 bg-[#0a0a0a] rounded-lg">
+          <p className="text-lg font-bold text-[#f59e0b]">{data.avg_outlook}</p>
+          <p className="text-[10px] text-gray-500">Avg Outlook</p>
+        </div>
+        <div className="text-center p-3 bg-[#0a0a0a] rounded-lg">
+          <p className="text-lg font-bold text-[#8b5cf6]">{data.avg_attention}</p>
+          <p className="text-[10px] text-gray-500">Avg Attention</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// PRACTICE HEATMAP (existing, cleaned up)
+// ============================================
+function PracticeHeatmap({ data, summary }: { data: PracticeRow[] | null; summary: PracticeSummaryRow[] | null }) {
   if ((!data || data.length === 0) && (!summary || summary.length === 0)) {
     return (
       <div className="bg-[#111111] border border-[#1a1a1a] rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-white mb-3">Practice Completion (Last 7 Days)</h3>
+        <SectionHeader title="Practice Completion (Last 7 Days)" icon={Activity} />
         <p className="text-sm text-gray-500 text-center py-6">No practice data yet</p>
       </div>
     );
   }
 
-  // Get unique practices and dates from heatmap data
   const practiceTypes = [...new Set((data || []).map(d => d.practice_type))].sort();
   const dates = [...new Set((data || []).map(d => d.practice_date))].sort();
-
-  // Build lookup
   const lookup: { [key: string]: PracticeRow } = {};
-  (data || []).forEach(row => {
-    lookup[`${row.practice_type}|${row.practice_date}`] = row;
-  });
-
-  // Summary lookup
+  (data || []).forEach(row => { lookup[`${row.practice_type}|${row.practice_date}`] = row; });
   const summaryLookup: { [key: string]: PracticeSummaryRow } = {};
-  (summary || []).forEach(row => {
-    summaryLookup[row.practice_type] = row;
-  });
-
-  // All practice types from both sources
+  (summary || []).forEach(row => { summaryLookup[row.practice_type] = row; });
   const allPractices = [...new Set([...practiceTypes, ...Object.keys(summaryLookup)])].sort();
 
   const rateColor = (rate: number | undefined) => {
@@ -380,8 +808,7 @@ function PracticeHeatmap({
 
   return (
     <div className="bg-[#111111] border border-[#1a1a1a] rounded-lg p-6">
-      <h3 className="text-lg font-semibold text-white mb-4">Practice Completion (Last 7 Days)</h3>
-      
+      <SectionHeader title="Practice Completion (Last 7 Days)" icon={Activity} />
       {dates.length > 0 ? (
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -401,31 +828,20 @@ function PracticeHeatmap({
                 const sumRow = summaryLookup[practice];
                 return (
                   <tr key={practice}>
-                    <td className="text-xs text-gray-300 py-1.5 pr-4 whitespace-nowrap">
-                      {PRACTICE_LABELS[practice] || practice.replace(/_/g, ' ')}
-                    </td>
+                    <td className="text-xs text-gray-300 py-1.5 pr-4 whitespace-nowrap">{PRACTICE_LABELS[practice] || practice.replace(/_/g, ' ')}</td>
                     {dates.map(date => {
                       const row = lookup[`${practice}|${date}`];
                       return (
                         <td key={date} className="py-1.5 px-1">
-                          <div 
-                            className={`w-full h-7 rounded ${rateColor(row?.completion_rate)} flex items-center justify-center`}
-                            title={row ? `${row.completion_rate}% (${row.completed_count}/${row.total_logged})` : 'No data'}
-                          >
-                            {row && (
-                              <span className="text-[9px] font-medium text-white/80">
-                                {row.completed_count}/{row.total_logged}
-                              </span>
-                            )}
+                          <div className={`w-full h-7 rounded ${rateColor(row?.completion_rate)} flex items-center justify-center`}
+                            title={row ? `${row.completion_rate}% (${row.completed_count}/${row.total_logged})` : 'No data'}>
+                            {row && <span className="text-[9px] font-medium text-white/80">{row.completed_count}/{row.total_logged}</span>}
                           </div>
                         </td>
                       );
                     })}
                     <td className="text-right pl-4">
-                      <span className={`text-xs font-medium ${
-                        (sumRow?.overall_rate || 0) >= 70 ? 'text-emerald-500' : 
-                        (sumRow?.overall_rate || 0) >= 40 ? 'text-yellow-500' : 'text-red-500'
-                      }`}>
+                      <span className={`text-xs font-medium ${(sumRow?.overall_rate || 0) >= 70 ? 'text-emerald-500' : (sumRow?.overall_rate || 0) >= 40 ? 'text-yellow-500' : 'text-red-500'}`}>
                         {sumRow?.overall_rate || 0}%
                       </span>
                     </td>
@@ -436,172 +852,56 @@ function PracticeHeatmap({
           </table>
         </div>
       ) : (
-        // Fallback: just show summary bars if no daily data
         <div className="space-y-3">
           {(summary || []).map(row => (
             <div key={row.practice_type} className="flex items-center gap-3">
-              <span className="text-xs text-gray-300 w-32 shrink-0">
-                {PRACTICE_LABELS[row.practice_type] || row.practice_type}
-              </span>
+              <span className="text-xs text-gray-300 w-32 shrink-0">{PRACTICE_LABELS[row.practice_type] || row.practice_type}</span>
               <div className="flex-1 h-5 bg-[#1a1a1a] rounded-full overflow-hidden">
-                <div 
-                  className={`h-full rounded-full ${rateColor(row.overall_rate)}`}
-                  style={{ width: `${row.overall_rate}%` }}
-                />
+                <div className={`h-full rounded-full ${rateColor(row.overall_rate)}`} style={{ width: `${row.overall_rate}%` }} />
               </div>
-              <span className={`text-xs font-medium w-10 text-right ${
-                row.overall_rate >= 70 ? 'text-emerald-500' : 
-                row.overall_rate >= 40 ? 'text-yellow-500' : 'text-red-500'
-              }`}>
-                {row.overall_rate}%
-              </span>
+              <span className={`text-xs font-medium w-10 text-right ${row.overall_rate >= 70 ? 'text-emerald-500' : row.overall_rate >= 40 ? 'text-yellow-500' : 'text-red-500'}`}>{row.overall_rate}%</span>
             </div>
           ))}
         </div>
       )}
-
-      {/* Legend */}
-      <div className="flex items-center gap-3 mt-4 pt-3 border-t border-[#1a1a1a]">
-        <span className="text-[10px] text-gray-500">Completion:</span>
-        {[
-          { color: 'bg-red-500/20', label: '0%' },
-          { color: 'bg-red-500/40', label: '1-39%' },
-          { color: 'bg-yellow-500/60', label: '40-59%' },
-          { color: 'bg-emerald-500/60', label: '60-79%' },
-          { color: 'bg-emerald-500', label: '80%+' },
-        ].map(item => (
-          <div key={item.label} className="flex items-center gap-1">
-            <div className={`w-3 h-3 rounded ${item.color}`} />
-            <span className="text-[10px] text-gray-500">{item.label}</span>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
 
 // ============================================
-// COHORT COMPARISON (NEW)
+// JOURNAL STATS (NEW)
 // ============================================
-function CohortComparison({ data }: { data: CohortRow[] | null }) {
+function JournalStatsPanel({ data }: { data: JournalStatRow[] | null }) {
   if (!data || data.length === 0) return null;
-
-  const organic = data.find(d => d.cohort === 'organic');
-  const aw5 = data.find(d => d.cohort === 'awaken5');
-
-  if (!organic && !aw5) return null;
-
-  const rows = [
-    { label: 'Avg Adherence', aw5: `${aw5?.avg_adherence || 0}%`, org: `${organic?.avg_adherence || 0}%`, aw5Num: aw5?.avg_adherence || 0, orgNum: organic?.avg_adherence || 0, higherBetter: true },
-    { label: 'Avg Stage', aw5: aw5?.avg_stage || 0, org: organic?.avg_stage || 0, aw5Num: aw5?.avg_stage || 0, orgNum: organic?.avg_stage || 0, higherBetter: true },
-    { label: 'Avg REwired', aw5: aw5?.avg_rewired || 0, org: organic?.avg_rewired || 0, aw5Num: aw5?.avg_rewired || 0, orgNum: organic?.avg_rewired || 0, higherBetter: true },
-    { label: 'Avg Streak', aw5: `${aw5?.avg_streak || 0}d`, org: `${organic?.avg_streak || 0}d`, aw5Num: aw5?.avg_streak || 0, orgNum: organic?.avg_streak || 0, higherBetter: true },
-    { label: 'Engagement (7d)', aw5: `${aw5?.engagement_rate || 0}%`, org: `${organic?.engagement_rate || 0}%`, aw5Num: aw5?.engagement_rate || 0, orgNum: organic?.engagement_rate || 0, higherBetter: true },
-    { label: 'Churned (14d+)', aw5: aw5?.churned_count || 0, org: organic?.churned_count || 0, aw5Num: aw5?.churned_count || 0, orgNum: organic?.churned_count || 0, higherBetter: false },
-  ];
-
   return (
     <div className="bg-[#111111] border border-[#1a1a1a] rounded-lg p-6">
-      <h3 className="text-lg font-semibold text-white mb-4">Cohort Comparison</h3>
-      
-      {/* Column headers */}
-      <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#2a2a2a]">
-        <span className="text-[10px] text-gray-500 uppercase tracking-wider">Metric</span>
-        <div className="flex items-center gap-8">
-          <div className="flex items-center gap-1.5 w-16 justify-end">
-            <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-purple-500/20 text-purple-400 border border-purple-500/30">AW5</span>
-            <span className="text-[10px] text-gray-600">({aw5?.user_count || 0})</span>
+      <SectionHeader title="Journal Entries" subtitle="Automated logging — what's being captured?" icon={BookOpen} />
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2">
+        {data.map(row => (
+          <div key={row.entry_type} className="p-3 bg-[#0a0a0a] rounded-lg text-center">
+            <p className="text-lg font-bold text-white">{row.total_entries}</p>
+            <p className="text-[10px] text-gray-500">{JOURNAL_TYPE_LABELS[row.entry_type] || row.entry_type.replace(/_/g, ' ')}</p>
+            <p className="text-[9px] text-gray-600">{row.unique_users} users · {row.entries_last_7d} this week</p>
           </div>
-          <div className="flex items-center gap-1.5 w-16 justify-end">
-            <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-[#ff9e19]/20 text-[#ff9e19] border border-[#ff9e19]/30">ORG</span>
-            <span className="text-[10px] text-gray-600">({organic?.user_count || 0})</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Rows */}
-      <div className="space-y-0">
-        {rows.map(row => {
-          const aw5Better = row.higherBetter ? row.aw5Num > row.orgNum : row.aw5Num < row.orgNum;
-          const orgBetter = row.higherBetter ? row.orgNum > row.aw5Num : row.orgNum < row.aw5Num;
-          return (
-            <div key={row.label} className="flex items-center justify-between py-2.5 border-b border-[#1a1a1a] last:border-0">
-              <span className="text-xs text-gray-400">{row.label}</span>
-              <div className="flex items-center gap-8">
-                <span className={`text-sm font-medium w-16 text-right ${aw5Better ? 'text-purple-400' : 'text-gray-400'}`}>
-                  {row.aw5}
-                </span>
-                <span className={`text-sm font-medium w-16 text-right ${orgBetter ? 'text-[#ff9e19]' : 'text-gray-400'}`}>
-                  {row.org}
-                </span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ============================================
-// TREND SPARKLINE (NEW - inline for user table)
-// ============================================
-function TrendSparkline({ trends, userId }: { trends: UserTrendRow[] | null; userId: string }) {
-  if (!trends) return <span className="text-gray-600 text-xs">—</span>;
-
-  const userWeeks = trends
-    .filter(t => t.user_id === userId)
-    .sort((a, b) => a.week_start.localeCompare(b.week_start));
-
-  if (userWeeks.length === 0) return <span className="text-gray-600 text-xs">—</span>;
-
-  // Calculate overall trend direction
-  const first = userWeeks[0]?.weekly_rate || 0;
-  const last = userWeeks[userWeeks.length - 1]?.weekly_rate || 0;
-  const trendDir = last - first;
-
-  return (
-    <div className="flex items-center gap-2">
-      {/* Mini bar chart */}
-      <div className="flex items-end gap-0.5 h-5">
-        {userWeeks.map((week) => (
-          <div
-            key={week.week_start}
-            className={`w-2.5 rounded-sm transition-all ${
-              week.weekly_rate >= 70 ? 'bg-emerald-500' :
-              week.weekly_rate >= 40 ? 'bg-yellow-500' :
-              week.weekly_rate > 0 ? 'bg-red-500' : 'bg-[#2a2a2a]'
-            }`}
-            style={{ height: `${Math.max((week.weekly_rate / 100) * 20, 2)}px` }}
-            title={`${new Date(week.week_start).toLocaleDateString()}: ${week.weekly_rate}%`}
-          />
         ))}
       </div>
-      {/* Trend arrow */}
-      {trendDir > 5 && <TrendingUp className="w-3 h-3 text-emerald-500" />}
-      {trendDir < -5 && <TrendingDown className="w-3 h-3 text-red-500" />}
-      {trendDir >= -5 && trendDir <= 5 && <Minus className="w-3 h-3 text-gray-600" />}
     </div>
   );
 }
 
 // ============================================
-// STAGE DISTRIBUTION BAR
+// STAGE DISTRIBUTION BAR (existing, cleaned up)
 // ============================================
 function StageDistributionBar({ data }: { data: DashboardData['stageDistribution'] }) {
-  const colors = [
-    'bg-blue-500', 'bg-cyan-500', 'bg-emerald-500', 'bg-yellow-500',
-    'bg-orange-500', 'bg-red-500', 'bg-purple-500'
-  ];
+  const colors = ['bg-blue-500','bg-cyan-500','bg-emerald-500','bg-yellow-500','bg-orange-500','bg-red-500','bg-purple-500'];
   return (
     <div className="bg-[#111111] border border-[#1a1a1a] rounded-lg p-6">
-      <h3 className="text-lg font-semibold text-white mb-4">Stage Distribution</h3>
+      <SectionHeader title="Stage Distribution" />
       <div className="h-8 rounded-full overflow-hidden flex bg-[#1a1a1a] mb-4">
         {data?.map((stage, i) => (
           <div key={stage.current_stage} className={`${colors[i]} transition-all duration-300`}
             style={{ width: `${stage.percentage}%` }}
-            title={`Stage ${stage.current_stage}: ${stage.user_count} (${stage.percentage}%)`}
-          />
+            title={`Stage ${stage.current_stage}: ${stage.user_count} (${stage.percentage}%)`} />
         ))}
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
@@ -620,40 +920,36 @@ function StageDistributionBar({ data }: { data: DashboardData['stageDistribution
 }
 
 // ============================================
-// CONVERSION FUNNEL
+// CONVERSION FUNNEL (existing)
 // ============================================
 function ConversionFunnel({ data }: { data: DashboardData['funnelMetrics'] }) {
   if (!data) return null;
   const stages = [
     { label: 'Total Users', count: data.started, rate: 100 },
-    { label: 'Stage 1', count: data.completed_stage_1, rate: data.rate_1_to_2 },
-    { label: 'Stage 2', count: data.completed_stage_2, rate: data.rate_2_to_3 },
-    { label: 'Stage 3', count: data.completed_stage_3, rate: data.rate_3_to_4 },
-    { label: 'Stage 4', count: data.completed_stage_4, rate: data.rate_4_to_5 },
-    { label: 'Stage 5', count: data.completed_stage_5, rate: data.rate_5_to_6 },
-    { label: 'Stage 6', count: data.completed_stage_6, rate: data.rate_6_to_7 },
+    { label: 'Stage 1→2', count: data.completed_stage_1, rate: data.rate_1_to_2 },
+    { label: 'Stage 2→3', count: data.completed_stage_2, rate: data.rate_2_to_3 },
+    { label: 'Stage 3→4', count: data.completed_stage_3, rate: data.rate_3_to_4 },
+    { label: 'Stage 4→5', count: data.completed_stage_4, rate: data.rate_4_to_5 },
+    { label: 'Stage 5→6', count: data.completed_stage_5, rate: data.rate_5_to_6 },
+    { label: 'Stage 6→7', count: data.completed_stage_6, rate: data.rate_6_to_7 },
   ];
   return (
     <div className="bg-[#111111] border border-[#1a1a1a] rounded-lg p-6">
-      <h3 className="text-lg font-semibold text-white mb-4">Current Stage Distribution</h3>
-      <div className="space-y-3">
-        {stages.map((stage) => (
-          <div key={stage.label} className="flex items-center gap-4">
-            <div className="w-24 text-sm text-gray-400">{stage.label}</div>
-            <div className="flex-1 h-8 bg-[#1a1a1a] rounded-full overflow-hidden relative">
-              <div className="h-full bg-gradient-to-r from-[#ff9e19] to-[#ffb347] transition-all duration-500"
+      <SectionHeader title="Conversion Funnel" />
+      <div className="space-y-2">
+        {stages.map(stage => (
+          <div key={stage.label} className="flex items-center gap-3">
+            <div className="w-20 text-xs text-gray-400">{stage.label}</div>
+            <div className="flex-1 h-6 bg-[#1a1a1a] rounded-full overflow-hidden relative">
+              <div className="h-full bg-gradient-to-r from-[#ff9e19] to-[#ffb347] transition-all"
                 style={{ width: `${(stage.count / (data.started || 1)) * 100}%` }} />
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-xs font-medium text-white">{stage.count} users</span>
+                <span className="text-[10px] font-medium text-white">{stage.count}</span>
               </div>
             </div>
-            <div className="w-16 text-right">
-              <span className={`text-sm font-medium ${
-                stage.rate >= 50 ? 'text-emerald-500' : stage.rate >= 25 ? 'text-yellow-500' : 'text-red-500'
-              }`}>
-                {stage.rate?.toFixed(0) || 0}%
-              </span>
-            </div>
+            <span className={`text-xs font-medium w-10 text-right ${stage.rate >= 50 ? 'text-emerald-500' : stage.rate >= 25 ? 'text-yellow-500' : 'text-red-500'}`}>
+              {stage.rate?.toFixed(0) || 0}%
+            </span>
           </div>
         ))}
       </div>
@@ -662,117 +958,138 @@ function ConversionFunnel({ data }: { data: DashboardData['funnelMetrics'] }) {
 }
 
 // ============================================
-// ACTIVITY BREAKDOWN
+// COHORT COMPARISON (existing)
 // ============================================
-function ActivityBreakdown({ data }: { data: DashboardData['activityMetrics'] }) {
-  if (!data) return null;
-  const metrics = [
-    { label: 'Active (7d)', value: data.active_7d, icon: CheckCircle2, color: 'text-emerald-500', bgColor: 'bg-emerald-500/10' },
-    { label: 'Active (30d)', value: data.active_30d, icon: Activity, color: 'text-blue-500', bgColor: 'bg-blue-500/10' },
-    { label: 'Churned (14d+)', value: data.churned_14d, icon: UserX, color: 'text-red-500', bgColor: 'bg-red-500/10' },
+function CohortComparison({ data }: { data: CohortRow[] | null }) {
+  if (!data || data.length === 0) return null;
+  const organic = data.find(d => d.cohort === 'organic');
+  const aw5 = data.find(d => d.cohort === 'awaken5');
+  if (!organic && !aw5) return null;
+
+  const rows = [
+    { label: 'Avg Adherence', aw5: `${aw5?.avg_adherence || 0}%`, org: `${organic?.avg_adherence || 0}%`, aw5Num: aw5?.avg_adherence || 0, orgNum: organic?.avg_adherence || 0, higherBetter: true },
+    { label: 'Avg Stage', aw5: aw5?.avg_stage || 0, org: organic?.avg_stage || 0, aw5Num: aw5?.avg_stage || 0, orgNum: organic?.avg_stage || 0, higherBetter: true },
+    { label: 'Avg REwired', aw5: aw5?.avg_rewired || 0, org: organic?.avg_rewired || 0, aw5Num: aw5?.avg_rewired || 0, orgNum: organic?.avg_rewired || 0, higherBetter: true },
+    { label: 'Engagement (7d)', aw5: `${aw5?.engagement_rate || 0}%`, org: `${organic?.engagement_rate || 0}%`, aw5Num: aw5?.engagement_rate || 0, orgNum: organic?.engagement_rate || 0, higherBetter: true },
+    { label: 'Churned', aw5: aw5?.churned_count || 0, org: organic?.churned_count || 0, aw5Num: aw5?.churned_count || 0, orgNum: organic?.churned_count || 0, higherBetter: false },
   ];
+
   return (
     <div className="bg-[#111111] border border-[#1a1a1a] rounded-lg p-6">
-      <h3 className="text-lg font-semibold text-white mb-4">User Activity</h3>
-      <div className="grid grid-cols-3 gap-4">
-        {metrics.map((m) => (
-          <div key={m.label} className="text-center">
-            <div className={`inline-flex p-3 rounded-lg ${m.bgColor} mb-2`}>
-              <m.icon className={`w-5 h-5 ${m.color}`} />
-            </div>
-            <p className="text-2xl font-bold text-white">{m.value}</p>
-            <p className="text-xs text-gray-400">{m.label}</p>
-          </div>
-        ))}
+      <SectionHeader title="Cohort Comparison" />
+      <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#2a2a2a]">
+        <span className="text-[10px] text-gray-500 uppercase">Metric</span>
+        <div className="flex items-center gap-8">
+          <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-purple-500/20 text-purple-400">AW5 ({aw5?.user_count || 0})</span>
+          <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-[#ff9e19]/20 text-[#ff9e19]">ORG ({organic?.user_count || 0})</span>
+        </div>
       </div>
+      {rows.map(row => {
+        const aw5Better = row.higherBetter ? row.aw5Num > row.orgNum : row.aw5Num < row.orgNum;
+        const orgBetter = row.higherBetter ? row.orgNum > row.aw5Num : row.orgNum < row.aw5Num;
+        return (
+          <div key={row.label} className="flex items-center justify-between py-2 border-b border-[#1a1a1a] last:border-0">
+            <span className="text-xs text-gray-400">{row.label}</span>
+            <div className="flex items-center gap-8">
+              <span className={`text-sm font-medium w-14 text-right ${aw5Better ? 'text-purple-400' : 'text-gray-400'}`}>{row.aw5}</span>
+              <span className={`text-sm font-medium w-14 text-right ${orgBetter ? 'text-[#ff9e19]' : 'text-gray-400'}`}>{row.org}</span>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
 
 // ============================================
-// RECENT USERS TABLE (Updated with sparklines)
+// TREND SPARKLINE (existing)
+// ============================================
+function TrendSparkline({ trends, userId }: { trends: UserTrendRow[] | null; userId: string }) {
+  if (!trends) return <span className="text-gray-600 text-xs">—</span>;
+  const userWeeks = trends.filter(t => t.user_id === userId).sort((a, b) => a.week_start.localeCompare(b.week_start));
+  if (userWeeks.length === 0) return <span className="text-gray-600 text-xs">—</span>;
+  const first = userWeeks[0]?.weekly_rate || 0;
+  const last = userWeeks[userWeeks.length - 1]?.weekly_rate || 0;
+  const trendDir = last - first;
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex items-end gap-0.5 h-5">
+        {userWeeks.map(week => (
+          <div key={week.week_start} className={`w-2.5 rounded-sm ${week.weekly_rate >= 70 ? 'bg-emerald-500' : week.weekly_rate >= 40 ? 'bg-yellow-500' : week.weekly_rate > 0 ? 'bg-red-500' : 'bg-[#2a2a2a]'}`}
+            style={{ height: `${Math.max((week.weekly_rate / 100) * 20, 2)}px` }}
+            title={`${new Date(week.week_start).toLocaleDateString()}: ${week.weekly_rate}%`} />
+        ))}
+      </div>
+      {trendDir > 5 && <TrendingUp className="w-3 h-3 text-emerald-500" />}
+      {trendDir < -5 && <TrendingDown className="w-3 h-3 text-red-500" />}
+      {trendDir >= -5 && trendDir <= 5 && <Minus className="w-3 h-3 text-gray-600" />}
+    </div>
+  );
+}
+
+// ============================================
+// RECENT USERS TABLE (existing)
 // ============================================
 function RecentUsersTable({ users, trends }: { users: DashboardData['recentUsers']; trends: UserTrendRow[] | null }) {
-  if (!users?.length) {
-    return (
-      <div className="bg-[#111111] border border-[#1a1a1a] rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Recent Users</h3>
-        <p className="text-gray-400">No users found.</p>
-      </div>
-    );
-  }
+  if (!users?.length) return null;
   return (
     <div className="bg-[#111111] border border-[#1a1a1a] rounded-lg overflow-hidden">
       <div className="p-6 border-b border-[#1a1a1a]">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-white">Recent Users</h3>
-          <a href="/admin/users" className="text-sm text-[#ff9e19] hover:text-[#ffb347] flex items-center gap-1">
-            View All <ChevronRight className="w-4 h-4" />
-          </a>
+          <a href="/admin/users" className="text-sm text-[#ff9e19] hover:text-[#ffb347] flex items-center gap-1">View All <ChevronRight className="w-4 h-4" /></a>
         </div>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead className="bg-[#0a0a0a]">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">User</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Stage</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Adherence</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">4-Wk Trend</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">REwired</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Last Active</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">User</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Stage</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Adherence</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">4-Wk Trend</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">REwired</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Status</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Last Active</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#1a1a1a]">
-            {users.slice(0, 10).map((user) => (
+            {users.slice(0, 15).map(user => (
               <tr key={user.user_id} className="hover:bg-[#1a1a1a]/50 transition-colors">
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-4 py-3 whitespace-nowrap">
                   <div>
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium text-white">{user.first_name || 'Unknown'}</p>
                       {user.referral_source && user.referral_source !== 'organic' && (
-                        <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-purple-500/20 text-purple-400 border border-purple-500/30 uppercase">
-                          {user.referral_source === 'awaken5' ? 'AW5' : user.referral_source}
-                        </span>
+                        <span className="px-1 py-0.5 text-[9px] font-semibold rounded bg-purple-500/20 text-purple-400 uppercase">AW5</span>
                       )}
                     </div>
-                    <p className="text-xs text-gray-500">{user.email}</p>
+                    <p className="text-[10px] text-gray-500">{user.email}</p>
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-white">{user.current_stage}</span>
-                    <span className="text-xs text-gray-500">({user.days_in_stage}d)</span>
-                  </div>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  <span className="text-sm text-white">{user.current_stage}</span>
+                  <span className="text-[10px] text-gray-500 ml-1">({user.days_in_stage}d)</span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-4 py-3 whitespace-nowrap">
                   <div className="flex items-center gap-2">
-                    <div className="w-16 h-2 bg-[#1a1a1a] rounded-full overflow-hidden">
-                      <div className={`h-full rounded-full ${
-                        user.adherence_percentage >= 80 ? 'bg-emerald-500' : 
-                        user.adherence_percentage >= 50 ? 'bg-yellow-500' : 'bg-red-500'
-                      }`} style={{ width: `${user.adherence_percentage}%` }} />
+                    <div className="w-14 h-2 bg-[#1a1a1a] rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full ${user.adherence_percentage >= 80 ? 'bg-emerald-500' : user.adherence_percentage >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                        style={{ width: `${user.adherence_percentage}%` }} />
                     </div>
-                    <span className="text-sm text-gray-400">{user.adherence_percentage}%</span>
+                    <span className="text-xs text-gray-400">{user.adherence_percentage}%</span>
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <TrendSparkline trends={trends} userId={user.user_id} />
+                <td className="px-4 py-3 whitespace-nowrap"><TrendSparkline trends={trends} userId={user.user_id} /></td>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  <span className="text-sm text-[#ff9e19] font-medium">{user.rewired_index?.toFixed(0) || '—'}</span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="text-sm text-[#ff9e19] font-medium">
-                    {user.rewired_index?.toFixed(0) || 'N/A'}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    user.is_paid ? 'bg-emerald-500/20 text-emerald-500' : 'bg-gray-500/20 text-gray-400'
-                  }`}>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  <span className={`px-2 py-1 text-xs rounded-full ${user.is_paid ? 'bg-emerald-500/20 text-emerald-500' : 'bg-gray-500/20 text-gray-400'}`}>
                     {user.is_paid ? 'Paid' : 'Free'}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-400">
                   {user.last_active ? new Date(user.last_active).toLocaleDateString() : 'Never'}
                 </td>
               </tr>
@@ -831,50 +1148,48 @@ export default function AdminDashboard() {
         <div className="flex flex-col items-center gap-4 text-center">
           <AlertCircle className="w-12 h-12 text-red-500" />
           <p className="text-white font-medium">{error}</p>
-          <button onClick={fetchData} className="px-4 py-2 bg-[#ff9e19] text-black rounded-lg hover:bg-[#ffb347] transition-colors">
-            Try Again
-          </button>
+          <button onClick={fetchData} className="px-4 py-2 bg-[#ff9e19] text-black rounded-lg hover:bg-[#ffb347] transition-colors">Try Again</button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-12">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white">Dashboard Overview</h2>
           {lastUpdated && (
-            <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
-              <Clock className="w-3 h-3" />
-              Last updated: {lastUpdated.toLocaleTimeString()}
+            <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+              <Clock className="w-3 h-3" /> Updated: {lastUpdated.toLocaleTimeString()}
             </p>
           )}
         </div>
         <button onClick={fetchData} disabled={loading}
           className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-white hover:bg-[#2a2a2a] transition-colors disabled:opacity-50">
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
         </button>
       </div>
 
-      {/* ★ NEEDS ATTENTION - First thing you see */}
+      {/* ═══ ROW 1: ALERTS ═══ */}
       <NeedsAttentionPanel alerts={data?.userAlerts || null} />
 
-      {/* Top Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard title="Total Users" value={data?.overview?.total_users || 0} subtitle="All time signups" icon={Users} color="blue" />
+      {/* ═══ ROW 2: TOP-LINE METRICS ═══ */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <MetricCard title="Total Users" value={data?.overview?.total_users || 0} subtitle="All time" icon={Users} color="blue" />
         <MetricCard title="Paid Users" value={data?.overview?.paid_users || 0} subtitle={`${data?.overview?.conversion_rate || 0}% conversion`} icon={DollarSign} color="green" />
-        <MetricCard title="Free Users" value={data?.overview?.free_users || 0} subtitle="Stage 1 (free tier)" icon={Users} color="orange" />
         <MetricCard title="Active (7d)" value={data?.activityMetrics?.active_7d || 0}
           subtitle={`${((data?.activityMetrics?.active_7d || 0) / (data?.overview?.total_users || 1) * 100).toFixed(0)}% of total`}
           icon={Activity} color="green" />
+        <MetricCard title="Churned (14d+)" value={data?.activityMetrics?.churned_14d || 0}
+          subtitle={`${((data?.activityMetrics?.churned_14d || 0) / (data?.overview?.total_users || 1) * 100).toFixed(0)}% of total`}
+          icon={UserX} color="red" />
       </div>
 
-      {/* Revenue Metrics */}
-      {data?.revenueMetrics && (
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      {/* ═══ ROW 3: REVENUE (compact) ═══ */}
+      {data?.revenueMetrics && (data.revenueMetrics.active_subscriptions > 0 || data.revenueMetrics.in_trial > 0) && (
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <MetricCard title="Active Subs" value={data.revenueMetrics.active_subscriptions || 0} icon={DollarSign} color="green" />
           <MetricCard title="Monthly" value={data.revenueMetrics.monthly_subs || 0} icon={TrendingUp} color="blue" />
           <MetricCard title="Annual" value={data.revenueMetrics.annual_subs || 0} icon={TrendingUp} color="orange" />
@@ -883,23 +1198,45 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* Stage Distribution */}
+      {/* ═══ ROW 4: BASELINE + STAGE DISTRIBUTION ═══ */}
+      <BaselinePanel data={data?.baselineCompletion || null} />
       {data?.stageDistribution && <StageDistributionBar data={data.stageDistribution} />}
 
-      {/* ★ PRACTICE HEATMAP - Full width */}
-      <PracticeHeatmap data={data?.practiceCompletion || null} summary={data?.practiceSummary || null} />
+      {/* ═══ ROW 5: STAGE 1 DEEP DIVE ═══ */}
+      <div className="border-l-4 border-[#ff9e19] pl-4">
+        <h2 className="text-lg font-bold text-white mb-1">Stage 1 Deep Dive</h2>
+        <p className="text-xs text-gray-500 mb-4">The critical first 14 days — where decisions live</p>
+      </div>
 
-      {/* Three Column: Funnel + Activity + Cohort */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <SurvivalCurve data={data?.stage1Survival || null} />
+        <SignalCheckTrends data={data?.signalCheckTrends || null} />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <EnhancementDelivery data={data?.enhancementDelivery || null} />
+        <TimeToUnlock data={data?.timeToUnlock || null} />
+      </div>
+
+      {/* ═══ ROW 6: ENGAGEMENT DEPTH ═══ */}
+      <EngagementDepth data={data?.engagementSummary || null} checkins={data?.weeklyCheckinStats || null} />
+
+      {/* ═══ ROW 7: PRACTICE + TOOLS + JOURNAL ═══ */}
+      <PracticeHeatmap data={data?.practiceCompletion || null} summary={data?.practiceSummary || null} />
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <ToolUsagePanel data={data?.toolUsage || null} />
+        <JournalStatsPanel data={data?.journalStats || null} />
+      </div>
+
+      {/* ═══ ROW 8: FUNNEL + COHORTS ═══ */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {data?.funnelMetrics && <ConversionFunnel data={data.funnelMetrics} />}
-        {data?.activityMetrics && <ActivityBreakdown data={data.activityMetrics} />}
         <CohortComparison data={data?.cohortMetrics || null} />
       </div>
 
-      {/* Recent Users Table with Sparklines */}
-      {data?.recentUsers && (
-        <RecentUsersTable users={data.recentUsers} trends={data?.userTrends || null} />
-      )}
+      {/* ═══ ROW 9: USERS TABLE ═══ */}
+      {data?.recentUsers && <RecentUsersTable users={data.recentUsers} trends={data?.userTrends || null} />}
     </div>
   );
 }
