@@ -2073,6 +2073,14 @@ ${context === 'stage_7_opening'
 - Current adherence: ${checkInData.adherence ?? 0}%
 - Weeks since baseline: ${checkInData.weekNumber ?? 1}
 ${checkInData.weeksDeclined ? `- Consecutive weeks declined: ${checkInData.weeksDeclined}` : ''}
+${checkInData.currentStage === 1 && checkInData.daysInStage >= 7 && checkInData.daysInStage < 14 ? `
+## ACCELERATED PATH STATUS
+Stage 1 has an accelerated unlock path (Day 10 instead of Day 14) for exceptional performers.
+Requirements: ≥95% adherence, ≥+0.5 delta, ≥4/5 competence rating.
+Current adherence: ${checkInData.adherence ?? 0}% ${(checkInData.adherence ?? 0) >= 95 ? '✓' : '(need 95%)'}
+Current delta: ${checkInData.avgDelta >= 0 ? '+' : ''}${checkInData.avgDelta?.toFixed(2) ?? '0.00'} ${(checkInData.avgDelta ?? 0) >= 0.5 ? '✓' : '(need +0.50)'}
+Days in stage: ${checkInData.daysInStage ?? 0}
+If the user is tracking toward accelerated unlock, mention it briefly as encouragement. If not, don't bring it up.` : ''}
 
 ## INSTRUCTION
 ${checkInData.declined 
