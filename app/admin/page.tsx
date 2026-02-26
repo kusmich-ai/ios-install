@@ -450,6 +450,7 @@ function InterventionModal({
     at_risk: { border: 'border-red-500/30', bg: 'bg-red-500/5', text: 'text-red-400', label: 'At Risk' },
     stalling: { border: 'border-yellow-500/30', bg: 'bg-yellow-500/5', text: 'text-yellow-400', label: 'Stalling' },
     ready_to_unlock: { border: 'border-emerald-500/30', bg: 'bg-emerald-500/5', text: 'text-emerald-400', label: 'Ready to Unlock' },
+    healthy: { border: 'border-gray-500/30', bg: 'bg-gray-500/5', text: 'text-gray-400', label: 'Healthy' },
   };
   const colors = alertColors[user.alert_type] || alertColors.at_risk;
 
