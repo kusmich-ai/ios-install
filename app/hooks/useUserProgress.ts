@@ -60,7 +60,7 @@ export interface UserProgress {
   
   // Progress tracking
   daysInStage: number;
-  unlockProgress: {
+ unlockProgress: {
     adherenceMet: boolean;
     daysMet: boolean;
     deltaMet: boolean;
@@ -68,6 +68,8 @@ export interface UserProgress {
     requiredAdherence: number;
     requiredDays: number;
     requiredDelta: number;
+    isAccelerated: boolean;
+    acceleratedDays: number | null;
   };
   
   // Stage attribution "seen" flags (for show-once unlock modals)
