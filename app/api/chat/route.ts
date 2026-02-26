@@ -2284,7 +2284,28 @@ ${context === 'breakthrough_response'
     // STEP 8: MAKE API CALL (with tool loop)
     const model = context === 'flow_block_setup' ? 'claude-opus-4-20250514' : 'claude-sonnet-4-20250514';
     
-    let response = await anthropic.messages.create({
+    // Retry wrapper for Claude API overload (529)
+    async function callClaudeWithRetry(params: any, retries = 3): Promise<Anthropic.Message> {
+      for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+          return await anthropic.messages.create(params);
+        } catch (apiError: any) {
+          const isOverloaded = apiError?.status === 529 || 
+                               apiError?.error?.type === 'overloaded_error' ||
+                               apiError?.message?.includes('overloaded');
+          
+          if (isOverloaded && attempt < retries) {
+            console.log(`[API/Chat] Claude overloaded, retry ${attempt}/${retries}...`);
+            await new Promise(r => setTimeout(r, attempt * 2000));
+            continue;
+          }
+          throw apiError;
+        }
+      }
+      throw new Error('Failed after retries');
+    }
+
+    let response = await callClaudeWithRetry({
       model,
       max_tokens: maxTokens,
       temperature: temperature,
@@ -2324,7 +2345,7 @@ ${context === 'breakthrough_response'
       }
 
       // Continue conversation with tool results
-      response = await anthropic.messages.create({
+      response = await callClaudeWithRetry({
         model,
         max_tokens: maxTokens,
         temperature: temperature,
