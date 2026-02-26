@@ -1751,7 +1751,18 @@ const getFallbackResultsMessage = (
       setUnlockFlowState('eligible_shown');
       
 const unlockMessages: { [key: number]: string } = {
-  2: processTemplate(unlockCelebrations.stage2.achievement, {
+  2: progress?.unlockProgress?.isAccelerated
+    ? `⚡ **Neural Priming stabilized — ahead of schedule.**
+
+Your consistency was exceptional. You've met the accelerated criteria:
+- ≥95% adherence ✓
+- ≥+0.5 average delta improvement ✓
+- Stage competence ≥4/5 ✓
+
+Your nervous system responded faster than the standard timeline. That's earned, not given.
+
+**Unlock Stage 2: Embodied Awareness?**`
+    : processTemplate(unlockCelebrations.stage2.achievement, {
     adherence: Math.round(progress?.adherencePercentage || 80),
     consecutiveDays: progress?.consecutiveDays || 14,
     avgDelta: 0.30
