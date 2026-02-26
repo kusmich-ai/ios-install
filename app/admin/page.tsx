@@ -156,6 +156,40 @@ interface BaselineCompletion {
   avg_attention: number;
 }
 
+interface TransformationSnapshot {
+  baseline_regulation: number;
+  baseline_awareness: number;
+  baseline_outlook: number;
+  baseline_attention: number;
+  baseline_rewired: number;
+  current_regulation: number;
+  current_awareness: number;
+  current_outlook: number;
+  current_attention: number;
+  current_rewired: number;
+  delta_regulation: number;
+  delta_awareness: number;
+  delta_outlook: number;
+  delta_attention: number;
+  delta_rewired: number;
+  users_with_checkins: number;
+}
+
+interface TransformationWeeklyRow {
+  week_of: string;
+  users_reporting: number;
+  avg_regulation: number;
+  avg_awareness: number;
+  avg_outlook: number;
+  avg_attention: number;
+  avg_rewired: number;
+  avg_regulation_delta: number;
+  avg_awareness_delta: number;
+  avg_outlook_delta: number;
+  avg_attention_delta: number;
+  avg_overall_delta: number;
+}
+
 interface DashboardData {
   overview: {
     total_users: number;
@@ -227,6 +261,8 @@ interface DashboardData {
   weeklyCheckinStats: WeeklyCheckinStats | null;
   engagementSummary: EngagementSummary | null;
   baselineCompletion: BaselineCompletion | null;
+  transformationSnapshot: TransformationSnapshot | null;
+  transformationWeekly: TransformationWeeklyRow[] | null;
 }
 
 // ============================================
@@ -777,6 +813,166 @@ function BaselinePanel({ data }: { data: BaselineCompletion | null }) {
 }
 
 // ============================================
+// TRANSFORMATION TRACKER (NEW)
+// Baseline → Current → Delta for REwired + 4 domains
+// Plus week-over-week progression chart
+// ============================================
+function TransformationTracker({ 
+  snapshot, weekly 
+}: { 
+  snapshot: TransformationSnapshot | null; 
+  weekly: TransformationWeeklyRow[] | null;
+}) {
+  if (!snapshot) {
+    return (
+      <div className="bg-[#111111] border border-[#1a1a1a] rounded-lg p-6">
+        <SectionHeader title="Transformation Tracker" subtitle="Baseline → Current across REwired Index + 4 domains" icon={TrendingUp} />
+        <p className="text-sm text-gray-500 text-center py-6">No transformation data yet — needs baseline + at least one weekly check-in</p>
+      </div>
+    );
+  }
+
+  const domains = [
+    { key: 'regulation', label: 'Regulation', color: 'text-emerald-500', barColor: 'bg-emerald-500', bgColor: 'bg-emerald-500/20',
+      baseline: snapshot.baseline_regulation, current: snapshot.current_regulation, delta: snapshot.delta_regulation },
+    { key: 'awareness', label: 'Awareness', color: 'text-blue-500', barColor: 'bg-blue-500', bgColor: 'bg-blue-500/20',
+      baseline: snapshot.baseline_awareness, current: snapshot.current_awareness, delta: snapshot.delta_awareness },
+    { key: 'outlook', label: 'Outlook', color: 'text-yellow-500', barColor: 'bg-yellow-500', bgColor: 'bg-yellow-500/20',
+      baseline: snapshot.baseline_outlook, current: snapshot.current_outlook, delta: snapshot.delta_outlook },
+    { key: 'attention', label: 'Attention', color: 'text-purple-500', barColor: 'bg-purple-500', bgColor: 'bg-purple-500/20',
+      baseline: snapshot.baseline_attention, current: snapshot.current_attention, delta: snapshot.delta_attention },
+  ];
+
+  const hasWeeklyData = weekly && weekly.length > 1;
+
+  return (
+    <div className="bg-[#111111] border border-[#1a1a1a] rounded-lg p-6">
+      <SectionHeader title="Transformation Tracker" subtitle={`Baseline → Current (${snapshot.users_with_checkins} users with check-ins)`} icon={TrendingUp} />
+      
+      {/* REwired Index Hero */}
+      <div className="mb-6 p-4 bg-[#0a0a0a] rounded-lg border border-[#ff9e19]/20">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-sm font-medium text-[#ff9e19]">REwired Index</span>
+          <span className={`text-lg font-bold ${snapshot.delta_rewired >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            {snapshot.delta_rewired >= 0 ? '+' : ''}{snapshot.delta_rewired}
+          </span>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="text-center">
+            <p className="text-2xl font-bold text-gray-400">{snapshot.baseline_rewired}</p>
+            <p className="text-[10px] text-gray-600">Baseline</p>
+          </div>
+          <div className="flex-1 h-3 bg-[#1a1a1a] rounded-full overflow-hidden relative">
+            {/* Baseline marker */}
+            <div className="absolute h-full w-0.5 bg-gray-500 z-10" style={{ left: `${(snapshot.baseline_rewired / 100) * 100}%` }} />
+            {/* Current fill */}
+            <div className={`h-full rounded-full transition-all ${snapshot.current_rewired >= snapshot.baseline_rewired ? 'bg-[#ff9e19]' : 'bg-red-500'}`}
+              style={{ width: `${(snapshot.current_rewired / 100) * 100}%` }} />
+          </div>
+          <div className="text-center">
+            <p className="text-2xl font-bold text-[#ff9e19]">{snapshot.current_rewired}</p>
+            <p className="text-[10px] text-gray-600">Current</p>
+          </div>
+        </div>
+      </div>
+
+      {/* 4 Domain Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        {domains.map(d => (
+          <div key={d.key} className="p-3 bg-[#0a0a0a] rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <span className={`text-xs font-medium ${d.color}`}>{d.label}</span>
+              <span className={`text-sm font-bold ${d.delta >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                {d.delta >= 0 ? '+' : ''}{d.delta}
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex-1">
+                {/* Baseline bar */}
+                <div className="flex items-center gap-1.5 mb-1">
+                  <div className="w-full h-2 bg-[#1a1a1a] rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full ${d.barColor} opacity-30`} style={{ width: `${(d.baseline / 5) * 100}%` }} />
+                  </div>
+                  <span className="text-[10px] text-gray-500 w-6 text-right">{d.baseline}</span>
+                </div>
+                {/* Current bar */}
+                <div className="flex items-center gap-1.5">
+                  <div className="w-full h-2 bg-[#1a1a1a] rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full ${d.barColor}`} style={{ width: `${(d.current / 5) * 100}%` }} />
+                  </div>
+                  <span className={`text-[10px] font-medium w-6 text-right ${d.color}`}>{d.current}</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-between mt-1.5">
+              <span className="text-[9px] text-gray-600">Baseline</span>
+              <span className="text-[9px] text-gray-600">Current</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Week-over-Week Progression Chart */}
+      {hasWeeklyData && (
+        <div>
+          <div className="flex items-center justify-between mb-3 pt-3 border-t border-[#1a1a1a]">
+            <span className="text-xs text-gray-400 font-medium">Weekly REwired Index Progression</span>
+            <span className="text-[10px] text-gray-600">{weekly!.length} weeks tracked</span>
+          </div>
+          <div className="flex items-end gap-1 h-24 mb-2">
+            {weekly!.map((w, i) => {
+              const height = Math.max((w.avg_rewired / 100) * 100, 4);
+              const prevRewired = i > 0 ? weekly![i - 1].avg_rewired : snapshot.baseline_rewired;
+              const improving = w.avg_rewired >= prevRewired;
+              return (
+                <div key={w.week_of} className="flex-1 flex flex-col items-center gap-0.5"
+                  title={`Week of ${new Date(w.week_of).toLocaleDateString()}: REwired ${w.avg_rewired} (${w.users_reporting} users)\nReg: ${w.avg_regulation} | Awr: ${w.avg_awareness} | Out: ${w.avg_outlook} | Att: ${w.avg_attention}`}>
+                  <span className="text-[8px] text-gray-500">{w.avg_rewired}</span>
+                  <div className="w-full rounded-t" style={{ height: `${height}%`, minHeight: '4px' }}>
+                    <div className={`w-full h-full rounded-t ${improving ? 'bg-[#ff9e19]' : 'bg-[#ff9e19]/40'}`} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex gap-1">
+            {weekly!.map(w => (
+              <div key={`l-${w.week_of}`} className="flex-1 text-center">
+                <span className="text-[7px] text-gray-600">
+                  {new Date(w.week_of).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* Domain delta trend (mini) */}
+          <div className="grid grid-cols-4 gap-3 mt-4 pt-3 border-t border-[#1a1a1a]">
+            {[
+              { label: 'Regulation', key: 'avg_regulation_delta' as const, color: 'text-emerald-500' },
+              { label: 'Awareness', key: 'avg_awareness_delta' as const, color: 'text-blue-500' },
+              { label: 'Outlook', key: 'avg_outlook_delta' as const, color: 'text-yellow-500' },
+              { label: 'Attention', key: 'avg_attention_delta' as const, color: 'text-purple-500' },
+            ].map(d => {
+              const latest = weekly![weekly!.length - 1];
+              const val = latest[d.key];
+              return (
+                <div key={d.key} className="text-center">
+                  <span className={`text-sm font-bold ${val >= 0 ? d.color : 'text-red-400'}`}>
+                    {val >= 0 ? '+' : ''}{val}
+                  </span>
+                  <p className="text-[9px] text-gray-500">{d.label} Δ</p>
+                  <p className="text-[8px] text-gray-600">latest week</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================
 // PRACTICE HEATMAP (existing, cleaned up)
 // ============================================
 function PracticeHeatmap({ data, summary }: { data: PracticeRow[] | null; summary: PracticeSummaryRow[] | null }) {
@@ -1198,8 +1394,9 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* ═══ ROW 4: BASELINE + STAGE DISTRIBUTION ═══ */}
+      {/* ═══ ROW 4: BASELINE + TRANSFORMATION + STAGE DISTRIBUTION ═══ */}
       <BaselinePanel data={data?.baselineCompletion || null} />
+      <TransformationTracker snapshot={data?.transformationSnapshot || null} weekly={data?.transformationWeekly || null} />
       {data?.stageDistribution && <StageDistributionBar data={data.stageDistribution} />}
 
       {/* ═══ ROW 5: STAGE 1 DEEP DIVE ═══ */}
