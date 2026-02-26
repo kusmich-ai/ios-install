@@ -377,6 +377,14 @@ const flowBlockSprint = flowBlockSprintArray?.[0] || null;
       const threshold = UNLOCK_THRESHOLDS[progressData.current_stage];
       const COMPETENCE_THRESHOLD = 4.0;
       
+      // Determine if accelerated path is met
+      const isAcceleratedEligible = threshold?.accelerated ? (
+        progressData.adherence_percentage >= threshold.accelerated.adherence &&
+        daysInStage >= threshold.accelerated.days &&
+        (domainDeltas.average >= threshold.accelerated.delta || avgScore >= COMPETENCE_THRESHOLD) &&
+        latestQualitativeRating !== null && latestQualitativeRating >= threshold.accelerated.qualitative
+      ) : false;
+
       const unlockProgress = threshold ? {
         adherenceMet: progressData.adherence_percentage >= threshold.adherence,
         daysMet: daysInStage >= threshold.days,
@@ -384,7 +392,9 @@ const flowBlockSprint = flowBlockSprintArray?.[0] || null;
         qualitativeMet: latestQualitativeRating !== null && latestQualitativeRating >= threshold.qualitative,
         requiredAdherence: threshold.adherence,
         requiredDays: threshold.days,
-        requiredDelta: threshold.delta
+        requiredDelta: threshold.delta,
+        isAccelerated: isAcceleratedEligible,
+        acceleratedDays: threshold.accelerated?.days || null
       } : {
         adherenceMet: false,
         daysMet: false,
@@ -392,7 +402,9 @@ const flowBlockSprint = flowBlockSprintArray?.[0] || null;
         qualitativeMet: false,
         requiredAdherence: 0,
         requiredDays: 0,
-        requiredDelta: 0
+        requiredDelta: 0,
+        isAccelerated: false,
+        acceleratedDays: null
       };
 
       // Check unlock eligibility
