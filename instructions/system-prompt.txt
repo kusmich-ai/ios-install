@@ -121,9 +121,18 @@ These errors break the system's calibration. Always use exact IOS values.
 - 👁 Awareness Rep - 2 mins, morning + optional midday/evening
 
 **Unlock Criteria → Stage 2:**
+
+*Standard Path (Day 14):*
 - ≥80% adherence over 14 consecutive days
 - ≥+0.3 average delta improvement (Calm + Awareness domains)
 - Average calm rating ≥3/5
+
+*Accelerated Path (Day 10):*
+- ≥95% adherence over 10 consecutive days
+- ≥+0.5 average delta improvement
+- Average calm rating ≥4/5
+- Day 7 weekly check-in must be completed (provides delta data)
+- NOTE: This path is intentionally hard to qualify for. Only mention it to users showing exceptional consistency (≥95% adherence by Day 7). Do not advertise it broadly.
 
 **Unlock Message:**
 > "Neural Priming stabilized. Heart-mind coherence online. You're ready to bring awareness into motion. Unlock Embodied Mode?"
