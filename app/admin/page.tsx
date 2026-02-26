@@ -9,7 +9,7 @@ import {
   RefreshCw, ChevronRight, AlertCircle, AlertTriangle,
   CheckCircle2, Clock, UserX, Zap, Minus, BarChart3,
   Brain, Target, BookOpen, MessageSquare, Layers,
-  ArrowDown, ArrowUp
+  ArrowDown, ArrowUp, Mail, Send, X, Eye
 } from 'lucide-react';
 
 // ============================================
@@ -367,9 +367,217 @@ function MiniStat({ label, value, color = 'white' }: { label: string; value: str
 }
 
 // ============================================
+// INTERVENTION MODAL
+// Click a user in Needs Attention → take action
+// ============================================
+const INTERVENTION_ACTIONS: { [alertType: string]: Array<{ id: string; label: string; icon: React.ElementType; description: string; color: string }> } = {
+  at_risk: [
+    { id: 'reengagement_email', label: 'Send Re-engagement Email', icon: Mail, description: 'Personalized email acknowledging their absence and inviting them back with encouragement', color: 'text-red-400' },
+    { id: 'personal_note', label: 'Send Personal Note', icon: Send, description: 'Custom message from you — write it below', color: 'text-red-400' },
+  ],
+  stalling: [
+    { id: 'encouragement_email', label: 'Send Encouragement Email', icon: Mail, description: 'Highlight their progress so far and remind them how close they are to the next milestone', color: 'text-yellow-400' },
+    { id: 'personal_note', label: 'Send Personal Note', icon: Send, description: 'Custom message from you — write it below', color: 'text-yellow-400' },
+  ],
+  ready_to_unlock: [
+    { id: 'unlock_prompt_email', label: 'Send Unlock Congratulations', icon: Zap, description: 'Celebrate their achievement and prompt them to unlock the next stage', color: 'text-emerald-400' },
+    { id: 'personal_note', label: 'Send Personal Note', icon: Send, description: 'Custom message from you — write it below', color: 'text-emerald-400' },
+  ],
+};
+
+function InterventionModal({ 
+  user, onClose, onSent 
+}: { 
+  user: UserAlert; 
+  onClose: () => void; 
+  onSent: (userId: string, action: string) => void;
+}) {
+  const [selectedAction, setSelectedAction] = useState<string | null>(null);
+  const [customMessage, setCustomMessage] = useState('');
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [recentInterventions, setRecentInterventions] = useState<Array<{ notification_type: string; sent_at: string }>>([]);
+  const [loadingHistory, setLoadingHistory] = useState(true);
+
+  const actions = INTERVENTION_ACTIONS[user.alert_type] || [];
+
+  // Load recent interventions for this user
+  useEffect(() => {
+    async function loadHistory() {
+      try {
+        const res = await fetch('/api/admin/interventions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'getHistory', userId: user.user_id }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setRecentInterventions(data.history || []);
+        }
+      } catch (e) { /* silent */ }
+      setLoadingHistory(false);
+    }
+    loadHistory();
+  }, [user.user_id]);
+
+  const handleSend = async () => {
+    if (!selectedAction) return;
+    setSending(true);
+    try {
+      const res = await fetch('/api/admin/interventions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'sendIntervention',
+          userId: user.user_id,
+          interventionType: selectedAction,
+          alertType: user.alert_type,
+          customMessage: selectedAction === 'personal_note' ? customMessage : undefined,
+        }),
+      });
+      if (res.ok) {
+        setSent(true);
+        onSent(user.user_id, selectedAction);
+        setTimeout(() => onClose(), 2000);
+      }
+    } catch (e) {
+      console.error('Failed to send intervention:', e);
+    }
+    setSending(false);
+  };
+
+  const alertColors = {
+    at_risk: { border: 'border-red-500/30', bg: 'bg-red-500/5', text: 'text-red-400', label: 'At Risk' },
+    stalling: { border: 'border-yellow-500/30', bg: 'bg-yellow-500/5', text: 'text-yellow-400', label: 'Stalling' },
+    ready_to_unlock: { border: 'border-emerald-500/30', bg: 'bg-emerald-500/5', text: 'text-emerald-400', label: 'Ready to Unlock' },
+  };
+  const colors = alertColors[user.alert_type] || alertColors.at_risk;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-[#111111] border border-[#2a2a2a] rounded-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        
+        {/* Header */}
+        <div className="flex items-center justify-between p-5 border-b border-[#1a1a1a]">
+          <div>
+            <h3 className="text-lg font-semibold text-white">{user.first_name}</h3>
+            <p className="text-xs text-gray-500">{user.email}</p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-[#1a1a1a] rounded-lg transition-colors">
+            <X className="w-5 h-5 text-gray-400" />
+          </button>
+        </div>
+
+        {/* Context */}
+        <div className="p-5 border-b border-[#1a1a1a]">
+          <div className="grid grid-cols-3 gap-3 mb-3">
+            <div className="text-center p-2 bg-[#0a0a0a] rounded-lg">
+              <p className="text-sm font-bold text-white">Stage {user.current_stage}</p>
+              <p className="text-[10px] text-gray-500">{user.days_in_stage} days</p>
+            </div>
+            <div className="text-center p-2 bg-[#0a0a0a] rounded-lg">
+              <p className={`text-sm font-bold ${user.adherence_percentage >= 60 ? 'text-emerald-400' : user.adherence_percentage >= 30 ? 'text-yellow-400' : 'text-red-400'}`}>
+                {user.adherence_percentage}%
+              </p>
+              <p className="text-[10px] text-gray-500">Adherence</p>
+            </div>
+            <div className="text-center p-2 bg-[#0a0a0a] rounded-lg">
+              <p className="text-sm font-bold text-gray-400">{user.days_since_practice}d ago</p>
+              <p className="text-[10px] text-gray-500">Last Practice</p>
+            </div>
+          </div>
+          <div className={`p-2.5 rounded-lg ${colors.bg} border ${colors.border}`}>
+            <div className="flex items-center gap-2 mb-1">
+              <span className={`text-xs font-medium ${colors.text}`}>{colors.label}</span>
+              {user.adherence_trend !== 0 && (
+                <span className={`text-[10px] ${user.adherence_trend < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+                  ({user.adherence_trend > 0 ? '+' : ''}{user.adherence_trend}% WoW)
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-gray-300">{user.alert_reason}</p>
+          </div>
+        </div>
+
+        {/* Recent intervention history */}
+        {!loadingHistory && recentInterventions.length > 0 && (
+          <div className="px-5 pt-4">
+            <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Recent Outreach</p>
+            <div className="space-y-1 mb-3">
+              {recentInterventions.slice(0, 3).map((item, i) => (
+                <div key={i} className="flex items-center justify-between py-1.5 px-2 bg-[#0a0a0a] rounded text-xs">
+                  <span className="text-gray-400">{item.notification_type.replace(/_/g, ' ')}</span>
+                  <span className="text-gray-600">{new Date(item.sent_at).toLocaleDateString()}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Actions */}
+        {sent ? (
+          <div className="p-8 text-center">
+            <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
+            <p className="text-white font-medium">Sent successfully</p>
+            <p className="text-xs text-gray-500 mt-1">Logged to notification history</p>
+          </div>
+        ) : (
+          <div className="p-5">
+            <p className="text-xs text-gray-400 mb-3">Choose an action:</p>
+            <div className="space-y-2">
+              {actions.map(action => (
+                <button 
+                  key={action.id}
+                  onClick={() => setSelectedAction(action.id)}
+                  className={`w-full text-left p-3 rounded-lg border transition-all ${
+                    selectedAction === action.id
+                      ? 'border-[#ff9e19] bg-[#ff9e19]/5'
+                      : 'border-[#1a1a1a] bg-[#0a0a0a] hover:border-[#2a2a2a]'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <action.icon className={`w-4 h-4 ${selectedAction === action.id ? 'text-[#ff9e19]' : 'text-gray-500'}`} />
+                    <div>
+                      <p className={`text-sm font-medium ${selectedAction === action.id ? 'text-white' : 'text-gray-300'}`}>{action.label}</p>
+                      <p className="text-[10px] text-gray-500">{action.description}</p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            {/* Custom message textarea */}
+            {selectedAction === 'personal_note' && (
+              <div className="mt-3">
+                <textarea 
+                  value={customMessage}
+                  onChange={e => setCustomMessage(e.target.value)}
+                  placeholder={`Write a personal message to ${user.first_name}...`}
+                  className="w-full h-28 p-3 bg-[#0a0a0a] border border-[#2a2a2a] rounded-lg text-sm text-white placeholder-gray-600 resize-none focus:outline-none focus:border-[#ff9e19]"
+                />
+              </div>
+            )}
+
+            {/* Send button */}
+            <button 
+              onClick={handleSend}
+              disabled={!selectedAction || sending || (selectedAction === 'personal_note' && !customMessage.trim())}
+              className="w-full mt-4 py-3 bg-[#ff9e19] text-black font-medium rounded-lg hover:bg-[#ffb347] transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {sending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              {sending ? 'Sending...' : 'Send Intervention'}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================
 // NEEDS ATTENTION PANEL
 // ============================================
-function NeedsAttentionPanel({ alerts }: { alerts: UserAlert[] | null }) {
+function NeedsAttentionPanel({ alerts, onUserClick }: { alerts: UserAlert[] | null; onUserClick: (user: UserAlert) => void }) {
   if (!alerts || alerts.length === 0) {
     return (
       <div className="bg-[#111111] border border-emerald-500/20 rounded-lg p-5">
@@ -388,9 +596,15 @@ function NeedsAttentionPanel({ alerts }: { alerts: UserAlert[] | null }) {
   const AlertCard = ({ user, textColor, bgColor, borderColor }: { 
     user: UserAlert; textColor: string; bgColor: string; borderColor: string;
   }) => (
-    <div className={`${bgColor} border ${borderColor} rounded-lg p-3`}>
+    <button 
+      onClick={() => onUserClick(user)}
+      className={`${bgColor} border ${borderColor} rounded-lg p-3 w-full text-left hover:brightness-125 transition-all cursor-pointer`}
+    >
       <div className="flex items-center justify-between mb-1">
-        <span className="text-sm font-medium text-white">{user.first_name}</span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm font-medium text-white">{user.first_name}</span>
+          <Eye className="w-3 h-3 text-gray-600" />
+        </div>
         <span className="text-[10px] text-gray-500">Stage {user.current_stage}</span>
       </div>
       <p className={`text-xs ${textColor}`}>{user.alert_reason}</p>
@@ -402,12 +616,12 @@ function NeedsAttentionPanel({ alerts }: { alerts: UserAlert[] | null }) {
           </span>
         </div>
       )}
-    </div>
+    </button>
   );
 
   return (
     <div className="bg-[#111111] border border-[#1a1a1a] rounded-lg p-6">
-      <SectionHeader title="Needs Attention" icon={AlertCircle} />
+      <SectionHeader title="Needs Attention" subtitle="Click a user to take action" icon={AlertCircle} />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <div className="flex items-center gap-2 mb-3">
@@ -1305,6 +1519,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [selectedUser, setSelectedUser] = useState<UserAlert | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -1369,7 +1584,18 @@ export default function AdminDashboard() {
       </div>
 
       {/* ═══ ROW 1: ALERTS ═══ */}
-      <NeedsAttentionPanel alerts={data?.userAlerts || null} />
+      <NeedsAttentionPanel alerts={data?.userAlerts || null} onUserClick={setSelectedUser} />
+
+      {/* Intervention Modal */}
+      {selectedUser && (
+        <InterventionModal 
+          user={selectedUser} 
+          onClose={() => setSelectedUser(null)} 
+          onSent={(userId, action) => {
+            console.log(`Intervention sent: ${action} → ${userId}`);
+          }}
+        />
+      )}
 
       {/* ═══ ROW 2: TOP-LINE METRICS ═══ */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
