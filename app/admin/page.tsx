@@ -1334,35 +1334,47 @@ function StageDistributionBar({ data }: { data: DashboardData['stageDistribution
 // ============================================
 function ConversionFunnel({ data }: { data: DashboardData['funnelMetrics'] }) {
   if (!data) return null;
+  
+  // True funnel: how many users passed through each gate
+  // "completed_stage_1" now means users who COMPLETED Stage 1 and reached Stage 2+
   const stages = [
-    { label: 'Total Users', count: data.started, rate: 100 },
-    { label: 'Stage 1→2', count: data.completed_stage_1, rate: data.rate_1_to_2 },
-    { label: 'Stage 2→3', count: data.completed_stage_2, rate: data.rate_2_to_3 },
-    { label: 'Stage 3→4', count: data.completed_stage_3, rate: data.rate_3_to_4 },
-    { label: 'Stage 4→5', count: data.completed_stage_4, rate: data.rate_4_to_5 },
-    { label: 'Stage 5→6', count: data.completed_stage_5, rate: data.rate_5_to_6 },
-    { label: 'Stage 6→7', count: data.completed_stage_6, rate: data.rate_6_to_7 },
+    { label: 'Signed Up', count: data.started, rate: 100, desc: 'Total users' },
+    { label: 'Completed S1', count: data.completed_stage_1, rate: data.rate_1_to_2, desc: 'Reached Stage 2' },
+    { label: 'Completed S2', count: data.completed_stage_2, rate: data.rate_2_to_3, desc: 'Reached Stage 3' },
+    { label: 'Completed S3', count: data.completed_stage_3, rate: data.rate_3_to_4, desc: 'Reached Stage 4' },
+    { label: 'Completed S4', count: data.completed_stage_4, rate: data.rate_4_to_5, desc: 'Reached Stage 5' },
+    { label: 'Completed S5', count: data.completed_stage_5, rate: data.rate_5_to_6, desc: 'Reached Stage 6' },
+    { label: 'Completed S6', count: data.completed_stage_6, rate: data.rate_6_to_7, desc: 'Reached Stage 7' },
   ];
   return (
     <div className="bg-[#111111] border border-[#1a1a1a] rounded-lg p-6">
-      <SectionHeader title="Conversion Funnel" />
+      <SectionHeader title="Conversion Funnel" subtitle="Users who passed through each stage gate" />
       <div className="space-y-2">
-        {stages.map(stage => (
+        {stages.map((stage, i) => (
           <div key={stage.label} className="flex items-center gap-3">
-            <div className="w-20 text-xs text-gray-400">{stage.label}</div>
+            <div className="w-24 shrink-0">
+              <div className="text-xs text-gray-300">{stage.label}</div>
+              {i > 0 && <div className="text-[9px] text-gray-600">{stage.desc}</div>}
+            </div>
             <div className="flex-1 h-6 bg-[#1a1a1a] rounded-full overflow-hidden relative">
               <div className="h-full bg-gradient-to-r from-[#ff9e19] to-[#ffb347] transition-all"
                 style={{ width: `${(stage.count / (data.started || 1)) * 100}%` }} />
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-[10px] font-medium text-white">{stage.count}</span>
+                <span className="text-[10px] font-medium text-white">{stage.count} users</span>
               </div>
             </div>
-            <span className={`text-xs font-medium w-10 text-right ${stage.rate >= 50 ? 'text-emerald-500' : stage.rate >= 25 ? 'text-yellow-500' : 'text-red-500'}`}>
-              {stage.rate?.toFixed(0) || 0}%
+            <span className={`text-xs font-medium w-10 text-right ${
+              i === 0 ? 'text-gray-400' : stage.rate >= 50 ? 'text-emerald-500' : stage.rate >= 25 ? 'text-yellow-500' : stage.rate === 0 ? 'text-gray-600' : 'text-red-500'
+            }`}>
+              {i === 0 ? '' : `${stage.rate?.toFixed(0) || 0}%`}
             </span>
           </div>
         ))}
       </div>
+      {/* Explainer */}
+      <p className="text-[10px] text-gray-600 mt-3 pt-3 border-t border-[#1a1a1a]">
+        Rates show stage-to-stage conversion (% of previous stage that advanced). 0% = no one has completed that stage yet.
+      </p>
     </div>
   );
 }
