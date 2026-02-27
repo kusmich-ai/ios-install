@@ -238,20 +238,20 @@ const stageRituals: { [key: number]: { list: string; total: string } } = {
   },
   2: {
     list: `1. **Resonance Breathing** - 5 mins
-2. **Somatic Flow** - 3 mins
+2. **Somatic Flow** - 2 mins
 3. **Awareness Rep** - 2 mins`,
     total: '10 minutes'
   },
   3: {
     list: `1. **Resonance Breathing** - 5 mins
-2. **Somatic Flow** - 3 mins
+2. **Somatic Flow** - 2 mins
 3. **Awareness Rep** - 2 mins
 4. **IOS Cue** - 2 mins`,
     total: '12-13 minutes'
   },
   4: {
     list: `1. **Resonance Breathing** - 5 mins
-2. **Somatic Flow** - 3 mins
+2. **Somatic Flow** - 2 mins
 3. **Awareness Rep** - 2 mins
 4. **IOS Cue** - 2 mins
 5. **Flow Block** - 60-90 mins (scheduled)`,
@@ -259,20 +259,20 @@ const stageRituals: { [key: number]: { list: string; total: string } } = {
   },
   5: {
     list: `1. **Resonance Breathing** - 5 mins
-2. **Somatic Flow** - 3 mins
+2. **Somatic Flow** - 2 mins
 3. **Awareness Rep** - 2 mins
 4. **IOS Cue** - 2 mins
 5. **Flow Block** - 60-90 mins (scheduled)
-6. **Co-Regulation Practice** - 3-5 mins (evening)`,
+6. **Co-Regulation Practice** - 2 mins (evening)`,
     total: '12-13 minutes morning + Flow Block + evening practice'
   },
   6: {
     list: `1. **Resonance Breathing** - 5 mins
-2. **Somatic Flow** - 3 mins
+2. **Somatic Flow** - 2 mins
 3. **Awareness Rep** - 2 mins
 4. **IOS Cue** - 2 mins
 5. **Flow Block** - 60-90 mins (scheduled)
-6. **Co-Regulation Practice** - 3-5 mins (evening)
+6. **Co-Regulation Practice** - 2 mins (evening)
 7. **Nightly Debrief** - 2 mins (before sleep)`,
     total: '12-13 minutes morning + Flow Block + evening practices'
   },
