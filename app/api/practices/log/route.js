@@ -149,15 +149,9 @@ export async function POST(req) {
       logResult = data;
     }
 
-    // Calculate adherence (adaptive window based on days in stage)
-    const { data: stageData } = await supabaseAdmin
-      .from('user_progress')
-      .select('stage_start_date')
-      .eq('user_id', userId)
-      .single();
-
-    const stageStartDate = stageData?.stage_start_date 
-      ? new Date(stageData.stage_start_date) 
+   // Calculate adherence (adaptive window based on days in stage)
+    const stageStartDate = progressData?.stage_start_date 
+      ? new Date(progressData.stage_start_date) 
       : null;
     const daysInStage = stageStartDate 
       ? Math.floor((new Date().getTime() - stageStartDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
