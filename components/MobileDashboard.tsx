@@ -277,6 +277,20 @@ flowBlockWeeklyMap, flowBlockSprintDay, totalDaysInApp, daysInStage, onStage7Unl
             </Link>
           </div>
 
+         {/* TIME IN SYSTEM */}
+          {totalDaysInApp !== undefined && (
+            <div className="flex items-center gap-2">
+              <div className="flex-1 bg-white rounded-xl px-4 py-3 border border-zinc-200/80 shadow-sm text-center">
+                <span className="text-lg font-bold text-zinc-800">{totalDaysInApp}</span>
+                <p className="text-[10px] font-medium text-zinc-400 uppercase tracking-wider mt-0.5">Days Active</p>
+              </div>
+              <div className="flex-1 bg-white rounded-xl px-4 py-3 border border-zinc-200/80 shadow-sm text-center">
+                <span className="text-lg font-bold text-amber-600">{daysInStage ?? 0}</span>
+                <p className="text-[10px] font-medium text-zinc-400 uppercase tracking-wider mt-0.5">Days in Stage {currentStage}</p>
+              </div>
+            </div>
+          )}
+
           {/* REWIRED INDEX */}
           <div className="bg-white rounded-xl p-4 border border-zinc-200/80 shadow-sm">
             <div className="flex items-center justify-between mb-3">
