@@ -70,6 +70,8 @@ interface MobileDashboardProps {
   identitySprintDay?: number;
   flowBlockWeeklyMap?: WeeklyMapEntry[] | null;
   flowBlockSprintDay?: number;
+totalDaysInApp?: number;
+  daysInStage?: number;
   onStage7Unlock?: () => void;
 }
 
