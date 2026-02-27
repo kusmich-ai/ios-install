@@ -224,6 +224,7 @@ interface ProgressData {
   adherence_percentage?: number;
   consecutive_days?: number;
   stage_start_date?: string;
+  created_at?: string;
 }
 
 // TIER_INTERPRETATIONS now imported from @/app/config/stages
