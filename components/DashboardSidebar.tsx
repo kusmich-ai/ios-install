@@ -186,6 +186,8 @@ export default function DashboardSidebar({
   identitySprintDay,
   flowBlockWeeklyMap,
   flowBlockSprintDay,
+  totalDaysInApp,
+  daysInStage,
   onStage7Click,
 }: DashboardSidebarProps) {
   
@@ -249,6 +251,22 @@ export default function DashboardSidebar({
             </Link>
           </div>
         </div>
+{/* ==========================================
+            TIME IN SYSTEM
+            ========================================== */}
+        {totalDaysInApp !== undefined && (
+          <div className="flex items-center gap-2">
+            <div className="flex-1 bg-white rounded-xl px-4 py-3 border border-black/[0.04] shadow-sm text-center">
+              <span className="text-lg font-bold text-zinc-800">{totalDaysInApp}</span>
+              <p className="text-[10px] font-medium text-zinc-400 uppercase tracking-wider mt-0.5">Days Active</p>
+            </div>
+            <div className="flex-1 bg-white rounded-xl px-4 py-3 border border-black/[0.04] shadow-sm text-center">
+              <span className="text-lg font-bold text-amber-600">{daysInStage ?? 0}</span>
+              <p className="text-[10px] font-medium text-zinc-400 uppercase tracking-wider mt-0.5">Days in Stage {currentStage}</p>
+            </div>
+          </div>
+        )}
+
         {/* ==========================================
             REWIRED INDEX
             ========================================== */}
