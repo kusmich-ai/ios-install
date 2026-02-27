@@ -39,6 +39,7 @@ export interface UserProgress {
   }[];
   unlockEligible: boolean;
   dataDate: string;
+  createdAt: string | null;
   
   // Aligned Action Sprint fields (updated from Identity)
   coherenceStatement: string | null;  // NEW - primary field
