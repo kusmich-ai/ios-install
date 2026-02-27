@@ -2378,9 +2378,17 @@ ${context === 'breakthrough_response'
   } catch (error) {
     console.error('[API/Chat] Error:', error);
     
+    const isOverloaded = error instanceof Error && (
+      error.message?.includes('overloaded') || 
+      error.message?.includes('529')
+    );
+    
     return NextResponse.json(
-      { error: 'Failed to process request. Please try again.' },
-      { status: 500 }
+      { error: isOverloaded 
+          ? 'It looks like our system is temporarily overloaded. Please wait a moment and try again.' 
+          : 'Failed to process request. Please try again.' 
+      },
+      { status: isOverloaded ? 503 : 500 }
     );
   }
 }
