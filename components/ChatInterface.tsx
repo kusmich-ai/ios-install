@@ -4689,7 +4689,7 @@ if (regressionIntervention?.isActive) {
                 ? Math.floor((Date.now() - new Date(progress.stageStartDate).getTime()) / (1000 * 60 * 60 * 24))
                 : 0}
               onPromptSelect={handlePromptStarterSelect}
-              visible={showPromptStarters && !loading && !isStreaming && messages.length > 0 && messages[messages.length - 1]?.role === 'assistant'}
+              visible={showPromptStarters && !loading && !isStreaming && messages.length > 0 && messages[messages.length - 1]?.role === 'assistant' && !isAwaitingStructuredInput(messages)}
             />
             <form onSubmit={sendMessage} className="flex gap-3">
               <textarea
