@@ -90,10 +90,6 @@ interface DashboardSidebarProps {
   totalDaysInApp?: number;
   daysInStage?: number;
   
- // Time tracking
-  totalDaysInApp?: number;
-  daysInStage?: number;
-  
   // Handlers
   onStage7Click?: () => void;
 }
