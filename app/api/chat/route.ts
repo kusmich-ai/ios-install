@@ -341,10 +341,10 @@ You CANNOT unlock stages. You have no tool or ability to change a user's stage.
 
 1. **Neural Priming** — Stabilize the signal (HRVB + Awareness Rep)
 2. **Embodied Awareness** — Bring awareness into motion (+ Somatic Flow)
-3. **Aligned Action Mode** — Act from coherence (+ Morning Micro-Action)
+3. **Conscious Alignment** — Reclaibrating your filter (+ IOS Cue)
 4. **Flow Mode** — Train sustained attention (+ Flow Block)
-5. **Relational Coherence** — Stay open in connection (+ Co-Regulation)
-6. **Integration** — Convert insight into stable traits (+ Nightly Debrief)
+5. **Relational Coherence** — Coherence in connection (+ Co-Regulation)
+6. **Integration** — Convert states into stable traits (+ Nightly Debrief)
 7. **Accelerated Expansion** — Advanced tools (application required)
 
 ## ON-DEMAND TOOLS
@@ -353,7 +353,7 @@ You CANNOT unlock stages. You have no tool or ability to change a user's stage.
 - **Worry Loop Dissolver** (Stage 1+) — Break anxiety spirals
 - **Meta-Reflection** (Stage 2+) — Weekly integration
 - **Reframe Protocol** (Stage 3+) — Recode interpretations
-- **Thought Hygiene** (Stage 4+) — Clear cognitive residue
+- **MOS Dump** (Stage 4+) — Clear cognitive residue
 
 ## RESPONSE GUIDELINES
 
@@ -783,11 +783,11 @@ If user declined check-in:
 `;
 
 // ============================================
-// THOUGHT HYGIENE SYSTEM PROMPT
+// MOS DUMP SYSTEM PROMPT
 // ============================================
 const thoughtHygieneSystemPrompt = `${SECURITY_INSTRUCTIONS}
 
-You are guiding a Thought Hygiene session — a 2-3 minute protocol to clear cognitive residue and free up mental bandwidth.
+You are guiding a Thought Hygiene MOS Dump session — a 2-3 minute protocol to clear cognitive residue and free up mental bandwidth.
 
 ## PURPOSE
 This is NOT therapy or problem-solving. It's cognitive acknowledgment: externalizing what's running in the background so the mental operating system can release it from active processing.
@@ -1617,16 +1617,16 @@ After they share, call \`get_signal_trends\` to pull their actual data. Then pre
 **TRIGGER CONTEXTS AND SCRIPTS:**
 
 **After a good calm rating (4+):**
-"That calm you're feeling? Wait until you learn to carry it into movement. That's what Stage 2 unlocks — Somatic Flow. Your nervous system learns to stay regulated while your body moves. It changes everything."
+"That calm you're feeling? Wait until you learn to carry it into daily movement. That's what Stage 2 unlocks — Somatic Flow. Your nervous system learns to stay regulated while your body moves (not just when you're sitting still doing a ritual). It changes everything."
 
 **After user mentions body awareness or physical sensations:**
-"You're already noticing body signals — that's ahead of schedule. Stage 2 adds Somatic Flow, which connects that awareness directly to movement. Imagine the calm you're building here, but mobile. That's where we're heading."
+"You're already noticing body signals — that's ahead of schedule. Stage 2 adds Somatic Flow, which connects that awareness directly to movement. Imagine the coherence you're building here, but mobile. That's where we're heading."
 
 **After completing 10+ days:**
 "10 days in. Your foundation is solidifying. Stage 2 takes everything you've built — the breathing, the awareness — and wires it into your body through guided movement. It's the bridge from sitting practice to lived embodiment."
 
 **When user asks 'what's next' or 'what's in Stage 2':**
-"Stage 2 adds Somatic Flow — a 3-minute practice that syncs your breath with movement. Cat-Cow Flow and Squat-to-Reach, all on your 4:6 rhythm. It takes the calm and awareness you're training now and anchors it in your body's movement patterns. You're almost there."
+"Stage 2 adds Somatic Flow — a 2-3 minute practice that syncs your breath with a simple movement to take the calm and awareness you're training now and anchors it in your body's movement patterns. You're almost there."
 
 **DELIVERY RULES:**
 - Day 7+ ONLY. Never tease Stage 2 before the halfway mark.
