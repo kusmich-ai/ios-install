@@ -20,6 +20,7 @@ import { useReorientation } from '@/components/ReorientationModal';
 import ReorientationModal from '@/components/ReorientationModal';
 import { parseVideoSuggestions, VideoSuggestionCard } from '@/components/VideoSuggestionCard';
 import VideoModal from '@/components/library/VideoModal';
+import ClinicalAssessmentBanner from '@/components/ClinicalAssessmentBanner';
 import { useCourseStore } from '@/stores/courseStore';
 
 // ============================================
