@@ -4753,6 +4753,16 @@ if (regressionIntervention?.isActive) {
         <MobileDashboard
           userName={getUserName()}
           currentStage={progress?.currentStage || 1}
+          totalDaysInApp={
+            (progress as any)?.createdAt
+              ? Math.floor((Date.now() - new Date((progress as any).createdAt).getTime()) / 86400000) + 1
+              : undefined
+          }
+          daysInStage={
+            progress?.stageStartDate
+              ? Math.floor((Date.now() - new Date(progress.stageStartDate).getTime()) / 86400000) + 1
+              : undefined
+          }
           baselineRewiredIndex={baselineData.rewiredIndex}
           baselineDomainScores={baselineData.domainScores}
           currentDomainScores={progress?.domainScores}
