@@ -72,8 +72,6 @@ interface MobileDashboardProps {
   flowBlockSprintDay?: number;
 totalDaysInApp?: number;
   daysInStage?: number;
-totalDaysInApp?: number;
-  daysInStage?: number;
   onStage7Unlock?: () => void;
 }
 
