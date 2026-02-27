@@ -482,6 +482,31 @@ function determineOpeningType(
 }
 
 // ============================================
+// STRUCTURED INPUT DETECTION (hides prompt starters when system is awaiting numbers/keywords)
+// ============================================
+
+function isAwaitingStructuredInput(messages: Array<{ role: string; content: string }>): boolean {
+  const lastAssistant = [...messages].reverse().find(m => m.role === 'assistant');
+  if (!lastAssistant) return false;
+  const text = lastAssistant.content.toLowerCase();
+  
+  // Signal check patterns
+  if (/\b(calm|presence|rate|rating|signal check)\b/.test(text) && /\b[0-5]\b/.test(text)) return true;
+  // Weekly check-in
+  if (/\b(regulation|awareness|outlook|attention)\b/.test(text) && /\b(0-5|1-5|four numbers|your (four|4))\b/.test(text)) return true;
+  // Any explicit "give me a number" request
+  if (/\b(give me|enter|type)\b.*\b(number|score|rating)\b/.test(text)) return true;
+  // Waiting for free/done/ready keywords (Thought Hygiene, etc.)
+  if (/\btype\s+['"]?(free|done|ready)['"]?\b/.test(text)) return true;
+  
+  return false;
+}
+
+// ============================================
+// BREAKTHROUGH PATTERN DETECTION
+// ============================================
+
+// ============================================
 // BREAKTHROUGH PATTERN DETECTION
 // ============================================
 
