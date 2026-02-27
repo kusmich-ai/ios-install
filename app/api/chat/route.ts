@@ -2285,7 +2285,7 @@ ${context === 'breakthrough_response'
     const model = context === 'flow_block_setup' ? 'claude-opus-4-20250514' : 'claude-sonnet-4-20250514';
     
     // Retry wrapper for Claude API overload (529)
-    async function callClaudeWithRetry(params: any, retries = 3): Promise<Anthropic.Message> {
+    async function callClaudeWithRetry(params: any, retries = 5): Promise<Anthropic.Message> {
       for (let attempt = 1; attempt <= retries; attempt++) {
         try {
           return await anthropic.messages.create(params);
@@ -2296,7 +2296,7 @@ ${context === 'breakthrough_response'
           
           if (isOverloaded && attempt < retries) {
             console.log(`[API/Chat] Claude overloaded, retry ${attempt}/${retries}...`);
-            await new Promise(r => setTimeout(r, attempt * 2000));
+            await new Promise(r => setTimeout(r, attempt * 3000));
             continue;
           }
           throw apiError;
