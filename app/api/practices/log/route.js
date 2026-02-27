@@ -153,9 +153,9 @@ export async function POST(req) {
     const stageStartDate = progressData?.stage_start_date 
       ? new Date(progressData.stage_start_date) 
       : null;
-    const daysInStage = stageStartDate 
+   const daysInStage = stageStartDate 
       ? Math.floor((new Date().getTime() - stageStartDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
-      : 14;
+      : 1;
     const effectiveDays = Math.min(Math.max(daysInStage, 1), 14);
 
     const windowStart = new Date();
