@@ -70,7 +70,7 @@ export async function POST(req) {
     // Get user's current stage
     const { data: progressData, error: progressError } = await supabaseAdmin
       .from('user_progress')
-      .select('current_stage')
+     .select('current_stage, stage_start_date')
       .eq('user_id', userId)
       .single();
 
