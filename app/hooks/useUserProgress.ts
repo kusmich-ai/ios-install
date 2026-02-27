@@ -442,6 +442,7 @@ const flowBlockSprint = flowBlockSprintArray?.[0] || null;
         dailyPractices,
         unlockEligible,
         dataDate: today,
+        createdAt: progressData.created_at || null,
         
         // ============================================
         // ALIGNED ACTION SPRINT FIELDS
