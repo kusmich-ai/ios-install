@@ -1637,6 +1637,10 @@ export default function AdminDashboard() {
       {/* ═══ ROW 4: BASELINE + TRANSFORMATION + STAGE DISTRIBUTION ═══ */}
       <BaselinePanel data={data?.baselineCompletion || null} />
       <TransformationTracker snapshot={data?.transformationSnapshot || null} weekly={data?.transformationWeekly || null} />
+      
+      {/* ═══ CLINICAL ASSESSMENTS ═══ */}
+      <AdminClinicalPanel />
+      
       {data?.stageDistribution && <StageDistributionBar data={data.stageDistribution} />}
 
       {/* ═══ ROW 5: STAGE 1 DEEP DIVE ═══ */}
