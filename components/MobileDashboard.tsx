@@ -202,7 +202,7 @@ export default function MobileDashboard({
   currentDomainScores, domainDeltas, unlockProgress, unlockEligible,
   adherencePercentage = 0, consecutiveDays = 0, coherenceStatement,
   currentIdentity, microAction, sprintDay, identitySprintDay,
-  flowBlockWeeklyMap, flowBlockSprintDay, onStage7Unlock,
+flowBlockWeeklyMap, flowBlockSprintDay, totalDaysInApp, daysInStage, onStage7Unlock,
 }: MobileDashboardProps) {
   const [isOpen, setIsOpen] = useState(false);
 
