@@ -86,6 +86,10 @@ interface DashboardSidebarProps {
   flowBlockWeeklyMap?: WeeklyMapEntry[] | null;
   flowBlockSprintDay?: number;
   
+  // Time tracking
+  totalDaysInApp?: number;
+  daysInStage?: number;
+  
   // Handlers
   onStage7Click?: () => void;
 }
