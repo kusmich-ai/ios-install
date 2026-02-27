@@ -24,7 +24,7 @@ export const STAGES: Stage[] = [
   {
     number: 1,
     name: 'Neural Priming',
-    tagline: 'Stabilize the signal. Teach your nervous system calm.',
+    tagline: 'Stabilize the signal. Teach your nervous system calm coherence.',
     practices: [
       {
         id: 'hrvb',
@@ -74,9 +74,9 @@ export const STAGES: Stage[] = [
         id: 'somatic_flow',
         name: 'Somatic Flow',
         shortName: 'Somatic',
-        duration: 4,
+        duration: 2,
         icon: '🧘',
-        description: 'Cat-Cow + Squat-to-Reach with breath'
+        description: 'Flow movements with breath'
       }
     ],
     unlockCriteria: {
@@ -110,7 +110,7 @@ export const STAGES: Stage[] = [
         id: 'somatic_flow',
         name: 'Somatic Flow',
         shortName: 'Somatic',
-        duration: 3,
+        duration: 2,
         icon: '🧘',
         description: 'Movement with breath'
       },
@@ -206,7 +206,7 @@ export const STAGES: Stage[] = [
         id: 'somatic_flow',
         name: 'Somatic Flow',
         shortName: 'Somatic',
-        duration: 3,
+        duration: 2,
         icon: '🧘',
         description: 'Movement with breath'
       },
@@ -230,7 +230,7 @@ export const STAGES: Stage[] = [
         id: 'co_regulation',
         name: 'Intrapersonal Co-Regulation',
         shortName: 'Co-Reg',
-        duration: 3,
+        duration: 2,
         icon: '💞',
         description: 'Compassion practice'
       }
@@ -266,7 +266,7 @@ export const STAGES: Stage[] = [
         id: 'somatic_flow',
         name: 'Somatic Flow',
         shortName: 'Somatic',
-        duration: 3,
+        duration: 2,
         icon: '🧘',
         description: 'Movement with breath'
       },
@@ -290,7 +290,7 @@ export const STAGES: Stage[] = [
         id: 'co_regulation',
         name: 'Intrapersonal Co-Regulation',
         shortName: 'Co-Reg',
-        duration: 3,
+        duration: 2,
         icon: '💞',
         description: 'Compassion practice'
       },
@@ -361,7 +361,7 @@ export const ON_DEMAND_TOOLS = [
   },
   {
     id: 'thought_hygiene',
-    name: 'Thought Hygiene',
+    name: 'MOS Dump (Thought Hygiene)',
     shortName: 'Hygiene',
     icon: '🧠',
     description: 'For clearing cognitive residue after heavy mental load.',
