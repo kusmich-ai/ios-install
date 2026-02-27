@@ -8,12 +8,12 @@ import { getRitualListForStage, getMorningRitualTime } from './helpers';
 // ============================================
 
 export const practiceTemplates = {
-  // RESONANCE BREATHING (HRVB)
+  // RESONANCE BREATHING 
   hrvb: {
     // When user clicks to start the practice
     startPrompt: `Time for **Resonance Breathing**.
 
-This stimulates your vagus nerve and trains your nervous system to shift from stress to calm coherence on command.
+This stimulates your vagus nerve and trains your nervous system to shift from activated to calm coherence on command.
 
 **Duration:** 5 minutes
 **How:** Sit comfortably. Spine long, shoulders relaxed.
@@ -36,13 +36,13 @@ Your vagal tone just got a firmware update. That coherent state you're feeling? 
     guidance: `**Resonance Breathing — The Mechanics**
 
 **Why it works:**
-The 4:6 breathing ratio hits your body's resonance frequency, maximizing heart rate variability. This directly stimulates the vagus nerve and shifts your autonomic nervous system toward parasympathetic (rest-digest-restore) dominance.
+The 4:6 breathing ratio hits your body's resonance frequency, maximizing heart rate variability. This directly stimulates the vagus nerve and shifts your autonomic nervous system toward parasympathetic dominance.
 
 **The technique:**
 1. Sit upright — spine long but not rigid
 2. Relax shoulders, soften jaw
 3. Inhale slowly through nose for 4 seconds (belly expands)
-4. Exhale smoothly for 6 seconds (belly contracts)
+4. Exhale smoothly for longer 6 seconds (belly contracts)
 5. No pause between breaths — continuous flow
 6. Eyes can be closed or softly focused
 
@@ -104,15 +104,15 @@ Thoughts will come. Getting lost will happen. The practice isn't preventing thou
 
 This connects your awareness to your body's proprioceptive map. You're learning to regulate through movement.
 
-**Duration:** 3 minutes
+**Duration:** 1-2 minutes
 **Two movements, synced with breath:**
 
-**1. Cat-Cow Flow (15 breaths)**
-- Hands and knees (or seated, hands on knees)
+**1. Cat-Cow Flow (7 breaths)**
+- Hands and knees 
 - Inhale 4s: Drop belly, lift chest — Cow
 - Exhale 6s: Round spine, tuck chin — Cat
 
-**2. Squat to Reach (15 breaths)**
+**2. Squat to Reach (7 breaths)**
 - Feet shoulder-width apart
 - Inhale 4s: Bend knees, sweep arms forward
 - Exhale 6s: Stand tall, extend arms overhead
@@ -133,18 +133,18 @@ Your body just woke up. Awareness isn't just in your head anymore — you've ext
 These movements mobilize the vagus nerve along the spine, enhance cerebrospinal fluid circulation, and strengthen the embodied awareness connection. The breath-movement sync reinforces the same coherent rhythm from Resonance Breathing.
 
 **Cat-Cow Flow:**
-- Start on hands and knees (or seated)
+- Start on hands and knees 
 - Inhale (4s): Drop belly toward floor, lift head and tailbone — this is "Cow"
 - Exhale (6s): Round spine toward ceiling, tuck chin and tailbone — this is "Cat"
 - Move smoothly, no jerky transitions
-- 15 complete breath cycles
+- 7 complete breath cycles
 
 **Squat to Reach:**
 - Stand with feet shoulder-width apart
 - Inhale (4s): Bend knees, hips back, sweep arms forward as if gathering air
 - Exhale (6s): Stand tall, extend arms overhead or wide like wings
 - Keep spine long, shoulders soft
-- 15 complete breath cycles
+- 7 complete breath cycles
 
 **Guided video:** [Somatic Flow](https://www.unbecoming.app/somatic)`
   },
@@ -156,7 +156,7 @@ These movements mobilize the vagus nerve along the spine, enhance cerebrospinal 
 Your cue: **{{currentIdentity}}**
 Your loop: **Notice → Label → Release**
 
-Run your 90-second morning imprint, then carry the cue through your day.
+Run your 60-second morning imprint, then carry the cue through your day.
 
 Click **"Done"** in the {{toolbarReference}} when your morning imprint is complete.`,
 
@@ -180,7 +180,7 @@ Type "yes" to start.`
   flow_block: {
     startPrompt: `Time for your **Flow Block**.
 
-This is where you train sustained attention on your highest-leverage work. Single task. Full immersion.
+This is where you train sustained attention on your highest-leverage work. Single task. Full immersion. This way you train attention and progress towards important outcomes.
 
 **Your setup checklist:**
 - [ ] Location: Same spot every time
@@ -223,7 +223,7 @@ Ready to design your Flow Block system? Type "yes" to begin.`
 
 This trains your social nervous system to stay open, regulated, and present in relational contexts.
 
-**Duration:** 3-5 minutes
+**Duration:** 1-3 minutes
 **Today's target:** [The rotation will be shown below]
 
 **The practice:**
@@ -297,7 +297,7 @@ export const stageTemplates = {
     ritualIntro: {
       intro: `You're starting at **Stage 1: Neural Priming**.
 
-**Tagline:** *Stabilize the signal. Teach your nervous system calm.*
+**Tagline:** *Stabilize the signal. Teach your nervous system calm / coherence.*
 
 This stage lays the neural foundation — shifting your body from sympathetic dominance (stress) into parasympathetic coherence.
 
@@ -344,7 +344,7 @@ When you drift into thought (you will), notice that too, and return.
 
 That's the practice. Recognizing you're not the things you experience.
 
-**This previous audio will guide you through the process when ready:** [Awareness Rep Audio](https://www.unbecoming.app/awareness)
+**This audio will guide you through the process when ready:** [Awareness Rep Audio](https://www.unbecoming.app/awareness)
 
 You will initiate this with the {{toolbarReference}} daily every morning.
 
@@ -442,7 +442,7 @@ Is there anything else you need? Or see you tomorrow morning.`
       eligible: `**🔓 SYSTEM UPGRADE AVAILABLE**
 
 You've proven consistency and transformation:
-- {{adherence}}% adherence over 14+ days ✓
+- {{adherence}}% adherence ✓
 - +{{avgDelta}} average delta improvement ✓
 - {{consecutiveDays}} day streak ✓
 
@@ -471,14 +471,14 @@ You've proven your nervous system can maintain coherence. Now we bring awareness
 
 **NEW RITUAL UNLOCKING:**
 
-**Somatic Flow** — 3 minutes of breath-synced movement that extends your awareness into your body. You'll learn Cat-Cow and Squat-to-Reach flows synchronized with your 4s inhale / 6s exhale.
+**Somatic Flow** — 1-3 minutes of breath-synced movement that extends your awareness into your body. You'll do simple movement flows synchronized with your 4s inhale / 6s exhale.
 
 ---
 
 **ON-DEMAND TOOL NOW AVAILABLE:**
 
 **Meta-Reflection**
-A 10–15 minute weekly session to observe how perception formed and to capture a usable kernel in the format: Signal → Interpretation → Action.
+A 10 minute weekly session to observe how perception formed and to capture a usable kernel in the format: Signal → Interpretation → Action.
 
 *When to use it:*
 - Weekly (I'll prompt you on Sundays, or run it on your own day)
@@ -525,8 +525,8 @@ Mobilizes the vagus nerve along the spine, enhances proprioception, and circulat
 **How:**
 Two simple movements synced with your 4s inhale / 6s exhale:
 
-**1. Cat-Cow Flow (7 breaths)**
-- Hands and knees (or seated, hands on knees)
+**1. "Cat-Cow" Flow (7 breaths)**
+- Hands and knees 
 - Inhale 4s: Drop belly, lift chest — Cow
 - Exhale 6s: Round spine, tuck chin — Cat
 
@@ -535,7 +535,7 @@ Two simple movements synced with your 4s inhale / 6s exhale:
 - Inhale 4s: Bend knees, sweep arms forward
 - Exhale 6s: Stand tall, arms overhead
 
-**Guided video:** [Somatic Flow](https://www.unbecoming.app/somatic)
+**Guided video if you need it:** [Somatic Flow](https://www.unbecoming.app/somatic)
 
 Make sense?`
       },
@@ -543,7 +543,7 @@ Make sense?`
       wrapUp: `Your **Stage 2 morning ritual** is now:
 
 1. Resonance Breathing — 5 mins
-2. **Somatic Flow — 3 mins** (new)
+2. **Somatic Flow — 1-2 mins** (new)
 3. Awareness Rep — 2 mins
 
 **Total: ${getMorningRitualTime(2)}**
@@ -594,7 +594,7 @@ Anything else? Or see you tomorrow.`
       eligible: `**🔓 SYSTEM UPGRADE AVAILABLE**
 
 You've proven consistency and transformation:
-- {{adherence}}% adherence over 14+ days ✓
+- {{adherence}}% adherence ✓
 - +{{avgDelta}} average delta improvement ✓
 - {{consecutiveDays}} day streak ✓
 
@@ -611,7 +611,7 @@ Take a moment to recall. Then type **"unlock"** when you're ready to advance.`,
 Current status vs unlock criteria:
 - Adherence: {{currentAdherence}}% (need 80%)
 - Avg Delta: {{currentAvgDelta}} (need +0.5)
-- Days: {{currentConsecutiveDays}} (need 14)
+- Days: {{currentConsecutiveDays}} 
 
 Your body is learning. Keep the practice consistent.`,
 
@@ -623,7 +623,7 @@ You've embodied awareness. Now we train it to catch patterns before they become 
 
 **NEW RITUAL UNLOCKING:**
 
-**IOS Cue** — A detection training system for your nervous system. You'll select one cue word targeting your dominant unconscious pattern, then train a simple recognition loop: Notice → Label → Release.
+**IOS Cue** — A detection training system for your RAS (The Reticular Activating System). You'll select one cue word targeting a dominant unconscious pattern, then train a simple recognition loop: Notice → Label → Release.
 
 We'll run the IOS Cue setup to select your cue and install the loop. Takes about 2-3 minutes.
 
@@ -642,7 +642,7 @@ A ~2-minute interpretation audit that separates what actually happened from what
 
 *How it works:* You'll move through a simple sequence: Signal → Interpretation → Action. We identify the verifiable signal, make the interpretation explicit, test it, and choose one concrete next step (or deliberate non-action). The result is clarity and agency—not forced positivity.
 
-Use it whenever an interpretation is amplifying the signal. Access it via {{toolbarReference}} → On-Demand Tools.
+Use it whenever an interpretation is amplifying the signal (You're making a bigger deal out of something). Access it via {{toolbarReference}} → On-Demand Tools.
 
 ---
 
@@ -676,11 +676,11 @@ Ready to set up your IOS Cue?`,
 **What it does:**
 Trains your RAS (reticular activating system) to detect unconscious patterns — the same system that makes you notice blue BMWs after you think about buying one. Except instead of cars, it filters your thoughts too.
 
-**When:** After Awareness Rep, as the final morning practice.
+**When:** You start part 1 after Awareness Rep, as the final morning practice.
 
 **How:**
 1. We select a cue word targeting your dominant pattern
-2. You run a 90-second morning imprint to prime detection
+2. You run a 60-second morning imprint to prime detection
 3. Throughout the day, you catch the pattern: Notice → Label → Release
 4. Before sleep, 60 seconds to consolidate what you caught
 
@@ -752,7 +752,7 @@ Every catch rewires the pattern. Keep detecting.`
       eligible: `**🔓 SYSTEM UPGRADE AVAILABLE**
 
 You've proven consistency and transformation:
-- {{adherence}}% adherence over 14+ days ✓
+- {{adherence}}% adherence ✓
 - +{{avgDelta}} average delta improvement ✓
 - {{consecutiveDays}} day streak ✓
 
@@ -769,7 +769,7 @@ Take a moment to recall. Then type **"unlock"** when you're ready to advance.`,
 Current status vs unlock criteria:
 - Adherence: {{currentAdherence}}% (need 80%)
 - Avg Delta: {{currentAvgDelta}} (need +0.5)
-- Days: {{currentConsecutiveDays}} (need 14)
+- Days: {{currentConsecutiveDays}} 
 
 Keep acting from awareness. Keep the ritual consistent.`,
 
@@ -781,7 +781,7 @@ Your actions are becoming aligned. Now we train sustained attention on performan
 
 **NEW RITUAL UNLOCKING:**
 
-**Flow Block** — 60-90 minutes of single-task deep work. Challenge ≈ skill +10%. No phone, no distractions, full immersion. This is where awareness becomes performance.
+**Flow Block** — 60-90 minutes of single-task deep work. Challenge ≈ skill +10%. No phone, no distractions, full immersion. This is where awareness becomes beneficial action.
 
 We'll run the Flow Block Setup together to identify your high-leverage tasks, build your Flow Menu, and design your weekly schedule.
 
@@ -789,7 +789,7 @@ We'll run the Flow Block Setup together to identify your high-leverage tasks, bu
 
 **ON-DEMAND TOOL NOW AVAILABLE:**
 
-**Thought Hygiene** — For clearing cognitive residue after heavy mental load. When your mind feels cluttered with loops — tasks, worries, conversations running in the background — this 2-3 minute protocol surfaces and releases them.
+**MOS Dump (Thought Hygiene)** — For clearing cognitive residue after heavy mental load. When your mind feels cluttered with loops — tasks, worries, conversations running in the background — this 2-3 minute protocol surfaces and releases them.
 
 Use it after Flow Blocks, meetings, or whenever you feel scattered. Takes 2-3 minutes.
 
@@ -806,9 +806,9 @@ Ready to set up your Flow Blocks?`
     ritualIntro: {
       intro: `Welcome to **Stage 4: Flow Mode**.
 
-**Tagline:** *Train sustained attention on performance drivers.*
+**Tagline:** *Train sustained attention on beneficial action drivers.*
 
-You've stabilized, embodied, and anchored identity. Now we convert coherence into deep cognitive performance.
+You've stabilized, embodied, and anchored identity. Now we convert coherence into deep performance.
 
 **New practice unlocking:** Flow Block
 
@@ -851,7 +851,7 @@ Ready to design your system?`
 
 **Morning Rituals:**
 1. Resonance Breathing — 5 mins
-2. Somatic Flow — 3 mins
+2. Somatic Flow — 1 mins
 3. Awareness Rep — 2 mins
 4. IOS Cue — 2 mins
 
@@ -891,7 +891,7 @@ The mind is becoming the tool, not the operator.`
       eligible: `**🔓 SYSTEM UPGRADE AVAILABLE**
 
 You've proven consistency and transformation:
-- {{adherence}}% adherence over 14+ days ✓
+- {{adherence}}% adherence ✓
 - +{{avgDelta}} average delta improvement ✓
 - {{consecutiveDays}} day streak ✓
 
@@ -908,19 +908,19 @@ Take a moment to recall. Then type **"unlock"** when you're ready to advance.`,
 Current status vs unlock criteria:
 - Adherence: {{currentAdherence}}% (need 80%)
 - Avg Delta: {{currentAvgDelta}} (need +0.6)
-- Days: {{currentConsecutiveDays}} (need 14)
+- Days: {{currentConsecutiveDays}} 
 
 Keep training the flow state.`,
 
       confirmation: `**🎉 Stage 5 Unlocked: Relational Coherence**
 
-You can sustain attention in solitude. Now we train it in connection.
+You can sustain coherence in solitude. Now we train it in connection.
 
 ---
 
 **NEW PRACTICE UNLOCKING:**
 
-**Co-Regulation Practice** — 4 minutes training the social nervous system. You'll activate the ventral vagal complex (your social safety circuit) through heart-focused compassion exercises. This trains your nervous system to stay open and regulated in relational contexts — not just when you're alone.
+**Co-Regulation Practice** — 1-3 minutes training the social nervous system. You'll activate the ventral vagal complex (your social safety circuit) through heart-focused compassion exercises. This trains your nervous system to stay open and regulated in relational contexts — not just when you're alone.
 
 **When:** Late afternoon/early evening, as you transition from work to personal time.
 
@@ -951,7 +951,7 @@ ${getRitualListForStage(5)}
 Ready to learn the Co-Regulation Practice?`,
 
       practices: {
-        co_regulation: `**NEW PRACTICE: CO-REGULATION — 3-5 MINS**
+        co_regulation: `**NEW PRACTICE: CO-REGULATION — 1-3 MINS**
 
 **What it does:**
 Activates the ventral vagal complex (social safety circuit) through heart-focused compassion. Trains your nervous system to stay open in relational contexts.
@@ -965,7 +965,7 @@ Activates the ventral vagal complex (social safety circuit) through heart-focuse
 4. Inhale: "Be blessed"
 5. Exhale: "I wish you peace and love"
 6. Notice any warmth or softness (don't force it)
-7. 4 minutes
+7. Repeat 3-5 times
 
 **5-Day rotation:**
 - Day 1: Friend
@@ -974,7 +974,7 @@ Activates the ventral vagal complex (social safety circuit) through heart-focuse
 - Day 4: Difficult person
 - Day 5: All beings
 
-**Guided audio:** [Co-Regulation Practice](https://www.unbecoming.app/coregulation)
+**Guided audio (if you need it):** [Co-Regulation Practice](https://www.unbecoming.app/coregulation)
 
 Make sense?`
       },
@@ -983,7 +983,7 @@ Make sense?`
 
 **Morning Rituals:**
 1. Resonance Breathing — 5 mins
-2. Somatic Flow — 3 mins
+2. Somatic Flow — 1-2 mins
 3. Awareness Rep — 2 mins
 4. IOS Cue — 2 mins
 
@@ -991,7 +991,7 @@ Make sense?`
 5. Flow Block — 60-90 mins (scheduled)
 
 **Evening:**
-6. Co-Regulation Practice — 4 mins (new)
+6. Co-Regulation Practice — 1-2 mins (new)
 
 **Total: ${getMorningRitualTime(5)}**
 
@@ -1023,7 +1023,7 @@ You're training relational coherence. The nervous system is learning to stay ope
       eligible: `**🔓 SYSTEM UPGRADE AVAILABLE**
 
 You've proven consistency and transformation:
-- {{adherence}}% adherence over 14+ days ✓
+- {{adherence}}% adherence ✓
 - +{{avgDelta}} average delta improvement ✓
 - {{consecutiveDays}} day streak ✓
 
@@ -1040,7 +1040,7 @@ Take a moment to recall. Then type **"unlock"** when you're ready to advance.`,
 Current status vs unlock criteria:
 - Adherence: {{currentAdherence}}% (need 80%)
 - Avg Delta: {{currentAvgDelta}} (need +0.7)
-- Days: {{currentConsecutiveDays}} (need 14)
+- Days: {{currentConsecutiveDays}} 
 
 Keep training relational presence.`,
 
@@ -1132,7 +1132,7 @@ Make sense?`
 
 **Morning Rituals:**
 1. Resonance Breathing — 5 mins
-2. Somatic Flow — 3 mins
+2. Somatic Flow — 1-2 mins
 3. Awareness Rep — 2 mins
 4. IOS Cue — 2 mins
 
@@ -1140,7 +1140,7 @@ Make sense?`
 5. Flow Block — 60-90 mins
 
 **Evening:**
-6. Co-Regulation Practice — 3-5 mins
+6. Co-Regulation Practice — 1-3 mins
 7. Nightly Debrief — 2 mins (new)
 
 **Total: ${getMorningRitualTime(6)}**
@@ -1402,7 +1402,7 @@ Would you like to learn more about Stage 7, or would you prefer to continue deep
 
 Everything you've done in Stages 1-6 has been preparation — building the neural foundation, stabilizing awareness, proving identity through action. Stage 7 is where that foundation meets something more powerful.
 
-**Beyond is a 6-month protocol for complete neural, emotional, and existential reprogramming.**
+**Beyond is a multi-month protocol for complete neural, emotional, and existential reprogramming.**
 
 It includes:
 • **Supervised psychedelic experience** — working with 5-MeO in a held, supported container
@@ -1606,7 +1606,7 @@ Your neural learning consolidates during sleep. These aren't suggestions — the
 - No food 2 hours before bed
 - Cool room (65°F / 18°C)
 - Total darkness
-- Optional: 2-min Resonance Breathing in bed
+- Optional: 2-min Resonance Breathing in bed before you sleep
 
 How's your sleep been this week?`,
 
