@@ -192,6 +192,8 @@ export default function DashboardSidebar({
   flowBlockSprintDay,
   totalDaysInApp,
   daysInStage,
+  totalDaysInApp,
+  daysInStage,
   onStage7Click,
 }: DashboardSidebarProps) {
   
