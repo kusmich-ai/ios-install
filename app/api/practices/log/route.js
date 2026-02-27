@@ -149,10 +149,24 @@ export async function POST(req) {
       logResult = data;
     }
 
-    // Calculate adherence
-    const fourteenDaysAgo = new Date();
-    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
-    const startDate = fourteenDaysAgo.toISOString().split('T')[0];
+    // Calculate adherence (adaptive window based on days in stage)
+    const { data: stageData } = await supabaseAdmin
+      .from('user_progress')
+      .select('stage_start_date')
+      .eq('user_id', userId)
+      .single();
+
+    const stageStartDate = stageData?.stage_start_date 
+      ? new Date(stageData.stage_start_date) 
+      : null;
+    const daysInStage = stageStartDate 
+      ? Math.floor((new Date().getTime() - stageStartDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
+      : 14;
+    const effectiveDays = Math.min(Math.max(daysInStage, 1), 14);
+
+    const windowStart = new Date();
+    windowStart.setDate(windowStart.getDate() - effectiveDays);
+    const startDate = windowStart.toISOString().split('T')[0];
 
     const { data: recentLogs } = await supabaseAdmin
       .from('practice_logs')
@@ -162,7 +176,7 @@ export async function POST(req) {
       .eq('completed', true);
 
     const requiredPractices = getStagePractices(currentStage);
-    const totalRequired = requiredPractices.length * 14;
+    const totalRequired = requiredPractices.length * effectiveDays;
     const completedCount = recentLogs?.length || 0;
     const adherencePercentage = totalRequired > 0 
       ? Math.min(100, Math.round((completedCount / totalRequired) * 100))
