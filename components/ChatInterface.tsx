@@ -426,7 +426,11 @@ function getNewDayMorningMessage(
     adherenceMessage = `Adherence: **${adherence}%**. `;
   }
   
-  return `Good morning${userName ? `, ${userName}` : ''}. Day ${consecutiveDays + 1} of building your operating system.
+ const totalDays = progressData?.created_at
+    ? Math.floor((Date.now() - new Date(progressData.created_at).getTime()) / (1000 * 60 * 60 * 24)) + 1
+    : consecutiveDays + 1;
+  
+  return `Good morning${userName ? `, ${userName}` : ''}. Day ${totalDays} of building your operating system. That's impressive.
 
 ${streakMessage}${adherenceMessage}
 
