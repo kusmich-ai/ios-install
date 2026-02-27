@@ -4,6 +4,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import AdminClinicalPanel from '@/components/admin/AdminClinicalPanel'
 import { 
   Users, TrendingUp, TrendingDown, DollarSign, Activity,
   RefreshCw, ChevronRight, AlertCircle, AlertTriangle,
