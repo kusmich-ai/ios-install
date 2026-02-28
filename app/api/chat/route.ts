@@ -2353,7 +2353,7 @@ ${context === 'breakthrough_response'
 
     // Handle tool use loop (for signal checks, milestones, etc.)
     let toolLoopCount = 0;
-    const maxToolLoops = 5; // Safety limit
+    const maxToolLoops = 10; // Safety limit
     
     while (response.stop_reason === 'tool_use' && toolLoopCount < maxToolLoops) {
       toolLoopCount++;
