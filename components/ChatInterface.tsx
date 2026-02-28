@@ -2141,8 +2141,9 @@ Ready to continue your transformation?`
     
     setUnlockFlowState('intro_started');
     
-    // Use the unlock.confirmation template which includes BOTH practice intro AND tool intro
-    const stageTemplate = stageTemplates[pendingUnlockStage as keyof typeof stageTemplates];
+    // Use the PREVIOUS stage's unlock.confirmation (stageTemplates[1] describes Stage 2's unlock, etc.)
+    const previousStage = (pendingUnlockStage || 2) - 1;
+    const stageTemplate = stageTemplates[previousStage as keyof typeof stageTemplates];
     
     if (stageTemplate?.unlock?.confirmation) {
       const templateContext = buildTemplateContext();
