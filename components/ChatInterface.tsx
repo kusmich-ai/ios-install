@@ -3477,7 +3477,6 @@ Give me your four numbers (e.g., "4 3 4 5").`;
       // Defer if any intervention is active (don't set hasChecked - retry later)
       if (
         weeklyCheckInActive ||
-        weeklyCheckInDue ||
         missedDaysIntervention?.isActive ||
         regressionIntervention?.isActive ||
         systemRecoveryIntervention?.isActive ||
@@ -3507,7 +3506,7 @@ Give me your four numbers (e.g., "4 3 4 5").`;
     };
     
     checkSundayReflection();
-  }, [user?.id, progress, isInitializing, weeklyCheckInActive, weeklyCheckInDue, missedDaysIntervention?.isActive, regressionIntervention?.isActive, systemRecoveryIntervention?.isActive, sprintRenewalState.isActive, unlockFlowState]);
+  }, [user?.id, progress, isInitializing, weeklyCheckInActive, missedDaysIntervention?.isActive, regressionIntervention?.isActive, systemRecoveryIntervention?.isActive, sprintRenewalState.isActive, unlockFlowState]);
 
   // ============================================
   // EFFECT - Check Resistance Patterns
