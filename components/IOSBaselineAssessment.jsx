@@ -642,7 +642,8 @@ const IOSBaselineAssessment = ({ user }) => {
     user_id: userId,
     current_stage: 1,
     stage_start_date: resultsData.timestamp,
-    system_initialized: true
+    system_initialized: true,
+    baseline_completed: true
   }, { onConflict: 'user_id' });
       
       if (progressError) {
