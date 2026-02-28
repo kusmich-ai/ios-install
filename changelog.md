@@ -4,6 +4,544 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 
 ---
 
+## [0.40.0] - 2026-02-28
+
+### Fixed - Critical User Chat Failure
+- **Fehren Chat Failure Diagnosis & Fix**
+  - Users experiencing consistent "I'm having trouble responding right now" errors
+  - Root cause: `baseline_completed` flag set to `false` despite completed assessments
+  - `days_in_stage` stuck at 0 instead of reflecting actual days in program
+  - Systemic issue: onboarding flow never properly sets `baseline_completed` to `true`
+  - Manual database corrections applied for affected users
+  - Broader fix implemented for all users with completed baselines
+
+- **Input Sanitization False Positives**
+  - Investigated 200 OK responses with empty `data.response`
+  - Input sanitization potentially flagging legitimate messages as unsafe
+  - Traced error flow through route.ts and ChatInterface.tsx
+
+---
+
+## [0.39.0] - 2026-02-27
+
+### Added - Clinical Assessment System
+- **Validated Psychological Measures Integration**
+  - PHQ-9 (depression), GAD-7 (anxiety), PSS-10 (stress), PWB-18 (wellbeing)
+  - Three-timepoint administration: onboarding, Stage 3 unlock, Stage 6 unlock
+  - `clinical_assessments` table with RLS policies
+  - Assessment completion tracking per user per phase
+
+- **Assessment Reminder Banner**
+  - `/components/AssessmentBanner.tsx` - Persistent auto-detecting banner
+  - Phase-appropriate messaging for each assessment timepoint
+  - Dismisses per session, reappears until assessment complete
+  - Integrated into ChatInterface.tsx
+
+- **Coach Prompting for Assessments**
+  - System prompt additions for AI coach to mention assessments naturally
+  - Triggers during Stage 3 and Stage 6 unlock conversations
+  - Non-intrusive prompting that doesn't interrupt protocol flows
+
+- **Admin Assessment Panel**
+  - Individual assessment scores visible in admin dashboard
+  - CSV export functionality for assessment data
+  - Fixed admin view to query `user_profiles` instead of non-existent `profiles` table
+
+### Fixed
+- **RLS Policy for Clinical Assessments**
+  - "Permission denied for table users" error on assessment save
+  - Updated RLS policies to use JWT email claims instead of direct `auth.users` queries
+  - Corrected Supabase import from deprecated `@supabase/auth-helpers-nextjs` to `@supabase/ssr`
+  - Fixed .ts vs .tsx file extension issues causing JSX parsing failures
+
+---
+
+## [0.38.0] - 2026-02-25
+
+### Added - Stage 1 Experience Layer (Full Implementation)
+- **STAGE1_EXPERIENCE_LAYER Constant**
+  - Complete 7-enhancement system injected into system prompt
+  - Activated for both `ritual_completion` and `default` chat contexts
+  - Conditional injection only for Stage 1 users
+
+- **Enhancement #1: Daily Signal Check**
+  - `record_signal_check` and `get_signal_trends` tool integration
+  - Day-specific prompt scripts (Days 1-2, 3+, 7+)
+  - Auto-triggered after both daily practices completed
+
+- **Enhancement #2: Science Drip Library**
+  - 14 daily entries + 7 extended entries (Days 15-21+)
+  - Topics: vagal tone, neuroplasticity, HRV, Default Mode Network, compound effects
+  - One per day maximum, tracked for non-repetition
+  - Journal logging via `log_journal_entry` with `entry_type: "science_drip"`
+
+- **Enhancement #3: Micro-Decentering Moments**
+  - Three scripted awareness interrupts: Day 5 (The Noticer), Day 10 (Language Shift), Day 13 (Adaptive)
+  - Never escalate into full Decentering Protocol
+  - Max one per conversation
+
+- **Enhancement #4: Day 7 Mirror**
+  - Subjective-then-objective mid-stage reflection
+  - "What do YOU think changed?" before showing data
+  - Three outcome branches based on user response
+
+- **Enhancement #5: Unlock Anticipation**
+  - 4 contextual teasers about Stage 2 capabilities
+  - Gated by day count (Day 7+) and delivery tracking
+
+- **Enhancement #6: Pattern Surfacing**
+  - Days 4-5 trigger connecting baseline scores to lived experience
+  - Three scenarios: Mirror users, Reflection users, Skip users
+  - Interpretation map for baseline score patterns
+
+- **Enhancement #7: Milestone Celebrations**
+  - 8 celebration moments (first completion, 3/7/10-day streaks, first calm 4+, adherence thresholds)
+  - `check_milestones` and `record_milestone` tool integration
+
+- **Session Flow Rules**
+  - Never stack 3+ enhancements per message
+  - Adapt to user's energy and engagement level
+  - Signal check always first, then one contextual enhancement
+
+- **Journal Entry Logging**
+  - `journal_entries` Supabase table for transformation records
+  - Entry types: science_drip, milestone, signal_trend, micro_decentering, day7_mirror, pattern_surfacing, coach_guest
+
+### Fixed
+- **Post-Ritual Check-in Race Condition**
+  - `triggerPostRitualCheckin` silently dropped when loading guard active
+  - Replaced simple return with retry mechanism (3 attempts, 1-second delays)
+  - Consistent delivery for all users regardless of async state
+
+- **Resend API Syntax**
+  - `reply_to` changed to `replyTo` to match Resend's camelCase API
+
+- **Stage 1 Enhancement Code Activation**
+  - Initial implementation accidentally commented out with "//" prefixes
+  - Uncommented all functional code in both `ritual_completion` and `default` cases
+
+### Added - Awareness Rep Script Library
+- **11 Script Variations Across 3 Progressive Tiers**
+  - Tier 1 Foundation (Stages 1-2): 4 scripts with different sensory entry points
+  - Tier 2 Recognition (Stages 3-5): 4 scripts with explicit interpretation detection
+  - Tier 3 Integration (Stage 6+): 3 scripts with minimal instruction and extended silence
+  - Stress-compatible and movement variants included
+  - Full compliance audit against System Intent and non-negotiable checklist
+  - Corrected 13 issues: calm-seeking language, identity reinforcement, possessive language, witness-entity creation
+  - Implementation guidance for rotation logic, tier promotion, and audio production
+
+---
+
+## [0.37.0] - 2026-02-24
+
+### Fixed - Flow Block System Overhaul
+- **Commitment Detection Premature Firing**
+  - System attempting data extraction on first user response ("ready")
+  - Added minimum conversation length guard before extraction triggers
+  - Relaxed overly strict commitment detection patterns
+
+- **Sprint Renewal System**
+  - Removed artificial day cap in `useUserProgress.ts` that blocked evolution flow
+  - Sprint renewal now triggers naturally at day 21+
+
+- **Flow Block API Model Switch**
+  - Changed from default model to Claude Opus at 0.1 temperature
+  - Better instruction adherence for structured installer flow
+  - Added detailed compliance examples to system prompt
+
+- **Mirror Onboarding Failures**
+  - Column name mismatches between API routes and `pattern_profiles` table
+  - Silent failures during both skip and guided reflection flows
+  - Fixed column names to match Supabase schema
+
+- **Weekly Check-in / IOS Cue Conflicts**
+  - UI state conflicts between weekly check-ins and IOS Cue confirmations
+  - Resolved competing state handlers
+
+### Added
+- **BreathPacer Component**
+  - Custom expanding/contracting circle animation for Worry Loop Dissolver
+  - 4-second inhale / 6-second exhale timing
+  - 2-minute countdown timer
+  - Smooth CSS transitions
+
+### Fixed - Mobile Layout
+- **Ritual Modal Button Clipping**
+  - Action buttons clipped by browser chrome on mobile
+  - Switched from `100vh` to `100dvh` (dynamic viewport height)
+  - Adjusted padding strategies for mobile Safari/Chrome
+
+---
+
+## [0.36.0] - 2026-02-23
+
+### Fixed - CI/CD Pipeline Recovery
+- **Vercel × GitHub Integration Broken**
+  - GitHub webhooks returning 404 errors
+  - Root cause: `vercel.json` with hourly cron (`0 * * * *`) violated Hobby plan limits
+  - All subsequent deployments silently rejected
+
+- **Resolution**
+  - Upgraded Vercel account to Pro (enabling hourly crons)
+  - Fixed TypeScript errors in `app/api/cron/notifications/route.ts`
+  - Changed `ReturnType<typeof createClient>` parameters to `any` (5 instances)
+  - Added `.npmrc` with `legacy-peer-deps=true` for ESLint 8/9 conflict
+  - Used GitHub Codespaces + Vercel CLI as deployment workaround
+  - Cleaned up duplicate deploy hooks causing double deployments
+
+- **Notification Cron System Restored**
+  - Hourly cron job back online: `0 * * * *`
+  - Morning reminders (7am local), missed day nudges (10am local)
+  - 3-day absence notifications, Sunday weekly summaries (6pm local)
+  - Timezone-aware notification delivery
+  - Email templates via Resend: `morningReminder`, `missedDay`, `threeDayAbsence`, `weeklySummary`
+  - `notification_log` table for deduplication
+  - `notification_preferences` table with unsubscribe support
+
+---
+
+## [0.35.0] - 2026-02-22
+
+### Changed - Mobile UI Redesign
+- **Floating Button Repositioning**
+  - Rituals button was covering send button and blending into chat (amber on amber)
+  - Dashboard button covering content behind it
+
+- **New Mobile Button Layout**
+  - Both buttons positioned as matching white pills at top of screen (`top-14`)
+  - Dashboard pill with hamburger icon on the left
+  - Rituals pill with lightning bolt icon on the right
+  - White backgrounds with amber accents for visibility against dark chat
+  - Explicit text labels (not icons alone)
+  - Positioned below existing header to avoid overlap
+
+---
+
+## [0.34.0] - 2026-02-20
+
+### Fixed - Supabase Security Audit
+- **16 ERROR-Level Issues Resolved**
+  - 3 `auth_users_exposed` views: Revoked anonymous access to `auth.users`
+  - 13 `security_definer_view` issues: Recreated views with `security_invoker = true`
+
+- **Admin Views Decoupled from auth.users**
+  - Added `email` column to `user_profiles` table
+  - Backfilled emails from `auth.users`
+  - Created trigger for automatic email sync on new signups
+  - Rewrote `admin_user_details` and `admin_user_alerts` views to eliminate `auth.users` dependencies
+
+- **Overly Permissive RLS Policies Tightened**
+  - `storage` table: Replaced allow-all with user-scoped policies
+  - `user_data` table: Replaced allow-all with `user_id = auth.uid()` restrictions
+  - Confirmed both tables contained active data before policy changes
+
+---
+
+## [0.33.0] - 2026-02-19
+
+### Changed - Philosophical Alignment Audit
+- **Comprehensive Tool Ecosystem Audit**
+  - Cross-referenced 15 tools against CODEX, Unbecoming Protocols, and sub-protocol instructions
+  - Assessed philosophical alignment, functional role, stage placement, naming consistency
+
+- **Morning Micro-Action → IOS Cue Renaming (Full Implementation)**
+  - `stages.ts`: Stage 3 renamed from "Aligned Action Mode" to "Cue Training"
+  - All practice entries updated: name → "IOS Cue", shortName → "Cue", description → "RAS detection training"
+  - `ChatInterface.tsx`: 10 logical edits (~18 string replacements)
+    - Practice name maps, error messages, evolution context, trigger patterns, button text, status bar text
+    - Sprint fallback strings updated from "coherence statement" to "current cue"
+  - Evolution flow updated to use cue decision tree: Interpretation / Effort / Attention Collapse
+  - Trigger patterns expanded: 'ios cue', 'set up cue', 'setup cue', 'start cue', 'run cue', 'cue training'
+
+- **Reframe Protocol → Interpretation Audit**
+  - Identified naming discrepancy between app ("Reframe") and CODEX ("Interpretation Audit")
+  - Name change planned to align with recognition-based philosophy
+
+- **Thought Hygiene → MOS Dump**
+  - Renamed to align with Nicholas's book methodology for high performers
+
+- **Tool Framing in ToolsSidebar**
+  - Added "Tools don't fix states. They restore clarity when interpretation is distorting signal." under On-Demand Tools
+  - Applied to both desktop and mobile versions
+
+### Added
+- **Signal Reset Micro-Tool**
+  - Planned as both sidebar option and AI-triggered tool
+
+- **Worry Loop Dissolver Analysis**
+  - Placement reviewed within system architecture
+
+---
+
+## [0.32.0] - 2026-02-12
+
+### Changed - Opening Message Overhaul
+- **First-Time Opening Message Rewrite**
+  - Removed API call for dynamic interpretation (caused inconsistency)
+  - Added comprehensive IOS context: what it is, 7-stage system, competence-based unlocking
+  - Explains Stage 1 Neural Priming purpose and science
+  - Sets expectations for AI coach communication style
+  - References toolbar interface
+
+- **New Day Morning Message Enhancement**
+  - Changed from generic greeting to "Day X of building your operating system"
+  - Reinforces progress and continuity
+  - Updated `getNewDayMorningMessage` function (lines 402-430)
+
+- **Same Day Return Message**
+  - Minor personality tweaks for returning users
+
+---
+
+## [0.31.0] - 2026-02-06
+
+### Added - Referral Tracking & Slack Notifications
+- **Slack Enrollment Notifications**
+  - Webhook system using Supabase database triggers
+  - Next.js API route for Slack integration
+  - Real-time notification on new user signups
+
+- **Referral Source Tagging**
+  - `referral_source` column added to `user_profiles`
+  - UTM parameter capture from signup URLs (`?ref=awaken5`)
+  - Database trigger syncing user metadata to profiles on `auth.users` update
+  - Fixed timing issues with email confirmation and RLS policies
+
+- **Admin Dashboard Referral Integration**
+  - Referral source visible in user management
+  - "AW5" badges to distinguish Awaken with 5 referrals from organic signups
+  - Updated stage progression funnel to clarify current distribution vs historical progression
+
+### Added - Admin Dashboard Enhancements (v2)
+- **Needs Attention Alert System**
+  - At-risk: no practice for 3+ days or 20%+ adherence drop
+  - Stalling: 30+ days in stage below unlock threshold
+  - Ready to unlock: meeting advancement criteria
+  - Color-coded alert cards with user details
+  - `healthy` alert type added to TypeScript union
+
+- **Practice Completion Heatmap**
+  - Visual grid showing completion rates by practice type over last 7 days
+  - Identifies which specific practices users skip most
+
+- **Cohort Comparison**
+  - "Awaken with 5" referrals vs organic signup metrics
+  - Average adherence, stage progression, churn rates by cohort
+
+- **Weekly Trend Sparklines**
+  - User adherence trajectories over time
+  - Visual trend indicators in user list
+
+- **New Database Views**
+  - `admin_user_alerts` - At-risk user detection
+  - `admin_practice_heatmap` - Practice completion grid
+  - `admin_cohort_metrics` - Referral source comparison
+  - `admin_weekly_trends` - Adherence trend data
+  - Updated `get_admin_dashboard_data()` RPC function
+
+---
+
+## [0.30.0] - 2026-01-29
+
+### Added - Re-engagement System
+- **Conversational Re-engagement Flow**
+  - Purely conversational approach (Option A) - removed all re-engagement buttons
+  - Handles users returning after multiple days away
+  - Keyword lockout during re-engagement to prevent practice name triggers
+  - ChatInterface.tsx reduced from 4868 to 4664 lines
+
+- **Route.ts Re-engagement Protection**
+  - Practice names blocked from triggering setup flows during re-engagement
+  - Clear examples of correct vs incorrect responses in system prompt
+
+### Fixed - Intervention Button State Management
+- **Phase-Aware Intervention Handling**
+  - Regression intervention buttons persisting after user selection
+  - Added `phase` property to intervention state ('initial', 'exploring', 'complete')
+  - Button rendering conditional on current phase
+  - Applied to regression, missed days, and system recovery interventions
+
+- **Weekly Check-in Data Sync**
+  - Scores saved to `weekly_checkins` but UI reading from `weekly_deltas`
+  - Updated `saveWeeklyCheckIn` to upsert into both tables
+  - Fixed column names: `week_of` instead of `week_start_date`
+  - Added `unique` constraints for proper upsert behavior
+  - `useUserProgress` hook now queries correct columns
+
+### Fixed - Build Errors
+- **ChatInterface.tsx Syntax Error**
+  - "Return statement is not allowed here" at line 3865
+  - Orphaned code block: `if (isAffirmative)` closed properly but subsequent `try` block lacked `else` wrapper
+  - Fixed by changing `}` to `} else {` with additional closing brace
+
+---
+
+## [0.29.5] - 2026-01-26
+
+### Added - Course Library Integration
+- **Science of Neural Liberation Course System**
+  - `/lib/courseIntegration.ts` - Complete course structure (4 modules)
+  - Stage-gating: Stage 1 = Module 1 only, Stage 2+ = all modules
+  - Helper functions for content access control
+
+- **AI Coach Video Suggestions (Layer 2)**
+  - `[[VIDEO_SUGGESTION:module:tutorial:reason]]` markup format
+  - `VideoSuggestionCard.tsx` - Clickable cards parsed from AI responses
+  - Both coaches (Nic and Fehren) can suggest contextual tutorials
+  - Trigger maps for conversation-to-tutorial matching
+  - Progress tracking with source attribution
+
+- **Coach Knowledge Integration (Layer 3)**
+  - Course concepts embedded in `coachPrompts.ts` for both coaches
+  - Coaches reference tutorial content naturally in conversations
+
+- **In-Chat Video Playback**
+  - VideoModal opens directly within chat interface (not navigation away)
+  - Maintains conversation flow during video viewing
+  - Fetches tutorial data from Supabase on click
+
+### Added - Flow Block Dashboard Widget
+- **Desktop Sidebar Schedule Display**
+  - `DashboardSidebar.tsx` - Weekly task schedule with time slots
+  - TypeScript interfaces for `WeeklyMapEntry` with `timeSlot` support
+  - Custom tooltip showing full task details on hover
+  - Today's block highlighted
+
+- **Mobile Dashboard Schedule**
+  - `MobileDashboard.tsx` - Tap-to-expand interaction pattern
+  - Smooth expand/collapse animations
+  - Touch-friendly row interactions
+
+- **Timezone-Safe Sprint Day Counter**
+  - Fixed "Day 2/21" showing instead of "Day 1/21"
+  - `getSprintDayNumber` function with local timezone handling
+
+---
+
+## [0.29.4] - 2026-01-22
+
+### Changed - Flow Block System v3.0
+- **Complete Protocol Implementation**
+  - Four-phase structure: Discovery & Strategy, Planning, Execution Support, Pattern Analysis
+  - "Rule of 3's": top 3 domains, 3G balance (Goal/Growth/Gratitude), 5 blocks/week
+  - 30-second primer explaining 3 Types and 3G hierarchy before domain selection
+  - Sequential questioning (one domain at a time with wait periods)
+  - Flow Menu built as distinct output before Weekly Map
+  - Explicit 3G balance auditing
+  - Concentrated vs distributed decision-making with signal detection
+  - Setup questions asked individually
+  - Pattern Analyst framework for ongoing support
+
+- **Flow Block API Fixes**
+  - Task Clarity Check added after each task acknowledgment
+  - Domain-Time Intelligence: flags relational blocks during work hours
+  - Calendar Scheduling restored as standard flow element
+  - System prompt isolation from security/cue kernel wrappers
+  - Lower temperature (0.1) for deterministic behavior
+  - Fixed system message handling in route.ts (messages included system prompt but route filtered it out)
+
+- **Extraction System Fixes**
+  - `flowBlockExtractionSystemPrompt` constant created and properly exported
+  - Extraction contexts forced to use designated system prompts regardless of message array
+  - `flow_block_sprints` table: added `created_at` and `updated_at` columns
+
+### Changed - Micro-Action → IOS Cue Evolution
+- **microActionAPI v4.0-v4.2**
+  - Evolved from identity-model ("I am someone who...") to cue kernel ("Notice → Label → Release")
+  - Context-first rule: explanations before questions
+  - Selection-based action design (concrete options vs open-ended)
+  - Removed redundant verification phases
+  - Embodied validation at key moments
+  - Execution cue creation and storage
+  - `execution_cue` field added to `identity_sprints` table
+
+- **Extraction Chain Debugging**
+  - Commitment detection not triggering extraction
+  - `isActive` flag not resetting after completion (UI stuck in setup mode)
+  - Route.ts filtering out system messages for extraction contexts
+  - Fixed: extraction contexts now always receive designated system prompts
+
+### Fixed - Database & Query Issues
+- **406 "Not Acceptable" Errors**
+  - `.single()` calls failing when no active sprint existed
+  - Replaced with `.limit(1)` + array destructuring pattern
+  - Applied to both `identity_sprints` and `flow_block_sprints` queries in `useUserProgress.ts` and `sprintDatabase.ts`
+
+- **Flow Block State Inversion**
+  - `hasFlowBlockConfig: !flowBlockSprint` → `hasFlowBlockConfig: !!flowBlockSprint`
+  - Sidebar now correctly shows sprint status
+
+- **RLS Policy Fixes**
+  - Missing policies on `identity_sprints` table
+  - Table name mismatch: code queried `flow_block_config` but table was `flow_block_sprints`
+  - Stub functions in ChatInterface.tsx overriding actual database operations
+  - Dropped and recreated RLS policies for `identity_sprints`
+
+### Changed - UX Improvements
+- **Practice Button Styling**
+  - Aligned Action and Flow Block buttons changed from green to amber
+  - "Complete Block" text changed to "Mark Done"
+  - Consistent with other practice buttons
+  - Updated in both `ToolsSidebar.tsx` and `FloatingActionButton.tsx`
+
+- **UI Language Updates**
+  - "Start Identity Installation" → "Set Up Morning Coherence"
+  - "Setting up your identity" → "Setting up coherence practice"
+  - Practice title "Morning Micro-Action" updated across stages configuration
+
+---
+
+## [0.29.3] - 2026-01-20
+
+### Added - Mirror Alternative Pathways
+- **Guided Reflection Questionnaire**
+  - 7 targeted questions surfacing behavioral patterns
+  - Covers: stress responses, attention patterns, relational dynamics
+  - Database migrations, API routes, React components
+  - Questions audited against kernel philosophy (recognition over improvement)
+  - Revised to eliminate self-improvement language and archaeological digging
+
+- **Skip Option for Mirror**
+  - Defers Mirror until after Stage 1 completion
+  - Database flag for skip tracking
+  - Re-offer logic after sufficient conversation history
+
+### Changed
+- **PaywallModal Enhancement**
+  - Added "Want to learn more? See full details →" link to footer
+  - Bridges in-app modal to standalone /upgrade page
+
+- **Upgrade Page Image Quality**
+  - Coach images doubled from 128px to 256px for retina displays
+  - Added `quality={100}` to Next.js Image components
+  - Recommended AVIF format over WebP for superior compression
+
+- **Copy Alignment with Kernel Philosophy**
+  - "Become who you're meant to be through daily micro-proof" reframed
+  - New: Focus on dissolving false identities and recognizing authentic self
+
+---
+
+## [0.29.2] - 2026-01-19
+
+### Added - Reorientation System (Continued)
+- **Tool Framing in Sidebar**
+  - "Tools don't fix states. They restore clarity when interpretation is distorting signal."
+  - Added under On-Demand Tools heading in ToolsSidebar
+  - Desktop and mobile versions updated
+
+- **Mirror Exercise Concerns Identified**
+  - Users without substantial ChatGPT history receive less relevant analysis
+  - Proposed disclaimer for 50+ conversation minimum
+  - Alternative pathways designed (guided reflection + skip option)
+
+### Fixed
+- **ToolsSidebar Map Syntax Error**
+  - Arrow function using parentheses instead of curly braces when declaring variables
+  - Caused deployment failure
+
+---
+
 ## [0.29.0] - 2026-01-19
 
 ### Added - Reorientation System
@@ -1020,70 +1558,20 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 ### Added
 - **Complete Legal Protection Package (6 Documents)**
   1. **Master Terms of Service** - Main agreement covering Stages 1-6
-     - Comprehensive definitions and scope
-     - Clear "not medical treatment" disclaimers
-     - Assumption of risk clauses
-     - Liability limitations and waivers
-     - Dispute resolution and arbitration agreement
-     - Severability and entire agreement clauses
-     - User acknowledgment checkboxes
-  
   2. **Informed Consent & Assumption of Risk** - Detailed separate document
-     - Explicit risk acknowledgments
-     - Medical consultation requirements
-     - Emergency protocols
-     - Voluntary participation confirmation
-  
   3. **Medical/Psychiatric Screening Questionnaire** - Auto-exclusion logic
-     - Hard exclusions for high-risk conditions
-     - Conditional warnings with professional consultation requirements
-     - Age verification (18+ minimum)
-     - Current mental health status assessment
-  
   4. **Stage 7 Addendum** - Separate agreement for advanced practices
-     - Additional screening criteria
-     - Enhanced liability protections
-     - Medical supervision requirements
-     - Psychedelic protocol safeguards
-  
   5. **Privacy Policy** - GDPR/Canadian PIPEDA compliant
-     - International data handling
-     - Supabase storage specifications
-     - User rights and data protection
-  
   6. **In-System Crisis Protocols** - AI display requirements
-     - Immediate crisis resource information
-     - Professional referral triggers
-     - Emergency contact protocols
 
 - **Safety screening criteria and eligibility requirements**
-  - Hard exclusions: active psychosis, suicidal ideation, recent psychiatric hospitalization, certain cardiac conditions, pregnancy (for cold exposure), epilepsy (for breathwork)
-  - Medical clearance encouraged for users on psychiatric medications
-  - Age requirement: 18+ minimum
-  - International scope with GDPR compliance considerations
-  - Canadian corporation operation specifications
-
 - **Legal protection strategy**
-  - Clear distinction as educational self-development (not medical treatment)
-  - Mandatory professional consultation recommendations for various conditions
-  - Protection against misuse for healing/therapy purposes
-  - Conservative/safest approach to liability
-  - Insurance coverage recommendations documented
-  - Crisis resource integration requirements
 
 ### Documentation
 - **Comprehensive legal framework established**
-  - Ready for attorney review and finalization
-  - Multi-jurisdiction considerations (international)
-  - Positioned to minimize liability risks
-  - Supabase data storage compliance noted
-  - All 6 documents production-ready
 
 ### Changed
 - **Risk management approach**
-  - From implicit to explicit legal protections
-  - Tiered agreement system (general + Stage 7)
-  - Screening before access vs. warnings during use
 
 ---
 
@@ -1091,32 +1579,13 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 
 ### Added
 - **Authentication system implementation (Phase 1A)**
-  - Email/password authentication with Supabase Auth
-  - User registration before baseline assessment
-  - Session management and route protection
-  - Middleware for authenticated routes
-  - Database schema with Row Level Security policies
-  - 7-day free trial system (toggleable)
-  - Environment variable for payment requirement control
-
 - **Pages Router authentication structure**
-  - `/pages/auth/login.jsx` - Login page
-  - `/pages/auth/signup.jsx` - Registration page
-  - `/pages/auth/verify.jsx` - Email verification handler
-  - `middleware.js` - Route protection logic
 
 ### Changed
 - **Assessment storage migration**
-  - Migrated from localStorage to Supabase database
-  - Baseline results now persist in `baseline_scores` table
-  - User-specific data with RLS policies
-  - Support for future payment integration architecture
 
 ### Fixed
 - **Supabase package dependencies**
-  - Added `@supabase/supabase-js` to package.json
-  - Added `@supabase/auth-helpers-nextjs` for Pages Router support
-  - Resolved Vercel build errors from missing dependencies
 
 ---
 
@@ -1124,36 +1593,15 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 
 ### Fixed
 - **Critical build errors in Vercel deployment**
-  - Middleware export error resolved with compliant middleware.ts format
-  - Async/await syntax error in IOSBaselineAssessment.jsx fixed
-  - Moved Supabase auth call into proper useEffect hook with async handling
-
 - **Email confirmation redirect issues**
-  - Updated Supabase redirect URLs from localhost to production URLs
-  - Email confirmations now properly redirect to live deployment
-
 - **Assessment navigation flow**
-  - Fixed premature redirect after section 4 (was calling results before BCT)
-  - Assessment now properly progresses through all 5 sections including BCT
-  - Corrected navigation logic to prevent skipping Breath Counting Task
-
 - **User routing after baseline completion**
-  - Added middleware to check baseline completion status
-  - Returning users now properly routed to chat instead of re-assessment
-  - Baseline assessment only appears once per user
 
 ### Added
 - **Instructional banner for first-time users**
-  - Appears only on first question of assessment
-  - Provides context: "This brief assessment establishes your starting point across four key domains"
-  - Improves onboarding clarity without cluttering repeat views
 
 ### Changed
 - **IOSBaselineAssessment.jsx complete rewrite**
-  - Production-ready component with all fixes integrated
-  - Proper user flow management (one-time assessment)
-  - Dark theme styling with #ff9e19 orange accents maintained
-  - Correct navigation through all five sections
 
 ---
 
@@ -1161,47 +1609,6 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 
 ### Added
 - **Complete system-prompt.txt file** - Production-ready project instructions
-  - Full Stage 1-3 conversation flows (day-by-day guidance)
-  - Day 1 onboarding with baseline results presentation
-  - Days 2-13/16-27/30+ daily check-in scripts
-  - Weekly delta check-in protocols (Sunday 4-question assessments)
-  - Day 14/28/42+ unlock evaluation logic with multiple scenarios
-  - Stage 2 onboarding (Somatic Flow introduction)
-  - Stage 3 onboarding (Identity Installation Protocol trigger)
-  - Identity sprint management (21-day cycles, mid-sprint adjustments)
-  - Adaptive intervention scripts (missing days, overwhelm, skipping ahead, regression)
-
-- **Supabase storage implementation documentation**
-  - Confirmed usage of `window.storage` API wrapper
-  - Anonymous user_id generation pattern
-  - Complete storage schema with namespaced keys
-  - Usage examples for all data types (baseline scores, daily logs, weekly deltas)
-  - Storage key structure: `ios:baseline:*`, `ios:daily:*`, `ios:weekly:*`
-
-- **Calculation functions**
-  - Adherence calculation logic (percentage-based over rolling windows)
-  - Delta improvement tracking (comparing weekly to baseline)
-  - Calm rating averaging
-  - Unlock eligibility checker with all criteria
-
-- **Enhanced coaching voice examples**
-  - Direct, scientifically grounded responses
-  - Handling resistance patterns
-  - Celebration of genuine progress (not participation)
-  - Intervention scripts for common scenarios
-
-### Changed
-- **Project instructions restructure**
-  - Moved from conceptual framework to operational implementation
-  - Added complete day-by-day conversation flows
-  - Integrated storage patterns throughout
-  - Clarified sub-protocol triggering with decision trees
-  
-### Documentation
-- **system-prompt.txt created** - Complete operational instructions for AI coach
-  - Replaces previous fragmented documentation
-  - Ready for deployment in production environment
-  - Includes all Stage 1-3 flows, storage patterns, and coaching guidelines
 
 ---
 
@@ -1209,17 +1616,9 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 
 ### Fixed
 - **Orange accent color visibility issue** in assessment orchestrator
-  - Problem: Tailwind arbitrary values `text-[#ff9e19]` not rendering consistently
-  - Solution: Replaced all arbitrary color values with inline styles using `style` prop
-  - Defined orange constant at component top: `const orangeAccent = '#ff9e19'`
-  - Applied to: icons, progress bars, buttons, borders, domain scores, checkmarks
-- **Color rendering consistency** across all UI elements
 
 ### Changed
 - **Assessment orchestrator styling system**
-  - Moved from Tailwind arbitrary values to inline styles for custom colors
-  - Maintained Tailwind for spacing, layout, and standard colors
-  - Improved color reliability across different browsers/environments
 
 ---
 
@@ -1227,20 +1626,9 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 
 ### Added
 - **Minimalist dark theme** for assessment orchestrator
-  - Background: #0a0a0a (near-black)
-  - Cards: #111111 (dark gray)
-  - Borders: #1a1a1a
-  - Text: white/gray hierarchy
-  - Accent: #ff9e19 (orange) for all interactive elements
-- **Professional UX polish**
-  - Clean, modern interface design
-  - Strategic use of gradients and shadows
-  - Improved visual hierarchy
 
 ### Changed
 - **Complete redesign** of assessment orchestrator from light theme to dark theme
-- Updated color palette across all components
-- Enhanced button states and hover effects
 
 ---
 
@@ -1248,25 +1636,13 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 
 ### Added
 - **Assessment completion navigation**
-  - Automatic redirect to `/chat` after baseline completion
-  - Data handoff via URL parameters: `?baseline=true&userId=[id]`
-  - Triple-redundant data storage (Supabase + URL + localStorage)
 - **GitHub documentation structure**
-  - Recommended `/docs` folder for version-controlled guides
-  - Integration guides for team reference
-  - Deployment documentation best practices
 
 ### Changed
 - **Results screen UX improvement**
-  - Removed technical confirmation message "Baseline data saved to Supabase"
-  - Cleaner, more user-friendly completion experience
-  - Maintained data reliability without exposing technical details
 
 ### Fixed
 - **Data persistence reliability**
-  - Implemented three-layer storage approach for baseline data
-  - URL parameters ensure data availability during redirect
-  - localStorage provides fallback if Supabase delays
 
 ---
 
@@ -1274,31 +1650,13 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 
 ### Added
 - **Complete Breath Counting Task (BCT) component**
-  - 3-minute timer with countdown
-  - Keyboard shortcuts (Space/B, Enter/C, R/Esc)
-  - Visual feedback for button presses
-  - Proper scoring formula: (seconds_elapsed / 180) × 5
-  - Immediate test termination on lost count
-  - Session history tracking
-  - Performance data export
 
 ### Fixed
 - **Supabase storage integration**
-  - Corrected import statements in IOSBaselineAssessment.jsx
-  - Changed from incorrect named imports to proper storage wrapper import
-  - Fixed key mismatch: aligned storage keys between assessment and chat
-  - Previously: assessment used `baseline:rewired_index`, chat looked for `ios:baseline:rewired_index`
-  - Solution: Updated both components to use consistent `baseline:` prefix
 - **Storage mechanism correction**
-  - Replaced window.storage (localStorage) calls with proper Supabase client calls
-  - Updated storeBaselineData function to use Supabase upsert method
-  - Added comprehensive logging for storage process tracking
 
 ### Changed
 - **Storage architecture**
-  - Migrated from browser localStorage to Supabase persistence
-  - Implemented sophisticated storage wrapper with automatic fallback
-  - Added automatic user ID generation in storage layer
 
 ---
 
@@ -1306,27 +1664,13 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 
 ### Added
 - **Vercel deployment infrastructure**
-  - Next.js/React frontend
-  - Supabase backend integration
-  - Environment variable management
-  - Claude API integration
 - **Data persistence layer**
-  - Supabase tables for user data
-  - Session management
-  - Baseline score storage with consistent keys
 
 ### Fixed
 - **Build errors in Vercel deployment**
-  - Added missing `@tailwindcss/postcss` dependency to package.json
-  - Fixed async/await syntax errors in IOSBaselineAssessment.jsx
-  - Removed documentation text accidentally included in code files
-  - Corrected function signatures to properly handle asynchronous operations
 
 ### Changed
 - **Development workflow**
-  - Manual package.json editing through VS Code preferred over terminal commands
-  - Git operations via VS Code Source Control interface
-  - Build testing on Vercel before main deployment
 
 ---
 
@@ -1334,55 +1678,22 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 
 ### Added
 - **Stage 3: Identity Mode implementation**
-  - 21-day Identity Installation Protocol
-  - Morning Micro-Action (2-3 mins daily)
-  - Identity selector conversation integration
-  - Total daily ritual time: 13-14 minutes
 - **Comprehensive coaching voice guidelines**
-  - Direct, scientifically grounded tone
-  - Focus on "rituals" not "practices"
-  - Emphasis on consistency over metrics
-  - No coddling approach
 
 ### Changed
 - **Stage 1 onboarding flow**
-  - Specific formatting requirements with line breaks and spacing
-  - Updated Awareness Rep duration from 2 to 3 minutes
-  - Total Stage 1 time: 8 minutes daily
 - **Stage 2 Somatic Flow details**
-  - Clarified movement as wave-like, continuous motion
-  - Cat-Cow Flow: 7 breaths
-  - Squat-to-Reach Flow: 7 breaths
-  - Total Somatic Flow: 3 minutes
-  - Stage 2 total: 11 minutes daily
-
-### Added
-- **Active reminder checklist**
-  - Resonance Breathing video link needed
-  - Awareness Rep audio link (3 mins) needed
-  - Somatic Flow video link needed
 
 ---
 
 ## [0.3.0] - 2025-11-07
 
 ### Added
-- **BCT (Breath Counting Task) improvements**
-  - Removed "time-to-failure test" warning for better UX
-  - Removed current score display during task
-  - Immediate termination when user loses count
-  - Scoring formula: (seconds_elapsed / 180) × 5
+- **BCT improvements**
 - **Complete Stage 1-3 user flows**
-  - Detailed onboarding scripts
-  - Daily check-in protocols
-  - Weekly delta assessment system
-  - Stage progression criteria
 
 ### Fixed
 - **Assessment orchestrator UX issues**
-  - Improved timing and transitions
-  - Language precision throughout interface
-  - Format consistency across all screens
 
 ---
 
@@ -1390,31 +1701,11 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 
 ### Added
 - **Baseline diagnostic system (4 domains)**
-  - Calm Core Assessment (Regulation) - ~1 min
-  - Observer Index (Awareness) - ~2 min
-  - Vitality Index (Outlook) - ~1 min
-  - Focus Diagnostic (Attention Part 1) - ~1 min
-  - Presence Test (Attention Part 2) - ~3 min
-  - Total baseline time: ~8 minutes
 - **REwired Index scoring system**
-  - 0-100 scale calculation
-  - Tier classifications (System Offline → Integrated)
-  - Domain-specific scoring
-  - Progressive tracking system
 - **Assessment UX improvements**
-  - One-question-at-a-time presentation
-  - Progress bars and counters
-  - Seamless auto-flow between sections
-  - Clear loading transitions
-  - Section-by-section scoring displays
 
 ### Changed
 - **Assessment naming (rebranding)**
-  - PSS-4 → Calm Core Assessment
-  - EQ-D → Observer Index
-  - WHO-5 → Vitality Index
-  - MWQ → Focus Diagnostic
-  - BCT → Presence Test
 
 ---
 
@@ -1422,55 +1713,23 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 
 ### Added
 - **Initial IOS System Installer architecture**
-  - 7-stage progressive framework
-  - Stage 1: Neural Priming (HRVB + Awareness Rep)
-  - Stage 2: Embodied Awareness (+ Somatic Flow)
-  - Stage 3: Identity Mode (+ Morning Micro-Action)
-  - Stage 4: Flow Mode (+ Flow Block)
-  - Stage 5: Relational Coherence (+ Co-Regulation)
-  - Stage 6: Integration (+ Nightly Debrief)
-  - Stage 7: Accelerated Expansion (manual unlock)
 - **Sub-protocol instructions**
-  - Morning Micro-Action (Identity Installation)
-  - Flow Block Integration (Performance)
-  - Nightly Debrief (Integration)
-  - Reframe Protocol (Interpretation Audit)
-  - Thought Hygiene (Cognitive Clearing)
-  - Meta-Reflection (Weekly Integration)
-  - Decentering Practice (Identity Awareness)
 - **Competence-based unlock system**
-  - Adherence tracking (percentage-based)
-  - Delta improvement measurements
-  - Qualitative readiness indicators
-  - Automated eligibility checks
 - **Coach personality framework**
-  - Witty, ruthless, empowering tone
-  - Scientifically grounded explanations
-  - No cheerleading or coddling
-  - Direct feedback on avoidance patterns
 - **Underlying systems (Day 1+)**
-  - Sleep Optimization protocols
-  - Movement Practice (5x/week)
-  - Stressor exposure (cold/heat)
 
 ### Documentation
 - **Comprehensive project instructions**
-  - System integration guidelines
-  - IOS CODEX (NOS + MOS elements)
-  - Stage unlock criteria and messages
-  - Daily interaction patterns
-  - Weekly delta check-in protocols
-  - Coaching voice samples
 
 
 ## Development Notes
 
 ### Current Development Stage
 - Assessment orchestrator: Complete and styled
-- Stage 1: Fully implemented with practice tracking
+- Stage 1: Fully implemented with practice tracking + Stage 1 Experience Layer (7 enhancements)
 - Stage 2: Fully implemented with Somatic Flow modal + intro templates
-- Stage 3: Fully implemented with Identity Installation + Two-Stage Extraction + intro templates
-- Stage 4: Fully implemented with Flow Block + Two-Stage Extraction + intro templates
+- Stage 3: Fully implemented with IOS Cue (formerly Micro-Action) + Two-Stage Extraction + intro templates
+- Stage 4: Fully implemented with Flow Block v3.0 + Two-Stage Extraction + intro templates
 - Stage 5: Fully implemented with Co-Regulation modal + 5-day rotation + intro templates
 - Stage 6: Fully implemented with Nightly Debrief modal + evening reminder + intro templates
 - Stage 7: Templates complete, application form UI complete, pending qualification review system
@@ -1479,23 +1738,47 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 - Sprint Renewal: Complete for Identity and Flow Block sprints
 - Chat interface: Integrated with baseline data + hybrid template system
 - Supabase storage: Configured and functional
-- Mobile responsive: Complete with drawer navigation
-- **Security: COMPLETE** - Auth, rate limiting, input sanitization, RLS
+- Mobile responsive: Complete with drawer navigation + redesigned pill buttons
+- **Security: COMPLETE** - Auth, rate limiting, input sanitization, RLS, Supabase linter audit
 - **Paywall: COMPLETE** - Stripe integration, subscription management
-- **Admin Dashboard: COMPLETE** - Team analytics and user management
-- **AI Coaching: COMPLETE** - Nic and Fehren coach modals with distinct personalities
+- **Admin Dashboard: COMPLETE** - Team analytics, user management, alerts, heatmaps, cohort comparison
+- **AI Coaching: COMPLETE** - Nic and Fehren coach modals with distinct personalities + course integration
 - **Attribution System: COMPLETE** - Stage unlock modals, tool framing, frustration detection
 - **Reorientation System: COMPLETE** - Day 7/21/missed week/Stage 4 triggers
+- **Notification System: COMPLETE** - Hourly cron, timezone-aware emails (morning/missed/absence/weekly)
+- **Clinical Assessments: COMPLETE** - PHQ-9, GAD-7, PSS-10, PWB-18 at 3 timepoints
+- **Stage 1 Experience Layer: COMPLETE** - 7 enhancements (signal check, science drips, micro-decentering, Day 7 Mirror, unlock anticipation, pattern surfacing, milestones)
+- **Referral Tracking: COMPLETE** - UTM capture, Slack notifications, cohort analytics
 
 ## Standing To-Do List
 
-### Active Reminder Checklist
-- [x] Provide Resonance Breathing video link (www.unbecoming.app/breathe)
-- [x] Provide Awareness Rep audio link (3 mins) - COMPLETE
-- [x] Provide Somatic Flow video link - COMPLETE
-- [x] Co-Regulation audio (`/audio/Relational.mp3`) - integrated
-
 ### Completed Development Tasks ✓
+
+#### Core Platform
+- [x] All stage templates (1-7)
+- [x] Unlock auto-checker with competence threshold
+- [x] Sprint Renewal (Continue/Evolve/Pivot)
+- [x] Two-stage extraction for identity sprints
+- [x] Two-stage extraction for flow block sprints
+- [x] Mobile responsive with drawer navigation
+- [x] Opening message overhaul (first-time, returning, new-day)
+
+#### Stage 1 Experience Layer
+- [x] Daily Signal Check with tool integration
+- [x] Science Drip Library (14 entries + 7 extended)
+- [x] Micro-Decentering Moments (Days 5, 10, 13)
+- [x] Day 7 Mirror (subjective-then-objective reflection)
+- [x] Unlock Anticipation teasers
+- [x] Pattern Surfacing (Days 4-5)
+- [x] Milestone Celebrations (8 moments)
+- [x] Journal entry logging system
+
+#### Philosophical Alignment
+- [x] Morning Micro-Action → IOS Cue (full rename across codebase)
+- [x] Stage 3 "Aligned Action Mode" → "Cue Training"
+- [x] Tool framing: "Tools don't fix states. They restore clarity..."
+- [x] Evolution flow updated to cue decision tree
+- [x] Awareness Rep script library (11 scripts, 3 tiers)
 
 #### Security & Infrastructure
 - [x] Security audit implementation (v0.22.0)
@@ -1507,14 +1790,38 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 - [x] Stripe integration and subscription management (v0.24.0)
 - [x] Paywall implementation (v0.24.0)
 - [x] Admin dashboard with team analytics (v0.26.0)
+- [x] Supabase security linter audit - 16 ERRORs resolved (v0.34.0)
+- [x] Admin views decoupled from auth.users
+- [x] Overly permissive RLS policies tightened
+- [x] Vercel Pro upgrade + hourly cron support
+- [x] CI/CD pipeline recovery (GitHub ↔ Vercel)
+
+#### Notification System
+- [x] Hourly cron job (`0 * * * *`)
+- [x] Morning reminders (7am local)
+- [x] Missed day nudges (10am local)
+- [x] 3-day absence notifications
+- [x] Sunday weekly summaries (6pm local)
+- [x] Email templates via Resend
+- [x] Timezone-aware delivery
+- [x] Unsubscribe support
+
+#### Clinical Assessments
+- [x] PHQ-9, GAD-7, PSS-10, PWB-18 integration
+- [x] Three-timepoint administration
+- [x] Assessment reminder banner
+- [x] Coach prompting for assessments
+- [x] Admin panel with CSV export
 
 #### AI Coaching & Personalization
 - [x] Coach with Nic modal (v0.23.0)
 - [x] Coach with Fehren modal (v0.23.0)
 - [x] Coach personality extraction from conversation data
 - [x] Coach conversation memory and persistence
+- [x] Course integration (Layer 2: video suggestions, Layer 3: embedded knowledge)
+- [x] In-chat video playback (VideoModal)
 
-#### Attribution & Misattribution Prevention
+#### Attribution & Engagement
 - [x] Stage attribution copy and modals (v0.27.0)
 - [x] Tool framing system (v0.28.0)
 - [x] AI frustration detection (v0.28.0)
@@ -1522,41 +1829,25 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 - [x] Outcome framing constraints (v0.28.0)
 - [x] Reorientation system (v0.29.0)
 - [x] Capacity signals telemetry (v0.29.0)
+- [x] Referral source tracking + Slack notifications
+- [x] Admin alerts (at-risk, stalling, ready-to-unlock)
+- [x] Practice completion heatmap
+- [x] Cohort comparison (AW5 vs organic)
 
-#### Template Library Development
-- [x] Stage 1 ritual introduction templates (COMPLETE - v0.14.0)
-- [x] Template engine implementation (COMPLETE - v0.16.0)
-- [x] Stage 2 ritual introduction templates (Somatic Flow) - COMPLETE
-- [x] Stage 3 ritual introduction templates (Morning Micro-Action) - COMPLETE
-- [x] Stage 4-6 introduction templates - COMPLETE
-- [x] Stage 7 introduction templates - COMPLETE
-- [x] Daily check-in templates (all stages) - COMPLETE
-- [x] Weekly delta check-in templates - COMPLETE
-- [x] Stage unlock notification templates - COMPLETE
-- [x] Progress summary templates - COMPLETE
-
-#### Data Tracking/Storage System
-- [x] Define storage schema for all user data
-- [x] Build adherence calculation logic
-- [x] Create delta tracking system
-- [x] Daily ritual completion logging
-- [x] Weekly delta check-in automation
-- [x] Two-stage extraction for identity sprints
-- [x] Two-stage extraction for flow block sprints
-- [x] Sprint renewal system (Continue/Evolve/Pivot)
-- [x] Unlock eligibility auto-checker (COMPLETE - v0.16.0)
-- [x] Tool session capacity signals tracking (v0.29.0)
-
-#### Stage 5-7 Implementation
-- [x] Co-Regulation Practice modal (Stage 5) - COMPLETE v0.20.0
-- [x] Nightly Debrief modal (Stage 6) - COMPLETE v0.20.0
-- [x] Stage 5-6 intro templates - COMPLETE
-- [x] Stage 7 templates - COMPLETE (manual unlock gate)
-- [x] Stage 7 application form UI - COMPLETE v0.29.0
-- [x] Awareness Rep audio file - COMPLETE v0.29.0
-- [x] Somatic Flow video - COMPLETE v0.29.0
+#### Media Assets
+- [x] Resonance Breathing video (www.unbecoming.app/breathe)
+- [x] Awareness Rep audio file (3 mins)
+- [x] Somatic Flow video
+- [x] Co-Regulation audio (`/audio/Relational.mp3`)
 
 ### Pending Development Tasks
+
+#### Naming/Alignment (In Progress)
+- [ ] Reframe Protocol → Interpretation Audit (rename)
+- [ ] Thought Hygiene → MOS Dump (rename)
+- [ ] Signal Reset micro-tool implementation
+- [ ] Decentering Practice elevation (on-demand → potential daily ritual)
+- [ ] Worry Loop Dissolver placement finalization
 
 #### Stage 7 Completion
 - [x] Stage 7 application form UI - COMPLETE
@@ -1566,18 +1857,24 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 - [x] System recovery from breaks (30+ days) - Reorientation system handles
 - [ ] Build regression/reset protocols
 - [ ] Manual override logic for stage changes
+- [ ] `baseline_completed` flag fix (systemic - onboarding flow never sets it)
+- [ ] `days_in_stage` auto-increment (never automatically updated)
 
 #### Future Enhancements
 - [ ] iOS native app conversion (Capacitor)
 - [ ] Circle integration for community features
-- [ ] "Science of Neural Liberation" course integration (4 modules, 16 tutorials)
+- [ ] "Science of Neural Liberation" course integration (4 modules, 16 tutorials) — Layer 1 (library page) complete, Layers 2-3 integrated
+- [ ] Landing page for film viewers (`/begin` route)
+- [ ] Stage 1 duration optimization (14 days vs shorter — pending beta data)
 
 ### Technical Stack
 - **Frontend**: Next.js 16, React, Tailwind CSS
 - **Backend**: Supabase
-- **Deployment**: Vercel
-- **AI Integration**: Claude API
+- **Deployment**: Vercel (Pro plan)
+- **AI Integration**: Claude API (Opus for Flow Block setup, Sonnet for general chat)
 - **Payments**: Stripe
+- **Email**: Resend
+- **Notifications**: Vercel Cron (hourly)
 - **Storage**: Supabase (primary) + localStorage (fallback)
 
 ### Design System
@@ -1589,20 +1886,28 @@ All notable changes to the IOS (Integrated Operating System) project will be doc
 - **Typography**: System fonts, clear hierarchy
 - **Spacing**: Consistent Tailwind scale
 - **Components**: Dark theme throughout
+- **Mobile**: White pill buttons with amber accents at top-14
 
 ### Database Schema (Key Tables)
 - `user_progress` - Stage, adherence, streaks, attribution flags, reorientation flags
+- `user_profiles` - Name, email (synced from auth), referral_source
 - `baseline_assessments` - Initial 4-domain scores, REwired Index
+- `clinical_assessments` - PHQ-9, GAD-7, PSS-10, PWB-18 scores at 3 timepoints
 - `practice_logs` - Daily ritual completion records (includes nightly_debrief notes)
-- `weekly_deltas` - Weekly check-in scores
+- `weekly_deltas` - Weekly check-in scores and deltas
 - `screening_responses` - Medical/psychiatric screening
 - `legal_acceptances` - Terms and consent records
-- `identity_sprints` - 21-day Micro-Action sprint tracking
-- `flow_block_sprints` - Flow Block sprint tracking
+- `identity_sprints` - 21-day IOS Cue sprint tracking (includes execution_cue)
+- `flow_block_sprints` - Flow Block sprint tracking (includes weekly_map with timeSlots)
 - `subscriptions` - Stripe subscription tracking
 - `tool_sessions` - On-demand tool usage and capacity signals
 - `coach_conversations` - AI coaching conversation history
-- `admin_*` views - Dashboard analytics
+- `signal_checks` - Daily signal check data
+- `journal_entries` - Science drips, milestones, micro-decentering, pattern surfacing logs
+- `notification_preferences` - Email notification settings per user
+- `notification_log` - Sent notification deduplication
+- `pattern_profiles` - Mirror/guided reflection pattern data
+- `admin_*` views - Dashboard analytics (decoupled from auth.users)
 
 ---
 
