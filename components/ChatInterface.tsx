@@ -4208,7 +4208,7 @@ if (regressionIntervention?.isActive) {
     }
     
     // Intro Flow Handling
-    if (openingType === 'first_time' && introStep < 3) {
+    if (openingType === 'first_time' && introStep < 4) {
       setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
       setLoading(true);
       
