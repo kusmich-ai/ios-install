@@ -63,20 +63,20 @@ export const STAGES: Stage[] = [
         description: 'Builds vagal tone'
       },
       {
-        id: 'awareness_rep',
-        name: 'Awareness Rep',
-        shortName: 'Awareness',
-        duration: 2,
-        icon: '👁️',
-        description: 'Meta-awareness training'
-      },
-      {
         id: 'somatic_flow',
         name: 'Somatic Flow',
         shortName: 'Somatic',
         duration: 2,
         icon: '🧘',
         description: 'Flow movements with breath'
+      },
+      {
+        id: 'awareness_rep',
+        name: 'Awareness Rep',
+        shortName: 'Awareness',
+        duration: 2,
+        icon: '👁️',
+        description: 'Meta-awareness training'
       }
     ],
     unlockCriteria: {
@@ -99,20 +99,20 @@ export const STAGES: Stage[] = [
         description: 'Builds vagal tone'
       },
       {
-        id: 'awareness_rep',
-        name: 'Awareness Rep',
-        shortName: 'Awareness',
-        duration: 2,
-        icon: '👁️',
-        description: 'Meta-awareness training'
-      },
-      {
         id: 'somatic_flow',
         name: 'Somatic Flow',
         shortName: 'Somatic',
         duration: 2,
         icon: '🧘',
         description: 'Movement with breath'
+      },
+      {
+        id: 'awareness_rep',
+        name: 'Awareness Rep',
+        shortName: 'Awareness',
+        duration: 2,
+        icon: '👁️',
+        description: 'Meta-awareness training'
       },
       {
         id: 'micro_action',
@@ -143,20 +143,20 @@ export const STAGES: Stage[] = [
         description: 'Builds vagal tone'
       },
       {
-        id: 'awareness_rep',
-        name: 'Awareness Rep',
-        shortName: 'Awareness',
-        duration: 2,
-        icon: '👁️',
-        description: 'Meta-awareness training'
-      },
-      {
         id: 'somatic_flow',
         name: 'Somatic Flow',
         shortName: 'Somatic',
         duration: 2,
         icon: '🧘',
         description: 'Movement with breath'
+      },
+      {
+        id: 'awareness_rep',
+        name: 'Awareness Rep',
+        shortName: 'Awareness',
+        duration: 2,
+        icon: '👁️',
+        description: 'Meta-awareness training'
       },
       {
         id: 'micro_action',
@@ -195,20 +195,20 @@ export const STAGES: Stage[] = [
         description: 'Builds vagal tone'
       },
       {
-        id: 'awareness_rep',
-        name: 'Awareness Rep',
-        shortName: 'Awareness',
-        duration: 2,
-        icon: '👁️',
-        description: 'Meta-awareness training'
-      },
-      {
         id: 'somatic_flow',
         name: 'Somatic Flow',
         shortName: 'Somatic',
         duration: 2,
         icon: '🧘',
         description: 'Movement with breath'
+      },
+      {
+        id: 'awareness_rep',
+        name: 'Awareness Rep',
+        shortName: 'Awareness',
+        duration: 2,
+        icon: '👁️',
+        description: 'Meta-awareness training'
       },
       {
         id: 'micro_action',
@@ -255,20 +255,20 @@ export const STAGES: Stage[] = [
         description: 'Builds vagal tone'
       },
       {
-        id: 'awareness_rep',
-        name: 'Awareness Rep',
-        shortName: 'Awareness',
-        duration: 2,
-        icon: '👁️',
-        description: 'Meta-awareness training'
-      },
-      {
         id: 'somatic_flow',
         name: 'Somatic Flow',
         shortName: 'Somatic',
         duration: 2,
         icon: '🧘',
         description: 'Movement with breath'
+      },
+      {
+        id: 'awareness_rep',
+        name: 'Awareness Rep',
+        shortName: 'Awareness',
+        duration: 2,
+        icon: '👁️',
+        description: 'Meta-awareness training'
       },
       {
         id: 'micro_action',
