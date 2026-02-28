@@ -371,15 +371,70 @@ export const ON_DEMAND_TOOLS = [
 ];
 
 // ============================================
+// PRACTICE SCHEDULE CONFIG
+// ============================================
+// Defines which days of the week each practice is active.
+// 0 = Sunday, 1 = Monday, 2 = Tuesday, ..., 6 = Saturday
+// If a practice is NOT listed here, it defaults to every day (0-6).
+
+const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
+const WEEKDAYS = [1, 2, 3, 4, 5]; // Mon-Fri
+
+export const practiceSchedule: { [key: string]: number[] } = {
+  flow_block: WEEKDAYS,
+  // All other practices default to ALL_DAYS.
+  // Add future schedule overrides here, e.g.:
+  // co_regulation: WEEKDAYS,
+};
+
+/**
+ * Get the scheduled days for a practice (defaults to every day)
+ */
+export function getPracticeScheduledDays(practiceId: string): number[] {
+  return practiceSchedule[practiceId] || ALL_DAYS;
+}
+
+// ============================================
 // STAGE HELPER FUNCTIONS
 // ============================================
 
 /**
- * Get practices for a specific stage
+ * Get ALL practices for a specific stage (regardless of schedule)
  */
 export function getStagePractices(stageNumber: number): Practice[] {
   const stage = STAGES.find(s => s.number === stageNumber);
   return stage?.practices || [];
+}
+
+/**
+ * Get practices SCHEDULED for a specific date (filters out off-day practices)
+ * Use this for sidebar display and "remaining today" logic.
+ */
+export function getScheduledPracticesForDate(stageNumber: number, date?: Date): Practice[] {
+  const targetDate = date || new Date();
+  const dayOfWeek = targetDate.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+
+  const allPractices = getStagePractices(stageNumber);
+
+  return allPractices.filter(practice => {
+    const scheduledDays = getPracticeScheduledDays(practice.id);
+    return scheduledDays.includes(dayOfWeek);
+  });
+}
+
+/**
+ * Get practice IDs scheduled for a specific date (used by progress-utils)
+ */
+export function getScheduledPracticeIdsForDate(stageNumber: number, date?: Date): string[] {
+  const targetDate = date || new Date();
+  const dayOfWeek = targetDate.getDay();
+
+  const allPracticeIds = getStagePracticeIds(stageNumber);
+
+  return allPracticeIds.filter(practiceId => {
+    const scheduledDays = getPracticeScheduledDays(practiceId);
+    return scheduledDays.includes(dayOfWeek);
+  });
 }
 
 /**
@@ -406,7 +461,7 @@ export function getStageTagline(stageNumber: number): string {
 }
 
 /**
- * Get array of practice IDs for a stage (simple string array)
+ * Get array of practice IDs for a stage (simple string array, all practices)
  */
 export function getStagePracticeIds(stageNumber: number): string[] {
   const stage = STAGES.find(s => s.number === stageNumber);
