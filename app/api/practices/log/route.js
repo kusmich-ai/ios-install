@@ -7,6 +7,7 @@ import {
   badRequestResponse,
 } from '@/lib/security/auth';
 import { checkRateLimit } from '@/lib/security/rateLimit';
+import { getScheduledPracticeIdsForDate } from '@/app/config/stages';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -149,11 +150,14 @@ export async function POST(req) {
       logResult = data;
     }
 
-   // Calculate adherence (adaptive window based on days in stage)
+    // ============================================
+    // SCHEDULE-AWARE ADHERENCE CALCULATION
+    // ============================================
+    // Adaptive window based on days in stage
     const stageStartDate = progressData?.stage_start_date 
       ? new Date(progressData.stage_start_date) 
       : null;
-   const daysInStage = stageStartDate 
+    const daysInStage = stageStartDate 
       ? Math.floor((new Date().getTime() - stageStartDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
       : 1;
     const effectiveDays = Math.min(Math.max(daysInStage, 1), 14);
@@ -169,14 +173,38 @@ export async function POST(req) {
       .gte('practice_date', startDate)
       .eq('completed', true);
 
-    const requiredPractices = getStagePractices(currentStage);
-    const totalRequired = requiredPractices.length * effectiveDays;
-    const completedCount = recentLogs?.length || 0;
-    const adherencePercentage = totalRequired > 0 
-      ? Math.min(100, Math.round((completedCount / totalRequired) * 100))
+    // Schedule-aware: count expected practices per day based on that day's schedule
+    let totalExpected = 0;
+    let totalCompleted = 0;
+    const todayDate = new Date();
+
+    for (let i = 0; i < effectiveDays; i++) {
+      const checkDate = new Date(todayDate);
+      checkDate.setDate(checkDate.getDate() - i);
+      const dateStr = checkDate.toISOString().split('T')[0];
+
+      // Get only practices SCHEDULED for this specific day of the week
+      const scheduledPractices = getScheduledPracticeIdsForDate(currentStage, checkDate);
+      totalExpected += scheduledPractices.length;
+
+      // Count completed scheduled practices for this date
+      const dayLogs = (recentLogs || []).filter(log => log.practice_date === dateStr);
+      const completedPracticeIds = dayLogs.map(log => log.practice_type);
+
+      for (const practiceId of scheduledPractices) {
+        if (completedPracticeIds.includes(practiceId)) {
+          totalCompleted++;
+        }
+      }
+    }
+
+    const adherencePercentage = totalExpected > 0 
+      ? Math.min(100, Math.round((totalCompleted / totalExpected) * 100))
       : 0;
 
-    // Calculate consecutive days with grace period
+    // ============================================
+    // SCHEDULE-AWARE CONSECUTIVE DAYS CALCULATION
+    // ============================================
     let consecutiveDays = 0;
     let graceDayUsed = false;
     
@@ -191,17 +219,28 @@ export async function POST(req) {
     const [year, month, day] = today.split('-').map(Number);
     const checkDate = new Date(year, month - 1, day);
     
-    for (let i = 0; i < 14; i++) {
+    for (let i = 0; i < 30; i++) {
       const dateStr = checkDate.getFullYear() + '-' + 
         String(checkDate.getMonth() + 1).padStart(2, '0') + '-' + 
         String(checkDate.getDate()).padStart(2, '0');
-      const dayPractices = logsByDate[dateStr];
-      const completedAllPractices = dayPractices && requiredPractices.every(p => dayPractices.has(p));
       
-      if (completedAllPractices) {
+      // Get only practices SCHEDULED for this specific day
+      const scheduledPractices = getScheduledPracticeIdsForDate(currentStage, checkDate);
+
+      // If no practices scheduled this day (future-proofing), skip without breaking streak
+      if (scheduledPractices.length === 0) {
+        checkDate.setDate(checkDate.getDate() - 1);
+        continue;
+      }
+
+      const dayPractices = logsByDate[dateStr];
+      const completedAllScheduled = dayPractices && scheduledPractices.every(p => dayPractices.has(p));
+      
+      if (completedAllScheduled) {
         consecutiveDays++;
         checkDate.setDate(checkDate.getDate() - 1);
       } else if (i === 0) {
+        // Today is incomplete — skip without breaking streak
         checkDate.setDate(checkDate.getDate() - 1);
         continue;
       } else if (!graceDayUsed) {
@@ -222,7 +261,9 @@ export async function POST(req) {
       })
       .eq('user_id', userId);
 
-    // Get today's status
+    // ============================================
+    // TODAY'S STATUS — SCHEDULE-AWARE
+    // ============================================
     const { data: todayLogs } = await supabaseAdmin
       .from('practice_logs')
       .select('practice_type, completed')
@@ -230,8 +271,10 @@ export async function POST(req) {
       .eq('practice_date', today)
       .eq('completed', true);
 
+    // Only count practices that are SCHEDULED for today
+    const scheduledToday = getScheduledPracticeIdsForDate(currentStage);
     const todayStatus = {};
-    requiredPractices.forEach(p => {
+    scheduledToday.forEach(p => {
       todayStatus[p] = todayLogs?.some(l => l.practice_type === p) || false;
     });
 
@@ -242,7 +285,7 @@ export async function POST(req) {
         adherencePercentage,
         consecutiveDays,
         todayStatus,
-        allCompleteToday: requiredPractices.every(p => todayStatus[p])
+        allCompleteToday: scheduledToday.every(p => todayStatus[p])
       }
     });
 
@@ -291,8 +334,11 @@ export async function GET(req) {
       .eq('user_id', userId)
       .eq('practice_date', today);
 
-    const requiredPractices = getStagePractices(currentStage);
-    const practices = requiredPractices.map(practiceId => {
+    // Schedule-aware: only return practices scheduled for the requested date
+    const requestedDate = new Date(today + 'T12:00:00'); // noon to avoid timezone issues
+    const scheduledToday = getScheduledPracticeIdsForDate(currentStage, requestedDate);
+    
+    const practices = scheduledToday.map(practiceId => {
       const log = todayLogs?.find(l => l.practice_type === practiceId);
       return {
         id: practiceId,
