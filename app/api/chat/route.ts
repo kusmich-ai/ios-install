@@ -1897,10 +1897,10 @@ export async function POST(req: Request) {
         const stageRituals: { [key: number]: string } = {
           1: '1. Resonance Breathing - 5 mins\n2. Awareness Rep - 2 mins',
           2: '1. Resonance Breathing - 5 mins\n2. Somatic Flow - 3 mins\n3. Awareness Rep - 2 mins',
-          3: '1. Resonance Breathing - 5 mins\n2. Somatic Flow - 3 mins\n3. Awareness Rep - 2 mins\n4. Morning Micro-Action - 2-3 mins',
-          4: '1. Resonance Breathing - 5 mins\n2. Somatic Flow - 3 mins\n3. Awareness Rep - 2 mins\n4. Morning Micro-Action - 2-3 mins\n5. Flow Block - 60-90 mins',
-          5: '1. Resonance Breathing - 5 mins\n2. Somatic Flow - 3 mins\n3. Awareness Rep - 2 mins\n4. Morning Micro-Action - 2-3 mins\n5. Flow Block - 60-90 mins\n6. Co-Regulation - 3-5 mins',
-          6: '1. Resonance Breathing - 5 mins\n2. Somatic Flow - 3 mins\n3. Awareness Rep - 2 mins\n4. Morning Micro-Action - 2-3 mins\n5. Flow Block - 60-90 mins\n6. Co-Regulation - 3-5 mins\n7. Nightly Debrief - 2 mins',
+          3: '1. Resonance Breathing - 5 mins\n2. Somatic Flow - 3 mins\n3. Awareness Rep - 2 mins\n4. IOS Cue - 2 mins',
+          4: '1. Resonance Breathing - 5 mins\n2. Somatic Flow - 3 mins\n3. Awareness Rep - 2 mins\n4. IOS Cue - 2 mins\n5. Flow Block - 60-90 mins',
+          5: '1. Resonance Breathing - 5 mins\n2. Somatic Flow - 3 mins\n3. Awareness Rep - 2 mins\n4. IOS Cue - 2 mins\n5. Flow Block - 60-90 mins\n6. Co-Regulation - 3-5 mins',
+          6: '1. Resonance Breathing - 5 mins\n2. Somatic Flow - 3 mins\n3. Awareness Rep - 2 mins\n4. IOS Cue - 2 mins\n5. Flow Block - 60-90 mins\n6. Co-Regulation - 3-5 mins\n7. Nightly Debrief - 2 mins',
         };
         
         const currentStage = reEngagementData.currentStage || 1;
