@@ -3194,6 +3194,23 @@ setTimeout(async () => {
           }
         }
       }
+      
+      // After weekly check-in completes on Sunday, offer meta-reflection (Stage 2+)
+      if (isSunday() && progress && progress.currentStage >= 2) {
+        setTimeout(async () => {
+          try {
+            const isDue = await isWeeklyReflectionDue(user.id);
+            if (isDue) {
+              setMessages(prev => [...prev, {
+                role: 'assistant',
+                content: `🪞 **Sunday Reflection**\n\nNow that your weekly numbers are logged, let's take a step back. The Meta-Reflection isn't about reviewing what happened — it's about observing how awareness moved through it.\n\nWould you like to begin?`
+              }]);
+            }
+          } catch (err) {
+            console.error('[MetaReflection] Post-checkin trigger error:', err);
+          }
+        }, 4000);
+      }
     } catch (error) {
   console.error('Failed to save weekly check-in:', error);
   
