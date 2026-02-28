@@ -1358,7 +1358,7 @@ export const introFlowTemplates = {
     0: { text: "Yes, let's learn the rituals", buttonLabel: "Yes, let's go" },
     1: { text: "Got it, makes sense. What's next?", buttonLabel: "Got it, next ritual" },
     2: { text: "Makes sense, I'm ready", buttonLabel: "Got it, I'm ready" },
-    3: null,
+    3: { text: "Got it, let's go", buttonLabel: "Got it, let's go" },
     4: null
   } as { [key: number]: { text: string; buttonLabel: string } | null },
   
