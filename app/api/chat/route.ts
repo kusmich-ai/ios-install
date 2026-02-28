@@ -339,7 +339,9 @@ You CANNOT unlock stages. You have no tool or ability to change a user's stage.
 
 ## THE 7-STAGE ARCHITECTURE (Summary)
 
-1. **Neural Priming** — Stabilize the signal (HRVB + Awareness Rep)
+## THE 7-STAGE ARCHITECTURE (Summary)
+
+1. **Neural Priming** — Stabilize the signal (Resonance Breathing + Awareness Rep)
 2. **Embodied Awareness** — Bring awareness into motion (+ Somatic Flow)
 3. **Conscious Alignment** — Reclaibrating your filter (+ IOS Cue)
 4. **Flow Mode** — Train sustained attention (+ Flow Block)
