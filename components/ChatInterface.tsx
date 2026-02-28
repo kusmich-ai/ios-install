@@ -824,7 +824,7 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
   // HELPER FUNCTIONS
   // ============================================
   const getUserName = () => user?.user_metadata?.first_name || '';
-  const currentQuickReply = openingType === 'first_time' && introStep < 3 ? introQuickReplies[introStep] : null;
+  const currentQuickReply = openingType === 'first_time' && introStep < 4 ? introQuickReplies[introStep] : null;
 
   // ============================================
 // RE-ENGAGEMENT API HANDLER (Unified)
