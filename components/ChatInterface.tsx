@@ -4332,7 +4332,8 @@ Ready to start your first practice?`;
         const redirectMessage = getIntroRedirectMessage(introStep);
         const fullResponse = aiResponse + '\n\n' + redirectMessage;
         
-        setMessages(prev => [...prev, { role: 'assistant', content: fullResponse }]);
+        setLoading(false);
+        await postAssistantMessage(fullResponse);
       } catch (err) {
         console.error('API error during intro:', err);
         setMessages(prev => [...prev, { 
