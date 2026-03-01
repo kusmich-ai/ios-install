@@ -898,7 +898,7 @@ function TimeToUnlock({ data }: { data: TimeToUnlockRow[] | null }) {
 // ============================================
 // TOOL USAGE (NEW)
 // ============================================
-ffunction ToolUsagePanel({ data }: { data: ToolUsageRow[] | null }) {
+function ToolUsagePanel({ data }: { data: ToolUsageRow[] | null }) {
   if (!data || data.length === 0) {
     return (
       <div className="bg-[#111111] border border-[#1a1a1a] rounded-lg p-6">
