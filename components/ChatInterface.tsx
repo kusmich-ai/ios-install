@@ -2689,7 +2689,8 @@ info?.microAction || 'Notice → Label → Release'
           }));
           
           setTimeout(() => {
-            setMessages(prev => [...prev, { role: 'assistant', content: assistantResponse }]);
+            setLoading(false);
+            await postAssistantMessage(assistantResponse);
           }, 300);
         }
       } catch (error) {
