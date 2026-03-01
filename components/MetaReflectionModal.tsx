@@ -462,7 +462,7 @@ function MetaReflectionModalComponent({ isOpen, onClose, userId, isWeeklyPrompt 
     if (userId) {
       try {
         const supabase = createClient();
-        await supabase.from('tool_sessions').insert({
+        const { error } = await supabase.from('tool_sessions').insert({
           user_id: userId,
           tool_type: 'meta_reflection',
           session_mode: 'standard',
@@ -470,7 +470,6 @@ function MetaReflectionModalComponent({ isOpen, onClose, userId, isWeeklyPrompt 
           session_data: {
             kernel: kernel,
             themes: themes,
-            // Capacity signals (not success/fail)
             was_signal_named: wasSignalNamed,
             was_interpretation_identified: wasInterpretationIdentified,
             action_selected: kernel !== null,
@@ -478,6 +477,7 @@ function MetaReflectionModalComponent({ isOpen, onClose, userId, isWeeklyPrompt 
           },
           recurring_themes: themes
         });
+        if (error) console.error('[MetaReflection] Insert failed:', error.message, error.code);
       } catch (error) {
         console.error('[MetaReflection] Failed to save session:', error);
       }
@@ -492,9 +492,9 @@ function MetaReflectionModalComponent({ isOpen, onClose, userId, isWeeklyPrompt 
     onClose();
   };
 
-  const handleClose = () => {
+ const handleClose = async () => {
     if (session.isActive && session.conversationHistory.length > 1) {
-      handleEndSession();
+      await handleEndSession();
     } else {
       setSession(initialSession);
       setMessages([]);
