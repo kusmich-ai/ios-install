@@ -412,7 +412,8 @@ function getNewDayMorningMessage(
   baselineData: BaselineData,
   progressData: ProgressData | null,
   userName: string,
-  currentStage: number
+  currentStage: number,
+  yesterdayInsight?: string | null
 ): string {
   const adherence = progressData?.adherence_percentage || 0;
   const consecutiveDays = progressData?.consecutive_days || 0;
@@ -428,9 +429,22 @@ function getNewDayMorningMessage(
     adherenceMessage = `Adherence: **${adherence}%**. `;
   }
   
- const totalDays = progressData?.created_at
+  const totalDays = progressData?.created_at
     ? Math.floor((Date.now() - new Date(progressData.created_at).getTime()) / (1000 * 60 * 60 * 24)) + 1
     : consecutiveDays + 1;
+  
+  if (yesterdayInsight) {
+    return `Good morning${userName ? `, ${userName}` : ''}. Day ${totalDays}.
+
+Before we get into today — yesterday's conversation touched on something worth holding onto. That insight has been saved in your Journal if you want to revisit it.
+
+${streakMessage}${adherenceMessage}
+
+**Today's Stage ${currentStage} Rituals:**
+${rituals.list}
+
+Use the toolbar to start, or pick up where we left off.`;
+  }
   
   return `Good morning${userName ? `, ${userName}` : ''}. Day ${totalDays} of building your operating system. That's impressive.
 
