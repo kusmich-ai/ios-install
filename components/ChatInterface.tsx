@@ -3946,7 +3946,8 @@ microActionState.extractedAction || 'Notice → Label → Release',
       const aiResponse = data.response || data.content || '';
 
       if (aiResponse) {
-        setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
+        setLoading(false);
+        await postAssistantMessage(aiResponse);
       }
     } catch (error) {
       console.error('[ChatInterface] Post-ritual checkin error:', error);
