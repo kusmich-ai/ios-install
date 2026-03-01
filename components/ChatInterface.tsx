@@ -2353,7 +2353,8 @@ const handleStage7QuickReply = useCallback(async (action: string) => {
       devLog('[MicroAction]', 'API response:', assistantResponse);
       
       const cleanResponse = cleanResponseForDisplay(assistantResponse);
-      setMessages(prev => [...prev, { role: 'assistant', content: cleanResponse }]);
+      setLoading(false);
+      await postAssistantMessage(cleanResponse);
       
       const fullHistory = [...updatedHistory, { role: 'assistant' as const, content: cleanResponse }];
       
