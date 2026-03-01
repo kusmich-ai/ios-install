@@ -85,10 +85,10 @@ const PROMPT_LIBRARY: Record<number, Record<string, TaggedPrompt[]>> = {
   },
   3: {
     morning: [
-      { text: "Help me think about my identity sprint so far", phase: 'mid' },
-      { text: "My identity feels off — let's explore why", phase: 'any' },
+      { text: "What patterns has the IOS Cue been surfacing for me?", phase: 'mid' },
+      { text: "Something feels misaligned — help me see what's underneath it", phase: 'any' },
       { text: "I'm feeling resistance to my micro-action", phase: 'any' },
-      { text: "What does acting from coherence actually look like today?", phase: 'early' },
+      { text: "What would today look like if I just noticed instead of performed?", phase: 'early' },
       { text: "Am I close to unlocking Flow Mode?", phase: 'late' },
       { text: "How's my progress looking?", phase: 'mid' },
     ],
