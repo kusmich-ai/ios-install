@@ -2405,6 +2405,40 @@ ${context === 'breakthrough_response'
     // Skip cue prefix for extraction contexts (need clean JSON)
     const skipCuePrefix = context === 'micro_action_extraction' || context === 'flow_block_extraction';
 
+    // Guard: if Claude returned empty/near-empty text, retry once
+    if (!skipCuePrefix && responseText.trim().length < 10) {
+      console.warn('[API/Chat] Empty/truncated response from Claude, retrying...', {
+        responseLength: responseText.length,
+        responseText: responseText.substring(0, 50),
+        context,
+      });
+
+      try {
+        const retryResponse = await callClaudeWithRetry({
+          model,
+          max_tokens: maxTokens,
+          temperature: temperature,
+          system: hasSystemPrompt ? undefined : systemPrompt,
+          messages: conversationMessages,
+          ...(includeEnhancementTools ? { tools: STAGE1_ENHANCEMENT_TOOLS } : {}),
+        });
+
+        const retryText = retryResponse.content
+          .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+          .map(block => block.text)
+          .join('');
+
+        if (retryText.trim().length >= 10) {
+          return NextResponse.json({
+            response: cuePrefix + retryText,
+            context: context || 'general',
+          });
+        }
+      } catch (retryErr) {
+        console.error('[API/Chat] Retry also failed:', retryErr);
+      }
+    }
+
     return NextResponse.json({ 
       response: skipCuePrefix ? responseText : cuePrefix + responseText,
       context: context || 'general',
