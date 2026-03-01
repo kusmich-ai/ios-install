@@ -448,7 +448,7 @@ function ReframeModalComponent({ isOpen, onClose, userId, isTriggered = false }:
     if (userId) {
       try {
         const supabase = createClient();
-        await supabase.from('tool_sessions').insert({
+        const { error } = await supabase.from('tool_sessions').insert({
           user_id: userId,
           tool_type: 'reframe',
           session_mode: 'standard',
@@ -457,13 +457,13 @@ function ReframeModalComponent({ isOpen, onClose, userId, isTriggered = false }:
             anchor: anchor,
             story: story,
             themes: themes,
-            // Capacity signals (not success/fail)
             was_signal_named: anchor !== null || story !== null,
             was_interpretation_identified: story !== null,
             action_selected: anchor !== null
           },
           recurring_themes: themes
         });
+        if (error) console.error('[Reframe] Insert failed:', error.message, error.code);
       } catch (error) {
         console.error('[Reframe] Failed to save session:', error);
       }
@@ -477,9 +477,9 @@ function ReframeModalComponent({ isOpen, onClose, userId, isTriggered = false }:
     onClose();
   };
 
-  const handleClose = () => {
+  const handleClose = async () => {
     if (session.isActive && session.conversationHistory.length > 1) {
-      handleEndSession();
+      await handleEndSession();
     } else {
       setSession(initialSession);
       setMessages([]);
