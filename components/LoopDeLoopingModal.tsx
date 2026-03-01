@@ -903,14 +903,18 @@ Pure sensory data. No interpretation, no story.`;
     if (userId) {
       try {
         const supabase = createClient();
-        await supabase.from('tool_sessions').insert({
+        const { error } = await supabase.from('tool_sessions').insert({
           user_id: userId,
           tool_type: 'loop_delooping',
           session_mode: session.mechanism || 'incomplete',
           duration_seconds: durationSeconds,
-          session_data: sessionData,
-          completed: session.phase === 'complete'
+          session_data: {
+            ...sessionData,
+            completed: session.phase === 'complete'
+          },
+          recurring_themes: []
         });
+        if (error) console.error('[LoopDeLooping] Insert failed:', error.message, error.code);
       } catch (error) {
         console.error('[LoopDeLooping] Failed to save session:', error);
       }
@@ -922,9 +926,9 @@ Pure sensory data. No interpretation, no story.`;
     onClose();
   };
 
-  const handleClose = () => {
+  const handleClose = async () => {
     if (session.isActive && session.conversationHistory.length > 1) {
-      handleEndSession();
+      await handleEndSession();
     } else {
       setSession(initialSession);
       setMessages([]);
