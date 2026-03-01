@@ -301,21 +301,21 @@ function DecenteringModalComponent({ isOpen, onClose, userId }: DecenteringModal
     if (userId) {
       try {
         const supabase = createClient();
-        await supabase.from('tool_sessions').insert({
+       const { error } = await supabase.from('tool_sessions').insert({
           user_id: userId,
           tool_type: 'decentering',
           session_mode: session.sessionMode,
           duration_seconds: durationSeconds,
           session_data: { 
             themes: sessionData.themes,
-            // Capacity signals (not success/fail)
             was_signal_named: sessionData.wasSignalNamed,
             was_interpretation_identified: sessionData.wasInterpretationIdentified,
-            action_selected: session.conversationHistory.length >= 6, // Engaged long enough to complete
+            action_selected: session.conversationHistory.length >= 6,
             sessions_today: sessionsToday + 1
           },
           recurring_themes: sessionData.themes
         });
+        if (error) console.error('[Decentering] Insert failed:', error.message, error.code);
       } catch (error) {
         console.error('[Decentering] Failed to save session:', error);
       }
@@ -328,10 +328,10 @@ function DecenteringModalComponent({ isOpen, onClose, userId }: DecenteringModal
     onClose();
   };
 
-  const handleClose = () => {
+  const handleClose = async () => {
     // If session is active, end it properly
     if (session.isActive && session.conversationHistory.length > 1) {
-      handleEndSession();
+      await handleEndSession();
     } else {
       setSession(initialSession);
       setMessages([]);
