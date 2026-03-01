@@ -3560,15 +3560,37 @@ Give me your four numbers (e.g., "4 3 4 5").`;
           setWeeklyCheckInActive(true);
           setWeeklyCheckInStep(6);
           
-        } else if (type === 'first_time') {
-          openingMessage = await getFirstTimeOpeningMessage(correctedBaselineData, userName);
         } else if (type === 'same_day') {
+          // Try to restore today's conversation from DB
+          const savedMessages = await loadTodayMessages();
+          
+          if (savedMessages && savedMessages.length > 0) {
+            // Restore existing conversation — no new opening needed
+            setMessages(savedMessages);
+            persistedCountRef.current = savedMessages.length;
+            
+            if (hasCompletedOnboarding) {
+              setIntroStep(4);
+            }
+            setShowPromptStarters(true);
+            setIsInitializing(false);
+            
+            await supabase
+              .from('user_progress')
+              .update({ last_visit: new Date().toISOString() })
+              .eq('user_id', user.id);
+            return;
+          }
+          
+          // No saved messages (first visit today via same_day edge case)
           openingMessage = getSameDayReturnMessage(correctedBaselineData, progressData, currentStage, completedToday);
         } else {
+          // New day — clear yesterday's messages, start fresh
+          await clearTodayMessages();
           openingMessage = getNewDayMorningMessage(correctedBaselineData, progressData, userName, currentStage);
         }
 
-       setMessages([]);
+        setMessages([]);
         await postAssistantMessage(openingMessage);
         
         await supabase
