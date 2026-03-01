@@ -227,21 +227,21 @@ function ThoughtHygieneModalComponent({ isOpen, onClose, userId }: ThoughtHygien
     try {
       const supabase = createClient();
       // Step 2.4: Store as capacity signals, not success/fail
-      await supabase.from('tool_sessions').insert({
+  const { error } = await supabase.from('tool_sessions').insert({
         user_id: userId,
         tool_type: 'thought_hygiene',
         session_mode: 'standard',
         duration_seconds: durationSeconds,
         session_data: {
-          // Capacity signals (not success/fail)
           clarity_rating: rating,
-          was_signal_named: true, // Always true if they complete dump step
-          was_interpretation_identified: false, // Not applicable for this tool
-          action_selected: rating >= 3, // Did they gain enough clarity to act?
+          was_signal_named: true,
+          was_interpretation_identified: false,
+          action_selected: rating >= 3,
           sessions_today: sessionsToday + 1
         },
-        recurring_themes: [] // privacy: do not store dump content
+        recurring_themes: []
       });
+      if (error) console.error('[ThoughtHygiene] Insert failed:', error.message, error.code);
     } catch (error) {
       console.error('[ThoughtHygiene] Failed to save session:', error);
     }
