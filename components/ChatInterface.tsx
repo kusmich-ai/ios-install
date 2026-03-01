@@ -4882,10 +4882,8 @@ Ready to start your first practice?`;
             
             {/* Thinking Orb Loading Indicator */}
 {loading && !isStreaming && (
-  <div className="flex justify-start">
-    <div className="bg-gray-800 border border-gray-700 rounded-2xl px-6 py-4">
-      <ThinkingOrb size={28} />
-    </div>
+  <div className="flex justify-start pl-2">
+    <ThinkingOrb size={28} />
   </div>
 )}
             {/* Streaming Message (Typewriter Effect) */}
