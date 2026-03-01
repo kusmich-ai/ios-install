@@ -9,7 +9,7 @@ import {
   Zap, X, Check, Loader2, RefreshCw, RotateCcw, Clock, Flame,
   Wind, Eye, Activity, Target, Heart, Moon, Layers, Compass, Sparkles,
 } from 'lucide-react';
-import { getStagePractices, getUnlockedOnDemandTools } from '@/app/config/stages';
+import { getScheduledPracticesForDate, getUnlockedOnDemandTools } from '@/app/config/stages';
 import type { UserProgress } from '@/app/hooks/useUserProgress';
 import { useResonanceBreathing } from '@/components/ResonanceModal';
 import { useAwarenessRep } from '@/components/AwarenessRepModal';
