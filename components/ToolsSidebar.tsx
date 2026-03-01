@@ -102,7 +102,7 @@ export default function ToolsSidebar({
   const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebrief();
   const { open: openLoopDeLooping, Modal: LoopDeLoopingModal } = useLoopDeLooping();
 
-  const currentStagePractices = getStagePractices(progress.currentStage);
+  const currentStagePractices = getScheduledPracticesForDate(progress.currentStage);
   const unlockedTools = getUnlockedOnDemandTools(progress.currentStage);
 
   
