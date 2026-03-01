@@ -901,6 +901,61 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
   }, [user?.id]);
 
   // ============================================
+  // JOURNAL SAVE (Bookmark chat messages)
+  // ============================================
+
+  const [savedMessageIndexes, setSavedMessageIndexes] = useState<Set<number>>(new Set());
+
+  const saveToJournal = useCallback(async (
+    content: string,
+    messageIndex: number,
+    entryType: string = 'chat_bookmark'
+  ) => {
+    if (!user?.id) return;
+    try {
+      const supabase = createClient();
+
+      const extendedProgress = progress as any;
+      let daysInStage = 1;
+      if (extendedProgress?.stageStartDate) {
+        const startDate = new Date(extendedProgress.stageStartDate);
+        daysInStage = Math.floor((Date.now() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      }
+
+      // Auto-generate title from content
+      const title = content
+        .replace(/\*\*/g, '')
+        .replace(/\n/g, ' ')
+        .substring(0, 80)
+        .trim() + (content.length > 80 ? '...' : '');
+
+      await supabase.from('journal_entries').insert({
+        user_id: user.id,
+        entry_type: entryType,
+        stage: progress?.currentStage || 1,
+        day_in_stage: daysInStage,
+        title,
+        content,
+        metadata: { source: 'chat', saved_at: new Date().toISOString() }
+      });
+
+      setSavedMessageIndexes(prev => new Set(prev).add(messageIndex));
+
+      // Also mark as meaningful in chat_messages for Phase 3
+      const today = new Date().toISOString().split('T')[0];
+      await supabase
+        .from('chat_messages')
+        .update({ is_meaningful: true, meaningful_type: entryType })
+        .eq('user_id', user.id)
+        .eq('message_date', today)
+        .eq('message_index', messageIndex);
+
+    } catch (err) {
+      console.error('[ChatInterface] Failed to save to journal:', err);
+    }
+  }, [user?.id, progress]);
+
+  // ============================================
 // RE-ENGAGEMENT API HANDLER (Unified)
 // ============================================
 
