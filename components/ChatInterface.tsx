@@ -4829,7 +4829,24 @@ Ready to start your first practice?`;
                 ? Math.floor((Date.now() - new Date(progress.stageStartDate).getTime()) / (1000 * 60 * 60 * 24))
                 : 0}
               onPromptSelect={handlePromptStarterSelect}
-              visible={showPromptStarters && !loading && !isStreaming && messages.length > 0 && messages[messages.length - 1]?.role === 'assistant' && !isAwaitingStructuredInput(messages)}
+              visible={
+                showPromptStarters && 
+                !loading && 
+                !isStreaming && 
+                messages.length > 0 && 
+                messages[messages.length - 1]?.role === 'assistant' && 
+                !isAwaitingStructuredInput(messages) &&
+                !microActionState.isActive &&
+                !flowBlockState.isActive &&
+                !weeklyCheckInActive &&
+                !sprintRenewalState.isActive &&
+                !missedDaysIntervention?.isActive &&
+                !regressionIntervention?.isActive &&
+                !systemRecoveryIntervention?.isActive &&
+                unlockFlowState === 'none' &&
+                stage7FlowState === 'none' &&
+                !(openingType === 'first_time' && introStep < 4)
+              }
             />
             <form onSubmit={sendMessage} className="flex gap-3">
               <textarea
@@ -4837,7 +4854,13 @@ Ready to start your first practice?`;
                 value={input}
                onChange={(e) => {
                   setInput(e.target.value);
-                  if (showPromptStarters && e.target.value.length > 0) setShowPromptStarters(false);
+                  if (e.target.value.length > 0) {
+                    if (showPromptStarters) setShowPromptStarters(false);
+                  } else {
+                    if (!showPromptStarters && messages[messages.length - 1]?.role === 'assistant') {
+                      setShowPromptStarters(true);
+                    }
+                  }
                 }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
