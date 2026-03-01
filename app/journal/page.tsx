@@ -5,7 +5,7 @@ import { createBrowserClient } from '@supabase/ssr';
 import { 
   Wind, Eye, Activity, Zap, Target, Heart, Moon,
   Layers, Compass, Sparkles, Award, BookOpen, 
-  Brain, Lightbulb, TrendingUp, ArrowLeft
+  Brain, Lightbulb, TrendingUp, ArrowLeft, Bookmark, MessageSquare
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -29,8 +29,11 @@ const ENTRY_TYPE_CONFIG: Record<string, { icon: React.ComponentType<{ className?
   pattern_surfacing: { icon: Compass, label: 'Pattern', color: 'text-rose-400' },
   reframe_anchor: { icon: Sparkles, label: 'Reframe', color: 'text-yellow-400' },
   debrief_lesson: { icon: Moon, label: 'Debrief', color: 'text-indigo-400' },
-  coach_guest: { icon: Lightbulb, label: 'Coach', color: 'text-orange-400' },
-};
+coach_guest: { icon: Lightbulb, label: 'Coach', color: 'text-orange-400' },
+  chat_bookmark: { icon: Bookmark, label: 'Saved', color: 'text-[#ff9e19]' },
+  breakthrough_insight: { icon: Sparkles, label: 'Breakthrough', color: 'text-[#ff9e19]' },
+  emotional_shift: { icon: Heart, label: 'Shift', color: 'text-rose-400' },
+}; 
 
 function formatDate(dateStr: string): string {
   const date = new Date(dateStr);
