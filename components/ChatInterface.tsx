@@ -4439,7 +4439,8 @@ Ready to start your first practice?`;
       const data = await response.json();
       const aiResponse = data.response || data.content || "I'm having trouble responding right now. Please try again.";
       
-      setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
+      setLoading(false);
+      await postAssistantMessage(aiResponse);
       
       // If breakthrough detected with high confidence, get response from API
       if (breakthroughDetection.type && breakthroughDetection.confidence >= 0.5) {
