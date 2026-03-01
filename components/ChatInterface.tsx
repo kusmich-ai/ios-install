@@ -760,6 +760,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   const hasCheckedStage7Eligibility = useRef<boolean>(false);
   const hasCheckedResistance = useRef<boolean>(false);
   const hasCheckedRegression = useRef<boolean>(false);
+  const persistedCountRef = useRef<number>(0);
 
   // ============================================
   // HOOKS
@@ -827,6 +828,77 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
   // ============================================
   const getUserName = () => user?.user_metadata?.first_name || '';
   const currentQuickReply = openingType === 'first_time' && introStep < 4 ? introQuickReplies[introStep] : null;
+
+  // ============================================
+  // MESSAGE PERSISTENCE (Same-day across devices)
+  // ============================================
+
+  const saveMessageToDB = useCallback(async (
+    role: 'user' | 'assistant',
+    content: string,
+    messageIndex: number,
+    isMeaningful: boolean = false,
+    meaningfulType?: string
+  ) => {
+    if (!user?.id) return;
+    try {
+      const supabase = createClient();
+      const today = new Date().toISOString().split('T')[0];
+
+      await supabase.from('chat_messages').insert({
+        user_id: user.id,
+        role,
+        content,
+        message_date: today,
+        is_meaningful: isMeaningful,
+        meaningful_type: meaningfulType || null,
+        message_index: messageIndex
+      });
+    } catch (err) {
+      console.error('[ChatInterface] Failed to save message:', err);
+    }
+  }, [user?.id]);
+
+  const loadTodayMessages = useCallback(async (): Promise<Message[] | null> => {
+    if (!user?.id) return null;
+    try {
+      const supabase = createClient();
+      const today = new Date().toISOString().split('T')[0];
+
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select('role, content, message_index')
+        .eq('user_id', user.id)
+        .eq('message_date', today)
+        .order('message_index', { ascending: true });
+
+      if (error || !data || data.length === 0) return null;
+
+      return data.map(m => ({
+        role: m.role as 'user' | 'assistant',
+        content: m.content
+      }));
+    } catch (err) {
+      console.error('[ChatInterface] Failed to load messages:', err);
+      return null;
+    }
+  }, [user?.id]);
+
+  const clearTodayMessages = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      const supabase = createClient();
+      const today = new Date().toISOString().split('T')[0];
+
+      await supabase
+        .from('chat_messages')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('message_date', today);
+    } catch (err) {
+      console.error('[ChatInterface] Failed to clear messages:', err);
+    }
+  }, [user?.id]);
 
   // ============================================
 // RE-ENGAGEMENT API HANDLER (Unified)
