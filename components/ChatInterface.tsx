@@ -4819,10 +4819,10 @@ Ready to start your first practice?`;
                         <button
                           onClick={() => saveToJournal(msg.content, idx)}
                           disabled={savedMessageIndexes.has(idx)}
-                          className={`mt-2 flex items-center gap-1 text-xs transition-all ${
+                        className={`mt-2 flex items-center gap-1 text-xs transition-all ${
                             savedMessageIndexes.has(idx)
                               ? 'text-[#ff9e19] cursor-default'
-                              : 'text-zinc-600 hover:text-[#ff9e19] opacity-0 group-hover:opacity-100'
+                              : 'text-zinc-600 hover:text-[#ff9e19] md:opacity-0 md:group-hover:opacity-100'
                           }`}
                           title={savedMessageIndexes.has(idx) ? 'Saved to Journal' : 'Save to Journal'}
                         >
