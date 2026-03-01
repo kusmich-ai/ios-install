@@ -2788,7 +2788,8 @@ const apiMessages = buildFlowBlockAPIMessages(updatedHistory, userResponse, curr
       
       // Clean and display response
       const cleanResponse = cleanFlowBlockResponseForDisplay(assistantResponse);
-      setMessages(prev => [...prev, { role: 'assistant', content: cleanResponse }]);
+      setLoading(false);
+      await postAssistantMessage(cleanResponse);
       
       // Update conversation history with assistant response
       const fullHistory = [...updatedHistory, { role: 'assistant' as const, content: cleanResponse }];
