@@ -15,6 +15,7 @@ import AwakenWithFiveCard from './AwakenWithFiveCard';
 import PromptStarters from '@/components/PromptStarters';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import { Zap, Heart } from 'lucide-react';
+import ThinkingOrb from '@/components/ThinkingOrb';
 import StageAttributionModal, { StageId } from '@/components/StageAttributionModal';
 import { useReorientation } from '@/components/ReorientationModal';
 import ReorientationModal from '@/components/ReorientationModal';
@@ -678,6 +679,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   const [isInitializing, setIsInitializing] = useState<boolean>(true);
   const [streamingMessage, setStreamingMessage] = useState<string>('');
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
+  const streamCancelRef = useRef<boolean>(false);
   const [openingType, setOpeningType] = useState<'first_time' | 'same_day' | 'new_day'>('first_time');
   const [introStep, setIntroStep] = useState<number>(0);
   const [practicesCompletedToday, setPracticesCompletedToday] = useState<string[]>([]);
@@ -1526,34 +1528,48 @@ const getFallbackResultsMessage = (
     };
   }, [baselineData, progress, practicesCompletedToday, introStep, isMobile, flowBlockState.isComplete]);
 
-  // ============================================
-  // TYPEWRITER EFFECT FOR TEMPLATE MESSAGES
+ // ============================================
+  // TYPEWRITER EFFECT FOR ALL ASSISTANT MESSAGES
   // ============================================
   const streamTemplateMessage = useCallback(async (
     message: string, 
     onComplete?: () => void
   ): Promise<void> => {
+    streamCancelRef.current = false;
     setIsStreaming(true);
     setStreamingMessage('');
     
-    // Split into words for natural feel (character-by-character is too slow)
+    // Split into words for natural feel
     const words = message.split(' ');
     let currentText = '';
     
     for (let i = 0; i < words.length; i++) {
+      // Check for cancellation (new message sent while streaming)
+      if (streamCancelRef.current) {
+        // Dump remaining text instantly
+        setMessages(prev => [...prev, { role: 'assistant', content: message }]);
+        setStreamingMessage('');
+        setIsStreaming(false);
+        if (onComplete) onComplete();
+        return;
+      }
+      
       currentText += (i === 0 ? '' : ' ') + words[i];
       setStreamingMessage(currentText);
       
-      // Variable delay: 15-40ms per word for natural rhythm
+      // Variable delay: faster for long messages, slower for short ones
+      const totalWords = words.length;
+      const baseSpeed = totalWords > 150 ? 8 : totalWords > 80 ? 12 : 18;
       const word = words[i];
       const hasPunctuation = /[.!?,;:]$/.test(word);
-      const delay = hasPunctuation ? 40 + Math.random() * 30 : 15 + Math.random() * 25;
+      const hasNewline = word.includes('\n');
+      const delay = hasNewline ? 60 : hasPunctuation ? baseSpeed + 25 + Math.random() * 20 : baseSpeed + Math.random() * 15;
       
       await new Promise(resolve => setTimeout(resolve, delay));
     }
     
     // Finalize: move streaming message to permanent messages array
-   setMessages(prev => [...prev, { role: 'assistant', content: message }]);
+    setMessages(prev => [...prev, { role: 'assistant', content: message }]);
     setStreamingMessage('');
     setIsStreaming(false);
     setShowPromptStarters(true);
@@ -1561,8 +1577,8 @@ const getFallbackResultsMessage = (
     if (onComplete) onComplete();
   }, []);
 
-  // ============================================
-  // POST ASSISTANT MESSAGE (with streaming option)
+  /// ============================================
+  // POST ASSISTANT MESSAGE (universal — templates + API)
   // ============================================
   const postAssistantMessage = useCallback(async (
     message: string, 
@@ -1573,13 +1589,19 @@ const getFallbackResultsMessage = (
   ): Promise<void> => {
     const shouldStream = options?.stream ?? true;
     
-    if (shouldStream && !loading && !isStreaming) {
+    if (shouldStream && !isStreaming) {
+      // Cancel any in-progress stream before starting new one
+      if (isStreaming) {
+        streamCancelRef.current = true;
+        await new Promise(r => setTimeout(r, 50));
+      }
       await streamTemplateMessage(message, options?.onComplete);
     } else {
       setMessages(prev => [...prev, { role: 'assistant', content: message }]);
+      setShowPromptStarters(true);
       if (options?.onComplete) options.onComplete();
     }
-  }, [loading, isStreaming, streamTemplateMessage]);
+  }, [isStreaming, streamTemplateMessage]);
   
   // ============================================
   // EFFECTS - Scroll and Textarea
@@ -4557,18 +4579,11 @@ Ready to start your first practice?`;
               </div>
             ))}
             
-            {/* Enhanced Loading Indicator */}
-{loading && (
+            {/* Thinking Orb Loading Indicator */}
+{loading && !isStreaming && (
   <div className="flex justify-start">
     <div className="bg-gray-800 border border-gray-700 rounded-2xl px-6 py-4">
-      <div className="flex items-center gap-3">
-        <div className="flex gap-1.5">
-          <div className="w-2 h-2 bg-[#ff9e19] rounded-full animate-bounce" />
-          <div className="w-2 h-2 bg-[#ff9e19] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-          <div className="w-2 h-2 bg-[#ff9e19] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-        </div>
-        <span className="text-gray-500 text-sm">Processing...</span>
-      </div>
+      <ThinkingOrb size={28} />
     </div>
   </div>
 )}
