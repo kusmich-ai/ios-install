@@ -4046,7 +4046,8 @@ if (systemRecoveryIntervention?.isActive) {
   }
   
   setTimeout(() => {
-    setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+    setLoading(false);
+    await postAssistantMessage(response);
     setLoading(false);
   }, 500);
   return;
