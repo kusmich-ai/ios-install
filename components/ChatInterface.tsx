@@ -3158,7 +3158,8 @@ if (isCommitment) {
         weekNumber
       );
 
-      setMessages(prev => [...prev, { role: 'assistant', content: resultMessage }]);
+     setLoading(false);
+      await postAssistantMessage(resultMessage);;
 
       // Note: Decline response is now included in the API response, no separate timeout needed
       
