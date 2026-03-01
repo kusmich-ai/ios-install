@@ -898,7 +898,7 @@ function TimeToUnlock({ data }: { data: TimeToUnlockRow[] | null }) {
 // ============================================
 // TOOL USAGE (NEW)
 // ============================================
-function ToolUsagePanel({ data }: { data: ToolUsageRow[] | null }) {
+ffunction ToolUsagePanel({ data }: { data: ToolUsageRow[] | null }) {
   if (!data || data.length === 0) {
     return (
       <div className="bg-[#111111] border border-[#1a1a1a] rounded-lg p-6">
@@ -908,35 +908,68 @@ function ToolUsagePanel({ data }: { data: ToolUsageRow[] | null }) {
     );
   }
 
+  // Sort: tools with eligible users first, then by adoption rate desc
+  const sorted = [...data].sort((a, b) => {
+    if ((a.eligible_users || 0) > 0 && (b.eligible_users || 0) === 0) return -1;
+    if ((a.eligible_users || 0) === 0 && (b.eligible_users || 0) > 0) return 1;
+    return (b.adoption_rate || 0) - (a.adoption_rate || 0);
+  });
+
   return (
     <div className="bg-[#111111] border border-[#1a1a1a] rounded-lg p-6">
-      <SectionHeader title="On-Demand Tool Usage" subtitle="Tool sessions — are they being offered and accepted?" icon={Target} />
+      <SectionHeader title="On-Demand Tool Usage" subtitle="Adoption rate = users who used / users who have access" icon={Target} />
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
             <tr className="border-b border-[#1a1a1a]">
               <th className="text-left text-xs text-gray-400 pb-2 font-medium">Tool</th>
-              <th className="text-right text-xs text-gray-400 pb-2 font-medium">Total</th>
-              <th className="text-right text-xs text-gray-400 pb-2 font-medium">Users</th>
+              <th className="text-right text-xs text-gray-400 pb-2 font-medium">Access</th>
+              <th className="text-right text-xs text-gray-400 pb-2 font-medium">Used</th>
+              <th className="text-right text-xs text-gray-400 pb-2 font-medium">Adoption</th>
+              <th className="text-right text-xs text-gray-400 pb-2 font-medium">Sessions</th>
               <th className="text-right text-xs text-gray-400 pb-2 font-medium">Last 7d</th>
               <th className="text-right text-xs text-gray-400 pb-2 font-medium">Avg Min</th>
             </tr>
           </thead>
           <tbody>
-            {data.map(row => (
-              <tr key={row.tool_type} className="border-b border-[#1a1a1a]/50">
-                <td className="text-sm text-gray-300 py-2">{PRACTICE_LABELS[row.tool_type] || row.tool_type.replace(/_/g, ' ')}</td>
-                <td className="text-sm text-white text-right py-2 font-medium">{row.total_sessions}</td>
-                <td className="text-sm text-gray-400 text-right py-2">{row.unique_users}</td>
-                <td className="text-sm text-right py-2">
-                  <span className={row.sessions_last_7d > 0 ? 'text-emerald-400' : 'text-gray-600'}>{row.sessions_last_7d}</span>
-                </td>
-                <td className="text-sm text-gray-400 text-right py-2">{row.avg_duration_min || '—'}</td>
-              </tr>
-            ))}
+            {sorted.map(row => {
+              const hasEligible = (row.eligible_users || 0) > 0;
+              const adoptionRate = row.adoption_rate || 0;
+              return (
+                <tr key={row.tool_type} className={`border-b border-[#1a1a1a]/50 ${!hasEligible ? 'opacity-40' : ''}`}>
+                  <td className="py-2.5">
+                    <div className="text-sm text-gray-300">{PRACTICE_LABELS[row.tool_type] || row.tool_type.replace(/_/g, ' ')}</div>
+                    {row.min_stage && row.min_stage > 1 && (
+                      <div className="text-[10px] text-gray-600">Unlocks Stage {row.min_stage}+</div>
+                    )}
+                  </td>
+                  <td className="text-sm text-gray-400 text-right py-2.5">{row.eligible_users || 0}</td>
+                  <td className="text-sm text-white text-right py-2.5 font-medium">{row.unique_users}</td>
+                  <td className="text-right py-2.5">
+                    {hasEligible ? (
+                      <span className={`text-sm font-bold ${
+                        adoptionRate >= 50 ? 'text-emerald-400' : adoptionRate > 0 ? 'text-yellow-400' : 'text-gray-600'
+                      }`}>
+                        {adoptionRate}%
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-600">—</span>
+                    )}
+                  </td>
+                  <td className="text-sm text-white text-right py-2.5 font-medium">{row.total_sessions}</td>
+                  <td className="text-sm text-right py-2.5">
+                    <span className={row.sessions_last_7d > 0 ? 'text-emerald-400' : 'text-gray-600'}>{row.sessions_last_7d}</span>
+                  </td>
+                  <td className="text-sm text-gray-400 text-right py-2.5">{row.avg_duration_min || '—'}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
+      <p className="text-[10px] text-gray-600 mt-3 pt-3 border-t border-[#1a1a1a]">
+        Dimmed rows = no users have unlocked that stage yet. Adoption rate normalizes usage by who can actually access each tool.
+      </p>
     </div>
   );
 }
