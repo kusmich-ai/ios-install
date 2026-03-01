@@ -115,6 +115,9 @@ interface ToolUsageRow {
   avg_duration_min: number;
   sessions_last_7d: number;
   sessions_last_30d: number;
+  eligible_users?: number;
+  adoption_rate?: number;
+  min_stage?: number;
 }
 
 interface JournalStatRow {
