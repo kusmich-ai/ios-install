@@ -4743,9 +4743,9 @@ Ready to start your first practice?`;
   <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
     <ClinicalAssessmentBanner userId={user?.id || ''} />
     {messages.map((msg, idx) => (
-              <div
+            <div
                 key={idx}
-                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                className={`group flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
                   className={`max-w-[85%] rounded-2xl px-6 py-4 ${
@@ -4774,6 +4774,24 @@ Ready to start your first practice?`;
                           onWatch={handleWatchVideo}
                         />
                       ))}
+                      {!isInitializing && idx > 0 && (
+                        <button
+                          onClick={() => saveToJournal(msg.content, idx)}
+                          disabled={savedMessageIndexes.has(idx)}
+                          className={`mt-2 flex items-center gap-1 text-xs transition-all ${
+                            savedMessageIndexes.has(idx)
+                              ? 'text-[#ff9e19] cursor-default'
+                              : 'text-zinc-600 hover:text-[#ff9e19] opacity-0 group-hover:opacity-100'
+                          }`}
+                          title={savedMessageIndexes.has(idx) ? 'Saved to Journal' : 'Save to Journal'}
+                        >
+                          {savedMessageIndexes.has(idx) ? (
+                            <><BookmarkCheck size={13} /> <span>Saved</span></>
+                          ) : (
+                            <><Bookmark size={13} /> <span>Save</span></>
+                          )}
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
