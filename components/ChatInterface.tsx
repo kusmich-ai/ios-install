@@ -4452,10 +4452,7 @@ Ready to start your first practice?`;
               breakthroughDetection.confidence
             );
             if (breakthroughResponse) {
-              setMessages(prev => [...prev, { 
-                role: 'assistant', 
-                content: `---\n\n${breakthroughResponse}` 
-              }]);
+              await postAssistantMessage(`---\n\n${breakthroughResponse}`);
             }
           } catch (error) {
             console.error('Breakthrough response error:', error);
