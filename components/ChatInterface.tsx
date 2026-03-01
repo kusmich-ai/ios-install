@@ -4635,8 +4635,49 @@ Ready to start your first practice?`;
       setLoading(false);
       await postAssistantMessage(aiResponse);
       
-      // If breakthrough detected with high confidence, get response from API
+   // If breakthrough detected with high confidence, get response from API
       if (breakthroughDetection.type && breakthroughDetection.confidence >= 0.5) {
+        // Auto-save the exchange to journal
+        const journalContent = `**What I said:**\n${userMessage}\n\n**Insight:**\n${aiResponse}`;
+        const entryType = breakthroughDetection.type === 'insight' ? 'breakthrough_insight'
+          : breakthroughDetection.type === 'emotionalShift' ? 'emotional_shift'
+          : 'milestone';
+
+        try {
+          const supabase = createClient();
+          const extProgress = progress as any;
+          let dis = 1;
+          if (extProgress?.stageStartDate) {
+            dis = Math.floor((Date.now() - new Date(extProgress.stageStartDate).getTime()) / (1000 * 60 * 60 * 24)) + 1;
+          }
+
+          await supabase.from('journal_entries').insert({
+            user_id: user?.id,
+            entry_type: entryType,
+            stage: progress?.currentStage || 1,
+            day_in_stage: dis,
+            title: `${breakthroughDetection.type} — ${userMessage.substring(0, 60)}...`,
+            content: journalContent,
+            metadata: {
+              source: 'auto_breakthrough',
+              confidence: breakthroughDetection.confidence,
+              breakthrough_type: breakthroughDetection.type
+            }
+          });
+
+          // Mark in chat_messages for Phase 3
+          const today = new Date().toISOString().split('T')[0];
+          const currentMsgCount = messages.length;
+          await supabase
+            .from('chat_messages')
+            .update({ is_meaningful: true, meaningful_type: entryType })
+            .eq('user_id', user?.id)
+            .eq('message_date', today)
+            .gte('message_index', currentMsgCount - 2);
+        } catch (journalErr) {
+          console.error('[ChatInterface] Failed to auto-save breakthrough:', journalErr);
+        }
+
         setTimeout(async () => {
           try {
             const breakthroughResponse = await getBreakthroughResponseFromAPI(
