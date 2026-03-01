@@ -4664,7 +4664,8 @@ Ready to start your first practice?`;
           }
         );
         
-        setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+        setLoading(false);
+        await postAssistantMessage(response);
         setRegressionIntervention(null); // Clear after regress
         setLoading(false);
       }}
@@ -4689,7 +4690,8 @@ Ready to start your first practice?`;
           }
         );
         
-        setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+        setLoading(false);
+        await postAssistantMessage(response);
         // Move to exploring phase - shows different buttons
         setRegressionIntervention(prev => prev ? { ...prev, phase: 'exploring' } : null);
         setLoading(false);
