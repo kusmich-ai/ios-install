@@ -874,7 +874,7 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
 
       if (error || !data || data.length === 0) return null;
 
-      return data.map(m => ({
+      return data.map((m: { role: string; content: string; message_index: number }) => ({
         role: m.role as 'user' | 'assistant',
         content: m.content
       }));
