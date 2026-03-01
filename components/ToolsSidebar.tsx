@@ -26,7 +26,7 @@ import {
   Compass,        // Meta-reflection
   Sparkles,       // Thought hygiene / Loop dissolver
 } from 'lucide-react';
-import { getStagePractices, getUnlockedOnDemandTools } from '@/app/config/stages';
+import { getScheduledPracticesForDate, getUnlockedOnDemandTools } from '@/app/config/stages';
 import type { UserProgress } from '@/app/hooks/useUserProgress';
 import { useResonanceBreathing } from '@/components/ResonanceModal';
 import { useAwarenessRep } from '@/components/AwarenessRepModal';
