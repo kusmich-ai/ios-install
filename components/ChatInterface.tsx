@@ -3477,7 +3477,8 @@ Give me your four numbers (e.g., "4 3 4 5").`;
           openingMessage = getNewDayMorningMessage(correctedBaselineData, progressData, userName, currentStage);
         }
 
-        setMessages([{ role: 'assistant', content: openingMessage }]);
+       setMessages([]);
+        await postAssistantMessage(openingMessage);;
         
         await supabase
           .from('user_progress')
