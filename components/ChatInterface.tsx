@@ -14,7 +14,7 @@ import Link from 'next/link';
 import AwakenWithFiveCard from './AwakenWithFiveCard';
 import PromptStarters from '@/components/PromptStarters';
 import DashboardSidebar from '@/components/DashboardSidebar';
-import { Zap, Heart } from 'lucide-react';
+import { Zap, Heart, Bookmark, BookmarkCheck } from 'lucide-react';
 import ThinkingOrb from '@/components/ThinkingOrb';
 import StageAttributionModal, { StageId } from '@/components/StageAttributionModal';
 import { useReorientation } from '@/components/ReorientationModal';
