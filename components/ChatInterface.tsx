@@ -4307,7 +4307,8 @@ Ready to start your first practice?`;
   }
   
   setTimeout(() => {
-    setMessages(prev => [...prev, { role: 'assistant', content: responseMessage }]);
+    setLoading(false);
+    await postAssistantMessage(responseMessage);
     setLoading(false);
   }, 500);
       return;
