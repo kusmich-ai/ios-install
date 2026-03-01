@@ -4438,7 +4438,34 @@ Ready to start your first practice?`;
         if (!response.ok) throw new Error('API request failed');
         
         const data = await response.json();
-        const aiResponse = data.response || data.content || '';
+      let aiResponse = data.response || data.content;
+      
+      // Single retry if response empty
+      if (!aiResponse) {
+        console.warn('[ChatInterface] Empty API response, retrying...', JSON.stringify(data).substring(0, 500));
+        const retryResponse = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: messages.map(m => ({ role: m.role, content: m.content })).concat([{ role: 'user', content: userMessage }]),
+            context: 'general',
+            additionalContext: {
+              currentStage: progress?.currentStage || 1,
+              daysInStage: progress?.stageStartDate 
+                ? Math.floor((Date.now() - new Date(progress.stageStartDate).getTime()) / (1000 * 60 * 60 * 24))
+                : 0,
+              adherence: progress?.adherencePercentage || 0,
+              userName: getUserName()
+            }
+          })
+        });
+        if (retryResponse.ok) {
+          const retryData = await retryResponse.json();
+          aiResponse = retryData.response || retryData.content;
+        }
+      }
+      
+      aiResponse = aiResponse || "I'm having trouble responding right now. Please try again.";
         
         const redirectMessage = getIntroRedirectMessage(introStep);
         const fullResponse = aiResponse + '\n\n' + redirectMessage;
