@@ -4815,25 +4815,25 @@ Ready to start your first practice?`;
                           onWatch={handleWatchVideo}
                         />
                       ))}
-                      {!isInitializing && idx > 0 && (
-                        <button
-                          onClick={() => saveToJournal(msg.content, idx)}
-                          disabled={savedMessageIndexes.has(idx)}
+                      </div>
+                    {!isInitializing && idx > 0 && (
+                      <button
+                        onClick={() => saveToJournal(msg.content, idx)}
+                        disabled={savedMessageIndexes.has(idx)}
                         className={`mt-2 flex items-center gap-1 text-xs transition-all ${
-                            savedMessageIndexes.has(idx)
-                              ? 'text-[#ff9e19] cursor-default'
-                              : 'text-zinc-600 hover:text-[#ff9e19] md:opacity-0 md:group-hover:opacity-100'
-                          }`}
-                          title={savedMessageIndexes.has(idx) ? 'Saved to Journal' : 'Save to Journal'}
-                        >
-                          {savedMessageIndexes.has(idx) ? (
-                            <><BookmarkCheck size={13} /> <span>Saved</span></>
-                          ) : (
-                            <><Bookmark size={13} /> <span>Save</span></>
-                          )}
-                        </button>
-                      )}
-                    </div>
+                          savedMessageIndexes.has(idx)
+                            ? 'text-[#ff9e19] cursor-default'
+                            : 'text-zinc-600 hover:text-[#ff9e19] md:opacity-0 md:group-hover:opacity-100'
+                        }`}
+                        title={savedMessageIndexes.has(idx) ? 'Saved to Journal' : 'Save to Journal'}
+                      >
+                        {savedMessageIndexes.has(idx) ? (
+                          <><BookmarkCheck size={13} /> <span>Saved</span></>
+                        ) : (
+                          <><Bookmark size={13} /> <span>Save</span></>
+                        )}
+                      </button>
+                    )}
                   )}
                 </div>
               </div>
