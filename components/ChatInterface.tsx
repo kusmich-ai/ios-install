@@ -1686,6 +1686,25 @@ const getFallbackResultsMessage = (
     }
   }, [messages, loading, isMobile, streamingMessage]);
 
+  // Auto-persist new messages to DB for same-day continuity
+  useEffect(() => {
+    if (isInitializing || !user?.id) return;
+
+    const currentLength = messages.length;
+    if (currentLength <= persistedCountRef.current) return;
+
+    const newMessages = messages.slice(persistedCountRef.current);
+    newMessages.forEach((msg, idx) => {
+      saveMessageToDB(
+        msg.role as 'user' | 'assistant',
+        msg.content,
+        persistedCountRef.current + idx
+      );
+    });
+
+    persistedCountRef.current = currentLength;
+  }, [messages.length, isInitializing, user?.id, saveMessageToDB]);
+
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
