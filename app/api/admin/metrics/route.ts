@@ -4,6 +4,15 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 
+interface ToolUsageRow {
+  tool_type: string;
+  total_sessions: number;
+  unique_users: number;
+  avg_duration_min: number;
+  sessions_last_7d: number;
+  sessions_last_30d: number;
+}
+
 // ============================================
 // ADMIN EMAIL WHITELIST
 // Add your team's email addresses here
@@ -89,6 +98,64 @@ export async function GET() {
         dailySignups: signupsResult.data,
         recentUsers: usersResult.data
       });
+    }
+
+    // Enrich tool usage with eligible user counts
+    if (dashboardData?.toolUsage) {
+      const stageToolAccess: Record<string, number> = {
+        decentering: 1,
+        loop_delooping: 1,
+        meta_reflection: 2,
+        reframe: 3,
+        thought_hygiene: 4,
+      };
+
+      // Get count of users at each stage or above
+      const { data: stageCounts } = await supabaseAdmin
+        .from('user_progress')
+        .select('current_stage');
+
+      if (stageCounts) {
+        const enrichedToolUsage = (dashboardData.toolUsage as ToolUsageRow[]).map((tool: ToolUsageRow) => {
+          const minStage = stageToolAccess[tool.tool_type] ?? 1;
+          const eligibleCount = stageCounts.filter(
+            (u: { current_stage: number }) => u.current_stage >= minStage
+          ).length;
+          return {
+            ...tool,
+            eligible_users: eligibleCount,
+            adoption_rate: eligibleCount > 0
+              ? Math.round((tool.unique_users / eligibleCount) * 100)
+              : 0,
+            min_stage: minStage,
+          };
+        });
+
+        // Add tools that have eligible users but zero sessions
+        const existingToolTypes = enrichedToolUsage.map((t: { tool_type: string }) => t.tool_type);
+        for (const [toolType, minStage] of Object.entries(stageToolAccess)) {
+          if (!existingToolTypes.includes(toolType)) {
+            const eligibleCount = stageCounts.filter(
+              (u: { current_stage: number }) => u.current_stage >= minStage
+            ).length;
+            if (eligibleCount > 0) {
+              enrichedToolUsage.push({
+                tool_type: toolType,
+                total_sessions: 0,
+                unique_users: 0,
+                avg_duration_min: 0,
+                sessions_last_7d: 0,
+                sessions_last_30d: 0,
+                eligible_users: eligibleCount,
+                adoption_rate: 0,
+                min_stage: minStage,
+              });
+            }
+          }
+        }
+
+        dashboardData.toolUsage = enrichedToolUsage;
+      }
     }
 
     return NextResponse.json(dashboardData);
