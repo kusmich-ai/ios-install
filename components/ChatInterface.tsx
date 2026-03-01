@@ -4798,6 +4798,7 @@ Ready to start your first practice?`;
                   {msg.role === 'user' ? (
                     <div className="whitespace-pre-wrap leading-relaxed">{msg.content}</div>
                   ) : (
+                    <>
                     <div className="leading-relaxed prose prose-invert prose-sm max-w-none">
                       <div 
                         dangerouslySetInnerHTML={{ 
@@ -4833,7 +4834,8 @@ Ready to start your first practice?`;
                           <><Bookmark size={13} /> <span>Save</span></>
                         )}
                       </button>
-                    )}
+                )}
+                    </>
                   )}
                 </div>
               </div>
