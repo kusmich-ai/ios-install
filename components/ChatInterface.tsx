@@ -1929,7 +1929,7 @@ const debriefStatus = progress.dailyPractices?.find(p => p.id === 'nightly_debri
     
     hasCheckedEveningDebrief.current = true;
     
-    setTimeout(() => {
+    setTimeout(async () => {
       setMessages(prev => [...prev, { 
         role: 'assistant', 
         content: `**Evening check-in** 🌙
@@ -1973,7 +1973,7 @@ This 2-minute practice helps encode today's learning before sleep. Want to run i
     
     hasCheckedStage7Eligibility.current = true;
     
-    setTimeout(() => {
+    setTimeout(async () => {
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: `🔓 **Stage 7 Available**
@@ -2633,7 +2633,7 @@ info?.microAction || 'Notice → Label → Release'
             ]
           }));
           
-          setTimeout(() => {
+          setTimeout(async () => {
             setLoading(false);
             await postAssistantMessage(assistantResponse);
           }, 300);
@@ -2689,7 +2689,7 @@ info?.microAction || 'Notice → Label → Release'
             ]
           }));
           
-          setTimeout(() => {
+          setTimeout(async () => {
             setLoading(false);
             await postAssistantMessage(assistantResponse);
           }, 300);
@@ -3159,7 +3159,7 @@ if (isCommitment) {
       );
 
      setLoading(false);
-      await postAssistantMessage(resultMessage);;
+      await postAssistantMessage(resultMessage);
 
       // Note: Decline response is now included in the API response, no separate timeout needed
       
@@ -3478,7 +3478,7 @@ Give me your four numbers (e.g., "4 3 4 5").`;
         }
 
        setMessages([]);
-        await postAssistantMessage(openingMessage);;
+        await postAssistantMessage(openingMessage);
         
         await supabase
           .from('user_progress')
@@ -3551,7 +3551,7 @@ Give me your four numbers (e.g., "4 3 4 5").`;
         const isDue = await isWeeklyReflectionDue(user.id);
         
         if (isDue) {
-          setTimeout(() => {
+          setTimeout(async () => {
             setMessages(prev => [...prev, {
               role: 'assistant',
               content: `🪞 **Sunday Reflection**\n\nIt's your weekly Meta-Reflection day. This is your time to observe how awareness moved through your week — not to judge, but to learn.\n\nWould you like to begin your reflection now?`
@@ -4045,10 +4045,9 @@ if (systemRecoveryIntervention?.isActive) {
     setSystemRecoveryIntervention(null); // Clear intervention after action
   }
   
-  setTimeout(() => {
+  setTimeout(async () => {
     setLoading(false);
     await postAssistantMessage(response);
-    setLoading(false);
   }, 500);
   return;
 }
@@ -4210,7 +4209,7 @@ if (regressionIntervention?.isActive) {
         const selectedOption = parseRenewalResponse(userMessage);
         
         if (!selectedOption) {
-          setTimeout(() => {
+          setTimeout(async () => {
             setMessages(prev => [...prev, {
               role: 'assistant',
               content: "I didn't catch that. Would you like to **Continue** (same statement), **Evolve** (stretch it forward), or **Pivot** (new direction)?"
@@ -4306,10 +4305,9 @@ Ready to start your first practice?`;
     responseMessage = "What would you like to explore?";
   }
   
-  setTimeout(() => {
+  setTimeout(async () => {
     setLoading(false);
     await postAssistantMessage(responseMessage);
-    setLoading(false);
   }, 500);
       return;
     } else {
@@ -4667,7 +4665,6 @@ Ready to start your first practice?`;
         setLoading(false);
         await postAssistantMessage(response);
         setRegressionIntervention(null); // Clear after regress
-        setLoading(false);
       }}
       className="px-5 py-2.5 bg-[#1a1a1a] border border-[#333] hover:border-[#ff9e19] text-white font-medium rounded-xl transition-all"
     >
@@ -4694,7 +4691,6 @@ Ready to start your first practice?`;
         await postAssistantMessage(response);
         // Move to exploring phase - shows different buttons
         setRegressionIntervention(prev => prev ? { ...prev, phase: 'exploring' } : null);
-        setLoading(false);
       }}
       className="px-5 py-2.5 bg-[#ff9e19] hover:bg-orange-600 text-white font-medium rounded-xl transition-all"
     >
