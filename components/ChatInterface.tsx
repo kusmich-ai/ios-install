@@ -3656,7 +3656,32 @@ Give me your four numbers (e.g., "4 3 4 5").`;
         } else {
           // New day — clear yesterday's messages, start fresh
           await clearTodayMessages();
-          openingMessage = getNewDayMorningMessage(correctedBaselineData, progressData, userName, currentStage);
+          
+          // Phase 3: Check if yesterday had meaningful exchanges
+          let yesterdayInsight: string | null = null;
+          try {
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
+            
+            const { data: meaningfulMessages } = await supabase
+              .from('chat_messages')
+              .select('content, meaningful_type')
+              .eq('user_id', user.id)
+              .eq('message_date', yesterdayStr)
+              .eq('is_meaningful', true)
+              .order('created_at', { ascending: false })
+              .limit(1);
+            
+            if (meaningfulMessages && meaningfulMessages.length > 0) {
+              yesterdayInsight = meaningfulMessages[0].meaningful_type || 'insight';
+            }
+          } catch (err) {
+            // Non-critical — just skip the reference
+            console.error('[ChatInterface] Failed to check yesterday context:', err);
+          }
+          
+          openingMessage = getNewDayMorningMessage(correctedBaselineData, progressData, userName, currentStage, yesterdayInsight);
         }
 
         setMessages([]);
