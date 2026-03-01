@@ -163,7 +163,7 @@ const PROMPT_LIBRARY: Record<number, Record<string, TaggedPrompt[]>> = {
     evening: [
       { text: "Help me with tonight's debrief — something significant happened", phase: 'any' },
       { text: "I want to do a deep meta-reflection", phase: 'any' },
-      { text: "Help me integrate what I'm learning into who I'm becoming", phase: 'any' },
+      { text: "What has awareness been revealing that I haven't fully seen yet?", phase: 'any' },
       { text: "What has the whole journey revealed so far?", phase: 'mid' },
     ],
   },
