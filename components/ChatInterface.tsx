@@ -22,6 +22,7 @@ import ReorientationModal from '@/components/ReorientationModal';
 import { parseVideoSuggestions, VideoSuggestionCard } from '@/components/VideoSuggestionCard';
 import VideoModal from '@/components/library/VideoModal';
 import ClinicalAssessmentBanner from '@/components/ClinicalAssessmentBanner';
+import { getStagePractices, getStagePracticeIds, getScheduledPracticeIdsForDate, ... } from '@/lib/stages';
 import { useCourseStore } from '@/stores/courseStore';
 
 // ============================================
@@ -4108,8 +4109,8 @@ microActionState.extractedAction || 'Notice → Label → Release',
 
     justCompletedViaButton.current = false;
 
-    const required = getStagePracticeIds(progress.currentStage);
-    const allComplete = required.every(p => practicesCompletedToday.includes(p));
+  const required = getScheduledPracticeIdsForDate(progress.currentStage);
+    const allComplete = required.length > 0 && required.every(p => practicesCompletedToday.includes(p));
 
     if (allComplete && practicesCompletedToday.length > 0) {
       hasAutoTriggeredToday.current = true;
