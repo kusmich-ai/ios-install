@@ -100,13 +100,21 @@ const UNLOCK_THRESHOLDS: { [stage: number]: {
 } } = {
   1: {
     adherence: 80, days: 14, delta: 0.3, qualitative: 3,
-    // Accelerated: unlock at Day 10 for exceptional performers
     accelerated: { adherence: 95, days: 10, delta: 0.5, qualitative: 4 }
   },
-  2: { adherence: 80, days: 14, delta: 0.5, qualitative: 3 },
-  3: { adherence: 80, days: 14, delta: 0.5, qualitative: 3 },
+  2: {
+    adherence: 80, days: 14, delta: 0.5, qualitative: 3,
+    accelerated: { adherence: 90, days: 10, delta: 0.5, qualitative: 4 }
+  },
+  3: {
+    adherence: 80, days: 14, delta: 0.5, qualitative: 3,
+    accelerated: { adherence: 90, days: 10, delta: 0.5, qualitative: 4 }
+  },
   4: { adherence: 80, days: 14, delta: 0.6, qualitative: 3 },
-  5: { adherence: 85, days: 14, delta: 0.7, qualitative: 3 },
+  5: {
+    adherence: 85, days: 14, delta: 0.7, qualitative: 3,
+    accelerated: { adherence: 90, days: 12, delta: 0.7, qualitative: 4 }
+  },
   6: { adherence: 85, days: 14, delta: 0.7, qualitative: 3 }
 };
 
