@@ -2406,33 +2406,65 @@ ${context === 'breakthrough_response'
     const skipCuePrefix = context === 'micro_action_extraction' || context === 'flow_block_extraction';
 
     // Guard: if Claude returned empty/near-empty text, retry once
+    // Key fix: if tool loop ran, retry WITH tool history so Claude has full context
     if (!skipCuePrefix && responseText.trim().length < 10) {
       console.warn('[API/Chat] Empty/truncated response from Claude, retrying...', {
         responseLength: responseText.length,
         responseText: responseText.substring(0, 50),
         context,
+        toolLoopsRan: toolLoopCount,
       });
 
       try {
-        const retryResponse = await callClaudeWithRetry({
-          model,
-          max_tokens: maxTokens,
-          temperature: temperature,
-          system: hasSystemPrompt ? undefined : systemPrompt,
-          messages: conversationMessages,
-          ...(includeEnhancementTools ? { tools: STAGE1_ENHANCEMENT_TOOLS } : {}),
-        });
-
-        const retryText = retryResponse.content
-          .filter((block): block is Anthropic.TextBlock => block.type === 'text')
-          .map(block => block.text)
-          .join('');
-
-        if (retryText.trim().length >= 10) {
-          return NextResponse.json({
-            response: cuePrefix + retryText,
-            context: context || 'general',
+        // If tool loop ran, Claude already processed tools but didn't produce text.
+        // Retry WITHOUT tools to force a text-only response, using a nudge message.
+        if (toolLoopCount > 0) {
+          const retryResponse = await callClaudeWithRetry({
+            model,
+            max_tokens: maxTokens,
+            temperature: temperature,
+            system: hasSystemPrompt ? undefined : systemPrompt,
+            messages: [
+              ...conversationMessages,
+              { role: 'assistant' as const, content: response.content },
+              { role: 'user' as const, content: '[System: Tools executed successfully. Please provide your text response to the user now.]' }
+            ],
+            // No tools — force text response
           });
+
+          const retryText = retryResponse.content
+            .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+            .map(block => block.text)
+            .join('');
+
+          if (retryText.trim().length >= 10) {
+            return NextResponse.json({
+              response: cuePrefix + retryText,
+              context: context || 'general',
+            });
+          }
+        } else {
+          // No tools ran — original retry logic (fresh attempt)
+          const retryResponse = await callClaudeWithRetry({
+            model,
+            max_tokens: maxTokens,
+            temperature: temperature,
+            system: hasSystemPrompt ? undefined : systemPrompt,
+            messages: conversationMessages,
+            ...(includeEnhancementTools ? { tools: STAGE1_ENHANCEMENT_TOOLS } : {}),
+          });
+
+          const retryText = retryResponse.content
+            .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+            .map(block => block.text)
+            .join('');
+
+          if (retryText.trim().length >= 10) {
+            return NextResponse.json({
+              response: cuePrefix + retryText,
+              context: context || 'general',
+            });
+          }
         }
       } catch (retryErr) {
         console.error('[API/Chat] Retry also failed:', retryErr);
