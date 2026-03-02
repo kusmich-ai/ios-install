@@ -425,6 +425,17 @@ const IOSBaselineAssessment = ({ user }) => {
       }
     }
   };
+const handleBack = () => {
+    if (currentQuestion > 0) {
+      setCurrentQuestion(currentQuestion - 1);
+    } else if (currentSection > 0) {
+      const prevSection = sections[currentSection - 1];
+      if (!prevSection.isBCT) {
+        setCurrentSection(currentSection - 1);
+        setCurrentQuestion(prevSection.questions.length - 1);
+      }
+    }
+  };
 
   // BCT Handlers
   const showButtonFeedback = (buttonType) => {
