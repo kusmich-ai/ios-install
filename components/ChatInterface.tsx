@@ -3263,7 +3263,7 @@ if (isCommitment) {
           outlook_delta: outlookDelta,
           attention_delta: attentionDelta,
           average_delta: avgDelta,
-          qualitative_rating: Math.round(((scores.regulation + scores.awareness + scores.outlook + scores.attention) / 4) * 100) / 100,
+          qualitative_rating: Math.round((((scores.regulation || 0) + (scores.awareness || 0) + (scores.outlook || 0) + (scores.attention || 0)) / 4) * 100) / 100,
           stage_at_checkin: progress?.currentStage || 1
         }, {
           onConflict: 'user_id,week_of'
