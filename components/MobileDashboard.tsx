@@ -352,7 +352,7 @@ flowBlockWeeklyMap, flowBlockSprintDay, totalDaysInApp, daysInStage, onStage7Unl
           )}
 
           {/* UNLOCK PROGRESS */}
-          {unlockProgress && currentStage < 7 && (
+          {unlockProgress && currentStage < 6 && (
             <div className="bg-white rounded-xl p-4 border border-zinc-200/80 shadow-sm">
               <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">Unlock Progress</h3>
               <div className="space-y-2">
@@ -360,7 +360,7 @@ flowBlockWeeklyMap, flowBlockSprintDay, totalDaysInApp, daysInStage, onStage7Unl
                   { label: 'Adherence', met: unlockProgress.adherenceMet, width: `${Math.min((adherencePercentage / (unlockProgress.requiredAdherence || 80)) * 100, 100)}%`, display: `${adherencePercentage}%` },
                   { label: 'Days', met: unlockProgress.daysMet, width: `${Math.min((consecutiveDays / (unlockProgress.requiredDays || 14)) * 100, 100)}%`, display: `${consecutiveDays}/${unlockProgress.requiredDays || 14}` },
                   { label: 'Growth', met: unlockProgress.deltaMet, width: unlockProgress.deltaMet ? '100%' : '50%', display: domainDeltas?.average !== undefined ? `+${domainDeltas.average.toFixed(1)}` : '—' },
-                  { label: 'Check-in', met: unlockProgress.qualitativeMet, width: unlockProgress.qualitativeMet ? '100%' : '0%', display: unlockProgress.qualitativeMet ? '✓' : '—' },
+                  { label: 'Weekly', met: unlockProgress.qualitativeMet, width: unlockProgress.qualitativeMet ? '100%' : '0%', display: unlockProgress.qualitativeMet ? '✓' : '—' },
                 ].map(({ label, met, width, display }) => (
                   <div key={label} className="flex items-center gap-2">
                     <span className={`text-xs w-16 ${met ? 'text-green-600' : 'text-zinc-500'}`}>{met ? '✓' : ''} {label}</span>
