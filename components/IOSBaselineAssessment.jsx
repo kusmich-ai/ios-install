@@ -1292,8 +1292,16 @@ setSaveError(null);
           </div>
         )}
 
-        {/* Navigation */}
-        <div className="flex justify-end">
+    {/* Navigation */}
+        <div className="flex justify-between">
+          <button
+            onClick={handleBack}
+            disabled={currentSection === 0 && currentQuestion === 0}
+            className="px-6 py-4 rounded-lg font-medium text-gray-400 transition-all disabled:opacity-0 disabled:cursor-default"
+            style={{ backgroundColor: '#1a1a1a' }}
+          >
+            ← Back
+          </button>
           <button
             onClick={handleNext}
             disabled={!isAnswered}
