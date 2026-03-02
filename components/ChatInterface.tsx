@@ -760,6 +760,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   const hasCheckedWeeklyDue = useRef<boolean>(false);
   const hasCheckedEveningDebrief = useRef<boolean>(false);
   const hasCheckedSundayReflection = useRef<boolean>(false);
+  const autoMessagePending = useRef<boolean>(false);
   const hasCheckedStage7Eligibility = useRef<boolean>(false);
   const hasCheckedResistance = useRef<boolean>(false);
   const hasCheckedRegression = useRef<boolean>(false);
@@ -3349,6 +3350,8 @@ if (isCommitment) {
             
             // Delay the regression message so user can see their weekly results first
 setTimeout(async () => {
+  if (autoMessagePending.current) return;
+  autoMessagePending.current = true;
   const regressionMsg = await getRegressionOpeningFromAPI(
     currentStage,
     adherence,
@@ -3377,7 +3380,8 @@ setTimeout(async () => {
         setTimeout(async () => {
           try {
             const isDue = await isWeeklyReflectionDue(user.id);
-            if (isDue) {
+            if (isDue && !autoMessagePending.current) {
+              autoMessagePending.current = true;
               setMessages(prev => [...prev, {
                 role: 'assistant',
                 content: `🪞 **Sunday Reflection**\n\nNow that your weekly numbers are logged, let's take a step back. The Meta-Reflection isn't about reviewing what happened — it's about observing how awareness moved through it.\n\nWould you like to begin?`
@@ -4163,7 +4167,7 @@ const sendMessage = async (e: React.FormEvent) => {
   
   const userMessage = input.trim();
   setInput('');
-
+autoMessagePending.current = false;
   
   // ============================================
   // PATTERN DETECTION - Route to specific flows
