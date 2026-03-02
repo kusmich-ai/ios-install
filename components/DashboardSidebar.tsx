@@ -458,7 +458,7 @@ export default function DashboardSidebar({
               <div className="flex items-center gap-2">
                 <span className={`text-xs w-16 font-medium ${unlockProgress.qualitativeMet ? 'text-emerald-600' : 'text-zinc-500'}`}>
                   {unlockProgress.qualitativeMet && <CheckCircle2 className="w-3 h-3 inline mr-1" />}
-                  Check-in
+                  Weekly
                 </span>
                 <div className="flex-1 h-1.5 bg-black/[0.04] rounded-full overflow-hidden">
                   <div 
