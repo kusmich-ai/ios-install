@@ -477,6 +477,28 @@ export default function DashboardSidebar({
         {/* ==========================================
             STAGE 7 UNLOCK BUTTON
             ========================================== */}
+        {currentStage === 6 && !unlockEligible && (
+          <div className="bg-white rounded-xl p-4 border border-black/[0.04] shadow-sm">
+            <div className="flex items-center gap-2 mb-1">
+              <Lock className="w-4 h-4 text-zinc-400" />
+              <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Stage 7: Accelerated Expansion</h3>
+            </div>
+            <p className="text-xs text-zinc-500 leading-relaxed">
+              Stage 7 requires an application and live conversation. Continue building stable awareness across contexts — when you're ready, ask about the Stage 7 application process.
+            </p>
+          </div>
+        )}
+        {currentStage === 7 && (
+          <div className="bg-gradient-to-br from-purple-50 to-amber-50 border border-purple-200/50 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <Sparkles className="w-4 h-4 text-purple-600" />
+              <h3 className="text-sm font-semibold text-purple-800">Stage 7: Accelerated Expansion</h3>
+            </div>
+            <p className="text-xs text-zinc-600">
+              The IOS is self-evolving. You are the feedback loop.
+            </p>
+          </div>
+        )}
         {currentStage === 6 && unlockEligible && onStage7Click && (
           <div className="bg-gradient-to-br from-purple-50 to-amber-50 border border-purple-200/50 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
