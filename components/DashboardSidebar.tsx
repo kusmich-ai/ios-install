@@ -396,7 +396,7 @@ export default function DashboardSidebar({
         {/* ==========================================
             UNLOCK PROGRESS
             ========================================== */}
-        {unlockProgress && !unlockEligible && (
+       {unlockProgress && !unlockEligible && currentStage < 6 && (
           <div className="bg-white rounded-xl p-4 border border-black/[0.04] shadow-sm">
             <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">
               Stage {currentStage + 1} Unlock Progress
