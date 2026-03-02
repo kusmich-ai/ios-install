@@ -3746,7 +3746,8 @@ Give me your four numbers (e.g., "4 3 4 5").`;
       try {
         const isDue = await isWeeklyReflectionDue(user.id);
         
-        if (isDue) {
+        if (isDue && !autoMessagePending.current) {
+          autoMessagePending.current = true;
           setTimeout(async () => {
             setMessages(prev => [...prev, {
               role: 'assistant',
