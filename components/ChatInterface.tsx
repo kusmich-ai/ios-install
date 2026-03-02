@@ -4600,10 +4600,13 @@ Ready to start your first practice?`;
         word => lowerMessage.includes(word)
       );
     
-    if (lowerMessage.includes('meta-reflection') || lowerMessage.includes('meta reflection') || 
+  if (lowerMessage.includes('meta-reflection') || lowerMessage.includes('meta reflection') || 
         lowerMessage.includes('reflect') && lowerMessage.includes('week') ||
         isSundayPromptResponse) {
-      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+      setMessages(prev => [...prev, 
+        { role: 'user', content: userMessage },
+        { role: 'assistant', content: '🪞 **Meta-Reflection** opened — complete your weekly reflection in the practice window. When you\'re done, come back here and we\'ll continue.' }
+      ]);
       openMetaReflection(user?.id, isSundayPromptResponse);
       return;
     }
