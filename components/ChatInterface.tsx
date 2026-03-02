@@ -22,7 +22,7 @@ import ReorientationModal from '@/components/ReorientationModal';
 import { parseVideoSuggestions, VideoSuggestionCard } from '@/components/VideoSuggestionCard';
 import VideoModal from '@/components/library/VideoModal';
 import ClinicalAssessmentBanner from '@/components/ClinicalAssessmentBanner';
-import { getStagePractices, getStagePracticeIds, getScheduledPracticeIdsForDate, ... } from '@/lib/stages';
+import { getStageName, getStatusTier, getStatusColor, getStagePracticeIds, getScheduledPracticeIdsForDate, normalizePracticeId, getPracticeName, TIER_INTERPRETATIONS } from '@/app/config/stages';
 import { useCourseStore } from '@/stores/courseStore';
 
 // ============================================
