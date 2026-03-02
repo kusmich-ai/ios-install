@@ -47,18 +47,6 @@ import {
   isAskingAboutStage7 as isAskingAboutStage7FromLib
 } from '@/lib/templates';
 
-// ============================================
-// STAGE CONFIG IMPORTS
-// ============================================
-import {
-  getStageName,
-  getStatusTier,
-  getStatusColor,
-  getStagePracticeIds,
-  normalizePracticeId,
-  getPracticeName,
-  TIER_INTERPRETATIONS
-} from '@/app/config/stages';
 import { 
   startNewMicroActionSprint, 
   getCurrentMicroActionSprint,
