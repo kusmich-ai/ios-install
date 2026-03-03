@@ -75,6 +75,7 @@ const PRACTICE_ICONS: { [key: string]: React.ComponentType<{ className?: string 
 // NEW: Tool icon mapping
 const TOOL_ICONS: { [key: string]: React.ComponentType<{ className?: string }> } = {
   'decentering': Layers,
+  'nos_glide': Waves,
   'meta_reflection': Compass,
   'reframe': RefreshCw,
   'thought_hygiene': Sparkles,
