@@ -59,6 +59,7 @@ export default function FloatingActionButton({
   const { open: openCoRegulation, Modal: CoRegulationModal } = useCoRegulation();
   const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebrief();
   const { open: openLoopDeLooping, Modal: LoopDeLoopingModal } = useLoopDeLooping();
+  const { open: openNosGlide, Modal: NosGlideModal } = useNosGlide();
 
   const currentStagePractices = getScheduledPracticesForDate(progress.currentStage);
   const unlockedTools = getUnlockedOnDemandTools(progress.currentStage);
