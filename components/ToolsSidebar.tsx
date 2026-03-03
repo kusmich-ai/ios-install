@@ -139,8 +139,10 @@ const getPracticeStatus = (practiceId: string): 'completed' | 'pending' | 'locke
 
   // UNCHANGED: handleToolClick
   const handleToolClick = (toolId: string) => {
-    if (toolId === 'worry_loop_dissolver') {
+  if (toolId === 'worry_loop_dissolver') {
       openLoopDeLooping(userId);
+    } else if (toolId === 'nos_glide') {
+      openNosGlide();
     } else {
       // Pass through to parent handler for chat-based tools
       onToolClick(toolId);
