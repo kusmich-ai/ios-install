@@ -4537,7 +4537,7 @@ Ready to start your first practice?`;
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            messages: messages.map(m => ({ role: m.role, content: m.content })).concat([{ role: 'user', content: userMessage }]),
+            messages: messages.filter(m => typeof m.content === 'string' && !m.content.includes('toolu_')).map(m => ({ role: m.role, content: m.content })).concat([{ role: 'user', content: userMessage }]),
             context: 'intro_question'
           })
         });
