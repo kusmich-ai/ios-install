@@ -41,7 +41,7 @@ const PRACTICE_ICONS: { [key: string]: React.ComponentType<{ className?: string 
 };
 
 const TOOL_ICONS: { [key: string]: React.ComponentType<{ className?: string }> } = {
-  'decentering': Layers, 'meta_reflection': Compass, 'reframe': RefreshCw,
+  'decentering': Layers, 'nos_glide': Waves, 'meta_reflection': Compass, 'reframe': RefreshCw,
   'thought_hygiene': Sparkles, 'worry_loop_dissolver': Sparkles,
 };
 
