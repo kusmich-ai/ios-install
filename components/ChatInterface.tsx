@@ -4028,6 +4028,10 @@ microActionState.extractedAction || 'Notice → Label → Release',
         openThoughtHygiene(user?.id);
         break;
 
+      case 'nos_glide':
+        await postAssistantMessage(processTemplate(templateLibrary.tools.nos_glide.startPrompt, buildTemplateContext()));
+        break;
+
       case 'co_regulation':
         openCoRegulation();
         break;
@@ -5156,7 +5160,7 @@ Ready to start your first practice?`;
                 !systemRecoveryIntervention?.isActive &&
                 unlockFlowState === 'none' &&
                 stage7FlowState === 'none' &&
-                !(openingType === 'first_time' && introStep < 4)
+                !(openingType === 'first_time' && introStep < 6)
               }
             />
             <form onSubmit={sendMessage} className="flex gap-3">
