@@ -18,6 +18,7 @@ import CuePhaseCard from './CuePhaseCard';
 import { useCoRegulation } from '@/components/CoRegulationModal';
 import { useNightlyDebrief } from '@/components/NightlyDebriefModal';
 import { useLoopDeLooping } from '@/components/LoopDeLoopingModal';
+import { useNosGlide } from '@/components/NosGlideModal';
 
 interface FloatingActionButtonProps {
   progress: UserProgress;
