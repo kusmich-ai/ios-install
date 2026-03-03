@@ -4504,7 +4504,7 @@ These aren't fitness goals. They're **neural regulation infrastructure**. The ri
 I'll check in on these periodically. For now, just know: if your rituals feel like they're not landing, sleep and movement are the first place to look.
 
 Ready to start your first practice?`;
-    setIntroStep(4);
+    setIntroStep(6);
 
     try {
       const supabase = createClient();
