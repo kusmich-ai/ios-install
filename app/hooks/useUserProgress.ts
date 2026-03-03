@@ -120,7 +120,6 @@ const UNLOCK_THRESHOLDS: { [stage: number]: {
 
 // Stage-specific tools
 const STAGE_TOOLS: { [stage: number]: string[] } = {
-const STAGE_TOOLS: { [stage: number]: string[] } = {
   1: ['decentering', 'nos_glide', 'worry_loop_dissolver'],
   2: ['decentering', 'nos_glide', 'worry_loop_dissolver', 'meta_reflection'],
   3: ['decentering', 'nos_glide', 'worry_loop_dissolver', 'meta_reflection', 'reframe'],
