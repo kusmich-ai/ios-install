@@ -815,6 +815,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   const { open: openMetaReflection, Modal: MetaReflectionModal } = useMetaReflection();
   const { open: openReframe, Modal: ReframeModal } = useReframe();
   const { open: openThoughtHygiene, Modal: ThoughtHygieneModal } = useThoughtHygiene();
+  const { open: openNosGlide, Modal: NosGlideModal } = useNosGlide();
   const { open: openCoRegulation, Modal: CoRegulationModal } = useCoRegulation();
 const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebrief();
 
