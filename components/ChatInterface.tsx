@@ -4664,9 +4664,17 @@ Ready to start your first practice?`;
         })
       });
       
-      if (!response.ok) throw new Error('API request failed');
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[ChatInterface] API failed:', response.status, errorText);
+        throw new Error(`API request failed: ${response.status}`);
+      }
       
       const data = await response.json();
+      console.log('[ChatInterface] API response keys:', Object.keys(data), 'messages sent:', messages.length);
+      if (!data.response && !data.content) {
+        console.error('[ChatInterface] Empty API response. Full data:', JSON.stringify(data).slice(0, 500));
+      }
       const aiResponse = data.response || data.content || "I'm having trouble responding right now. Please try again.";
       
       setLoading(false);
