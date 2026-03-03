@@ -146,6 +146,7 @@ import { useReframe } from '@/components/ReframeModal';
 import { useThoughtHygiene } from '@/components/ThoughtHygieneModal';
 import { useCoRegulation } from '@/components/CoRegulationModal';
 import { useNightlyDebrief } from '@/components/NightlyDebriefModal';
+import { useNosGlide } from '@/components/NosGlideModal';
 
 // ============================================
 // DEV LOGGING UTILITY
