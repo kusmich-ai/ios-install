@@ -4,7 +4,7 @@
 'use client';
 
 import { useState } from 'react';
-import { 
+import {
   ChevronRight, 
   ChevronDown, 
   Check, 
@@ -18,11 +18,12 @@ import {
   Wind,           // Breathing (was 🫁)
   Eye,            // Awareness (was 👁)
   Activity,       // Somatic Flow (was 🧘‍♂️)
-  Zap,            // Micro-action (was ⚡)
+  Zap,            // IOS Cues (was ⚡)
   Target,         // Flow block (was 🎯)
   Heart,          // Co-regulation (was 💞)
   Moon,           // Nightly debrief (was 🌙)
   Layers,         // Decentering
+  Waves,          // NOS Glide
   Compass,        // Meta-reflection
   Sparkles,       // Thought hygiene / Loop dissolver
 } from 'lucide-react';
