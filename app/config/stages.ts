@@ -333,6 +333,15 @@ export const ON_DEMAND_TOOLS = [
     unlockedAt: 1
   },
   {
+    id: 'nos_glide',
+    name: 'NOS Glide',
+    shortName: 'Glide',
+    icon: '🌊',
+    description: 'Physiological transition sequence that guides your nervous system from daytime activation into parasympathetic rest.',
+    when: 'When your system won\'t shut off at night — racing mind, restless body, "wired but tired"',
+    unlockedAt: 1
+  },
+  {
     id: 'worry_loop_dissolver',
     name: 'Worry Loop Dissolver',
     shortName: 'Loop',
