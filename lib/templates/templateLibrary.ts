@@ -351,50 +351,51 @@ You will initiate this with the {{toolbarReference}} daily every morning.
 Make sense?`
       },
 
-     wrapUp: `That's your **Stage 1 morning ritual**. {{morningTime}}. Every day.
+      onDemandToolsIntro: `Those two rituals are your morning non-negotiables.
 
-**Same sequence:**
+But you also have two **on-demand tools** available from Day 1. These aren't daily rituals — they're tools you reach for when you need them.
+
+**Decentering Practice** — When you notice you're stuck in a thought loop, identified with a role, or fused with an emotion ("I AM anxious" instead of "I notice anxiety"), this practice helps you create space between you and the experience. It's a short conversational exercise — just ask me to run it whenever you need it.
+
+**NOS Glide** — An evening wind-down tool for when your nervous system won't shut off at night. Racing mind, restless body, "wired but tired." It sequences your system from activation into rest. I'll walk you through it next.
+
+Make sense so far?`,
+
+      nosGlideWalkthrough: `Good. Let me give you a quick overview of the **NOS Glide**.
+
+Your NOS doesn't respond to "relax" — it responds to **transitions**. The Glide is a 3-step physiological descent sequence you can use before bed:
+
+**1. Breath Descent** (~60-90s) — Your familiar 4-in, 6-out rhythm, but with a different intention. Morning breathing is calibration. This is descent. You're telling your system: the day is done.
+
+**2. Progressive Release** (~60-90s) — Tense and release muscle groups (legs → arms → jaw → abdomen). Stress gets stored as tension. This finishes the activation cycle.
+
+**3. Earned Stillness** (~60-120s) — Do nothing. Your system has been sequenced down. The stillness isn't forced — it's earned.
+
+Total: 5-10 minutes. Use it whenever you need it — not every night, just when your system is running hot. If you fall asleep during it, that's success.
+
+You can ask me to guide you through it anytime, or run it on your own once you know the steps.
+
+Ready for your full Stage 1 overview?`,
+
+     wrapUp: `Here's your complete **Stage 1 toolkit**:
+
+**Morning Rituals (Daily, Non-Negotiable):**
 1. Wake up
 2. Resonance Breathing — 5 mins
 3. Awareness Rep — 2 mins
 4. Then check in with me
 
-Your {{toolbarReference}} will let you know if you have completed them for the day and your progress.
+**On-Demand Tools (Use When Needed):**
+• Decentering Practice — when stuck in thought loops or identity fusion
+• NOS Glide — evening wind-down when your system won't shut off
 
----
+Your {{toolbarReference}} will let you know if you have completed your daily rituals and your progress.
 
-**ON-DEMAND TOOLS NOW AVAILABLE:**
-
-**Decentering Practice**
-A short (2–5 minute) guided practice that helps you relate differently to thoughts, emotions, and roles — without trying to change or fix them.
-
-*When to use it:*
-- When an emotion feels fused with identity ("I am anxious")
-- When you feel stuck in a role (the responsible one, the fixer, the failure)
-- When thoughts feel unquestionable or automatic
-- When you're caught in a mental loop and need perspective
-
-*How it works:* You'll be guided through simple questions that help you notice what is being felt, what meaning the mind is adding, and what remains when those are observed. The aim isn't to get rid of thoughts or emotions — it's to experience them with more space, clarity, and choice.
-
----
-
-**Worry Loop Dissolver**
-A structured 3–5 minute protocol to collapse worry loops (rumination, catastrophizing, anticipatory anxiety) so thinking becomes clear again.
-
-*When to use it:*
-- When the same worry keeps replaying
-- When the mind is projecting worst-case future outcomes
-- When you're stuck analyzing what something "means" or what someone "thinks"
-- When the nervous system feels on alert without a clear, present threat
-- When you can't stop mentally rehearsing scenarios
-
-*How it works:* You start with a verifiable Signal (a present body sensation or emotion), identify the active loop mechanism, then run a short sequence that removes the fuel sustaining the loop and anchors attention back to present sensory data.
-
----
-
-Access both tools anytime via your {{toolbarReference}} under "On-Demand Tools."
+Access both on-demand tools anytime via your {{toolbarReference}} under "On-Demand Tools."
 
 **Starting tomorrow morning** — do both rituals, then come back and let me know how it went.
+
+And if you're having trouble winding down tonight — try the NOS Glide. Consider it your first assignment.
 
 See you then. Your nervous system is about to start learning.`
     },
@@ -1073,6 +1074,7 @@ You now have the complete IOS toolkit:
 
 **On-Demand Tools:**
 - Decentering Practice (identity fusion)
+- NOS Glide (evening wind-down)
 - Meta-Reflection (weekly integration)
 - Reframe Protocol (trigger response)
 - Thought Hygiene (cognitive clearing)
@@ -1357,9 +1359,11 @@ export const introFlowTemplates = {
   quickReplies: {
     0: { text: "Yes, let's learn the rituals", buttonLabel: "Yes, let's go" },
     1: { text: "Got it, makes sense. What's next?", buttonLabel: "Got it, next ritual" },
-    2: { text: "Makes sense, I'm ready", buttonLabel: "Got it, I'm ready" },
-    3: { text: "Got it, let's go", buttonLabel: "Got it, let's go" },
-    4: null
+    2: { text: "Makes sense, I'm ready", buttonLabel: "Got it, tell me about the tools" },
+    3: { text: "Makes sense. Show me the NOS Glide", buttonLabel: "Got it, show me NOS Glide" },
+    4: { text: "Ready for my Stage 1 overview", buttonLabel: "Ready, let's go" },
+    5: null,
+    6: null
   } as { [key: number]: { text: string; buttonLabel: string } | null },
   
   // Redirect messages to get user back on track after answering their question
@@ -1371,6 +1375,12 @@ Now, back to your rituals. Ready to learn them?`,
 
 Back to the walkthrough. Make sense so far? Ready for the next ritual?`,
     2: `---
+
+Back to the intro. Ready to hear about your on-demand tools?`,
+    3: `---
+
+Back to the NOS Glide overview. Ready to continue?`,
+    4: `---
 
 Okay, back to wrapping up. Ready to get started?`
   } as { [key: number]: string }
@@ -1589,6 +1599,30 @@ Access it via {{toolbarReference}} under "On-Demand Tools."`,
 What's still running in the background of your mind — taking up bandwidth? Tasks, conversations, worries, whatever's looping.
 
 Don't overthink it. Don't dig. Just dump what's floating to the surface.`
+  },
+
+  nos_glide: {
+    unlockIntro: `**NOS Glide** — Now Available
+
+A 5-10 minute physiological transition sequence that guides your nervous system from daytime activation into parasympathetic rest. Not a training rep — a transition tool you reach for when you need it.
+
+Use it when:
+- You can't shut off at night — racing mind, restless body
+- "Wired but tired" — high activation with exhaustion
+- Going straight from high-intensity activity to bed
+- Evening anxiety or rumination before sleep
+
+Access it via {{toolbarReference}} under "On-Demand Tools."`,
+
+    startPrompt: `Let's run the **NOS Glide**.
+
+Find a comfortable position — seated on the edge of your bed or lying down.
+
+We're starting with your familiar 4-in, 6-out rhythm. But the intention here is different from your morning practice. Morning HRVB is calibration — this is descent. You're telling your nervous system: the day is done.
+
+6 breath cycles. Slow and smooth. Let each exhale be a release, not just an expiration.
+
+Go. Let me know when you've finished the 6 cycles.`
   }
 };
 
