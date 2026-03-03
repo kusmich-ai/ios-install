@@ -120,13 +120,14 @@ const UNLOCK_THRESHOLDS: { [stage: number]: {
 
 // Stage-specific tools
 const STAGE_TOOLS: { [stage: number]: string[] } = {
-  1: ['decentering'],
-  2: ['decentering', 'meta_reflection'],
-  3: ['decentering', 'meta_reflection', 'reframe'],
-  4: ['decentering', 'meta_reflection', 'reframe', 'thought_hygiene'],
-  5: ['decentering', 'meta_reflection', 'reframe', 'thought_hygiene'],
-  6: ['decentering', 'meta_reflection', 'reframe', 'thought_hygiene'],
-  7: ['decentering', 'meta_reflection', 'reframe', 'thought_hygiene']
+const STAGE_TOOLS: { [stage: number]: string[] } = {
+  1: ['decentering', 'nos_glide', 'worry_loop_dissolver'],
+  2: ['decentering', 'nos_glide', 'worry_loop_dissolver', 'meta_reflection'],
+  3: ['decentering', 'nos_glide', 'worry_loop_dissolver', 'meta_reflection', 'reframe'],
+  4: ['decentering', 'nos_glide', 'worry_loop_dissolver', 'meta_reflection', 'reframe', 'thought_hygiene'],
+  5: ['decentering', 'nos_glide', 'worry_loop_dissolver', 'meta_reflection', 'reframe', 'thought_hygiene'],
+  6: ['decentering', 'nos_glide', 'worry_loop_dissolver', 'meta_reflection', 'reframe', 'thought_hygiene'],
+  7: ['decentering', 'nos_glide', 'worry_loop_dissolver', 'meta_reflection', 'reframe', 'thought_hygiene']
 };
 
 // ============================================
