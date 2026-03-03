@@ -319,6 +319,27 @@ const ON_DEMAND_TOOLS: Tool[] = [
     duration: '2-5 mins'
   },
   {
+    id: 'nos_glide',
+    name: 'NOS Glide',
+    description: 'Physiological transition sequence from daytime activation into parasympathetic rest',
+    unlockedAtStage: 1,
+    duration: '5-10 mins'
+  },
+  {
+    id: 'worry_loop_dissolver',
+    name: 'Worry Loop Dissolver',
+    description: 'Collapse worry loops (rumination, catastrophizing, anticipatory anxiety) so thinking becomes clear',
+    unlockedAtStage: 1,
+    duration: '3-5 mins'
+  },
+  {
+    id: 'meta_reflection',
+    name: 'Meta-Reflection',
+    description: 'Weekly practice to deepen self-inquiry and integrate insights',
+    unlockedAtStage: 2,
+    duration: '5-10 mins'
+  },
+  {
     id: 'reframe',
     name: 'Reframe Protocol',
     description: 'Interpret and recode the meaning of triggering experiences',
@@ -331,13 +352,6 @@ const ON_DEMAND_TOOLS: Tool[] = [
     description: 'Clear cognitive residue and reset after heavy mental load',
     unlockedAtStage: 4,
     duration: '2-3 mins'
-  },
-  {
-    id: 'meta_reflection',
-    name: 'Meta-Reflection',
-    description: 'Weekly practice to deepen self-inquiry and integrate insights',
-    unlockedAtStage: 2,
-    duration: '5-10 mins'
   }
 ];
 
