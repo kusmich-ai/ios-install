@@ -3858,17 +3858,23 @@ Give me your four numbers (e.g., "4 3 4 5").`;
     let responseMessage: string;
     const templateContext = buildTemplateContext();
     
-    if (currentStep === 0) {
+if (currentStep === 0) {
       responseMessage = processTemplate(stageTemplates[1].ritualIntro.practices.hrvb, templateContext);
       setIntroStep(1);
     } else if (currentStep === 1) {
       responseMessage = processTemplate(stageTemplates[1].ritualIntro.practices.awareness_rep, templateContext);
       setIntroStep(2);
     } else if (currentStep === 2) {
+      responseMessage = processTemplate(stageTemplates[1].ritualIntro.onDemandToolsIntro, templateContext);
+      setIntroStep(3);
+    } else if (currentStep === 3) {
+      responseMessage = processTemplate(stageTemplates[1].ritualIntro.nosGlideWalkthrough, templateContext);
+      setIntroStep(4);
+    } else if (currentStep === 4) {
       responseMessage = processTemplate(stageTemplates[1].ritualIntro.wrapUp, templateContext);
-    setIntroStep(3);
+    setIntroStep(5);
     // Don't mark complete yet — foundation intro comes next
-  } else if (introStep === 3) {
+  } else if (introStep === 5) {
     // FOUNDATION PROTOCOLS INTRO
     responseMessage = `One more thing before you start — and this is just as important as the rituals.
 
@@ -3898,7 +3904,7 @@ These aren't fitness goals. They're **neural regulation infrastructure**. The ri
 I'll check in on these periodically. For now, just know: if your rituals feel like they're not landing, sleep and movement are the first place to look.
 
 Ready to start your first practice?`;
-    setIntroStep(4);
+    setIntroStep(6);
 
     try {
       const supabase = createClient();
@@ -4440,7 +4446,7 @@ if (regressionIntervention?.isActive) {
     }
     
     // Intro Flow Handling
-    if (openingType === 'first_time' && introStep < 4) {
+    if (openingType === 'first_time' && introStep < 6) {
       setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
       setLoading(true);
       
@@ -4459,10 +4465,16 @@ if (regressionIntervention?.isActive) {
     responseMessage = processTemplate(stageTemplates[1].ritualIntro.practices.awareness_rep, templateContext);
     setIntroStep(2);
   } else if (introStep === 2) {
-    responseMessage = processTemplate(stageTemplates[1].ritualIntro.wrapUp, templateContext);
+    responseMessage = processTemplate(stageTemplates[1].ritualIntro.onDemandToolsIntro, templateContext);
     setIntroStep(3);
-    // Don't mark complete yet — foundation intro comes next
   } else if (introStep === 3) {
+    responseMessage = processTemplate(stageTemplates[1].ritualIntro.nosGlideWalkthrough, templateContext);
+    setIntroStep(4);
+  } else if (introStep === 4) {
+    responseMessage = processTemplate(stageTemplates[1].ritualIntro.wrapUp, templateContext);
+    setIntroStep(5);
+    // Don't mark complete yet — foundation intro comes next
+  } else if (introStep === 5) {
     // FOUNDATION PROTOCOLS INTRO
     responseMessage = `One more thing before you start — and this is just as important as the rituals.
 
