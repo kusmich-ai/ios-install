@@ -243,6 +243,7 @@ const getPracticeStatus = (practiceId: string): 'completed' | 'pending' | 'locke
         onComplete={() => handleModalComplete('nightly_debrief', 'Nightly Debrief')} 
       />
       <LoopDeLoopingModal />
+      <NosGlideModal />
 
       {/* =============================================
           LUXURY VISUAL STYLING STARTS HERE
