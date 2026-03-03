@@ -4029,8 +4029,8 @@ microActionState.extractedAction || 'Notice → Label → Release',
         openThoughtHygiene(user?.id);
         break;
 
-      case 'nos_glide':
-        await postAssistantMessage(processTemplate(templateLibrary.tools.nos_glide.startPrompt, buildTemplateContext()));
+     case 'nos_glide':
+        openNosGlide();
         break;
 
       case 'co_regulation':
@@ -5283,6 +5283,7 @@ Ready to start your first practice?`;
       <MetaReflectionModal />
       <ReframeModal />
       <ThoughtHygieneModal />
+      <NosGlideModal />
       <CoRegulationModal onComplete={() => handlePracticeCompleted('co_regulation')} />
       <NightlyDebriefModal onComplete={() => handlePracticeCompleted('nightly_debrief')} />
 
