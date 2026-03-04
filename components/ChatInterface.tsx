@@ -5336,7 +5336,7 @@ Ready to start your first practice?`;
       <ThoughtHygieneModal />
       <NosGlideModal />
       <CoRegulationModal onComplete={() => handlePracticeCompleted('co_regulation')} />
-      <NightlyDebriefModal onComplete={() => handlePracticeCompleted('nightly_debrief')} userId={userId} />
+     <NightlyDebriefModal onComplete={() => handlePracticeCompleted('nightly_debrief')} userId={user?.id} />
 
       {/* Paywall Modal */}
       <PaywallModal 
