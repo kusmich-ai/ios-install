@@ -120,7 +120,8 @@ export default function FloatingActionButton({
   };
 
   const handleToolClick = (toolId: string) => {
-    if (toolId === 'worry_loop_dissolver') { openLoopDeLooping(userId); setIsOpen(false); }
+  if (toolId === 'worry_loop_dissolver') { openLoopDeLooping(userId); setIsOpen(false); }
+    else if (toolId === 'nos_glide') { openNosGlide(); setIsOpen(false); }
     else { onToolClick(toolId); setIsOpen(false); }
   };
 
@@ -134,9 +135,10 @@ export default function FloatingActionButton({
       <ResonanceModal onComplete={() => handleModalComplete('hrvb', 'Resonance Breathing')} />
       <AwarenessRepModal onComplete={() => handleModalComplete('awareness_rep', 'Awareness Rep')} />
       <CoRegulationModal onComplete={() => handleModalComplete('co_regulation', 'Co-Regulation Practice')} />
-      <NightlyDebriefModal onComplete={() => handleModalComplete('nightly_debrief', 'Nightly Debrief')} />
+      <NightlyDebriefModal onComplete={() => handleModalComplete('nightly_debrief', 'Nightly Debrief')} userId={userId} />
       <SomaticFlowModal onComplete={() => handleModalComplete('somatic_flow', 'Somatic Flow')} completionCount={progress.somaticFlowCompletions} />
       <LoopDeLoopingModal />
+      <NosGlideModal />
 
       {/* Overlay */}
       {isOpen && (
