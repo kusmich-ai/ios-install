@@ -1,6 +1,7 @@
 // app/hooks/useUserProgress.ts
 // Updated to read identity_statement from identity_sprints table (displayed as aligned action in UI)
 // Includes stage attribution "seen" flags for show-once unlock modals
+// v2: Added streak freeze logic (Step 7)
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -61,7 +62,7 @@ export interface UserProgress {
   
   // Progress tracking
   daysInStage: number;
- unlockProgress: {
+  unlockProgress: {
     adherenceMet: boolean;
     daysMet: boolean;
     deltaMet: boolean;
@@ -72,6 +73,11 @@ export interface UserProgress {
     isAccelerated: boolean;
     acceleratedDays: number | null;
   };
+  
+  // Streak freeze
+  streakFreezeUsed: boolean;
+  streakFreezeDate: string | null;
+  streakFreezeAvailable: boolean;
   
   // Stage attribution "seen" flags (for show-once unlock modals)
   stage_1_attribution_seen: boolean;
@@ -317,7 +323,7 @@ export function useUserProgress() {
         .eq('user_id', user.id)
         .eq('practice_date', today);
 
-// Fetch calm scores from last 7 days (Stage 1 signal gate)
+      // Fetch calm scores from last 7 days (Stage 1 signal gate)
       // Source: signal_checks table — written by record_signal_check AI tool after each practice
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
@@ -349,26 +355,26 @@ export function useUserProgress() {
       // FETCH ACTIVE IDENTITY SPRINT
       // Reads from identity_sprints table
       // ============================================
-    const { data: identitySprintArray } = await supabase
-  .from('identity_sprints')
-  .select('*')
-  .eq('user_id', user.id)
-  .eq('completion_status', 'active')
-  .order('created_at', { ascending: false })
-  .limit(1);
+      const { data: identitySprintArray } = await supabase
+        .from('identity_sprints')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('completion_status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1);
 
-const identitySprint = identitySprintArray?.[0] || null;
+      const identitySprint = identitySprintArray?.[0] || null;
 
       // Fetch active Flow Block sprint
-const { data: flowBlockSprintArray } = await supabase
-  .from('flow_block_sprints')
-  .select('*')
-  .eq('user_id', user.id)
-  .eq('completion_status', 'active')
-  .order('created_at', { ascending: false })
-  .limit(1);
+      const { data: flowBlockSprintArray } = await supabase
+        .from('flow_block_sprints')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('completion_status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1);
 
-const flowBlockSprint = flowBlockSprintArray?.[0] || null;
+      const flowBlockSprint = flowBlockSprintArray?.[0] || null;
 
       // Calculate sprint days
       const calculateSprintDay = (startDate: string | null): number | null => {
@@ -451,6 +457,27 @@ const flowBlockSprint = flowBlockSprintArray?.[0] || null;
         ? new Date(progressData.stage_start_date) : new Date();
       const todayDate = new Date();
       const daysInStage = Math.floor((todayDate.getTime() - stageStartDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+      // ============================================
+      // STREAK FREEZE AVAILABILITY
+      // Stage 1: 1 freeze per 7-day window
+      // Stage 2+: 1 freeze per 14-day window
+      // Resets automatically each new window
+      // ============================================
+      const freezeWindowDays = progressData.current_stage === 1 ? 7 : 14;
+      const daysSinceStageStart = Math.floor(
+        (todayDate.getTime() - stageStartDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
+      const currentFreezeWindow = Math.floor(daysSinceStageStart / freezeWindowDays);
+      const freezeWindowStart = new Date(stageStartDate);
+      freezeWindowStart.setDate(freezeWindowStart.getDate() + (currentFreezeWindow * freezeWindowDays));
+
+      const freezeUsedInCurrentWindow = 
+        progressData.streak_freeze_used === true &&
+        progressData.streak_freeze_date != null &&
+        new Date(progressData.streak_freeze_date) >= freezeWindowStart;
+
+      const streakFreezeAvailable = !freezeUsedInCurrentWindow;
 
       // Calculate unlock progress
       const threshold = UNLOCK_THRESHOLDS[progressData.current_stage];
@@ -547,6 +574,11 @@ const flowBlockSprint = flowBlockSprintArray?.[0] || null;
         // Progress tracking fields
         daysInStage,
         unlockProgress,
+
+        // Streak freeze
+        streakFreezeUsed: progressData.streak_freeze_used || false,
+        streakFreezeDate: progressData.streak_freeze_date || null,
+        streakFreezeAvailable,
         
         // Stage attribution "seen" flags (from user_progress table)
         stage_1_attribution_seen: progressData.stage_1_attribution_seen ?? false,
@@ -566,7 +598,8 @@ const flowBlockSprint = flowBlockSprintArray?.[0] || null;
         adherence: newProgress.adherencePercentage,
         unlockEligible: newProgress.unlockEligible,
         domainScores: newProgress.domainScores,
-        somaticFlowCompletions: newProgress.somaticFlowCompletions
+        somaticFlowCompletions: newProgress.somaticFlowCompletions,
+        streakFreezeAvailable: newProgress.streakFreezeAvailable,
       });
 
       setProgress(newProgress);
