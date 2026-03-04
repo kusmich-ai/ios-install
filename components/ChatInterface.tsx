@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useIsMobile } from '@/app/hooks/useIsMobile';
 import { useUserProgress } from '@/app/hooks/useUserProgress';
 import { useSubscription, useSubscriptionActions } from '@/app/hooks/useSubscription';
-import { stageTemplates } from '@/lib/templates/templateLibrary';
+import { stageTemplates, coachTemplates } from '@/lib/templates/templateLibrary';
 import ToolsSidebar from '@/components/ToolsSidebar';
 import { PaywallModal } from '@/components/PaywallModal';
 import FloatingActionButton from '@/components/FloatingActionButton';
