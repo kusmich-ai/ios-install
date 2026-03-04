@@ -13,9 +13,14 @@ export interface Stage {
   tagline: string;
   practices: Practice[];
   unlockCriteria: {
-    adherence: number; // percentage
-    days: number;
-    deltaThreshold: number;
+    adherence: number; // percentage (primary path)
+    days: number; // window in days
+    deltaThreshold: number; // minimum avg delta required
+    acceleratedDays?: number; // accelerated path: fewer days at higher adherence
+    acceleratedAdherence?: number; // adherence % required for accelerated path
+    competenceBypass?: number; // if avg domain score >= this, delta requirement waived
+    hardWeekAdherence?: number; // hard-week path: higher adherence threshold
+    hardWeekDelta?: number; // hard-week path: reduced delta requirement
     additionalConditions?: string[];
   };
 }
