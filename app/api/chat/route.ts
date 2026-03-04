@@ -2294,7 +2294,14 @@ ${context === 'breakthrough_response'
          const dayNames2 = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
          const today2 = dayNames2[new Date().getDay()];
          const isWeekend2 = new Date().getDay() === 0 || new Date().getDay() === 6;
-         systemPrompt += `\n\n## USER SESSION CONTEXT\n- Current stage: Stage ${additionalContext.currentStage} (${stageName})\n- Days in stage: ${additionalContext.daysInStage ?? 'unknown'}\n- Adherence: ${additionalContext.adherence ?? 0}%\n- User name: ${additionalContext.userName || 'User'}\n- Today: ${today2}${isWeekend2 ? '\n- NOTE: Flow Block is weekday-only (Mon-Fri). It is NOT scheduled today. Do not reference it as missing or remaining.' : ''}`;
+         systemPrompt += `\n\n## USER SESSION CONTEXT
+- Current stage: Stage ${additionalContext.currentStage} (${stageName})
+- Days in stage: ${additionalContext.daysInStage ?? 'unknown'}
+- Adherence: ${additionalContext.adherence ?? 0}%
+- User name: ${additionalContext.userName || 'User'}
+- Today: ${today2}${isWeekend2 ? '\n- NOTE: Flow Block is weekday-only (Mon-Fri). It is NOT scheduled today.' : ''}
+- weeklyCheckInPending: ${(additionalContext.weeklyCheckInDue && !additionalContext.weeklyCheckInActive) ? 'true' : 'false'}
+- daysInStage: ${additionalContext.daysInStage ?? 0}`;
 
          // Inject full Stage 1 Experience Layer for general chat too
          if (additionalContext.currentStage === 1) {
