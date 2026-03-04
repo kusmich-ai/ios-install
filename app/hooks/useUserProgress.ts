@@ -333,7 +333,7 @@ export function useUserProgress() {
 
       const recentCalmRatings: number[] = (calmRatingLogs || [])
         .map((log: { calm_rating: number | null }) => log.calm_rating)
-        .filter((r): r is number => r !== null);
+        .filter((r: number | null): r is number => r !== null);
 
       // Fetch total somatic_flow completions (for video-mandatory vs self-guided threshold)
       const { count: somaticFlowCount, error: sfCountError } = await supabase
