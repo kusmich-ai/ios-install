@@ -1679,6 +1679,34 @@ export function getStreakMessage(consecutiveDays: number, adherence: number): st
 }
 
 // ============================================
+// COACH INTRODUCTION TEMPLATES
+// ============================================
+
+export const coachTemplates = {
+  stage1Introduction: `Quick note — as you go deeper into the IOS, you'll notice two coaches in your header: **Nic** and **Fehren**.
+
+**Nic** (⚡) is your Mind & Nervous System coach. Direct, analytical, mechanism-focused. Go to him when you want to understand *why* something is happening — patterns, cognitive loops, performance strategy, or the neuroscience behind what you're experiencing and how to get over it with non-cheerleader direct energy.
+
+**Fehren** (💙) is your Heart & Body coach. Warm, spacious, feeling-first. Go to her when something needs to be *felt* before it's figured out — emotional weight, relational tension, somatic signals, or when you need permission to just be with what's here.
+
+They're different from me (the IOS Installer). I run your protocols, track your progression, and walk you through anything in the IOS frame. They hold space for the stuff that comes up *because* of the work.
+
+Right now you can sample a few messages with each. Full coaching unlocks in Stage 2. No rush — just know they're there when you need them.`,
+
+  stage2Unlock: `One more thing — your AI coaches are now fully unlocked.
+
+**Nic** (⚡) and **Fehren** (💙) are separate from this chat. Think of them like on-call specialists:
+
+→ Something nervous system or strategic? Talk to Nic.
+→ Something emotional or somatic? Talk to Fehren.
+→ Daily practices, progression or overall IOS stuff? Stay here with me.
+
+You don't need to use all three every day. Most days, this chat handles everything. The coaches are for when something comes up that needs more space than a protocol can give — a difficult conversation, a pattern you can't shake, a feeling that won't resolve.
+
+They remember your past conversations and learn your patterns over time. The more you use them, the more personalized they become.`
+};
+
+// ============================================
 // EXPORT COMBINED LIBRARY
 // ============================================
 
