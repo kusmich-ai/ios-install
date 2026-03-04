@@ -49,9 +49,14 @@ export const STAGES: Stage[] = [
       }
     ],
     unlockCriteria: {
-      adherence: 80,
-      days: 14,
-      deltaThreshold: 0.3
+      adherence: 70,           // 10/14 practices — allows ~2 missed days
+      days: 7,                 // 7-day window
+      deltaThreshold: 0.3,
+      acceleratedDays: 5,      // accelerated path: 5 days at 90%+
+      acceleratedAdherence: 90,
+      competenceBypass: 4.0,   // already regulated — delta requirement waived
+      hardWeekAdherence: 85,   // hard-week path: high adherence, lower delta
+      hardWeekDelta: 0.1
     }
   },
   {
