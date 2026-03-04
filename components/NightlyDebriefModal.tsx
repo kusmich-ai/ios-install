@@ -1,16 +1,19 @@
 "use client";
 import React, { useState, useRef } from "react";
+import { createClient } from '@/lib/supabase-client';
 
 // ============================================================================
 // NIGHTLY DEBRIEF PRACTICE COMPONENT
 // 2-minute end-of-day integration checkpoint
+// Now logs lessons to journal_entries
 // ============================================================================
 
 interface NightlyDebriefPracticeProps {
   onComplete: (lesson: string) => void;
+  userId?: string;
 }
 
-function NightlyDebriefPractice({ onComplete }: NightlyDebriefPracticeProps) {
+function NightlyDebriefPractice({ onComplete, userId }: NightlyDebriefPracticeProps) {
   const [phase, setPhase] = useState<'intro' | 'breathe' | 'reflect' | 'complete'>('intro');
   const [lesson, setLesson] = useState('');
   const [breathCount, setBreathCount] = useState(0);
@@ -33,9 +36,31 @@ function NightlyDebriefPractice({ onComplete }: NightlyDebriefPracticeProps) {
     setPhase('reflect');
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     if (!lesson.trim()) return;
     setPhase('complete');
+
+    // Log to journal_entries
+    if (userId) {
+      try {
+        const supabase = createClient();
+        await supabase.from('journal_entries').insert({
+          user_id: userId,
+          entry_type: 'debrief_lesson',
+          stage: 6, // Nightly Debrief unlocks at Stage 6
+          title: 'Nightly Debrief',
+          content: lesson.trim(),
+          metadata: {
+            source: 'nightly_debrief_modal',
+            timestamp: new Date().toISOString()
+          }
+        });
+        console.log('[NightlyDebrief] Journal entry saved');
+      } catch (error) {
+        console.error('[NightlyDebrief] Failed to save journal entry:', error);
+      }
+    }
+
     setTimeout(() => {
       onComplete(lesson);
     }, 2500);
@@ -280,8 +305,17 @@ function NightlyDebriefPractice({ onComplete }: NightlyDebriefPracticeProps) {
           </div>
           
           <p style={{ 
+            fontSize: '0.85rem', 
+            color: 'rgba(245, 242, 236, 0.35)',
+            fontStyle: 'italic'
+          }}>
+            Logged to your journal
+          </p>
+          
+          <p style={{ 
             fontSize: '0.9rem', 
-            color: 'rgba(245, 242, 236, 0.5)'
+            color: 'rgba(245, 242, 236, 0.5)',
+            marginTop: '0.5rem'
           }}>
             Rest well 🌙
           </p>
@@ -299,9 +333,10 @@ interface NightlyDebriefModalProps {
   isOpen: boolean;
   onClose: () => void;
   onComplete?: (lesson: string) => void;
+  userId?: string;
 }
 
-export function NightlyDebriefModal({ isOpen, onClose, onComplete }: NightlyDebriefModalProps) {
+export function NightlyDebriefModal({ isOpen, onClose, onComplete, userId }: NightlyDebriefModalProps) {
   const hasCompletedRef = useRef(false);
 
   if (!isOpen) {
@@ -326,7 +361,7 @@ export function NightlyDebriefModal({ isOpen, onClose, onComplete }: NightlyDebr
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 9999 }}>
-      <NightlyDebriefPractice onComplete={handleSessionComplete} />
+      <NightlyDebriefPractice onComplete={handleSessionComplete} userId={userId} />
       
       {/* Close button */}
       <button
@@ -388,8 +423,8 @@ export function useNightlyDebrief() {
     isOpen,
     open,
     close,
-    Modal: ({ onComplete }: { onComplete?: (lesson: string) => void }) => (
-      <NightlyDebriefModal isOpen={isOpen} onClose={close} onComplete={onComplete} />
+    Modal: ({ onComplete, userId }: { onComplete?: (lesson: string) => void; userId?: string }) => (
+      <NightlyDebriefModal isOpen={isOpen} onClose={close} onComplete={onComplete} userId={userId} />
     ),
   };
 }
