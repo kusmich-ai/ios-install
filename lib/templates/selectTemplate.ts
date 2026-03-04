@@ -64,8 +64,9 @@ export interface SelectionContext {
   // Tool intro tracking
   toolsIntroduced: string[];
   
-  // Weekly check-in
+// Weekly check-in
   weeklyCheckInDue: boolean;
+  weeklyCheckInActive: boolean;
   
   // Platform
   isMobile: boolean;
