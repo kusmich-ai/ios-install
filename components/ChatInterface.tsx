@@ -765,6 +765,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   const hasCheckedStage7Eligibility = useRef<boolean>(false);
   const hasCheckedResistance = useRef<boolean>(false);
   const hasCheckedRegression = useRef<boolean>(false);
+  const hasCheckedCoachIntro = useRef<boolean>(false);
   const persistedCountRef = useRef<number>(0);
 
   // ============================================
