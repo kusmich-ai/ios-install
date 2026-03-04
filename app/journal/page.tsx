@@ -29,6 +29,7 @@ const ENTRY_TYPE_CONFIG: Record<string, { icon: React.ComponentType<{ className?
   pattern_surfacing: { icon: Compass, label: 'Pattern', color: 'text-rose-400' },
   reframe_anchor: { icon: Sparkles, label: 'Reframe', color: 'text-yellow-400' },
   debrief_lesson: { icon: Moon, label: 'Debrief', color: 'text-indigo-400' },
+  meta_reflection: { icon: Compass, label: 'Reflection', color: 'text-indigo-400' },
 coach_guest: { icon: Lightbulb, label: 'Coach', color: 'text-orange-400' },
   chat_bookmark: { icon: Bookmark, label: 'Saved', color: 'text-[#ff9e19]' },
   breakthrough_insight: { icon: Sparkles, label: 'Breakthrough', color: 'text-[#ff9e19]' },
