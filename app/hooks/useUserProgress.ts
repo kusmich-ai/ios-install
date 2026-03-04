@@ -495,7 +495,9 @@ const flowBlockSprint = flowBlockSprintArray?.[0] || null;
         daysInStage,
         domainDeltas.average,
         latestQualitativeRating,
-        avgScore
+        avgScore,
+        recentCalmRatings,          // Stage 1: daily signal gate
+        baselineScores.regulation   // Stage 1: baseline calm reference
       );
 
       // Update last fetch date
