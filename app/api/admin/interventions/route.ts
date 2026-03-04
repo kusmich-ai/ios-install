@@ -182,32 +182,18 @@ export async function POST(req: Request) {
     if (action === 'sendIntervention') {
       const { userId, interventionType, alertType, customMessage } = body;
 
-      // Get user info
+      // Get user info from auth.users (service role can access this)
       let firstName = 'there';
       let email = '';
 
-      const { data: profileData } = await supabaseAdmin
-        .from('user_profiles')
-        .select('first_name, email')
-        .eq('user_id', userId)
-        .single();
+      const { data: { user: targetUser }, error: targetError } = await supabaseAdmin.auth.admin.getUserById(userId);
 
-      if (profileData) {
-        firstName = profileData.first_name || firstName;
-        email = profileData.email || '';
-      } else {
-        // Fallback: try user_data table
-        const { data: userData } = await supabaseAdmin
-          .from('user_data')
-          .select('first_name, email')
-          .eq('user_id', userId)
-          .single();
-        
-        if (userData) {
-          firstName = userData.first_name || firstName;
-          email = userData.email || '';
-        }
+      if (targetError || !targetUser) {
+        return NextResponse.json({ error: 'User not found' }, { status: 404 });
       }
+
+      email = targetUser.email || '';
+      firstName = targetUser.user_metadata?.first_name || targetUser.user_metadata?.name || 'there';
 
       if (!email) {
         return NextResponse.json({ error: 'No email found for user' }, { status: 400 });
