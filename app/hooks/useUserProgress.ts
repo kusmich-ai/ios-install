@@ -99,8 +99,8 @@ const UNLOCK_THRESHOLDS: { [stage: number]: {
   accelerated?: AcceleratedThreshold;
 } } = {
   1: {
-    adherence: 80, days: 14, delta: 0.3, qualitative: 3,
-    accelerated: { adherence: 95, days: 10, delta: 0.5, qualitative: 4 }
+    adherence: 70, days: 7, delta: 0.3, qualitative: 3,
+    accelerated: { adherence: 90, days: 5, delta: 0.3, qualitative: 3 }
   },
   2: {
     adherence: 80, days: 14, delta: 0.5, qualitative: 3,
