@@ -462,6 +462,8 @@ function MetaReflectionModalComponent({ isOpen, onClose, userId, isWeeklyPrompt 
     if (userId) {
       try {
         const supabase = createClient();
+        
+        // Save to tool_sessions (existing behavior)
         const { error } = await supabase.from('tool_sessions').insert({
           user_id: userId,
           tool_type: 'meta_reflection',
@@ -477,7 +479,29 @@ function MetaReflectionModalComponent({ isOpen, onClose, userId, isWeeklyPrompt 
           },
           recurring_themes: themes
         });
-        if (error) console.error('[MetaReflection] Insert failed:', error.message, error.code);
+        if (error) console.error('[MetaReflection] tool_sessions insert failed:', error.message, error.code);
+
+        // Save to journal_entries (NEW)
+        if (kernel) {
+          const { error: journalError } = await supabase.from('journal_entries').insert({
+            user_id: userId,
+            entry_type: 'meta_reflection',
+            stage: 2, // Meta-Reflection unlocks at Stage 2
+            title: 'Meta-Reflection',
+            content: kernel,
+            metadata: {
+              source: 'meta_reflection_modal',
+              themes: themes,
+              duration_seconds: durationSeconds,
+              timestamp: new Date().toISOString()
+            }
+          });
+          if (journalError) {
+            console.error('[MetaReflection] journal insert failed:', journalError.message);
+          } else {
+            console.log('[MetaReflection] Journal entry saved');
+          }
+        }
       } catch (error) {
         console.error('[MetaReflection] Failed to save session:', error);
       }
