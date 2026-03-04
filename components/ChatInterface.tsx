@@ -2043,7 +2043,49 @@ Keep going - the real rewiring happens in weeks 2-4.`);
       // Not a milestone day - mark as checked so we don't keep re-checking
       hasCheckedWeeklyMilestone.current = true;
     }
-  }, [progress, progressLoading, weeklyCheckInActive, weeklyCheckInDue, missedDaysIntervention?.isActive, regressionIntervention?.isActive, systemRecoveryIntervention?.isActive, sprintRenewalState.isActive, unlockFlowState]);
+}, [progress, progressLoading, weeklyCheckInActive, weeklyCheckInDue, missedDaysIntervention?.isActive, regressionIntervention?.isActive, systemRecoveryIntervention?.isActive, sprintRenewalState.isActive, unlockFlowState]);
+
+  // ============================================
+  // EFFECT - Coach Introduction (Stage 1, Day 5+)
+  // ============================================
+  
+  useEffect(() => {
+    if (hasCheckedCoachIntro.current || !progress || progressLoading) return;
+    if (progress.currentStage !== 1) return;
+    
+    // Don't collide with other interventions
+    if (
+      weeklyCheckInActive ||
+      weeklyCheckInDue ||
+      missedDaysIntervention?.isActive ||
+      regressionIntervention?.isActive ||
+      systemRecoveryIntervention?.isActive ||
+      sprintRenewalState.isActive ||
+      unlockFlowState !== 'none'
+    ) return;
+    
+    const daysInStage = progress.daysInStage || 0;
+    if (daysInStage < 5) {
+      hasCheckedCoachIntro.current = true;
+      return;
+    }
+    
+    // Check localStorage so it only fires once ever per user
+    const storageKey = `coach_intro_shown_${user?.id}`;
+    if (typeof window !== 'undefined' && localStorage.getItem(storageKey)) {
+      hasCheckedCoachIntro.current = true;
+      return;
+    }
+    
+    hasCheckedCoachIntro.current = true;
+    
+    setTimeout(async () => {
+      await postAssistantMessage(coachTemplates.stage1Introduction);
+      if (typeof window !== 'undefined' && user?.id) {
+        localStorage.setItem(storageKey, 'true');
+      }
+    }, 3000);
+  }, [progress, progressLoading, weeklyCheckInActive, weeklyCheckInDue, missedDaysIntervention?.isActive, regressionIntervention?.isActive, systemRecoveryIntervention?.isActive, sprintRenewalState.isActive, unlockFlowState, user?.id]);
 
   // ============================================
   // EFFECT - Check for Evening Nightly Debrief (Stage 6+)
