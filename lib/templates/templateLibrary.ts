@@ -1719,6 +1719,7 @@ export const templateLibrary = {
   stage7Conversation: stage7ConversationTemplates,
   tools: toolTemplates,
   foundations: foundationTemplates,
+  coaches: coachTemplates,
   getStreakMessage,
   getIntroRedirectMessage,
   isAskingAboutStage7
