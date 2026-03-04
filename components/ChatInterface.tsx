@@ -2378,7 +2378,14 @@ Ready to continue your transformation?`
       // Stage 4: Set flag for flow block setup
       setAwaitingFlowBlockStart(true);
     }
-    // Stages 2, 5, 6 don't need special setup flows - just the confirmation message
+ // Stages 2, 5, 6 don't need special setup flows - just the confirmation message
+    
+    // Show coach unlock reminder for Stage 2
+    if (pendingUnlockStage === 2) {
+      setTimeout(async () => {
+        await postAssistantMessage(coachTemplates.stage2Unlock);
+      }, 4000);
+    }
     
     setPendingUnlockStage(null);
   };
