@@ -1656,8 +1656,9 @@ const getFallbackResultsMessage = (
           return lastCheckinDate < startOfWeek;
         }
         
-        return false;
+  return false;
       })(),
+      weeklyCheckInActive,
       isMobile
     };
   }, [baselineData, progress, practicesCompletedToday, introStep, isMobile, flowBlockState.isComplete]);
