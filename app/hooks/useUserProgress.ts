@@ -146,38 +146,90 @@ function getTierFromIndex(index: number): string {
   return 'Integrated';
 }
 
+// Helper: determine calm rating trend direction over last 3 data points
+function getCalmRatingTrend(ratings: number[]): 'up' | 'flat' | 'down' | 'insufficient' {
+  if (ratings.length < 3) return 'insufficient';
+  const last3 = ratings.slice(-3);
+  let upMoves = 0;
+  let downMoves = 0;
+  for (let i = 1; i < last3.length; i++) {
+    if (last3[i] > last3[i - 1]) upMoves++;
+    else if (last3[i] < last3[i - 1]) downMoves++;
+  }
+  if (downMoves >= 2) return 'down';
+  if (upMoves >= 2) return 'up';
+  return 'flat';
+}
+
 function checkBasicUnlockEligibility(
   stage: number,
   adherence: number,
   daysInStage: number,
   avgDelta: number,
   qualitativeRating: number | null,
-  avgScore: number
+  avgScore: number,
+  recentCalmRatings: number[] = [],
+  baselineCalmScore: number = 2.5
 ): boolean {
   const threshold = UNLOCK_THRESHOLDS[stage];
   if (!threshold) return false;
-  
+
+  // ============================================
+  // STAGE 1: 3-gate, 4-path logic
+  // Primary signal = daily calm ratings (no weekly check-in required)
+  // ============================================
+  if (stage === 1) {
+    // GATE 1 — Adherence (standard OR accelerated path)
+    const standardAdherenceMet = adherence >= 70 && daysInStage >= 7;
+    const acceleratedAdherenceMet = adherence >= 90 && daysInStage >= 5;
+    const gate1 = standardAdherenceMet || acceleratedAdherenceMet;
+    if (!gate1) return false;
+
+    // GATE 3 — No regression (sustained downward trend = not ready)
+    const trend = getCalmRatingTrend(recentCalmRatings);
+    if (trend === 'down') return false;
+
+    // GATE 2 — Signal shift (first passing path wins)
+    // Path A: avg calm ratings >= baseline regulation + 0.3 (no check-in needed)
+    const avgCalm = recentCalmRatings.length >= 3
+      ? recentCalmRatings.reduce((s, r) => s + r, 0) / recentCalmRatings.length
+      : null;
+    const pathA = avgCalm !== null && avgCalm >= baselineCalmScore + 0.3;
+
+    // Path B: weekly check-in avg delta >= 0.3 (if check-in was completed)
+    const pathB = avgDelta >= 0.3;
+
+    // Path C: competence bypass — already operating at high level
+    const pathC = avgScore >= 4.0;
+
+    // Path D: hard-week path — high adherence + not declining (no delta required)
+    const pathD = adherence >= 85 && (trend === 'up' || trend === 'flat' || trend === 'insufficient');
+
+    const gate2 = pathA || pathB || pathC || pathD;
+    return gate2;
+  }
+
+  // ============================================
+  // STAGES 2–6: Original hybrid logic (unchanged)
+  // ============================================
   const COMPETENCE_THRESHOLD = 4.0;
 
-  // --- CHECK ACCELERATED PATH FIRST ---
+  // Accelerated path check
   if (threshold.accelerated) {
     const accel = threshold.accelerated;
     const accelAdherence = adherence >= accel.adherence;
     const accelDays = daysInStage >= accel.days;
     const accelDelta = avgDelta >= accel.delta || avgScore >= COMPETENCE_THRESHOLD;
     const accelQual = qualitativeRating !== null && qualitativeRating >= accel.qualitative;
-
-    if (accelAdherence && accelDays && accelDelta && accelQual) {
-      return true;
-    }
+    if (accelAdherence && accelDays && accelDelta && accelQual) return true;
   }
 
-  // --- STANDARD PATH ---
+  // Standard path
   const adherenceMet = adherence >= threshold.adherence;
   const daysMet = daysInStage >= threshold.days;
   const deltaMet = avgDelta >= threshold.delta || avgScore >= COMPETENCE_THRESHOLD;
   const qualMet = qualitativeRating !== null && qualitativeRating >= threshold.qualitative;
-  
+
   return adherenceMet && daysMet && deltaMet && qualMet;
 }
 
