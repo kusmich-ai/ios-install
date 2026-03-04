@@ -317,22 +317,20 @@ export function useUserProgress() {
         .eq('user_id', user.id)
         .eq('practice_date', today);
 
-// Fetch calm ratings from last 7 days (Stage 1 signal gate — no weekly check-in required)
+// Fetch calm scores from last 7 days (Stage 1 signal gate)
+      // Source: signal_checks table — written by record_signal_check AI tool after each practice
       const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6); // 6 back + today = 7 days inclusive
-      const sevenDaysAgoStr = `${sevenDaysAgo.getFullYear()}-${String(sevenDaysAgo.getMonth() + 1).padStart(2, '0')}-${String(sevenDaysAgo.getDate()).padStart(2, '0')}`;
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
 
-      const { data: calmRatingLogs } = await supabase
-        .from('practice_logs')
-        .select('calm_rating, practice_date')
+      const { data: signalCheckLogs } = await supabase
+        .from('signal_checks')
+        .select('calm_score, created_at')
         .eq('user_id', user.id)
-        .gte('practice_date', sevenDaysAgoStr)
-        .lte('practice_date', today)
-        .not('calm_rating', 'is', null)
-        .order('practice_date', { ascending: true });
+        .gte('created_at', sevenDaysAgo.toISOString())
+        .order('created_at', { ascending: true });
 
-      const recentCalmRatings: number[] = (calmRatingLogs || [])
-        .map((log: { calm_rating: number | null }) => log.calm_rating)
+      const recentCalmRatings: number[] = (signalCheckLogs || [])
+        .map((log: { calm_score: number | null }) => log.calm_score)
         .filter((r: number | null): r is number => r !== null);
 
       // Fetch total somatic_flow completions (for video-mandatory vs self-guided threshold)
