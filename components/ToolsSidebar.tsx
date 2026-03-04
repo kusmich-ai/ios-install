@@ -240,9 +240,10 @@ const getPracticeStatus = (practiceId: string): 'completed' | 'pending' | 'locke
       <CoRegulationModal 
         onComplete={() => handleModalComplete('co_regulation', 'Co-Regulation Practice')} 
       />
-      <NightlyDebriefModal 
-        onComplete={() => handleModalComplete('nightly_debrief', 'Nightly Debrief')} 
-      />
+   <NightlyDebriefModal 
+  onComplete={() => handleModalComplete('nightly_debrief', 'Nightly Debrief')}
+  userId={userId}
+/>
       <LoopDeLoopingModal />
       <NosGlideModal />
 
