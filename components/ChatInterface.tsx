@@ -4200,9 +4200,17 @@ const handleRequestCheckIn = useCallback(async () => {
         }
       })
     });
-    // handle response same way your other fetch blocks do
+    if (!response.ok) throw new Error('Weekly check-in trigger failed');
+    const data = await response.json();
+    const aiResponse = data.response || data.content || '';
+    if (aiResponse) {
+      setLoading(false);
+      await postAssistantMessage(aiResponse);
+    }
   } catch (error) {
-    console.error('Error triggering check-in:', error);
+    console.error('[ChatInterface] Weekly check-in trigger error:', error);
+  } finally {
+    setLoading(false);
   }
 }, [messages, progress, getUserName]);
     try {
