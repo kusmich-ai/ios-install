@@ -4200,7 +4200,9 @@ microActionState.extractedAction || 'Notice → Label → Release',
               : 0,
             adherence: progress?.adherencePercentage || 0,
             userName: getUserName(),
-            consecutiveDays: progress?.consecutiveDays || 0
+            consecutiveDays: progress?.consecutiveDays || 0,
+            milestonePendingDay: progress?.milestonePendingDay ?? null,
+            streakFreezeAvailable: progress?.streakFreezeAvailable ?? true
           }
         })
       });
