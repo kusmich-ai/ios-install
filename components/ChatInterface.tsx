@@ -4181,7 +4181,7 @@ microActionState.extractedAction || 'Notice → Label → Release',
       return;
     }
     setLoading(true);
-const handleRequestCheckIn = useCallback(async () => {
+
   try {
     const response = await fetch('/api/chat', {
       method: 'POST',
