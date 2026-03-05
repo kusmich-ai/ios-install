@@ -1308,6 +1308,30 @@ const STAGE1_ENHANCEMENT_TOOLS: Anthropic.Tool[] = [
       required: ["entry_type", "title", "content"]
     }
   }
+  },
+  {
+    name: "consume_streak_freeze",
+    description: "Record that the streak freeze was consumed for the current window. Call this when a missed day is detected and streakFreezeAvailable is true.",
+    input_schema: {
+      type: "object" as const,
+      properties: {},
+      required: []
+    }
+  },
+  {
+    name: "mark_milestone_sent",
+    description: "Record that a day-based milestone message has been delivered. Call this IMMEDIATELY after delivering a milestone message. Prevents the same message from firing again.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        day: {
+          type: "number",
+          description: "The days_in_stage value for the milestone just delivered (1, 2, 4, 5, or 6)"
+        }
+      },
+      required: ["day"]
+    }
+  }
 ];
 
 // ============================================
