@@ -1,6 +1,7 @@
 // components/DashboardSidebar.tsx
 // Extracted left sidebar from ChatInterface with luxury styling
 // v2.1: Added Flow Block Schedule section with timeSlot support
+// v2.2: Stage 2 unlock progress widget (Step 10)
 'use client';
 
 import Link from 'next/link';
@@ -75,6 +76,9 @@ interface DashboardSidebarProps {
   adherencePercentage?: number;
   consecutiveDays?: number;
   
+  // Stage 1 signal trend (optional — arrow omitted if not provided)
+  calmTrend?: 'up' | 'flat' | null;
+
   // Aligned Action (Stage 3+) - with backwards compatibility
   coherenceStatement?: string;
   currentIdentity?: string;
@@ -165,6 +169,135 @@ const DOMAIN_COLORS = {
 };
 
 // ============================================
+// STAGE 2 UNLOCK WIDGET
+// Only renders for Stage 1. Replaces generic progress bars
+// with dot-based day tracker + plain-English status line.
+// ============================================
+
+interface Stage2UnlockWidgetProps {
+  unlockProgress: UnlockProgress;
+  unlockEligible: boolean;
+  daysInStage: number;
+  adherencePercentage: number;
+  calmTrend?: 'up' | 'flat' | null;
+}
+
+function Stage2UnlockWidget({
+  unlockProgress,
+  unlockEligible,
+  daysInStage,
+  adherencePercentage,
+  calmTrend,
+}: Stage2UnlockWidgetProps) {
+  const requiredDays = unlockProgress.requiredDays || 7;
+  const requiredAdherence = unlockProgress.requiredAdherence || 70;
+
+  // Dot row: how many days completed vs required
+  const daysCompleted = Math.min(daysInStage, requiredDays);
+  const dots = Array.from({ length: requiredDays }, (_, i) => i < daysCompleted);
+
+  // "X more practices to go"
+  // Stage 1 = 2 practices/day. Target = requiredDays * 2 at requiredAdherence%.
+  const totalPracticesInWindow = requiredDays * 2;
+  const targetPractices = Math.ceil(totalPracticesInWindow * (requiredAdherence / 100));
+  const completedPractices = Math.round((adherencePercentage / 100) * totalPracticesInWindow);
+  const practicesRemaining = Math.max(0, targetPractices - completedPractices);
+
+  // Progress bar fill — based on completed practices vs target
+  const barPercent = Math.min(100, Math.round((completedPractices / targetPractices) * 100));
+
+  // Signal trend arrow
+  const trendArrow = calmTrend === 'up' ? ' ↑' : calmTrend === 'flat' ? ' →' : '';
+
+  return (
+    <div className="bg-white rounded-xl border border-black/[0.04] shadow-sm overflow-hidden">
+      {/* Header rule */}
+      <div className="flex items-center gap-2 px-4 pt-3.5 pb-2">
+        <div className="flex-1 h-px bg-black/[0.06]" />
+        <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest whitespace-nowrap">
+          Stage 2 Unlock
+        </span>
+        <div className="flex-1 h-px bg-black/[0.06]" />
+      </div>
+
+      <div className="px-4 pb-4 space-y-3">
+        {unlockEligible ? (
+          // ── ELIGIBLE STATE ──────────────────────
+          <>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {dots.map((filled, i) => (
+                <span
+                  key={i}
+                  className="text-emerald-500 text-sm leading-none"
+                  style={{ fontSize: '11px' }}
+                >
+                  {filled ? '●' : '●'}
+                </span>
+              ))}
+              <span className="text-xs text-emerald-600 font-medium ml-1">
+                {daysCompleted} of {requiredDays} days
+              </span>
+            </div>
+
+            <div className="w-full rounded-full h-2 bg-black/[0.04] overflow-hidden">
+              <div className="h-2 rounded-full bg-emerald-500 transition-all duration-500 w-full" />
+            </div>
+
+            <p className="text-xs font-semibold text-emerald-600">
+              Stage 2 unlocked. Ready to install?
+            </p>
+          </>
+        ) : (
+          // ── IN-PROGRESS STATE ───────────────────
+          <>
+            {/* Dot row */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {dots.map((filled, i) => (
+                <span
+                  key={i}
+                  className={`leading-none transition-colors ${filled ? 'text-amber-500' : 'text-zinc-200'}`}
+                  style={{ fontSize: '11px' }}
+                >
+                  ●
+                </span>
+              ))}
+              <span className="text-xs text-zinc-400 font-medium ml-1">
+                {daysCompleted} of {requiredDays} days
+              </span>
+            </div>
+
+            {/* Signal line — only shown when trend data exists */}
+            {trendArrow && (
+              <p className="text-xs text-zinc-500">
+                Your signal is shifting{trendArrow}
+              </p>
+            )}
+
+            {/* Thin divider */}
+            <div className="h-px bg-black/[0.05]" />
+
+            {/* Practices remaining */}
+            {practicesRemaining > 0 && (
+              <p className="text-xs text-zinc-500">
+                {practicesRemaining} more {practicesRemaining === 1 ? 'practice' : 'practices'} to go.
+              </p>
+            )}
+
+            {/* Progress bar */}
+            <div className="w-full rounded-full h-2 bg-black/[0.04] overflow-hidden">
+              <div
+                className="h-2 rounded-full bg-amber-500 transition-all duration-500"
+                style={{ width: `${barPercent}%` }}
+              />
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================
 // COMPONENT
 // ============================================
 
@@ -179,6 +312,7 @@ export default function DashboardSidebar({
   unlockEligible,
   adherencePercentage = 0,
   consecutiveDays = 0,
+  calmTrend,
   coherenceStatement,
   currentIdentity,
   microAction,
@@ -251,7 +385,8 @@ export default function DashboardSidebar({
             </Link>
           </div>
         </div>
-{/* ==========================================
+
+        {/* ==========================================
             TIME IN SYSTEM
             ========================================== */}
         {totalDaysInApp !== undefined && (
@@ -395,8 +530,23 @@ export default function DashboardSidebar({
 
         {/* ==========================================
             UNLOCK PROGRESS
+            Stage 1: rich dot widget
+            Stage 2–5: existing bar widget
             ========================================== */}
-       {unlockProgress && !unlockEligible && currentStage < 6 && (
+
+        {/* Stage 1 — new dot-based widget */}
+        {currentStage === 1 && unlockProgress && (
+          <Stage2UnlockWidget
+            unlockProgress={unlockProgress}
+            unlockEligible={unlockEligible ?? false}
+            daysInStage={daysInStage ?? 0}
+            adherencePercentage={adherencePercentage}
+            calmTrend={calmTrend}
+          />
+        )}
+
+        {/* Stage 2–5 — existing bar widget */}
+        {unlockProgress && !unlockEligible && currentStage > 1 && currentStage < 6 && (
           <div className="bg-white rounded-xl p-4 border border-black/[0.04] shadow-sm">
             <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">
               Stage {currentStage + 1} Unlock Progress
