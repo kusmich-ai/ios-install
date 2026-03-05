@@ -46,7 +46,38 @@ const TOOL_ICONS: { [key: string]: React.ComponentType<{ className?: string }> }
   'thought_hygiene': Sparkles, 'worry_loop_dissolver': Sparkles,
 };
 
-export default function FloatingActionButton({ 
+// ============================================
+// STAGE 2 TEASER PANEL
+// ============================================
+function Stage2TeaserPanel({ unlockEligible }: { unlockEligible: boolean }) {
+  return (
+    <div className={`rounded-xl p-4 border transition-all duration-500 ${
+      unlockEligible
+        ? 'bg-emerald-950/20 border-emerald-500/60'
+        : 'bg-zinc-900/[0.03] border-amber-400/40'
+    }`}>
+      <p className={`text-[10px] font-semibold uppercase tracking-widest mb-2 ${
+        unlockEligible ? 'text-emerald-600' : 'text-amber-500/80'
+      }`}>
+        Stage 2: Embodied Mode
+      </p>
+      <div className={`h-px mb-3 ${unlockEligible ? 'bg-emerald-500/30' : 'bg-amber-400/20'}`} />
+      <p className="text-xs text-zinc-500 mb-3 leading-relaxed">
+        {unlockEligible ? 'Ready to install.' : 'Coming when you\'re ready.'}
+      </p>
+      <p className="text-xs text-zinc-400 italic leading-relaxed">
+        &quot;When coherence stops living in your head and starts living in your body.&quot;
+      </p>
+      {unlockEligible && (
+        <div className="mt-3 pt-3 border-t border-emerald-500/20">
+          <p className="text-xs font-semibold text-emerald-600">Install now →</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function FloatingActionButton({
   progress, userId, onPracticeClick, onToolClick,
   onProgressUpdate, onPracticeCompleted, isRefreshing = false
 }: FloatingActionButtonProps) {
