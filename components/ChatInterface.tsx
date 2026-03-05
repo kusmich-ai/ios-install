@@ -4861,6 +4861,7 @@ Ready to start your first practice?`;
           sprintDay={(progress as any)?.sprintDay ?? (progress as any)?.identitySprintDay ?? undefined}
           identitySprintDay={(progress as any)?.identitySprintDay ?? undefined}
           onStage7Click={startStage7Introduction}
+          calmTrend={progress?.currentStage === 1 ? (progress?.domainDeltas?.regulation ?? 0) > 0 ? 'up' : 'flat' : null}
           flowBlockWeeklyMap={flowBlockState?.extractedWeeklyMap || null}
   flowBlockSprintDay={flowBlockState?.sprintStartDate ? getSprintDayNumber(flowBlockState.sprintStartDate) : undefined}
         />
