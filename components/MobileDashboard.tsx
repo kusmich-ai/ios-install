@@ -78,6 +78,9 @@ interface MobileDashboardProps {
   calmTrend?: 'up' | 'flat' | null;
   // Step 12: streak freeze
   streakFreezeAvailable?: boolean;
+  // Step 13: weekly check-in banner
+  weeklyCheckInDue?: boolean;
+  onRequestCheckIn?: () => void;
   onStage7Unlock?: () => void;
 }
 
@@ -141,6 +144,40 @@ const DOMAIN_COLORS = {
   outlook: { bar: 'bg-amber-400', text: 'text-amber-400' },
   attention: { bar: 'bg-amber-300', text: 'text-amber-500' },
 };
+
+// ============================================
+// WEEKLY CHECK-IN BANNER (Step 13)
+// Stage 2+ only. Pending = amber + tappable. Complete = subtle green.
+// ============================================
+
+function WeeklyCheckInBanner({ due, onRequestCheckIn }: { due: boolean; onRequestCheckIn?: () => void }) {
+  if (!due) {
+    return (
+      <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 border border-emerald-200/60 rounded-xl">
+        <span className="text-emerald-500 text-sm leading-none">✓</span>
+        <span className="text-xs font-medium text-emerald-600">Weekly check-in complete</span>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={onRequestCheckIn}
+      className="w-full flex items-center gap-2 px-3 py-2.5 bg-amber-50 active:bg-amber-100 border border-amber-300/60 rounded-xl transition-colors text-left min-h-[44px]"
+    >
+      <span className="text-amber-500 text-sm leading-none">⚡</span>
+      <span className="text-xs font-medium text-amber-700 flex-1">
+        Weekly check-in pending
+      </span>
+      <svg
+        className="w-3.5 h-3.5 text-amber-400"
+        fill="none" viewBox="0 0 24 24" stroke="currentColor"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+      </svg>
+    </button>
+  );
+}
 
 // ============================================
 // STREAK FREEZE INDICATOR (Step 12)
@@ -401,7 +438,7 @@ export default function MobileDashboard({
   adherencePercentage = 0, consecutiveDays = 0, coherenceStatement,
   currentIdentity, microAction, sprintDay, identitySprintDay,
   flowBlockWeeklyMap, flowBlockSprintDay, totalDaysInApp, daysInStage,
-  calmTrend, streakFreezeAvailable, onStage7Unlock,
+  calmTrend, streakFreezeAvailable, weeklyCheckInDue, onRequestCheckIn, onStage7Unlock,
 }: MobileDashboardProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -534,6 +571,14 @@ export default function MobileDashboard({
               ))}
             </div>
           </div>
+
+          {/* ==========================================
+              WEEKLY CHECK-IN BANNER (Step 13)
+              Stage 2+ only
+              ========================================== */}
+          {currentStage >= 2 && weeklyCheckInDue !== undefined && (
+            <WeeklyCheckInBanner due={weeklyCheckInDue} onRequestCheckIn={() => { onRequestCheckIn?.(); setIsOpen(false); }} />
+          )}
 
           {/* ==========================================
               UNLOCK PROGRESS
