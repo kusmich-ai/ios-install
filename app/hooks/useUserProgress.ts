@@ -3,6 +3,7 @@
 // Includes stage attribution "seen" flags for show-once unlock modals
 // v2: Added streak freeze logic (Step 7)
 // v3: Added milestone message logic (Step 8)
+// v4: Added weeklyCheckInDue (Step 13)
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -81,8 +82,12 @@ export interface UserProgress {
   streakFreezeAvailable: boolean;
 
   // Milestone messages (Step 8)
-  milestonePendingDay: number | null;  // which milestone day is due today, null if none
-  milestoneMessagesSent: number[];     // day numbers already delivered
+  milestonePendingDay: number | null;
+  milestoneMessagesSent: number[];
+
+  // Weekly check-in status (Step 13)
+  // true = Stage 2+ and no check-in recorded for the current calendar week
+  weeklyCheckInDue: boolean;
   
   // Stage attribution "seen" flags (for show-once unlock modals)
   stage_1_attribution_seen: boolean;
@@ -97,7 +102,6 @@ export interface UserProgress {
 // CONSTANTS
 // ============================================
 
-// Accelerated path thresholds (optional per stage)
 interface AcceleratedThreshold {
   adherence: number;
   days: number;
@@ -129,7 +133,6 @@ const UNLOCK_THRESHOLDS: { [stage: number]: {
   6: { adherence: 85, days: 14, delta: 0.7, qualitative: 3 }
 };
 
-// Stage-specific tools
 const STAGE_TOOLS: { [stage: number]: string[] } = {
   1: ['decentering', 'nos_glide', 'worry_loop_dissolver'],
   2: ['decentering', 'nos_glide', 'worry_loop_dissolver', 'meta_reflection'],
@@ -140,7 +143,6 @@ const STAGE_TOOLS: { [stage: number]: string[] } = {
   7: ['decentering', 'nos_glide', 'worry_loop_dissolver', 'meta_reflection', 'reframe', 'thought_hygiene']
 };
 
-// Days that trigger a milestone message in Stage 1 (fires once after practice completion)
 const MILESTONE_DAYS = [1, 2, 4, 5, 6];
 
 // ============================================
@@ -150,6 +152,16 @@ const MILESTONE_DAYS = [1, 2, 4, 5, 6];
 function getLocalDateString(): string {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
+// Returns the Monday of the current calendar week as YYYY-MM-DD
+function getCurrentWeekMonday(): string {
+  const now = new Date();
+  const day = now.getDay(); // 0 = Sunday
+  const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(now);
+  monday.setDate(diff);
+  return `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}-${String(monday.getDate()).padStart(2, '0')}`;
 }
 
 function getTierFromIndex(index: number): string {
@@ -264,7 +276,6 @@ export function useUserProgress() {
   const fetchProgress = useCallback(async (forceRefresh = false) => {
     const today = getLocalDateString();
     
-    // Skip if we already have today's data (unless forcing refresh)
     if (!forceRefresh && progress?.dataDate === today) {
       return;
     }
@@ -276,21 +287,18 @@ export function useUserProgress() {
     }
 
     try {
-      // Get authenticated user
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
       if (authError || !user) {
         throw new Error('User not authenticated');
       }
 
-      // Fetch baseline data from key-value store
       const { data: baselineRows } = await supabase
         .from('user_data')
         .select('key, value')
         .eq('user_id', user.id)
         .in('key', ['ios:baseline:domain_scores', 'ios:baseline:rewired_index']);
 
-      // Parse the key-value data
       const baselineMap = (baselineRows || []).reduce((acc: Record<string, string>, row: { key: string; value: string }) => {
         acc[row.key] = row.value;
         return acc;
@@ -304,7 +312,6 @@ export function useUserProgress() {
         ? JSON.parse(baselineMap['ios:baseline:rewired_index'])
         : 50;
 
-      // Fetch user progress
       const { data: progressData, error: progressError } = await supabase
         .from('user_progress')
         .select('*')
@@ -315,24 +322,21 @@ export function useUserProgress() {
         throw progressError;
       }
       
-      // FIXED: Fetch latest weekly delta - select BOTH scores AND deltas, order by week_of (not created_at)
+      // NOTE: week_of included for weeklyCheckInDue calculation (Step 13)
       const { data: latestDelta } = await supabase
         .from('weekly_deltas')
-        .select('regulation_score,awareness_score,outlook_score,attention_score,regulation_delta,awareness_delta,outlook_delta,attention_delta,average_delta,qualitative_rating')
+        .select('week_of,regulation_score,awareness_score,outlook_score,attention_score,regulation_delta,awareness_delta,outlook_delta,attention_delta,average_delta,qualitative_rating')
         .eq('user_id', user.id)
         .order('week_of', { ascending: false })
         .limit(1)
         .single();
 
-      // Fetch today's practice logs
       const { data: todayLogs } = await supabase
         .from('practice_logs')
         .select('practice_type')
         .eq('user_id', user.id)
         .eq('practice_date', today);
 
-      // Fetch calm scores from last 7 days (Stage 1 signal gate)
-      // Source: signal_checks table — written by record_signal_check AI tool after each practice
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
 
@@ -347,7 +351,6 @@ export function useUserProgress() {
         .map((log: { calm_score: number | null }) => log.calm_score)
         .filter((r: number | null): r is number => r !== null);
 
-      // Fetch total somatic_flow completions (for video-mandatory vs self-guided threshold)
       const { count: somaticFlowCount, error: sfCountError } = await supabase
         .from('practice_logs')
         .select('*', { count: 'exact', head: true })
@@ -373,7 +376,6 @@ export function useUserProgress() {
 
       const identitySprint = identitySprintArray?.[0] || null;
 
-      // Fetch active Flow Block sprint
       const { data: flowBlockSprintArray } = await supabase
         .from('flow_block_sprints')
         .select('*')
@@ -384,14 +386,13 @@ export function useUserProgress() {
 
       const flowBlockSprint = flowBlockSprintArray?.[0] || null;
 
-      // Calculate sprint days
       const calculateSprintDay = (startDate: string | null): number | null => {
         if (!startDate) return null;
         const start = new Date(startDate);
         const now = new Date();
         const diffTime = now.getTime() - start.getTime();
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-        return Math.max(diffDays, 1); // No cap — renewal check needs day 22+
+        return Math.max(diffDays, 1);
       };
 
       const identitySprintDay = calculateSprintDay(identitySprint?.start_date);
@@ -399,10 +400,7 @@ export function useUserProgress() {
 
       // Calculate domain scores - FIXED: Use actual scores if available, fallback to baseline + delta
       const baselineScores = baselineDomainScores || {
-        regulation: 2.5,
-        awareness: 2.5,
-        outlook: 2.5,
-        attention: 2.5
+        regulation: 2.5, awareness: 2.5, outlook: 2.5, attention: 2.5
       };
 
       // FIXED: Prefer actual scores from weekly_deltas, fallback to baseline + delta calculation
@@ -443,24 +441,19 @@ export function useUserProgress() {
              (domainScores.attention - baselineScores.attention)) / 4
       };
 
-      // Calculate REwired Index
       const avgScore = (domainScores.regulation + domainScores.awareness + 
                        domainScores.outlook + domainScores.attention) / 4;
       const rewiredIndex = Math.round(avgScore * 20);
       const rewiredDelta = rewiredIndex - baselineRewiredIndex;
       const tier = getTierFromIndex(rewiredIndex);
 
-      // Get unlocked tools for current stage
       const unlockedTools = STAGE_TOOLS[progressData.current_stage] || [];
 
-      // Build daily practices list based on stage
       const completedIds = new Set<string>((todayLogs || []).map((log: { practice_type: string }) => log.practice_type));
       const dailyPractices = buildDailyPractices(progressData.current_stage, completedIds);
 
-      // Get latest qualitative rating
       const latestQualitativeRating = latestDelta?.qualitative_rating != null ? Number(latestDelta.qualitative_rating) : null;
 
-      // Calculate days in stage
       const stageStartDate = progressData.stage_start_date 
         ? new Date(progressData.stage_start_date) : new Date();
       const todayDate = new Date();
@@ -468,9 +461,6 @@ export function useUserProgress() {
 
       // ============================================
       // STREAK FREEZE AVAILABILITY
-      // Stage 1: 1 freeze per 7-day window
-      // Stage 2+: 1 freeze per 14-day window
-      // Resets automatically each new window
       // ============================================
       const freezeWindowDays = progressData.current_stage === 1 ? 7 : 14;
       const daysSinceStageStart = Math.floor(
@@ -489,9 +479,6 @@ export function useUserProgress() {
 
       // ============================================
       // MILESTONE MESSAGE AVAILABILITY (Step 8)
-      // Stage 1 only. Milestone days: 1, 2, 4, 5, 6
-      // Fires once after ritual completion — never again
-      // milestone_messages_sent: jsonb array of day numbers already delivered
       // ============================================
       const milestoneMessagesSent: number[] = Array.isArray(progressData.milestone_messages_sent)
         ? progressData.milestone_messages_sent
@@ -503,7 +490,19 @@ export function useUserProgress() {
         !milestoneMessagesSent.includes(daysInStage)
       ) ? daysInStage : null;
 
-      // Calculate unlock progress
+      // ============================================
+      // WEEKLY CHECK-IN STATUS (Step 13)
+      // Stage 2+ only. Due if no check-in this calendar week.
+      // Compares latestDelta.week_of against this Monday's date.
+      // ============================================
+      const thisMonday = getCurrentWeekMonday();
+      const weeklyCheckInDue = progressData.current_stage >= 2 && (
+        !latestDelta?.week_of || latestDelta.week_of < thisMonday
+      );
+
+      // ============================================
+      // UNLOCK PROGRESS
+      // ============================================
       const threshold = UNLOCK_THRESHOLDS[progressData.current_stage];
       const COMPETENCE_THRESHOLD = 4.0;
       
@@ -537,7 +536,6 @@ export function useUserProgress() {
         acceleratedDays: null
       };
 
-      // Check unlock eligibility
       const unlockEligible = checkBasicUnlockEligibility(
         progressData.current_stage,
         progressData.adherence_percentage,
@@ -545,11 +543,10 @@ export function useUserProgress() {
         domainDeltas.average,
         latestQualitativeRating,
         avgScore,
-        recentCalmRatings,          // Stage 1: daily signal gate
-        baselineScores.regulation   // Stage 1: baseline calm reference
+        recentCalmRatings,
+        baselineScores.regulation
       );
 
-      // Update last fetch date
       lastFetchDate.current = today;
       lastFetchTime.current = Date.now();
 
@@ -586,29 +583,26 @@ export function useUserProgress() {
         identitySprintNumber: identitySprint?.sprint_number || null,
         identitySprintStart: identitySprint?.start_date || null,
         
-        // Flow Block fields
         hasFlowBlockConfig: !!flowBlockSprint,
         flowBlockSprintNumber: flowBlockSprint?.sprint_number || null,
         flowBlockSprintStart: flowBlockSprint?.start_date || null,
         flowBlockSprintDay: flowBlockSprintDay,
         
-        // Practice completion counts (for adaptive UI thresholds)
         somaticFlowCompletions: somaticFlowCount ?? 0,
         
-        // Progress tracking fields
         daysInStage,
         unlockProgress,
 
-        // Streak freeze
         streakFreezeUsed: progressData.streak_freeze_used || false,
         streakFreezeDate: progressData.streak_freeze_date || null,
         streakFreezeAvailable,
 
-        // Milestone messages (Step 8)
         milestonePendingDay,
         milestoneMessagesSent,
+
+        // Step 13
+        weeklyCheckInDue,
         
-        // Stage attribution "seen" flags (from user_progress table)
         stage_1_attribution_seen: progressData.stage_1_attribution_seen ?? false,
         stage_2_attribution_seen: progressData.stage_2_attribution_seen ?? false,
         stage_3_attribution_seen: progressData.stage_3_attribution_seen ?? false,
@@ -620,8 +614,6 @@ export function useUserProgress() {
       console.log('[useUserProgress] Setting progress:', {
         date: today,
         coherenceStatement: newProgress.coherenceStatement,
-        currentIdentity: newProgress.currentIdentity,
-        microAction: newProgress.microAction,
         sprintDay: newProgress.sprintDay,
         adherence: newProgress.adherencePercentage,
         unlockEligible: newProgress.unlockEligible,
@@ -629,7 +621,7 @@ export function useUserProgress() {
         somaticFlowCompletions: newProgress.somaticFlowCompletions,
         streakFreezeAvailable: newProgress.streakFreezeAvailable,
         milestonePendingDay: newProgress.milestonePendingDay,
-        milestoneMessagesSent: newProgress.milestoneMessagesSent,
+        weeklyCheckInDue: newProgress.weeklyCheckInDue,
       });
 
       setProgress(newProgress);
@@ -644,16 +636,13 @@ export function useUserProgress() {
     }
   }, [supabase, progress]);
 
-  // Initial fetch on mount
   useEffect(() => {
     fetchProgress();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Check for new day every minute and auto-refresh
   useEffect(() => {
     const checkNewDay = () => {
       const today = getLocalDateString();
-      
       if (lastFetchDate.current && lastFetchDate.current !== today) {
         console.log('[useUserProgress] New day detected! Refreshing...', {
           was: lastFetchDate.current,
@@ -665,11 +654,9 @@ export function useUserProgress() {
 
     checkNewDay();
     const interval = setInterval(checkNewDay, 60000);
-    
     return () => clearInterval(interval);
   }, [fetchProgress]);
 
-  // Refresh when window regains focus
   useEffect(() => {
     const handleFocus = () => {
       const today = getLocalDateString();
