@@ -368,7 +368,14 @@ export default function FloatingActionButton({
                   );
                 })}
               </div>
-            </div>
+     </div>
+
+            {/* Stage 2 teaser — visible all of Stage 1 */}
+            {progress.currentStage === 1 && (
+              <div className="mt-4">
+                <Stage2TeaserPanel unlockEligible={progress.unlockEligible ?? false} />
+              </div>
+            )}
           </div>
         </div>
       )}
