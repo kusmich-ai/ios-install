@@ -4172,6 +4172,39 @@ microActionState.extractedAction || 'Notice → Label → Release',
     }
   }, [practicesCompletedToday, progress?.currentStage]);
 
+  const handleRequestCheckIn = useCallback(async () => {
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [...messages.filter(m => typeof m.content === 'string' && !m.content.includes('toolu_')).map(m => ({ role: m.role, content: m.content })), { role: 'user', content: "Let's do my weekly check-in" }],
+          context: 'weekly_checkin',
+          additionalContext: {
+            currentStage: progress?.currentStage || 1,
+            daysInStage: progress?.stageStartDate
+              ? Math.floor((Date.now() - new Date(progress.stageStartDate).getTime()) / (1000 * 60 * 60 * 24))
+              : 0,
+            adherence: progress?.adherencePercentage || 0,
+            userName: getUserName(),
+            consecutiveDays: progress?.consecutiveDays || 0,
+          }
+        })
+      });
+      if (!response.ok) throw new Error('Weekly check-in trigger failed');
+      const data = await response.json();
+      const aiResponse = data.response || data.content || '';
+      if (aiResponse) {
+        setLoading(false);
+        await postAssistantMessage(aiResponse);
+      }
+    } catch (error) {
+      console.error('[ChatInterface] Weekly check-in trigger error:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [messages, progress, getUserName]);
+
   const triggerPostRitualCheckin = async (retryCount = 0) => {
     if (loading) {
       // If something else is loading, retry after a short delay (up to 3 retries)
@@ -4181,38 +4214,6 @@ microActionState.extractedAction || 'Notice → Label → Release',
       return;
     }
     setLoading(true);
-
-  try {
-    const response = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        messages: [...messages.filter(m => typeof m.content === 'string' && !m.content.includes('toolu_')).map(m => ({ role: m.role, content: m.content })), { role: 'user', content: "Let's do my weekly check-in" }],
-        context: 'weekly_checkin',
-        additionalContext: {
-          currentStage: progress?.currentStage || 1,
-          daysInStage: progress?.stageStartDate
-            ? Math.floor((Date.now() - new Date(progress.stageStartDate).getTime()) / (1000 * 60 * 60 * 24))
-            : 0,
-          adherence: progress?.adherencePercentage || 0,
-          userName: getUserName(),
-          consecutiveDays: progress?.consecutiveDays || 0,
-        }
-      })
-    });
-    if (!response.ok) throw new Error('Weekly check-in trigger failed');
-    const data = await response.json();
-    const aiResponse = data.response || data.content || '';
-    if (aiResponse) {
-      setLoading(false);
-      await postAssistantMessage(aiResponse);
-    }
-  } catch (error) {
-    console.error('[ChatInterface] Weekly check-in trigger error:', error);
-  } finally {
-    setLoading(false);
-  }
-}, [messages, progress, getUserName]);
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
