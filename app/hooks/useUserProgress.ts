@@ -2,6 +2,7 @@
 // Updated to read identity_statement from identity_sprints table (displayed as aligned action in UI)
 // Includes stage attribution "seen" flags for show-once unlock modals
 // v2: Added streak freeze logic (Step 7)
+// v3: Added milestone message logic (Step 8)
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -78,6 +79,10 @@ export interface UserProgress {
   streakFreezeUsed: boolean;
   streakFreezeDate: string | null;
   streakFreezeAvailable: boolean;
+
+  // Milestone messages (Step 8)
+  milestonePendingDay: number | null;  // which milestone day is due today, null if none
+  milestoneMessagesSent: number[];     // day numbers already delivered
   
   // Stage attribution "seen" flags (for show-once unlock modals)
   stage_1_attribution_seen: boolean;
@@ -134,6 +139,9 @@ const STAGE_TOOLS: { [stage: number]: string[] } = {
   6: ['decentering', 'nos_glide', 'worry_loop_dissolver', 'meta_reflection', 'reframe', 'thought_hygiene'],
   7: ['decentering', 'nos_glide', 'worry_loop_dissolver', 'meta_reflection', 'reframe', 'thought_hygiene']
 };
+
+// Days that trigger a milestone message in Stage 1 (fires once after practice completion)
+const MILESTONE_DAYS = [1, 2, 4, 5, 6];
 
 // ============================================
 // HELPER FUNCTIONS
@@ -479,6 +487,22 @@ export function useUserProgress() {
 
       const streakFreezeAvailable = !freezeUsedInCurrentWindow;
 
+      // ============================================
+      // MILESTONE MESSAGE AVAILABILITY (Step 8)
+      // Stage 1 only. Milestone days: 1, 2, 4, 5, 6
+      // Fires once after ritual completion — never again
+      // milestone_messages_sent: jsonb array of day numbers already delivered
+      // ============================================
+      const milestoneMessagesSent: number[] = Array.isArray(progressData.milestone_messages_sent)
+        ? progressData.milestone_messages_sent
+        : [];
+
+      const milestonePendingDay = (
+        progressData.current_stage === 1 &&
+        MILESTONE_DAYS.includes(daysInStage) &&
+        !milestoneMessagesSent.includes(daysInStage)
+      ) ? daysInStage : null;
+
       // Calculate unlock progress
       const threshold = UNLOCK_THRESHOLDS[progressData.current_stage];
       const COMPETENCE_THRESHOLD = 4.0;
@@ -579,6 +603,10 @@ export function useUserProgress() {
         streakFreezeUsed: progressData.streak_freeze_used || false,
         streakFreezeDate: progressData.streak_freeze_date || null,
         streakFreezeAvailable,
+
+        // Milestone messages (Step 8)
+        milestonePendingDay,
+        milestoneMessagesSent,
         
         // Stage attribution "seen" flags (from user_progress table)
         stage_1_attribution_seen: progressData.stage_1_attribution_seen ?? false,
@@ -600,6 +628,8 @@ export function useUserProgress() {
         domainScores: newProgress.domainScores,
         somaticFlowCompletions: newProgress.somaticFlowCompletions,
         streakFreezeAvailable: newProgress.streakFreezeAvailable,
+        milestonePendingDay: newProgress.milestonePendingDay,
+        milestoneMessagesSent: newProgress.milestoneMessagesSent,
       });
 
       setProgress(newProgress);
