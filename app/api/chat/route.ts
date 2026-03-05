@@ -1307,7 +1307,6 @@ const STAGE1_ENHANCEMENT_TOOLS: Anthropic.Tool[] = [
       },
       required: ["entry_type", "title", "content"]
     }
-  }
   },
   {
     name: "consume_streak_freeze",
