@@ -5341,6 +5341,8 @@ Ready to start your first practice?`;
           flowBlockWeeklyMap={flowBlockState?.extractedWeeklyMap || null}
   flowBlockSprintDay={flowBlockState?.sprintStartDate ? getSprintDayNumber(flowBlockState.sprintStartDate) : undefined}
 streakFreezeAvailable={progress?.streakFreezeAvailable}
+          weeklyCheckInDue={progress?.weeklyCheckInDue}
+          onRequestCheckIn={handleRequestCheckIn}
           />
       )}
 
