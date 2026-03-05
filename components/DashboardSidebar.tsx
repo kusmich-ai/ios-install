@@ -2,8 +2,10 @@
 // Extracted left sidebar from ChatInterface with luxury styling
 // v2.1: Added Flow Block Schedule section with timeSlot support
 // v2.2: Stage 2 unlock progress widget (Step 10)
+// v2.3: Streak freeze indicator (Step 12)
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { 
   User,
@@ -93,6 +95,9 @@ interface DashboardSidebarProps {
   // Time tracking
   totalDaysInApp?: number;
   daysInStage?: number;
+
+  // Step 12: streak freeze
+  streakFreezeAvailable?: boolean;
   
   // Handlers
   onStage7Click?: () => void;
@@ -169,6 +174,49 @@ const DOMAIN_COLORS = {
 };
 
 // ============================================
+// STREAK FREEZE INDICATOR (Step 12)
+// ============================================
+
+function StreakFreezeIndicator({ available }: { available: boolean }) {
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setShowTooltip(v => !v)}
+        className="flex items-center gap-1.5 w-full text-left"
+        aria-label="Streak freeze status"
+      >
+        <span className={`text-base leading-none select-none ${available ? 'text-amber-400' : 'text-zinc-300'}`}>
+          {available ? '◎' : '◉'}
+        </span>
+        <span className={`text-xs font-medium ${available ? 'text-zinc-500' : 'text-zinc-300'}`}>
+          {available ? '1 protected day available' : 'Protected day used'}
+        </span>
+      </button>
+
+      {showTooltip && (
+        <>
+          {/* Backdrop to close */}
+          <div className="fixed inset-0 z-10" onClick={() => setShowTooltip(false)} />
+          {/* Tooltip */}
+          <div className="absolute left-0 bottom-full mb-2 z-20 w-60 bg-zinc-900 text-white text-xs rounded-xl p-3 shadow-xl">
+            <p className="font-semibold mb-1 text-amber-400">Streak Freeze</p>
+            <p className="text-zinc-300 leading-relaxed">
+              {available
+                ? 'Miss one day this window without losing your consistency streak. Activates automatically — no action required.'
+                : 'Your freeze was used this window. It resets when the next window begins.'}
+            </p>
+            {/* Tooltip arrow */}
+            <div className="absolute left-4 top-full w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-zinc-900" />
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ============================================
 // STAGE 2 UNLOCK WIDGET
 // Only renders for Stage 1. Replaces generic progress bars
 // with dot-based day tracker + plain-English status line.
@@ -180,6 +228,7 @@ interface Stage2UnlockWidgetProps {
   daysInStage: number;
   adherencePercentage: number;
   calmTrend?: 'up' | 'flat' | null;
+  streakFreezeAvailable?: boolean;
 }
 
 function Stage2UnlockWidget({
@@ -188,6 +237,7 @@ function Stage2UnlockWidget({
   daysInStage,
   adherencePercentage,
   calmTrend,
+  streakFreezeAvailable,
 }: Stage2UnlockWidgetProps) {
   const requiredDays = unlockProgress.requiredDays || 7;
   const requiredAdherence = unlockProgress.requiredAdherence || 70;
@@ -246,6 +296,13 @@ function Stage2UnlockWidget({
             <p className="text-xs font-semibold text-emerald-600">
               Stage 2 unlocked. Ready to install?
             </p>
+
+            {/* Streak freeze */}
+            {streakFreezeAvailable !== undefined && (
+              <div className="pt-1 border-t border-black/[0.04]">
+                <StreakFreezeIndicator available={streakFreezeAvailable} />
+              </div>
+            )}
           </>
         ) : (
           // ── IN-PROGRESS STATE ───────────────────
@@ -290,6 +347,13 @@ function Stage2UnlockWidget({
                 style={{ width: `${barPercent}%` }}
               />
             </div>
+
+            {/* Streak freeze */}
+            {streakFreezeAvailable !== undefined && (
+              <div className="pt-1 border-t border-black/[0.04]">
+                <StreakFreezeIndicator available={streakFreezeAvailable} />
+              </div>
+            )}
           </>
         )}
       </div>
@@ -355,6 +419,7 @@ export default function DashboardSidebar({
   flowBlockSprintDay,
   totalDaysInApp,
   daysInStage,
+  streakFreezeAvailable,
   onStage7Click,
 }: DashboardSidebarProps) {
   
@@ -563,8 +628,8 @@ export default function DashboardSidebar({
 
         {/* ==========================================
             UNLOCK PROGRESS
-            Stage 1: rich dot widget
-            Stage 2–5: existing bar widget
+            Stage 1: rich dot widget (includes streak freeze)
+            Stage 2–5: existing bar widget + freeze indicator
             ========================================== */}
 
         {/* Stage 1 — new dot-based widget */}
@@ -575,6 +640,7 @@ export default function DashboardSidebar({
             daysInStage={daysInStage ?? 0}
             adherencePercentage={adherencePercentage}
             calmTrend={calmTrend}
+            streakFreezeAvailable={streakFreezeAvailable}
           />
         )}
 
@@ -658,6 +724,13 @@ export default function DashboardSidebar({
                   {unlockProgress.qualitativeMet ? '✓' : '—'}
                 </span>
               </div>
+
+              {/* Streak freeze for Stage 2–5 */}
+              {streakFreezeAvailable !== undefined && (
+                <div className="pt-2 border-t border-black/[0.04]">
+                  <StreakFreezeIndicator available={streakFreezeAvailable} />
+                </div>
+              )}
             </div>
           </div>
         )}
