@@ -514,11 +514,14 @@ export function useUserProgress() {
         latestQualitativeRating !== null && latestQualitativeRating >= threshold.accelerated.qualitative
       ) : false;
 
+// Step 14: gate booleans must agree with unlockEligible.
+      // If eligible (via any path — standard, accelerated, or Stage 1 multi-path),
+      // force all gates green so the UI widget matches the AI's verdict.
       const unlockProgress = threshold ? {
-        adherenceMet: progressData.adherence_percentage >= threshold.adherence,
-        daysMet: daysInStage >= threshold.days,
-        deltaMet: latestDelta !== null && (domainDeltas.average >= threshold.delta || avgScore >= COMPETENCE_THRESHOLD),
-        qualitativeMet: latestQualitativeRating !== null && latestQualitativeRating >= threshold.qualitative,
+        adherenceMet: unlockEligible || progressData.adherence_percentage >= threshold.adherence,
+        daysMet: unlockEligible || daysInStage >= threshold.days,
+        deltaMet: unlockEligible || (latestDelta !== null && (domainDeltas.average >= threshold.delta || avgScore >= COMPETENCE_THRESHOLD)),
+        qualitativeMet: unlockEligible || (latestQualitativeRating !== null && latestQualitativeRating >= threshold.qualitative),
         requiredAdherence: threshold.adherence,
         requiredDays: threshold.days,
         requiredDelta: threshold.delta,
