@@ -4864,6 +4864,7 @@ Ready to start your first practice?`;
           calmTrend={progress?.currentStage === 1 ? (progress?.domainDeltas?.regulation ?? 0) > 0 ? 'up' : 'flat' : null}
           flowBlockWeeklyMap={flowBlockState?.extractedWeeklyMap || null}
   flowBlockSprintDay={flowBlockState?.sprintStartDate ? getSprintDayNumber(flowBlockState.sprintStartDate) : undefined}
+          streakFreezeAvailable={progress?.streakFreezeAvailable}
         />
       )}
       {/* Main Chat Area */}
