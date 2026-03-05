@@ -1,31 +1,53 @@
-// components/MobileDashboard.tsx
-// Mobile dashboard drawer with luxury cream styling (matches DashboardSidebar)
-// v2.3: Floating pill bottom-left above input - no header strip overlay
-// v2.4: Stage 2 unlock progress widget (Step 10)
+// components/DashboardSidebar.tsx
+// Extracted left sidebar from ChatInterface with luxury styling
+// v2.1: Added Flow Block Schedule section with timeSlot support
+// v2.2: Stage 2 unlock progress widget (Step 10)
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
-import { Menu, X, User, TrendingUp, TrendingDown, Zap, Sparkles, Target, BookOpen, Lock } from 'lucide-react';
+import { 
+  User,
+  TrendingUp,
+  TrendingDown,
+  Zap,
+  CheckCircle2,
+  Lock,
+  Sparkles,
+  Target,
+  BookOpen,
+} from 'lucide-react';
 import AwakenWithFiveCard from './AwakenWithFiveCard';
 
 // ============================================
 // TYPES
 // ============================================
 
-interface UnlockProgress {
-  adherenceMet?: boolean;
-  daysMet?: boolean;
-  deltaMet?: boolean;
-  qualitativeMet?: boolean;
-  adherence?: number;
-  deltaAverage?: number;
-  daysComplete?: number;
-  requiredAdherence?: number;
-  requiredDays?: number;
-  requiredDelta?: number;
+interface DomainScores {
+  regulation: number;
+  awareness: number;
+  outlook: number;
+  attention: number;
 }
 
+interface DomainDeltas {
+  regulation?: number;
+  awareness?: number;
+  outlook?: number;
+  attention?: number;
+  average?: number;
+}
+
+interface UnlockProgress {
+  adherenceMet: boolean;
+  daysMet: boolean;
+  deltaMet: boolean;
+  qualitativeMet: boolean;
+  requiredAdherence: number;
+  requiredDays: number;
+  requiredDelta: number;
+}
+
+// Flow Block types (matches flowBlockAPI.ts)
 interface WeeklyMapEntry {
   day: string;
   domain: string;
@@ -34,48 +56,46 @@ interface WeeklyMapEntry {
   category: string;
   coherenceLink?: string;
   duration: number;
-  timeSlot?: string;
+  timeSlot?: string;  // e.g., "9:00am", "7:00pm"
 }
 
-interface MobileDashboardProps {
+interface DashboardSidebarProps {
+  // User info
   userName?: string;
   currentStage: number;
+  
+  // Baseline data
   baselineRewiredIndex: number;
-  baselineDomainScores: {
-    regulation: number;
-    awareness: number;
-    outlook: number;
-    attention: number;
-  };
-  currentDomainScores?: {
-    regulation: number;
-    awareness: number;
-    outlook: number;
-    attention: number;
-  };
-  domainDeltas?: {
-    regulation?: number;
-    awareness?: number;
-    outlook?: number;
-    attention?: number;
-    average?: number;
-  };
+  baselineDomainScores: DomainScores;
+  
+  // Current progress
+  currentDomainScores?: DomainScores;
+  domainDeltas?: DomainDeltas;
   unlockProgress?: UnlockProgress;
   unlockEligible?: boolean;
   adherencePercentage?: number;
   consecutiveDays?: number;
+  
+  // Stage 1 signal trend (optional — arrow omitted if not provided)
+  calmTrend?: 'up' | 'flat' | null;
+
+  // Aligned Action (Stage 3+) - with backwards compatibility
   coherenceStatement?: string;
   currentIdentity?: string;
   microAction?: string;
   sprintDay?: number;
   identitySprintDay?: number;
+  
+  // Flow Block (Stage 4+)
   flowBlockWeeklyMap?: WeeklyMapEntry[] | null;
   flowBlockSprintDay?: number;
+  
+  // Time tracking
   totalDaysInApp?: number;
   daysInStage?: number;
-  // Stage 1 signal trend (optional — arrow omitted if not provided)
-  calmTrend?: 'up' | 'flat' | null;
-  onStage7Unlock?: () => void;
+  
+  // Handlers
+  onStage7Click?: () => void;
 }
 
 // ============================================
@@ -119,19 +139,28 @@ function getProgressBarColor(index: number): string {
   return 'bg-purple-500';
 }
 
+// Get abbreviated day name
 function getShortDay(day: string): string {
   const shortNames: { [key: string]: string } = {
-    'Monday': 'Mon', 'Tuesday': 'Tue', 'Wednesday': 'Wed',
-    'Thursday': 'Thu', 'Friday': 'Fri', 'Saturday': 'Sat', 'Sunday': 'Sun'
+    'Monday': 'Mon',
+    'Tuesday': 'Tue',
+    'Wednesday': 'Wed',
+    'Thursday': 'Thu',
+    'Friday': 'Fri',
+    'Saturday': 'Sat',
+    'Sunday': 'Sun'
   };
   return shortNames[day] || day.slice(0, 3);
 }
 
+// Check if today matches the day
 function isToday(day: string): boolean {
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  return day === dayNames[new Date().getDay()];
+  const today = dayNames[new Date().getDay()];
+  return day === today;
 }
 
+// Monochromatic amber shades for domains (luxury design)
 const DOMAIN_COLORS = {
   regulation: { bar: 'bg-amber-600', text: 'text-amber-600' },
   awareness: { bar: 'bg-amber-500', text: 'text-amber-500' },
@@ -140,7 +169,9 @@ const DOMAIN_COLORS = {
 };
 
 // ============================================
-// STAGE 2 UNLOCK WIDGET (mobile)
+// STAGE 2 UNLOCK WIDGET
+// Only renders for Stage 1. Replaces generic progress bars
+// with dot-based day tracker + plain-English status line.
 // ============================================
 
 interface Stage2UnlockWidgetProps {
@@ -161,19 +192,25 @@ function Stage2UnlockWidget({
   const requiredDays = unlockProgress.requiredDays || 7;
   const requiredAdherence = unlockProgress.requiredAdherence || 70;
 
+  // Dot row: how many days completed vs required
   const daysCompleted = Math.min(daysInStage, requiredDays);
   const dots = Array.from({ length: requiredDays }, (_, i) => i < daysCompleted);
 
+  // "X more practices to go"
+  // Stage 1 = 2 practices/day. Target = requiredDays * 2 at requiredAdherence%.
   const totalPracticesInWindow = requiredDays * 2;
   const targetPractices = Math.ceil(totalPracticesInWindow * (requiredAdherence / 100));
   const completedPractices = Math.round((adherencePercentage / 100) * totalPracticesInWindow);
   const practicesRemaining = Math.max(0, targetPractices - completedPractices);
+
+  // Progress bar fill — based on completed practices vs target
   const barPercent = Math.min(100, Math.round((completedPractices / targetPractices) * 100));
 
+  // Signal trend arrow
   const trendArrow = calmTrend === 'up' ? ' ↑' : calmTrend === 'flat' ? ' →' : '';
 
   return (
-    <div className="bg-white rounded-xl border border-zinc-200/80 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-xl border border-black/[0.04] shadow-sm overflow-hidden">
       {/* Header rule */}
       <div className="flex items-center gap-2 px-4 pt-3.5 pb-2">
         <div className="flex-1 h-px bg-black/[0.06]" />
@@ -185,24 +222,35 @@ function Stage2UnlockWidget({
 
       <div className="px-4 pb-4 space-y-3">
         {unlockEligible ? (
+          // ── ELIGIBLE STATE ──────────────────────
           <>
             <div className="flex items-center gap-1.5 flex-wrap">
-              {dots.map((_, i) => (
-                <span key={i} className="text-emerald-500" style={{ fontSize: '11px' }}>●</span>
+              {dots.map((filled, i) => (
+                <span
+                  key={i}
+                  className="text-emerald-500 text-sm leading-none"
+                  style={{ fontSize: '11px' }}
+                >
+                  {filled ? '●' : '●'}
+                </span>
               ))}
               <span className="text-xs text-emerald-600 font-medium ml-1">
                 {daysCompleted} of {requiredDays} days
               </span>
             </div>
-            <div className="w-full rounded-full h-2 bg-zinc-100 overflow-hidden">
-              <div className="h-2 rounded-full bg-emerald-500 w-full transition-all duration-500" />
+
+            <div className="w-full rounded-full h-2 bg-black/[0.04] overflow-hidden">
+              <div className="h-2 rounded-full bg-emerald-500 transition-all duration-500 w-full" />
             </div>
+
             <p className="text-xs font-semibold text-emerald-600">
               Stage 2 unlocked. Ready to install?
             </p>
           </>
         ) : (
+          // ── IN-PROGRESS STATE ───────────────────
           <>
+            {/* Dot row */}
             <div className="flex items-center gap-1.5 flex-wrap">
               {dots.map((filled, i) => (
                 <span
@@ -218,21 +266,25 @@ function Stage2UnlockWidget({
               </span>
             </div>
 
+            {/* Signal line — only shown when trend data exists */}
             {trendArrow && (
               <p className="text-xs text-zinc-500">
                 Your signal is shifting{trendArrow}
               </p>
             )}
 
-            <div className="h-px bg-zinc-100" />
+            {/* Thin divider */}
+            <div className="h-px bg-black/[0.05]" />
 
+            {/* Practices remaining */}
             {practicesRemaining > 0 && (
               <p className="text-xs text-zinc-500">
                 {practicesRemaining} more {practicesRemaining === 1 ? 'practice' : 'practices'} to go.
               </p>
             )}
 
-            <div className="w-full rounded-full h-2 bg-zinc-100 overflow-hidden">
+            {/* Progress bar */}
+            <div className="w-full rounded-full h-2 bg-black/[0.04] overflow-hidden">
               <div
                 className="h-2 rounded-full bg-amber-500 transition-all duration-500"
                 style={{ width: `${barPercent}%` }}
@@ -246,342 +298,485 @@ function Stage2UnlockWidget({
 }
 
 // ============================================
-// FLOW BLOCK SCHEDULE
-// ============================================
-
-function FlowBlockScheduleMobile({ weeklyMap, sprintDay }: { weeklyMap: WeeklyMapEntry[]; sprintDay?: number }) {
-  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
-
-  return (
-    <div className="bg-white rounded-xl p-4 border border-zinc-200/80 shadow-sm">
-      <div className="flex items-center gap-2 mb-3">
-        <Target className="w-4 h-4 text-blue-500" />
-        <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider">My Flow Block Schedule</h3>
-      </div>
-      <div className="space-y-1">
-        {weeklyMap.map((entry, index) => {
-          const isTodayBlock = isToday(entry.day);
-          const isExpanded = expandedIndex === index;
-          return (
-            <div key={index}>
-              <button
-                onClick={() => setExpandedIndex(isExpanded ? null : index)}
-                className={`w-full flex items-center gap-2 py-2 px-2 rounded-lg text-xs transition-all ${
-                  isTodayBlock ? 'bg-blue-50 border border-blue-200/50' : isExpanded ? 'bg-zinc-50' : 'hover:bg-zinc-50 active:bg-zinc-100'
-                }`}
-              >
-                <span className={`w-10 font-semibold text-left ${isTodayBlock ? 'text-blue-600' : 'text-zinc-500'}`}>{getShortDay(entry.day)}</span>
-                <span className="text-zinc-300">|</span>
-                <span className={`flex-1 truncate text-left ${isTodayBlock ? 'text-blue-700 font-medium' : 'text-zinc-600'}`}>{entry.task}</span>
-                <span className={`text-xs whitespace-nowrap ${isTodayBlock ? 'text-blue-500' : 'text-zinc-400'}`}>
-                  {entry.timeSlot ? `${entry.timeSlot} · ` : ''}{entry.duration}m
-                </span>
-                <svg className={`w-3.5 h-3.5 transition-transform duration-200 ${isTodayBlock ? 'text-blue-400' : 'text-zinc-300'} ${isExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              <div className={`overflow-hidden transition-all duration-200 ease-out ${isExpanded ? 'max-h-24 opacity-100' : 'max-h-0 opacity-0'}`}>
-                <div className={`px-3 py-2 mx-2 mb-1 rounded-lg text-xs ${isTodayBlock ? 'bg-blue-50/50' : 'bg-zinc-50'}`}>
-                  <p className={`font-medium mb-1 ${isTodayBlock ? 'text-blue-700' : 'text-zinc-700'}`}>{entry.task}</p>
-                  <p className={isTodayBlock ? 'text-blue-500' : 'text-zinc-500'}>{entry.domain} · {entry.flowType} · {entry.category}</p>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      {sprintDay && (
-        <div className="mt-3 pt-3 border-t border-black/[0.04] flex items-center gap-2">
-          <div className="flex-1 h-1 bg-black/[0.04] rounded-full overflow-hidden">
-            <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${(sprintDay / 21) * 100}%` }} />
-          </div>
-          <span className="text-xs text-zinc-400 font-medium">Day {sprintDay}/21</span>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ============================================
 // COMPONENT
 // ============================================
 
-export default function MobileDashboard({
-  userName, currentStage, baselineRewiredIndex, baselineDomainScores,
-  currentDomainScores, domainDeltas, unlockProgress, unlockEligible,
-  adherencePercentage = 0, consecutiveDays = 0, coherenceStatement,
-  currentIdentity, microAction, sprintDay, identitySprintDay,
-  flowBlockWeeklyMap, flowBlockSprintDay, totalDaysInApp, daysInStage,
-  calmTrend, onStage7Unlock,
-}: MobileDashboardProps) {
-  const [isOpen, setIsOpen] = useState(false);
-
+export default function DashboardSidebar({
+  userName,
+  currentStage,
+  baselineRewiredIndex,
+  baselineDomainScores,
+  currentDomainScores,
+  domainDeltas,
+  unlockProgress,
+  unlockEligible,
+  adherencePercentage = 0,
+  consecutiveDays = 0,
+  calmTrend,
+  coherenceStatement,
+  currentIdentity,
+  microAction,
+  sprintDay,
+  identitySprintDay,
+  flowBlockWeeklyMap,
+  flowBlockSprintDay,
+  totalDaysInApp,
+  daysInStage,
+  onStage7Click,
+}: DashboardSidebarProps) {
+  
+  // Use sprintDay with fallback to identitySprintDay for backwards compatibility
   const displaySprintDay = sprintDay ?? identitySprintDay;
+  
+  // Use coherenceStatement with fallback to currentIdentity for backwards compatibility
   const displayStatement = coherenceStatement ?? currentIdentity;
-
+  
+  // Calculate current REwired Index
   const currentReg = currentDomainScores?.regulation ?? baselineDomainScores.regulation;
   const currentAware = currentDomainScores?.awareness ?? baselineDomainScores.awareness;
   const currentOut = currentDomainScores?.outlook ?? baselineDomainScores.outlook;
   const currentAtt = currentDomainScores?.attention ?? baselineDomainScores.attention;
-  const currentRewiredIndex = Math.round((currentReg + currentAware + currentOut + currentAtt) / 4 * 20);
-  const rewiredDelta = currentRewiredIndex - baselineRewiredIndex;
+  const currentRewired = Math.round((currentReg + currentAware + currentOut + currentAtt) / 4 * 20);
+  const rewiredDelta = currentRewired - baselineRewiredIndex;
 
   return (
-    <>
-      {/* ==========================================
-          DASHBOARD PILL BUTTON
-          ========================================== */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className="fixed top-14 left-3 z-30 h-9 pl-2.5 pr-3.5 bg-white/95 backdrop-blur-sm border border-white/20 rounded-full flex items-center gap-2 active:bg-zinc-100 transition-all md:hidden shadow-lg shadow-black/30"
-        aria-label="Open dashboard"
-      >
-        <Menu className="w-4 h-4 text-amber-500" />
-        <span className="text-xs font-semibold text-zinc-700">Dashboard</span>
-      </button>
-
-      {/* Overlay */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
-
-      {/* Slide-out Drawer */}
-      <div
-        className={`fixed top-0 left-0 h-full w-80 max-w-[85vw] bg-[#fafaf8] border-r border-amber-200/60 z-50 transform transition-transform duration-300 ease-in-out md:hidden ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        <button
-          onClick={() => setIsOpen(false)}
-          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center text-zinc-500 hover:text-zinc-800 transition-colors"
-          aria-label="Close dashboard"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        <div className="h-full overflow-y-auto p-5 space-y-4">
-          
-          {/* USER INFO HEADER */}
-          <div className="border-b border-black/5 pb-4 pt-2">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-100 to-amber-50 flex items-center justify-center">
-                <User className="w-5 h-5 text-amber-600" />
-              </div>
-              <div>
-                <h2 className="text-base font-semibold text-zinc-800">
-                  {userName ? `Hey, ${userName}` : 'Welcome'}
-                </h2>
-                <p className="text-xs text-zinc-500">Stage {currentStage}: {getStageName(currentStage)}</p>
-              </div>
+    <aside className="hidden md:flex flex-col w-80 border-r border-black/5 bg-[#fafaf8] overflow-y-auto">
+      <div className="p-5 space-y-4">
+        
+        {/* ==========================================
+            USER INFO HEADER
+            ========================================== */}
+        <div className="border-b border-black/5 pb-4">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-100 to-amber-50 flex items-center justify-center">
+              <User className="w-5 h-5 text-amber-600" />
             </div>
-            <Link href="/profile/patterns" onClick={() => setIsOpen(false)}
-              className="inline-flex items-center gap-2 mt-2 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg text-xs font-medium transition-colors border border-amber-200/50">
+            <div>
+              <h2 className="text-base font-semibold text-zinc-800">
+                {userName ? `Hey, ${userName}` : 'Welcome'}
+              </h2>
+              <p className="text-xs text-zinc-500">
+                Stage {currentStage}: {getStageName(currentStage)}
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex flex-col gap-2 mt-2">
+            <Link 
+              href="/profile/patterns"
+              className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg text-xs font-medium transition-colors border border-amber-200/50"
+            >
               <Sparkles className="w-3.5 h-3.5" />
               Pattern Profile & Transformation Map
             </Link>
+            <Link 
+              href="/library"
+              className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-medium transition-colors border border-blue-200/50"
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              Course Library
+            </Link>
+            <Link 
+              href="/journal"
+              className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg text-xs font-medium transition-colors border border-purple-200/50"
+            >
+              <TrendingUp className="w-3.5 h-3.5" />
+              IOS Journal
+            </Link>
           </div>
+        </div>
 
-          {/* TIME IN SYSTEM */}
-          {totalDaysInApp !== undefined && (
-            <div className="flex items-center gap-2">
-              <div className="flex-1 bg-white rounded-xl px-4 py-3 border border-zinc-200/80 shadow-sm text-center">
-                <span className="text-lg font-bold text-zinc-800">{totalDaysInApp}</span>
-                <p className="text-[10px] font-medium text-zinc-400 uppercase tracking-wider mt-0.5">Days Active</p>
-              </div>
-              <div className="flex-1 bg-white rounded-xl px-4 py-3 border border-zinc-200/80 shadow-sm text-center">
-                <span className="text-lg font-bold text-amber-600">{daysInStage ?? 0}</span>
-                <p className="text-[10px] font-medium text-zinc-400 uppercase tracking-wider mt-0.5">Days in Stage {currentStage}</p>
-              </div>
+        {/* ==========================================
+            TIME IN SYSTEM
+            ========================================== */}
+        {totalDaysInApp !== undefined && (
+          <div className="flex items-center gap-2">
+            <div className="flex-1 bg-white rounded-xl px-4 py-3 border border-black/[0.04] shadow-sm text-center">
+              <span className="text-lg font-bold text-zinc-800">{totalDaysInApp}</span>
+              <p className="text-[10px] font-medium text-zinc-400 uppercase tracking-wider mt-0.5">Days Active</p>
             </div>
-          )}
+            <div className="flex-1 bg-white rounded-xl px-4 py-3 border border-black/[0.04] shadow-sm text-center">
+              <span className="text-lg font-bold text-amber-600">{daysInStage ?? 0}</span>
+              <p className="text-[10px] font-medium text-zinc-400 uppercase tracking-wider mt-0.5">Days in Stage {currentStage}</p>
+            </div>
+          </div>
+        )}
 
-          {/* REWIRED INDEX */}
-          <div className="bg-white rounded-xl p-4 border border-zinc-200/80 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">REwired Index</span>
+        {/* ==========================================
+            REWIRED INDEX
+            ========================================== */}
+        <div className="bg-white rounded-xl p-4 border border-black/[0.04] shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">REwired Index</span>
+            <div className="flex items-center gap-2">
+              <span className={`text-2xl font-bold ${getStatusColor(currentRewired)}`}>
+                {currentRewired}
+              </span>
+              {rewiredDelta !== 0 && (
+                <span className={`text-sm font-semibold flex items-center gap-0.5 ${rewiredDelta > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                  {rewiredDelta > 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+                  {rewiredDelta > 0 ? '+' : ''}{rewiredDelta}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="w-full rounded-full h-2 bg-black/[0.04] overflow-hidden">
+            <div 
+              className={`h-2 rounded-full transition-all duration-500 ${getProgressBarColor(currentRewired)}`}
+              style={{ width: `${currentRewired}%` }}
+            />
+          </div>
+          <p className="text-xs text-zinc-500 mt-2 font-medium">{getStatusTier(currentRewired)}</p>
+        </div>
+
+        {/* ==========================================
+            DOMAIN SCORES
+            ========================================== */}
+        <div className="bg-white rounded-xl p-4 border border-black/[0.04] shadow-sm space-y-4">
+          <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Domain Scores</h3>
+          
+          {/* Regulation */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-medium text-zinc-600">Regulation</span>
               <div className="flex items-center gap-2">
-                <span className={`text-2xl font-bold ${getStatusColor(currentRewiredIndex)}`}>{currentRewiredIndex}</span>
-                {rewiredDelta !== 0 && (
-                  <span className={`text-sm font-semibold flex items-center gap-0.5 ${rewiredDelta > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                    {rewiredDelta > 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-                    {rewiredDelta > 0 ? '+' : ''}{rewiredDelta}
+                <span className={`text-sm font-semibold ${DOMAIN_COLORS.regulation.text}`}>
+                  {(currentDomainScores?.regulation ?? baselineDomainScores.regulation).toFixed(1)}/5
+                </span>
+                {domainDeltas?.regulation !== undefined && domainDeltas.regulation !== 0 && (
+                  <span className={`text-xs font-medium flex items-center gap-0.5 ${domainDeltas.regulation > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                    {domainDeltas.regulation > 0 ? '↑' : '↓'}{Math.abs(domainDeltas.regulation).toFixed(1)}
                   </span>
                 )}
               </div>
             </div>
-            <div className="h-2 bg-zinc-100 rounded-full overflow-hidden mb-2">
-              <div className={`h-full transition-all ${getProgressBarColor(currentRewiredIndex)}`} style={{ width: `${Math.min(currentRewiredIndex, 100)}%` }} />
+            <div className="w-full rounded-full h-1.5 bg-black/[0.04]">
+              <div 
+                className={`h-1.5 rounded-full ${DOMAIN_COLORS.regulation.bar} transition-all duration-500`}
+                style={{ width: `${((currentDomainScores?.regulation ?? baselineDomainScores.regulation) / 5) * 100}%` }}
+              />
             </div>
-            <p className="text-xs text-zinc-500">
-              Status: <span className={`font-medium ${getStatusColor(currentRewiredIndex)}`}>{getStatusTier(currentRewiredIndex)}</span>
+          </div>
+
+          {/* Awareness */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-medium text-zinc-600">Awareness</span>
+              <div className="flex items-center gap-2">
+                <span className={`text-sm font-semibold ${DOMAIN_COLORS.awareness.text}`}>
+                  {(currentDomainScores?.awareness ?? baselineDomainScores.awareness).toFixed(1)}/5
+                </span>
+                {domainDeltas?.awareness !== undefined && domainDeltas.awareness !== 0 && (
+                  <span className={`text-xs font-medium flex items-center gap-0.5 ${domainDeltas.awareness > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                    {domainDeltas.awareness > 0 ? '↑' : '↓'}{Math.abs(domainDeltas.awareness).toFixed(1)}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="w-full rounded-full h-1.5 bg-black/[0.04]">
+              <div 
+                className={`h-1.5 rounded-full ${DOMAIN_COLORS.awareness.bar} transition-all duration-500`}
+                style={{ width: `${((currentDomainScores?.awareness ?? baselineDomainScores.awareness) / 5) * 100}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Outlook */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-medium text-zinc-600">Outlook</span>
+              <div className="flex items-center gap-2">
+                <span className={`text-sm font-semibold ${DOMAIN_COLORS.outlook.text}`}>
+                  {(currentDomainScores?.outlook ?? baselineDomainScores.outlook).toFixed(1)}/5
+                </span>
+                {domainDeltas?.outlook !== undefined && domainDeltas.outlook !== 0 && (
+                  <span className={`text-xs font-medium flex items-center gap-0.5 ${domainDeltas.outlook > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                    {domainDeltas.outlook > 0 ? '↑' : '↓'}{Math.abs(domainDeltas.outlook).toFixed(1)}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="w-full rounded-full h-1.5 bg-black/[0.04]">
+              <div 
+                className={`h-1.5 rounded-full ${DOMAIN_COLORS.outlook.bar} transition-all duration-500`}
+                style={{ width: `${((currentDomainScores?.outlook ?? baselineDomainScores.outlook) / 5) * 100}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Attention */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-medium text-zinc-600">Attention</span>
+              <div className="flex items-center gap-2">
+                <span className={`text-sm font-semibold ${DOMAIN_COLORS.attention.text}`}>
+                  {(currentDomainScores?.attention ?? baselineDomainScores.attention).toFixed(1)}/5
+                </span>
+                {domainDeltas?.attention !== undefined && domainDeltas.attention !== 0 && (
+                  <span className={`text-xs font-medium flex items-center gap-0.5 ${domainDeltas.attention > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                    {domainDeltas.attention > 0 ? '↑' : '↓'}{Math.abs(domainDeltas.attention).toFixed(1)}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="w-full rounded-full h-1.5 bg-black/[0.04]">
+              <div 
+                className={`h-1.5 rounded-full ${DOMAIN_COLORS.attention.bar} transition-all duration-500`}
+                style={{ width: `${((currentDomainScores?.attention ?? baselineDomainScores.attention) / 5) * 100}%` }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* ==========================================
+            UNLOCK PROGRESS
+            Stage 1: rich dot widget
+            Stage 2–5: existing bar widget
+            ========================================== */}
+
+        {/* Stage 1 — new dot-based widget */}
+        {currentStage === 1 && unlockProgress && (
+          <Stage2UnlockWidget
+            unlockProgress={unlockProgress}
+            unlockEligible={unlockEligible ?? false}
+            daysInStage={daysInStage ?? 0}
+            adherencePercentage={adherencePercentage}
+            calmTrend={calmTrend}
+          />
+        )}
+
+        {/* Stage 2–5 — existing bar widget */}
+        {unlockProgress && !unlockEligible && currentStage > 1 && currentStage < 6 && (
+          <div className="bg-white rounded-xl p-4 border border-black/[0.04] shadow-sm">
+            <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">
+              Stage {currentStage + 1} Unlock Progress
+            </h3>
+            
+            <div className="space-y-3">
+              {/* Adherence Progress */}
+              <div className="flex items-center gap-2">
+                <span className={`text-xs w-16 font-medium ${unlockProgress.adherenceMet ? 'text-emerald-600' : 'text-zinc-500'}`}>
+                  {unlockProgress.adherenceMet && <CheckCircle2 className="w-3 h-3 inline mr-1" />}
+                  Adherence
+                </span>
+                <div className="flex-1 h-1.5 bg-black/[0.04] rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full transition-all rounded-full ${unlockProgress.adherenceMet ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                    style={{ width: unlockProgress.adherenceMet ? '100%' : `${Math.min(100, (adherencePercentage / unlockProgress.requiredAdherence) * 100)}%` }}
+                  />
+                </div>
+                <span className="text-xs text-zinc-400 w-10 text-right font-medium">
+                  {unlockProgress.adherenceMet ? '✓' : `${adherencePercentage}%`}
+                </span>
+              </div>
+              
+              {/* Days Progress */}
+              <div className="flex items-center gap-2">
+                <span className={`text-xs w-16 font-medium ${unlockProgress.daysMet ? 'text-emerald-600' : 'text-zinc-500'}`}>
+                  {unlockProgress.daysMet && <CheckCircle2 className="w-3 h-3 inline mr-1" />}
+                  Days
+                </span>
+                <div className="flex-1 h-1.5 bg-black/[0.04] rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full transition-all rounded-full ${unlockProgress.daysMet ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                    style={{ width: unlockProgress.daysMet ? '100%' : `${Math.min(100, (consecutiveDays / unlockProgress.requiredDays) * 100)}%` }}
+                  />
+                </div>
+                <span className="text-xs text-zinc-400 w-10 text-right font-medium">
+                  {unlockProgress.daysMet ? '✓' : `${consecutiveDays}/${unlockProgress.requiredDays}`}
+                </span>
+              </div>
+              
+              {/* Delta Progress */}
+              <div className="flex items-center gap-2">
+                <span className={`text-xs w-16 font-medium ${unlockProgress.deltaMet ? 'text-emerald-600' : 'text-zinc-500'}`}>
+                  {unlockProgress.deltaMet && <CheckCircle2 className="w-3 h-3 inline mr-1" />}
+                  Growth
+                </span>
+                <div className="flex-1 h-1.5 bg-black/[0.04] rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full transition-all rounded-full ${unlockProgress.deltaMet ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                    style={{ width: unlockProgress.deltaMet ? '100%' : `${Math.min(100, Math.max(0, ((domainDeltas?.average || 0) / unlockProgress.requiredDelta) * 100))}%` }}
+                  />
+                </div>
+                <span className="text-xs text-zinc-400 w-10 text-right font-medium">
+                  {unlockProgress.deltaMet ? '✓' : `+${(domainDeltas?.average || 0).toFixed(1)}`}
+                </span>
+              </div>
+              
+              {/* Weekly Check-in */}
+              <div className="flex items-center gap-2">
+                <span className={`text-xs w-16 font-medium ${unlockProgress.qualitativeMet ? 'text-emerald-600' : 'text-zinc-500'}`}>
+                  {unlockProgress.qualitativeMet && <CheckCircle2 className="w-3 h-3 inline mr-1" />}
+                  Weekly
+                </span>
+                <div className="flex-1 h-1.5 bg-black/[0.04] rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full transition-all rounded-full ${unlockProgress.qualitativeMet ? 'bg-emerald-500' : 'bg-zinc-300'}`}
+                    style={{ width: unlockProgress.qualitativeMet ? '100%' : '0%' }}
+                  />
+                </div>
+                <span className="text-xs text-zinc-400 w-10 text-right font-medium">
+                  {unlockProgress.qualitativeMet ? '✓' : '—'}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ==========================================
+            STAGE 7 UNLOCK BUTTON
+            ========================================== */}
+        {currentStage === 6 && !unlockEligible && (
+          <div className="bg-white rounded-xl p-4 border border-black/[0.04] shadow-sm">
+            <div className="flex items-center gap-2 mb-1">
+              <Lock className="w-4 h-4 text-zinc-400" />
+              <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Stage 7: Accelerated Expansion</h3>
+            </div>
+            <p className="text-xs text-zinc-500 leading-relaxed">
+              Stage 7 requires an application and live conversation. Continue building stable awareness across contexts — when you're ready, ask about the Stage 7 application process.
             </p>
           </div>
-
-          {/* DOMAIN SCORES */}
-          <div className="bg-white rounded-xl p-4 border border-zinc-200/80 shadow-sm">
-            <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">Domain Scores</h3>
-            <div className="space-y-3">
-              {[
-                { key: 'regulation', label: 'Regulation', value: currentReg, delta: domainDeltas?.regulation },
-                { key: 'awareness', label: 'Awareness', value: currentAware, delta: domainDeltas?.awareness },
-                { key: 'outlook', label: 'Outlook', value: currentOut, delta: domainDeltas?.outlook },
-                { key: 'attention', label: 'Attention', value: currentAtt, delta: domainDeltas?.attention },
-              ].map(({ key, label, value, delta }) => (
-                <div key={key} className="flex items-center gap-3">
-                  <span className={`text-xs w-20 ${DOMAIN_COLORS[key as keyof typeof DOMAIN_COLORS].text}`}>{label}</span>
-                  <div className="flex-1 h-1.5 bg-zinc-100 rounded-full overflow-hidden">
-                    <div className={`h-full transition-all ${DOMAIN_COLORS[key as keyof typeof DOMAIN_COLORS].bar}`} style={{ width: `${(value / 5) * 100}%` }} />
-                  </div>
-                  <span className="text-xs text-zinc-600 w-8 text-right font-medium">{value.toFixed(1)}</span>
-                  {delta !== undefined && delta !== 0 && (
-                    <span className={`text-xs w-10 text-right font-medium ${delta > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                      {delta > 0 ? '+' : ''}{delta.toFixed(1)}
-                    </span>
-                  )}
-                </div>
-              ))}
+        )}
+        {currentStage === 7 && (
+          <div className="bg-gradient-to-br from-purple-50 to-amber-50 border border-purple-200/50 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <Sparkles className="w-4 h-4 text-purple-600" />
+              <h3 className="text-sm font-semibold text-purple-800">Stage 7: Accelerated Expansion</h3>
             </div>
+            <p className="text-xs text-zinc-600">
+              The IOS is self-evolving. You are the feedback loop.
+            </p>
           </div>
-
-          {/* ==========================================
-              UNLOCK PROGRESS
-              Stage 1: rich dot widget
-              Stage 2–5: existing bar widget
-              ========================================== */}
-
-          {/* Stage 1 — new dot widget */}
-          {currentStage === 1 && unlockProgress && (
-            <Stage2UnlockWidget
-              unlockProgress={unlockProgress}
-              unlockEligible={unlockEligible ?? false}
-              daysInStage={daysInStage ?? 0}
-              adherencePercentage={adherencePercentage}
-              calmTrend={calmTrend}
-            />
-          )}
-
-          {/* Stage 2–5 — existing bar widget */}
-          {unlockProgress && currentStage > 1 && currentStage < 6 && (
-            <div className="bg-white rounded-xl p-4 border border-zinc-200/80 shadow-sm">
-              <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">Unlock Progress</h3>
-              <div className="space-y-2">
-                {[
-                  { label: 'Adherence', met: unlockProgress.adherenceMet, width: `${Math.min((adherencePercentage / (unlockProgress.requiredAdherence || 80)) * 100, 100)}%`, display: `${adherencePercentage}%` },
-                  { label: 'Days', met: unlockProgress.daysMet, width: `${Math.min((consecutiveDays / (unlockProgress.requiredDays || 14)) * 100, 100)}%`, display: `${consecutiveDays}/${unlockProgress.requiredDays || 14}` },
-                  { label: 'Growth', met: unlockProgress.deltaMet, width: unlockProgress.deltaMet ? '100%' : '50%', display: domainDeltas?.average !== undefined ? `+${domainDeltas.average.toFixed(1)}` : '—' },
-                  { label: 'Weekly', met: unlockProgress.qualitativeMet, width: unlockProgress.qualitativeMet ? '100%' : '0%', display: unlockProgress.qualitativeMet ? '✓' : '—' },
-                ].map(({ label, met, width, display }) => (
-                  <div key={label} className="flex items-center gap-2">
-                    <span className={`text-xs w-16 ${met ? 'text-green-600' : 'text-zinc-500'}`}>{met ? '✓' : ''} {label}</span>
-                    <div className="flex-1 h-1.5 bg-zinc-100 rounded-full overflow-hidden">
-                      <div className={`h-full transition-all ${met ? 'bg-green-500' : 'bg-zinc-300'}`} style={{ width }} />
-                    </div>
-                    <span className="text-xs text-zinc-400 w-12 text-right">{display}</span>
-                  </div>
-                ))}
-              </div>
+        )}
+        {currentStage === 6 && unlockEligible && onStage7Click && (
+          <div className="bg-gradient-to-br from-purple-50 to-amber-50 border border-purple-200/50 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Lock className="w-4 h-4 text-purple-600" />
+              <h3 className="text-sm font-semibold text-purple-800">Final Stage Available</h3>
             </div>
-          )}
+            <p className="text-xs text-zinc-600 mb-3">
+              You've demonstrated mastery at Stage 6. Ready to explore what's beyond?
+            </p>
+            <button
+              onClick={onStage7Click}
+              className="w-full px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold rounded-xl transition-all shadow-sm shadow-amber-500/20"
+            >
+              Unlock Stage 7?
+            </button>
+          </div>
+        )}
 
-          {/* STAGE 7 UNLOCK */}
-          {currentStage === 6 && !unlockEligible && (
-            <div className="bg-white rounded-xl p-4 border border-zinc-200/80 shadow-sm">
-              <div className="flex items-center gap-2 mb-1">
-                <Lock className="w-4 h-4 text-zinc-400" />
-                <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Stage 7: Accelerated Expansion</h3>
-              </div>
-              <p className="text-xs text-zinc-500 leading-relaxed">
-                Stage 7 requires an application and live conversation. Continue building stable awareness across contexts — when you're ready, ask about the Stage 7 application process.
+        {/* ==========================================
+            MY ALIGNED ACTION (Stage 3+)
+            ========================================== */}
+        {displayStatement && (
+          <div className="bg-white rounded-xl p-4 border border-black/[0.04] shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <Zap className="w-4 h-4 text-amber-500" />
+              <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider">My IOS Cue</h3>
+            </div>
+            <p className="text-sm text-zinc-700 leading-relaxed">{displayStatement}</p>
+            {microAction && (
+             <p className="text-xs text-amber-600 font-medium mt-2">
+                Loop: {microAction}
               </p>
-            </div>
-          )}
-          {currentStage === 7 && (
-            <div className="bg-gradient-to-br from-purple-50 to-amber-50 border border-purple-200/50 rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-1">
-                <Sparkles className="w-4 h-4 text-purple-600" />
-                <h3 className="text-sm font-semibold text-purple-800">Stage 7: Accelerated Expansion</h3>
-              </div>
-              <p className="text-xs text-zinc-600">
-                The IOS is self-evolving. You are the feedback loop.
-              </p>
-            </div>
-          )}
-          {currentStage === 6 && unlockEligible && onStage7Unlock && (
-            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300/50 rounded-xl p-4 shadow-sm">
-              <h3 className="text-sm font-medium text-amber-800 mb-2">Final Stage Available</h3>
-              <p className="text-xs text-amber-700/80 mb-3">You&apos;ve demonstrated mastery at Stage 6. Ready to explore what&apos;s beyond?</p>
-              <button onClick={() => { onStage7Unlock(); setIsOpen(false); }}
-                className="w-full px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-xl transition-all shadow-md hover:shadow-lg">
-                Unlock Stage 7
-              </button>
-            </div>
-          )}
-
-          {/* ALIGNED ACTION (Stage 3+) */}
-          {(displayStatement || microAction) && (
-            <div className="bg-white rounded-xl p-4 border border-zinc-200/80 shadow-sm">
-              <div className="flex items-center gap-2 mb-2">
-                <Zap className="w-4 h-4 text-amber-500" />
-                <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider">My IOS Cue</h3>
-              </div>
-              {displayStatement && <p className="text-sm text-zinc-700 leading-relaxed">{displayStatement}</p>}
-              {microAction && <p className="text-xs text-amber-600 font-medium mt-2">Loop: {microAction}</p>}
-              {displaySprintDay && (
-                <div className="mt-3 flex items-center gap-2">
-                  <div className="flex-1 h-1 bg-black/[0.04] rounded-full overflow-hidden">
-                    <div className="h-full bg-amber-500 rounded-full transition-all" style={{ width: `${(displaySprintDay / 21) * 100}%` }} />
-                  </div>
-                  <span className="text-xs text-zinc-400 font-medium">Day {displaySprintDay}/21</span>
+            )}
+            {displaySprintDay && (
+              <div className="mt-3 flex items-center gap-2">
+                <div className="flex-1 h-1 bg-black/[0.04] rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-amber-500 rounded-full transition-all"
+                    style={{ width: `${(displaySprintDay / 21) * 100}%` }}
+                  />
                 </div>
-              )}
+                <span className="text-xs text-zinc-400 font-medium">
+                  Day {displaySprintDay}/21
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ==========================================
+            MY FLOW BLOCK SCHEDULE (Stage 4+)
+            ========================================== */}
+        {flowBlockWeeklyMap && flowBlockWeeklyMap.length > 0 && (
+          <div className="bg-white rounded-xl p-4 border border-black/[0.04] shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <Target className="w-4 h-4 text-blue-500" />
+              <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider">My Flow Block Schedule</h3>
             </div>
-          )}
-
-          {/* FLOW BLOCK SCHEDULE (Stage 4+) */}
-          {flowBlockWeeklyMap && flowBlockWeeklyMap.length > 0 && (
-            <FlowBlockScheduleMobile weeklyMap={flowBlockWeeklyMap} sprintDay={flowBlockSprintDay} />
-          )}
-
-          {/* COURSE LIBRARY */}
-          <Link href="/library" onClick={() => setIsOpen(false)}
-            className="block bg-white rounded-xl p-4 border border-zinc-200/80 shadow-sm hover:border-amber-300/60 hover:shadow-md transition-all">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-100 to-orange-50 flex items-center justify-center">
-                <BookOpen className="w-4 h-4 text-amber-600" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-sm font-semibold text-zinc-800">Course Library</h3>
-                <p className="text-xs text-zinc-500">The Science of Neural Liberation</p>
-              </div>
-              <svg className="w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
+            
+            {/* Weekly Map Display */}
+            <div className="space-y-2">
+              {flowBlockWeeklyMap.map((entry, index) => {
+                const isTodayBlock = isToday(entry.day);
+                return (
+                  <div 
+                    key={index}
+                    className={`group relative flex items-center gap-2 py-1.5 px-2 rounded-lg text-xs transition-colors ${
+                      isTodayBlock 
+                        ? 'bg-blue-50 border border-blue-200/50' 
+                        : 'hover:bg-zinc-50'
+                    }`}
+                  >
+                    {/* Day */}
+                    <span className={`w-10 font-semibold ${isTodayBlock ? 'text-blue-600' : 'text-zinc-500'}`}>
+                      {getShortDay(entry.day)}
+                    </span>
+                    
+                    {/* Divider */}
+                    <span className="text-zinc-300">|</span>
+                    
+                    {/* Task (truncated with instant tooltip) */}
+                    <span className={`flex-1 truncate cursor-default ${isTodayBlock ? 'text-blue-700 font-medium' : 'text-zinc-600'}`}>
+                      {entry.task}
+                    </span>
+                    
+                    {/* Instant Tooltip - shows full task on hover */}
+                    <div className="absolute left-0 right-0 -top-1 -translate-y-full opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50 pointer-events-none">
+                      <div className="bg-zinc-900 text-white text-xs rounded-lg px-3 py-2 shadow-lg mx-2">
+                        <div className="font-medium">{entry.task}</div>
+                        <div className="text-zinc-400 mt-0.5">
+                          {entry.domain} · {entry.flowType} · {entry.category}
+                        </div>
+                        {/* Tooltip arrow */}
+                        <div className="absolute left-4 bottom-0 translate-y-full w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-zinc-900"></div>
+                      </div>
+                    </div>
+                    
+                    {/* Time and Duration */}
+                    <span className={`text-xs whitespace-nowrap ${isTodayBlock ? 'text-blue-500' : 'text-zinc-400'}`}>
+                      {entry.timeSlot ? `${entry.timeSlot} · ` : ''}{entry.duration}m
+                    </span>
+                  </div>
+                );
+              })}
             </div>
-          </Link>
-
-          {/* IOS JOURNAL */}
-          <Link href="/journal" onClick={() => setIsOpen(false)}
-            className="block bg-white rounded-xl p-4 border border-zinc-200/80 shadow-sm hover:border-purple-300/60 hover:shadow-md transition-all">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center">
-                <TrendingUp className="w-4 h-4 text-purple-600" />
+            
+            {/* Sprint Progress */}
+            {flowBlockSprintDay && (
+              <div className="mt-3 pt-3 border-t border-black/[0.04] flex items-center gap-2">
+                <div className="flex-1 h-1 bg-black/[0.04] rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-blue-500 rounded-full transition-all"
+                    style={{ width: `${(flowBlockSprintDay / 21) * 100}%` }}
+                  />
+                </div>
+                <span className="text-xs text-zinc-400 font-medium">
+                  Day {flowBlockSprintDay}/21
+                </span>
               </div>
-              <div className="flex-1">
-                <h3 className="text-sm font-semibold text-zinc-800">IOS Journal</h3>
-                <p className="text-xs text-zinc-500">Your transformation timeline</p>
-              </div>
-              <svg className="w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
-          </Link>
+            )}
+          </div>
+        )}
 
-          <AwakenWithFiveCard />
-        </div>
+        {/* ==========================================
+            AWAKEN WITH 5 CTA
+            ========================================== */}
+        <AwakenWithFiveCard />
       </div>
-    </>
+    </aside>
   );
 }
