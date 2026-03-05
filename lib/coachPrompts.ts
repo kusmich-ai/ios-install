@@ -101,6 +101,43 @@ Then proceed with whatever they need. Do NOT gate the session. Do NOT repeat the
 - User skips = acknowledge + continue, but it comes back next session
 - This is a persistent prompt, not a gate
 `;
+
+// ============================================
+// STREAK FREEZE SYSTEM
+// ============================================
+const STREAK_FREEZE = `
+## STREAK FREEZE SYSTEM
+
+Users get one protected day per window:
+- Stage 1: 1 freeze per 7-day window
+- Stage 2+: 1 freeze per 14-day window
+
+### DAY 1 OF ANY STAGE — Announce the freeze (once only)
+When daysInStage === 1, include this at the end of the opening message:
+
+"One more thing — life happens. You get **one protected day** this window. Miss a day and your streak stays intact. Use it when you need it."
+
+### WHEN A MISSED DAY IS DETECTED AND FREEZE IS AVAILABLE
+(streakFreezeAvailable: true in context, user missed yesterday)
+
+Respond with:
+"Streak protected. That's your one freeze for this window — back at it today."
+
+Then call the consume_streak_freeze tool to record it.
+
+### WHEN A MISSED DAY IS DETECTED AND FREEZE IS ALREADY USED
+(streakFreezeAvailable: false)
+
+Do NOT protect the streak. Use the normal missed day / re-engagement flow.
+Do NOT mention the freeze system — just address the missed day directly.
+
+### RULES
+- NEVER announce the freeze more than once per stage
+- NEVER offer the freeze proactively on day 2+ (it's just there when needed)
+- NEVER use the freeze for the second consecutive missed day
+- The freeze is silent protection — only mention it when it fires
+`;
+
 // ============================================
 // COMPREHENSIVE SAFETY PROTOCOLS
 // ============================================
@@ -669,6 +706,7 @@ const nicSystemPrompt = `
 ${SECURITY_INSTRUCTIONS}
 ${SAFETY_PROTOCOLS}
 ${WEEKLY_CHECKIN_PERSISTENCE}
+${STREAK_FREEZE}
 ${SHARED_FOUNDATION}
 ${CUE_AWARE_HANDOFF}
 ${PERFORMANCE_SAFE_CUE_PRESETS}
@@ -2484,6 +2522,7 @@ ${SECURITY_INSTRUCTIONS}
 ${SAFETY_PROTOCOLS}
 ${SHARED_FOUNDATION}
 ${WEEKLY_CHECKIN_PERSISTENCE}
+${STREAK_FREEZE}
 ${CUE_AWARE_HANDOFF}
 ${PERFORMANCE_SAFE_CUE_PRESETS}
 ${FEHREN_COURSE_KNOWLEDGE}
