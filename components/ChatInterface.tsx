@@ -1971,11 +1971,7 @@ Your consistency was exceptional. You've met the accelerated criteria:
 Your nervous system responded faster than the standard timeline. That's earned, not given.
 
 **Unlock Stage 2: Embodied Awareness?**`
-    : processTemplate(unlockCelebrations.stage2.achievement, {
-    adherence: Math.round(progress?.adherencePercentage || 80),
-    consecutiveDays: progress?.consecutiveDays || 14,
-    avgDelta: 0.30
-  }),
+    : `Neural Priming complete. Your nervous system has been stabilizing the signal — you've done the work. Stage 2 takes what you've built and puts it into motion. People describe it as the moment calm stops being a practice and starts being who they are. Ready to install Embodied Mode?`,
   3: processTemplate(unlockCelebrations.stage3.achievement, {
     adherence: Math.round(progress?.adherencePercentage || 80),
     consecutiveDays: progress?.consecutiveDays || 14,
