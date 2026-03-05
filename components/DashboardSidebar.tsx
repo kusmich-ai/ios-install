@@ -578,6 +578,11 @@ export default function DashboardSidebar({
           />
         )}
 
+        {/* Stage 2 teaser panel — visible all of Stage 1 */}
+        {currentStage === 1 && (
+          <Stage2TeaserPanel unlockEligible={unlockEligible ?? false} />
+        )}
+
         {/* Stage 2–5 — existing bar widget */}
         {unlockProgress && !unlockEligible && currentStage > 1 && currentStage < 6 && (
           <div className="bg-white rounded-xl p-4 border border-black/[0.04] shadow-sm">
