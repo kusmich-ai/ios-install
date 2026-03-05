@@ -1,6 +1,7 @@
 // components/MobileDashboard.tsx
 // Mobile dashboard drawer with luxury cream styling (matches DashboardSidebar)
 // v2.3: Floating pill bottom-left above input - no header strip overlay
+// v2.4: Stage 2 unlock progress widget (Step 10)
 'use client';
 
 import { useState } from 'react';
@@ -70,8 +71,10 @@ interface MobileDashboardProps {
   identitySprintDay?: number;
   flowBlockWeeklyMap?: WeeklyMapEntry[] | null;
   flowBlockSprintDay?: number;
-totalDaysInApp?: number;
+  totalDaysInApp?: number;
   daysInStage?: number;
+  // Stage 1 signal trend (optional — arrow omitted if not provided)
+  calmTrend?: 'up' | 'flat' | null;
   onStage7Unlock?: () => void;
 }
 
@@ -135,6 +138,112 @@ const DOMAIN_COLORS = {
   outlook: { bar: 'bg-amber-400', text: 'text-amber-400' },
   attention: { bar: 'bg-amber-300', text: 'text-amber-500' },
 };
+
+// ============================================
+// STAGE 2 UNLOCK WIDGET (mobile)
+// ============================================
+
+interface Stage2UnlockWidgetProps {
+  unlockProgress: UnlockProgress;
+  unlockEligible: boolean;
+  daysInStage: number;
+  adherencePercentage: number;
+  calmTrend?: 'up' | 'flat' | null;
+}
+
+function Stage2UnlockWidget({
+  unlockProgress,
+  unlockEligible,
+  daysInStage,
+  adherencePercentage,
+  calmTrend,
+}: Stage2UnlockWidgetProps) {
+  const requiredDays = unlockProgress.requiredDays || 7;
+  const requiredAdherence = unlockProgress.requiredAdherence || 70;
+
+  const daysCompleted = Math.min(daysInStage, requiredDays);
+  const dots = Array.from({ length: requiredDays }, (_, i) => i < daysCompleted);
+
+  const totalPracticesInWindow = requiredDays * 2;
+  const targetPractices = Math.ceil(totalPracticesInWindow * (requiredAdherence / 100));
+  const completedPractices = Math.round((adherencePercentage / 100) * totalPracticesInWindow);
+  const practicesRemaining = Math.max(0, targetPractices - completedPractices);
+  const barPercent = Math.min(100, Math.round((completedPractices / targetPractices) * 100));
+
+  const trendArrow = calmTrend === 'up' ? ' ↑' : calmTrend === 'flat' ? ' →' : '';
+
+  return (
+    <div className="bg-white rounded-xl border border-zinc-200/80 shadow-sm overflow-hidden">
+      {/* Header rule */}
+      <div className="flex items-center gap-2 px-4 pt-3.5 pb-2">
+        <div className="flex-1 h-px bg-black/[0.06]" />
+        <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest whitespace-nowrap">
+          Stage 2 Unlock
+        </span>
+        <div className="flex-1 h-px bg-black/[0.06]" />
+      </div>
+
+      <div className="px-4 pb-4 space-y-3">
+        {unlockEligible ? (
+          <>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {dots.map((_, i) => (
+                <span key={i} className="text-emerald-500" style={{ fontSize: '11px' }}>●</span>
+              ))}
+              <span className="text-xs text-emerald-600 font-medium ml-1">
+                {daysCompleted} of {requiredDays} days
+              </span>
+            </div>
+            <div className="w-full rounded-full h-2 bg-zinc-100 overflow-hidden">
+              <div className="h-2 rounded-full bg-emerald-500 w-full transition-all duration-500" />
+            </div>
+            <p className="text-xs font-semibold text-emerald-600">
+              Stage 2 unlocked. Ready to install?
+            </p>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {dots.map((filled, i) => (
+                <span
+                  key={i}
+                  className={`leading-none transition-colors ${filled ? 'text-amber-500' : 'text-zinc-200'}`}
+                  style={{ fontSize: '11px' }}
+                >
+                  ●
+                </span>
+              ))}
+              <span className="text-xs text-zinc-400 font-medium ml-1">
+                {daysCompleted} of {requiredDays} days
+              </span>
+            </div>
+
+            {trendArrow && (
+              <p className="text-xs text-zinc-500">
+                Your signal is shifting{trendArrow}
+              </p>
+            )}
+
+            <div className="h-px bg-zinc-100" />
+
+            {practicesRemaining > 0 && (
+              <p className="text-xs text-zinc-500">
+                {practicesRemaining} more {practicesRemaining === 1 ? 'practice' : 'practices'} to go.
+              </p>
+            )}
+
+            <div className="w-full rounded-full h-2 bg-zinc-100 overflow-hidden">
+              <div
+                className="h-2 rounded-full bg-amber-500 transition-all duration-500"
+                style={{ width: `${barPercent}%` }}
+              />
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // ============================================
 // FLOW BLOCK SCHEDULE
@@ -202,7 +311,8 @@ export default function MobileDashboard({
   currentDomainScores, domainDeltas, unlockProgress, unlockEligible,
   adherencePercentage = 0, consecutiveDays = 0, coherenceStatement,
   currentIdentity, microAction, sprintDay, identitySprintDay,
-flowBlockWeeklyMap, flowBlockSprintDay, totalDaysInApp, daysInStage, onStage7Unlock,
+  flowBlockWeeklyMap, flowBlockSprintDay, totalDaysInApp, daysInStage,
+  calmTrend, onStage7Unlock,
 }: MobileDashboardProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -220,9 +330,6 @@ flowBlockWeeklyMap, flowBlockSprintDay, totalDaysInApp, daysInStage, onStage7Unl
     <>
       {/* ==========================================
           DASHBOARD PILL BUTTON
-          Bottom-left, just above the input area
-          Dark pill so it's visible against dark bg
-          but clearly distinct from amber chat elements
           ========================================== */}
       <button
         onClick={() => setIsOpen(true)}
@@ -277,7 +384,7 @@ flowBlockWeeklyMap, flowBlockSprintDay, totalDaysInApp, daysInStage, onStage7Unl
             </Link>
           </div>
 
-         {/* TIME IN SYSTEM */}
+          {/* TIME IN SYSTEM */}
           {totalDaysInApp !== undefined && (
             <div className="flex items-center gap-2">
               <div className="flex-1 bg-white rounded-xl px-4 py-3 border border-zinc-200/80 shadow-sm text-center">
@@ -339,6 +446,46 @@ flowBlockWeeklyMap, flowBlockSprintDay, totalDaysInApp, daysInStage, onStage7Unl
             </div>
           </div>
 
+          {/* ==========================================
+              UNLOCK PROGRESS
+              Stage 1: rich dot widget
+              Stage 2–5: existing bar widget
+              ========================================== */}
+
+          {/* Stage 1 — new dot widget */}
+          {currentStage === 1 && unlockProgress && (
+            <Stage2UnlockWidget
+              unlockProgress={unlockProgress}
+              unlockEligible={unlockEligible ?? false}
+              daysInStage={daysInStage ?? 0}
+              adherencePercentage={adherencePercentage}
+              calmTrend={calmTrend}
+            />
+          )}
+
+          {/* Stage 2–5 — existing bar widget */}
+          {unlockProgress && currentStage > 1 && currentStage < 6 && (
+            <div className="bg-white rounded-xl p-4 border border-zinc-200/80 shadow-sm">
+              <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">Unlock Progress</h3>
+              <div className="space-y-2">
+                {[
+                  { label: 'Adherence', met: unlockProgress.adherenceMet, width: `${Math.min((adherencePercentage / (unlockProgress.requiredAdherence || 80)) * 100, 100)}%`, display: `${adherencePercentage}%` },
+                  { label: 'Days', met: unlockProgress.daysMet, width: `${Math.min((consecutiveDays / (unlockProgress.requiredDays || 14)) * 100, 100)}%`, display: `${consecutiveDays}/${unlockProgress.requiredDays || 14}` },
+                  { label: 'Growth', met: unlockProgress.deltaMet, width: unlockProgress.deltaMet ? '100%' : '50%', display: domainDeltas?.average !== undefined ? `+${domainDeltas.average.toFixed(1)}` : '—' },
+                  { label: 'Weekly', met: unlockProgress.qualitativeMet, width: unlockProgress.qualitativeMet ? '100%' : '0%', display: unlockProgress.qualitativeMet ? '✓' : '—' },
+                ].map(({ label, met, width, display }) => (
+                  <div key={label} className="flex items-center gap-2">
+                    <span className={`text-xs w-16 ${met ? 'text-green-600' : 'text-zinc-500'}`}>{met ? '✓' : ''} {label}</span>
+                    <div className="flex-1 h-1.5 bg-zinc-100 rounded-full overflow-hidden">
+                      <div className={`h-full transition-all ${met ? 'bg-green-500' : 'bg-zinc-300'}`} style={{ width }} />
+                    </div>
+                    <span className="text-xs text-zinc-400 w-12 text-right">{display}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* STAGE 7 UNLOCK */}
           {currentStage === 6 && !unlockEligible && (
             <div className="bg-white rounded-xl p-4 border border-zinc-200/80 shadow-sm">
@@ -373,29 +520,6 @@ flowBlockWeeklyMap, flowBlockSprintDay, totalDaysInApp, daysInStage, onStage7Unl
             </div>
           )}
 
-          {/* UNLOCK PROGRESS */}
-          {unlockProgress && currentStage < 6 && (
-            <div className="bg-white rounded-xl p-4 border border-zinc-200/80 shadow-sm">
-              <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">Unlock Progress</h3>
-              <div className="space-y-2">
-                {[
-                  { label: 'Adherence', met: unlockProgress.adherenceMet, width: `${Math.min((adherencePercentage / (unlockProgress.requiredAdherence || 80)) * 100, 100)}%`, display: `${adherencePercentage}%` },
-                  { label: 'Days', met: unlockProgress.daysMet, width: `${Math.min((consecutiveDays / (unlockProgress.requiredDays || 14)) * 100, 100)}%`, display: `${consecutiveDays}/${unlockProgress.requiredDays || 14}` },
-                  { label: 'Growth', met: unlockProgress.deltaMet, width: unlockProgress.deltaMet ? '100%' : '50%', display: domainDeltas?.average !== undefined ? `+${domainDeltas.average.toFixed(1)}` : '—' },
-                  { label: 'Weekly', met: unlockProgress.qualitativeMet, width: unlockProgress.qualitativeMet ? '100%' : '0%', display: unlockProgress.qualitativeMet ? '✓' : '—' },
-                ].map(({ label, met, width, display }) => (
-                  <div key={label} className="flex items-center gap-2">
-                    <span className={`text-xs w-16 ${met ? 'text-green-600' : 'text-zinc-500'}`}>{met ? '✓' : ''} {label}</span>
-                    <div className="flex-1 h-1.5 bg-zinc-100 rounded-full overflow-hidden">
-                      <div className={`h-full transition-all ${met ? 'bg-green-500' : 'bg-zinc-300'}`} style={{ width }} />
-                    </div>
-                    <span className="text-xs text-zinc-400 w-12 text-right">{display}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* ALIGNED ACTION (Stage 3+) */}
           {(displayStatement || microAction) && (
             <div className="bg-white rounded-xl p-4 border border-zinc-200/80 shadow-sm">
@@ -426,7 +550,7 @@ flowBlockWeeklyMap, flowBlockSprintDay, totalDaysInApp, daysInStage, onStage7Unl
             className="block bg-white rounded-xl p-4 border border-zinc-200/80 shadow-sm hover:border-amber-300/60 hover:shadow-md transition-all">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-100 to-orange-50 flex items-center justify-center">
-                <BookOpen className="w-4.5 h-4.5 text-amber-600" />
+                <BookOpen className="w-4 h-4 text-amber-600" />
               </div>
               <div className="flex-1">
                 <h3 className="text-sm font-semibold text-zinc-800">Course Library</h3>
@@ -437,12 +561,13 @@ flowBlockWeeklyMap, flowBlockSprintDay, totalDaysInApp, daysInStage, onStage7Unl
               </svg>
             </div>
           </Link>
-{/* IOS JOURNAL */}
+
+          {/* IOS JOURNAL */}
           <Link href="/journal" onClick={() => setIsOpen(false)}
             className="block bg-white rounded-xl p-4 border border-zinc-200/80 shadow-sm hover:border-purple-300/60 hover:shadow-md transition-all">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center">
-                <TrendingUp className="w-4.5 h-4.5 text-purple-600" />
+                <TrendingUp className="w-4 h-4 text-purple-600" />
               </div>
               <div className="flex-1">
                 <h3 className="text-sm font-semibold text-zinc-800">IOS Journal</h3>
@@ -453,6 +578,7 @@ flowBlockWeeklyMap, flowBlockSprintDay, totalDaysInApp, daysInStage, onStage7Unl
               </svg>
             </div>
           </Link>
+
           <AwakenWithFiveCard />
         </div>
       </div>
