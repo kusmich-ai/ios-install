@@ -2,6 +2,7 @@
 // Mobile dashboard drawer with luxury cream styling (matches DashboardSidebar)
 // v2.3: Floating pill bottom-left above input - no header strip overlay
 // v2.4: Stage 2 unlock progress widget (Step 10)
+// v2.5: Streak freeze indicator (Step 12)
 'use client';
 
 import { useState } from 'react';
@@ -75,6 +76,8 @@ interface MobileDashboardProps {
   daysInStage?: number;
   // Stage 1 signal trend (optional — arrow omitted if not provided)
   calmTrend?: 'up' | 'flat' | null;
+  // Step 12: streak freeze
+  streakFreezeAvailable?: boolean;
   onStage7Unlock?: () => void;
 }
 
@@ -140,6 +143,47 @@ const DOMAIN_COLORS = {
 };
 
 // ============================================
+// STREAK FREEZE INDICATOR (Step 12)
+// ============================================
+
+function StreakFreezeIndicator({ available }: { available: boolean }) {
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setShowTooltip(v => !v)}
+        className="flex items-center gap-1.5 w-full text-left min-h-[44px] py-1"
+        aria-label="Streak freeze status"
+      >
+        <span className={`text-base leading-none select-none ${available ? 'text-amber-400' : 'text-zinc-300'}`}>
+          {available ? '◎' : '◉'}
+        </span>
+        <span className={`text-xs font-medium ${available ? 'text-zinc-500' : 'text-zinc-300'}`}>
+          {available ? '1 protected day available' : 'Protected day used'}
+        </span>
+      </button>
+
+      {showTooltip && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setShowTooltip(false)} />
+          <div className="absolute left-0 bottom-full mb-2 z-20 w-64 bg-zinc-900 text-white text-xs rounded-xl p-3 shadow-xl">
+            <p className="font-semibold mb-1 text-amber-400">Streak Freeze</p>
+            <p className="text-zinc-300 leading-relaxed">
+              {available
+                ? 'Miss one day this window without losing your consistency streak. Activates automatically — no action required.'
+                : 'Your freeze was used this window. It resets when the next window begins.'}
+            </p>
+            {/* Tooltip arrow */}
+            <div className="absolute left-4 top-full w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-zinc-900" />
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ============================================
 // STAGE 2 UNLOCK WIDGET (mobile)
 // ============================================
 
@@ -149,6 +193,7 @@ interface Stage2UnlockWidgetProps {
   daysInStage: number;
   adherencePercentage: number;
   calmTrend?: 'up' | 'flat' | null;
+  streakFreezeAvailable?: boolean;
 }
 
 function Stage2UnlockWidget({
@@ -157,6 +202,7 @@ function Stage2UnlockWidget({
   daysInStage,
   adherencePercentage,
   calmTrend,
+  streakFreezeAvailable,
 }: Stage2UnlockWidgetProps) {
   const requiredDays = unlockProgress.requiredDays || 7;
   const requiredAdherence = unlockProgress.requiredAdherence || 70;
@@ -200,6 +246,11 @@ function Stage2UnlockWidget({
             <p className="text-xs font-semibold text-emerald-600">
               Stage 2 unlocked. Ready to install?
             </p>
+            {streakFreezeAvailable !== undefined && (
+              <div className="pt-1 border-t border-zinc-100">
+                <StreakFreezeIndicator available={streakFreezeAvailable} />
+              </div>
+            )}
           </>
         ) : (
           <>
@@ -238,6 +289,13 @@ function Stage2UnlockWidget({
                 style={{ width: `${barPercent}%` }}
               />
             </div>
+
+            {/* Streak freeze — always shown in Stage 1 widget */}
+            {streakFreezeAvailable !== undefined && (
+              <div className="pt-1 border-t border-zinc-100">
+                <StreakFreezeIndicator available={streakFreezeAvailable} />
+              </div>
+            )}
           </>
         )}
       </div>
@@ -343,7 +401,7 @@ export default function MobileDashboard({
   adherencePercentage = 0, consecutiveDays = 0, coherenceStatement,
   currentIdentity, microAction, sprintDay, identitySprintDay,
   flowBlockWeeklyMap, flowBlockSprintDay, totalDaysInApp, daysInStage,
-  calmTrend, onStage7Unlock,
+  calmTrend, streakFreezeAvailable, onStage7Unlock,
 }: MobileDashboardProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -479,8 +537,8 @@ export default function MobileDashboard({
 
           {/* ==========================================
               UNLOCK PROGRESS
-              Stage 1: rich dot widget
-              Stage 2–5: existing bar widget
+              Stage 1: rich dot widget (includes freeze)
+              Stage 2–5: existing bar widget + freeze
               ========================================== */}
 
           {/* Stage 1 — new dot widget */}
@@ -491,6 +549,7 @@ export default function MobileDashboard({
               daysInStage={daysInStage ?? 0}
               adherencePercentage={adherencePercentage}
               calmTrend={calmTrend}
+              streakFreezeAvailable={streakFreezeAvailable}
             />
           )}
 
@@ -518,6 +577,13 @@ export default function MobileDashboard({
                     <span className="text-xs text-zinc-400 w-12 text-right">{display}</span>
                   </div>
                 ))}
+
+                {/* Streak freeze for Stage 2–5 */}
+                {streakFreezeAvailable !== undefined && (
+                  <div className="pt-2 border-t border-zinc-100">
+                    <StreakFreezeIndicator available={streakFreezeAvailable} />
+                  </div>
+                )}
               </div>
             </div>
           )}
