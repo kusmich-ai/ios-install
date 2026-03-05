@@ -4181,7 +4181,30 @@ microActionState.extractedAction || 'Notice → Label → Release',
       return;
     }
     setLoading(true);
-
+const handleRequestCheckIn = useCallback(async () => {
+  try {
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [...messages.filter(m => typeof m.content === 'string' && !m.content.includes('toolu_')).map(m => ({ role: m.role, content: m.content })), { role: 'user', content: "Let's do my weekly check-in" }],
+        context: 'weekly_checkin',
+        additionalContext: {
+          currentStage: progress?.currentStage || 1,
+          daysInStage: progress?.stageStartDate
+            ? Math.floor((Date.now() - new Date(progress.stageStartDate).getTime()) / (1000 * 60 * 60 * 24))
+            : 0,
+          adherence: progress?.adherencePercentage || 0,
+          userName: getUserName(),
+          consecutiveDays: progress?.consecutiveDays || 0,
+        }
+      })
+    });
+    // handle response same way your other fetch blocks do
+  } catch (error) {
+    console.error('Error triggering check-in:', error);
+  }
+}, [messages, progress, getUserName]);
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
