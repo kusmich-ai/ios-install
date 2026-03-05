@@ -98,6 +98,10 @@ interface DashboardSidebarProps {
 
   // Step 12: streak freeze
   streakFreezeAvailable?: boolean;
+
+  // Step 13: weekly check-in banner
+  weeklyCheckInDue?: boolean;
+  onRequestCheckIn?: () => void;
   
   // Handlers
   onStage7Click?: () => void;
@@ -213,6 +217,40 @@ function StreakFreezeIndicator({ available }: { available: boolean }) {
         </>
       )}
     </div>
+  );
+}
+
+// ============================================
+// WEEKLY CHECK-IN BANNER (Step 13)
+// Stage 2+ only. Pending = amber + tappable. Complete = subtle green.
+// ============================================
+
+function WeeklyCheckInBanner({ due, onRequestCheckIn }: { due: boolean; onRequestCheckIn?: () => void }) {
+  if (!due) {
+    return (
+      <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 border border-emerald-200/60 rounded-xl">
+        <span className="text-emerald-500 text-sm leading-none">✓</span>
+        <span className="text-xs font-medium text-emerald-600">Weekly check-in complete</span>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={onRequestCheckIn}
+      className="w-full flex items-center gap-2 px-3 py-2.5 bg-amber-50 hover:bg-amber-100 border border-amber-300/60 rounded-xl transition-colors text-left group"
+    >
+      <span className="text-amber-500 text-sm leading-none">⚡</span>
+      <span className="text-xs font-medium text-amber-700 flex-1">
+        Weekly check-in pending
+      </span>
+      <svg
+        className="w-3.5 h-3.5 text-amber-400 group-hover:text-amber-600 transition-colors"
+        fill="none" viewBox="0 0 24 24" stroke="currentColor"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+      </svg>
+    </button>
   );
 }
 
@@ -420,6 +458,8 @@ export default function DashboardSidebar({
   totalDaysInApp,
   daysInStage,
   streakFreezeAvailable,
+  weeklyCheckInDue,
+  onRequestCheckIn,
   onStage7Click,
 }: DashboardSidebarProps) {
   
@@ -625,6 +665,14 @@ export default function DashboardSidebar({
             </div>
           </div>
         </div>
+
+        {/* ==========================================
+            WEEKLY CHECK-IN BANNER (Step 13)
+            Stage 2+ only
+            ========================================== */}
+        {currentStage >= 2 && weeklyCheckInDue !== undefined && (
+          <WeeklyCheckInBanner due={weeklyCheckInDue} onRequestCheckIn={onRequestCheckIn} />
+        )}
 
         {/* ==========================================
             UNLOCK PROGRESS
