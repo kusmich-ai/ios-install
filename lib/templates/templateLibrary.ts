@@ -297,7 +297,7 @@ export const stageTemplates = {
     ritualIntro: {
       intro: `You're starting at **Stage 1: Neural Priming**.
 
-**Tagline:** *Stabilize the signal. Teach your nervous system calm / coherence.*
+**Tagline:** *Stabilize and regulate the signal. Teach your nervous system calm / coherence.*
 
 This stage lays the neural foundation — shifting your body from sympathetic dominance (stress) into parasympathetic coherence.
 
@@ -306,7 +306,8 @@ ${getRitualListForStage(1)}
 
 **Total: ${getMorningRitualTime(1)}** every morning, immediately upon waking.
 
-These aren't optional. They're the kernel installation. Without them, nothing else sticks.
+These aren't optional. They're the foundation. Without them, nothing else sticks.
+They are very simple, but don't let that fool you. They are the foundation for everything you're building.
 
 Ready to learn each ritual?`,
 
@@ -331,7 +332,7 @@ That's ritual one. Make sense?`,
         awareness_rep: `**RITUAL 2: AWARENESS REP — 2 MINS**
 
 **What it does:**
-Strengthens meta-awareness circuitry (insula-PCC connectivity). Trains your brain to notice when you're caught up in an identity or label and return to present awareness.
+Strengthens meta-cognition circuitry (insula-PCC connectivity). It decenters you, separating you from your thoughts and feelings.
 
 **When:** Right after Resonance Breathing, while still seated.
 
@@ -363,9 +364,9 @@ Make sense so far?`,
 
       nosGlideWalkthrough: `Good. Let me give you a quick overview of the **NOS Glide**.
 
-Your NOS doesn't respond to "relax" — it responds to **transitions**. The Glide is a 3-step physiological descent sequence you can use before bed:
+Your NOS (nervous system) doesn't respond to "relax" — it responds to **transitions**. The Glide is a 3-step physiological sequence you can use before bed:
 
-**1. Breath Descent** (~60-90s) — Your familiar 4-in, 6-out rhythm, but with a different intention. Morning breathing is calibration. This is descent. You're telling your system: the day is done.
+**1. Breath Descent** (~60s) — Your familiar 4-in, 6-out rhythm, but with a different intention. Morning breathing is calibration. This is descent. You're telling your system: the day is done.
 
 **2. Progressive Release** (~60-90s) — Tense and release muscle groups (legs → arms → jaw → abdomen). Stress gets stored as tension. This finishes the activation cycle.
 
@@ -447,7 +448,7 @@ You've proven consistency and transformation:
 - +{{avgDelta}} average delta improvement ✓
 - {{consecutiveDays}} day streak ✓
 
-**Neural Priming stabilized.** Heart-mind coherence online.
+**Stage 1 - Neural Priming stabilized.** Heart-mind coherence online.
 
 Before we unlock **Stage 2: Embodied Awareness**, quick reflection:
 
