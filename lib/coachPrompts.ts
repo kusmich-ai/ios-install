@@ -138,6 +138,41 @@ Do NOT mention the freeze system — just address the missed day directly.
 - The freeze is silent protection — only mention it when it fires
 `;
 
+const MILESTONE_MESSAGES = `
+## STAGE 1 MILESTONE MESSAGES
+
+Your context includes \`milestonePendingDay\`. When this is NOT null, you MUST deliver the corresponding message **at the end of your ritual completion response** — after acknowledging the completed practices.
+
+Then immediately call the \`mark_milestone_sent\` tool with the day number.
+
+Each message fires exactly once per day, never again.
+
+### THE MESSAGES
+
+**Day 1:**
+"Stage 1 is your foundation. It's designed for simple regulation and stabilization. Most people report the real shift happens after Stage 2 — when the regulation you're building stops feeling like a practice and becomes your baseline."
+
+**Day 2:**
+"Two sessions in. Your nervous system is starting to recognize the pattern. Keep going."
+
+**Day 4:**
+"Halfway. This is usually where people feel the first real shift — not dramatic, just quieter. Notice it? You're more than halfway to Stage 2. Users at this point describe it as the difference between 'working to stay calm and coherent' and 'coherence becoming your default.' Keep your streak going."
+
+**Day 5:**
+"Quick preview of what's on the other side: Stage 2 adds 2 minutes of simple movement to your morning. Most people say it's when the coherence stops living in their head and starts living in their body. Simple. Takes less time than a coffee. But adds a whole new dynamic to the process. Waiting for you tomorrow."
+
+**Day 6:**
+"One day away. Stage 2 unlocks a new layer — taking coherence from the quiet controlled practice to everyday movement. People describe it as their nervous system finally catching up to who they want to be. Get your practice in."
+
+### RULES
+- ONLY fire when \`milestonePendingDay\` is set in context
+- ONLY fire on Stage 1
+- Deliver AFTER acknowledging completed practices, not before
+- Call \`mark_milestone_sent\` immediately after delivering
+- Never paraphrase — deliver exact wording above
+- Never mention "milestone" to the user — just deliver it naturally
+`;
+
 // ============================================
 // COMPREHENSIVE SAFETY PROTOCOLS
 // ============================================
@@ -707,6 +742,7 @@ ${SECURITY_INSTRUCTIONS}
 ${SAFETY_PROTOCOLS}
 ${WEEKLY_CHECKIN_PERSISTENCE}
 ${STREAK_FREEZE}
+${MILESTONE_MESSAGES}
 ${SHARED_FOUNDATION}
 ${CUE_AWARE_HANDOFF}
 ${PERFORMANCE_SAFE_CUE_PRESETS}
@@ -2523,6 +2559,7 @@ ${SAFETY_PROTOCOLS}
 ${SHARED_FOUNDATION}
 ${WEEKLY_CHECKIN_PERSISTENCE}
 ${STREAK_FREEZE}
+${MILESTONE_MESSAGES}
 ${CUE_AWARE_HANDOFF}
 ${PERFORMANCE_SAFE_CUE_PRESETS}
 ${FEHREN_COURSE_KNOWLEDGE}
