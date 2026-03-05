@@ -1488,6 +1488,52 @@ async function executeEnhancementTool(
       }
       return { success: true, message: `Journal entry '${toolInput.title}' logged.` };
     }
+case 'consume_streak_freeze': {
+      const { error } = await supabase
+        .from('user_progress')
+        .update({
+          streak_freeze_used: true,
+          streak_freeze_date: new Date().toISOString().split('T')[0]
+        })
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('[Streak Freeze] Update error:', error);
+        return { success: false, error: error.message };
+      }
+      return { success: true, message: 'Streak freeze consumed.' };
+    }
+
+    case 'mark_milestone_sent': {
+      const day = toolInput.day as number;
+
+      const { data: current } = await supabase
+        .from('user_progress')
+        .select('milestone_messages_sent')
+        .eq('user_id', userId)
+        .single();
+
+      const existing: number[] = Array.isArray(current?.milestone_messages_sent)
+        ? current.milestone_messages_sent
+        : [];
+
+      if (existing.includes(day)) {
+        return { success: true, message: 'Already recorded.' };
+      }
+
+      const updated = [...existing, day];
+
+      const { error } = await supabase
+        .from('user_progress')
+        .update({ milestone_messages_sent: updated })
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('[Milestone Sent] Update error:', error);
+        return { success: false, error: error.message };
+      }
+      return { success: true, message: `Milestone day ${day} recorded.` };
+    }
 
     default:
       return { success: false, error: `Unknown tool: ${toolName}` };
