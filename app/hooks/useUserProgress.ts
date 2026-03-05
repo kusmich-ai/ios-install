@@ -514,7 +514,18 @@ export function useUserProgress() {
         latestQualitativeRating !== null && latestQualitativeRating >= threshold.accelerated.qualitative
       ) : false;
 
-// Step 14: gate booleans must agree with unlockEligible.
+const unlockEligible = checkBasicUnlockEligibility(
+        progressData.current_stage,
+        progressData.adherence_percentage,
+        daysInStage,
+        domainDeltas.average,
+        latestQualitativeRating,
+        avgScore,
+        recentCalmRatings,
+        baselineScores.regulation
+      );
+
+      // Step 14: gate booleans must agree with unlockEligible.
       // If eligible (via any path — standard, accelerated, or Stage 1 multi-path),
       // force all gates green so the UI widget matches the AI's verdict.
       const unlockProgress = threshold ? {
@@ -538,17 +549,6 @@ export function useUserProgress() {
         isAccelerated: false,
         acceleratedDays: null
       };
-
-      const unlockEligible = checkBasicUnlockEligibility(
-        progressData.current_stage,
-        progressData.adherence_percentage,
-        daysInStage,
-        domainDeltas.average,
-        latestQualitativeRating,
-        avgScore,
-        recentCalmRatings,
-        baselineScores.regulation
-      );
 
       lastFetchDate.current = today;
       lastFetchTime.current = Date.now();
