@@ -321,7 +321,42 @@ export function useUserProgress() {
       if (progressError) {
         throw progressError;
       }
-      
+
+      // ============================================
+      // AUTO-RESET: If 7+ days since last practice, reset stage_start_date
+      // so returning users get a fresh start instead of "40 days in Stage 1"
+      // ============================================
+      const { data: lastPracticeLog } = await supabase
+        .from('practice_logs')
+        .select('practice_date')
+        .eq('user_id', user.id)
+        .order('practice_date', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (lastPracticeLog?.practice_date) {
+        const lastPracticeDate = new Date(lastPracticeLog.practice_date + 'T00:00:00');
+        const now = new Date();
+        const daysSinceLastPractice = Math.floor((now.getTime() - lastPracticeDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (daysSinceLastPractice >= 7) {
+          console.log(`[useUserProgress] Auto-reset: ${daysSinceLastPractice} days since last practice. Resetting stage_start_date.`);
+          const newStartDate = new Date().toISOString();
+          
+          await supabase
+            .from('user_progress')
+            .update({
+              stage_start_date: newStartDate,
+              consecutive_days: 0
+            })
+            .eq('user_id', user.id);
+          
+          // Update local data so the rest of this fetch uses the new values
+          progressData.stage_start_date = newStartDate;
+          progressData.consecutive_days = 0;
+        }
+      }
+
       // NOTE: week_of included for weeklyCheckInDue calculation (Step 13)
       const { data: latestDelta } = await supabase
         .from('weekly_deltas')
