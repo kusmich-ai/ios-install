@@ -582,7 +582,7 @@ Ready to begin?`,
 
       allComplete: `All practices complete for today. ✓
 
-Embodiment achieved. The body is now connected awareness.
+Stage 2 - Embodiment achieved. The body is now connected awareness.
 
 **Current status:**
 - Day {{daysInStage}} of Stage 2
@@ -600,7 +600,7 @@ You've proven consistency and transformation:
 - +{{avgDelta}} average delta improvement ✓
 - {{consecutiveDays}} day streak ✓
 
-**Embodiment achieved.** The body is now connected awareness.
+**Stage 2 - Embodiment achieved.** The body is now connected awareness.
 
 Before we unlock **Stage 3: Cue Training**, quick reflection:
 
@@ -758,7 +758,7 @@ You've proven consistency and transformation:
 - +{{avgDelta}} average delta improvement ✓
 - {{consecutiveDays}} day streak ✓
 
-**Cue Training complete.** You now catch patterns before they run you.
+**Stage 3 - Cue Training complete.** You now catch patterns before they run you.
 
 Before we unlock **Stage 4: Flow Mode**, quick reflection:
 
