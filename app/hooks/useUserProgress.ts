@@ -4,6 +4,7 @@
 // v2: Added streak freeze logic (Step 7)
 // v3: Added milestone message logic (Step 8)
 // v4: Added weeklyCheckInDue (Step 13)
+// v5: Added baselineScores + patternProfile for Stage 1→2 unlock flow
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -96,6 +97,22 @@ export interface UserProgress {
   stage_4_attribution_seen: boolean;
   stage_5_attribution_seen: boolean;
   stage_6_attribution_seen: boolean;
+
+  // Baseline scores (raw, for unlock flow transformation mirror)
+  baselineScores: {
+    regulation: number;
+    awareness: number;
+    outlook: number;
+    attention: number;
+    rewiredIndex: number;
+  };
+
+  // Pattern profile (from Mirror onboarding)
+  patternProfile: {
+    primaryPattern: string | null;
+    coreChallenge: string | null;
+    mirrorSummary: string | null;
+  } | null;
 }
 
 // ============================================
@@ -155,7 +172,8 @@ function getLocalDateString(): string {
 }
 
 // Returns the Monday of the current calendar week as YYYY-MM-DD
-function getCurrentWeekMonday(): string {
+// Exported so ChatInterface can use the same logic for mini check-in saves
+export function getCurrentWeekMonday(): string {
   const now = new Date();
   const day = now.getDay(); // 0 = Sunday
   const diff = now.getDate() - day + (day === 0 ? -6 : 1);
@@ -421,6 +439,17 @@ export function useUserProgress() {
 
       const flowBlockSprint = flowBlockSprintArray?.[0] || null;
 
+      // ============================================
+      // FETCH PATTERN PROFILE (Mirror onboarding data)
+      // ============================================
+      const { data: patternProfileData } = await supabase
+        .from('pattern_profiles')
+        .select('primary_pattern, core_challenge, mirror_summary')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
       const calculateSprintDay = (startDate: string | null): number | null => {
         if (!startDate) return null;
         const start = new Date(startDate);
@@ -549,7 +578,7 @@ export function useUserProgress() {
         latestQualitativeRating !== null && latestQualitativeRating >= threshold.accelerated.qualitative
       ) : false;
 
-const unlockEligible = checkBasicUnlockEligibility(
+      const unlockEligible = checkBasicUnlockEligibility(
         progressData.current_stage,
         progressData.adherence_percentage,
         daysInStage,
@@ -647,6 +676,22 @@ const unlockEligible = checkBasicUnlockEligibility(
         stage_4_attribution_seen: progressData.stage_4_attribution_seen ?? false,
         stage_5_attribution_seen: progressData.stage_5_attribution_seen ?? false,
         stage_6_attribution_seen: progressData.stage_6_attribution_seen ?? false,
+
+        // v5: Baseline scores for unlock transformation mirror
+        baselineScores: {
+          regulation: baselineScores.regulation,
+          awareness: baselineScores.awareness,
+          outlook: baselineScores.outlook,
+          attention: baselineScores.attention,
+          rewiredIndex: baselineRewiredIndex,
+        },
+
+        // v5: Pattern profile from Mirror onboarding
+        patternProfile: patternProfileData ? {
+          primaryPattern: patternProfileData.primary_pattern || null,
+          coreChallenge: patternProfileData.core_challenge || null,
+          mirrorSummary: patternProfileData.mirror_summary || null,
+        } : null,
       };
 
       console.log('[useUserProgress] Setting progress:', {
@@ -660,6 +705,8 @@ const unlockEligible = checkBasicUnlockEligibility(
         streakFreezeAvailable: newProgress.streakFreezeAvailable,
         milestonePendingDay: newProgress.milestonePendingDay,
         weeklyCheckInDue: newProgress.weeklyCheckInDue,
+        baselineScores: newProgress.baselineScores,
+        patternProfile: newProgress.patternProfile,
       });
 
       setProgress(newProgress);
