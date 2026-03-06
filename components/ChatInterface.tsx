@@ -1,4 +1,4 @@
-  'use client';
+'use client';
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useIsMobile } from '@/app/hooks/useIsMobile';
@@ -2586,6 +2586,10 @@ One sentence only. No preamble.`;
   };
 
   // ============================================
+  // HANDLE UNLOCK CONFIRMATION
+  // ============================================
+
+  const handleUnlockConfirmation = async (confirmed: boolean) => {
     if (confirmed && pendingUnlockStage) {
       // Check if subscription is required (Stage 2+) and user doesn't have one
       if (pendingUnlockStage >= 2 && !hasActiveSubscription) {
