@@ -1029,7 +1029,7 @@ You've proven consistency and transformation:
 - +{{avgDelta}} average delta improvement ✓
 - {{consecutiveDays}} day streak ✓
 
-**Relational coherence stabilized.** You are now connected.
+**Stage 5 - Relational coherence stabilized.** You are now connected.
 
 Before we unlock **Stage 6: Integration**, quick reflection:
 
