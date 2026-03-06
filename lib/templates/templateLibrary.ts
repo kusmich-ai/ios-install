@@ -897,7 +897,7 @@ You've proven consistency and transformation:
 - +{{avgDelta}} average delta improvement ✓
 - {{consecutiveDays}} day streak ✓
 
-**Flow performance stabilized.** The mind is no longer the operator — it's the tool.
+**Stage 4 - Flow performance stabilized.** The mind is no longer the operator — it's the tool.
 
 Before we unlock **Stage 5: Relational Coherence**, quick reflection:
 
