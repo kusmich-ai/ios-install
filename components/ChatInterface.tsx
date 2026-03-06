@@ -1,4 +1,4 @@
-'use client';
+  'use client';
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useIsMobile } from '@/app/hooks/useIsMobile';
@@ -690,8 +690,28 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   const [showPromptStarters, setShowPromptStarters] = useState(true);
   const hasAutoTriggeredToday = useRef(false);
   const justCompletedViaButton = useRef(false);
-  const [unlockFlowState, setUnlockFlowState] = useState<'none' | 'eligible_shown' | 'confirmed' | 'intro_started'>('none');
+  const [unlockFlowState, setUnlockFlowState] = useState<
+    'none' | 'eligible_shown' | 'confirmed' | 'intro_started' |
+    'mini_checkin' | 'gate1_shown' | 'beat2_pending' | 'gate2_shown' |
+    'beat3_shown' | 'unlock_ready'
+  >('none');
   const [pendingUnlockStage, setPendingUnlockStage] = useState<number | null>(null);
+
+  // ============================================
+  // UNLOCK BEAT FLOW STATE (Stage 1→2 3-beat sequence)
+  // ============================================
+  const [miniCheckinScores, setMiniCheckinScores] = useState<{
+    regulation: number | null;
+    awareness: number | null;
+    outlook: number | null;
+    attention: number | null;
+  }>({ regulation: null, awareness: null, outlook: null, attention: null });
+
+  const [unlockBeat1Data, setUnlockBeat1Data] = useState<{
+    aiInsight: string;
+    gate1Choice: 'A' | 'B' | 'C' | null;
+    gate2Choice: 'A' | 'B' | 'C' | null;
+  } | null>(null);
   const [microActionState, setMicroActionState] = useState<MicroActionState>(initialMicroActionState);
   const microActionStateRef = useRef(microActionState);
   useEffect(() => {
@@ -1942,6 +1962,8 @@ const getFallbackResultsMessage = (
 
   // ============================================
   // EFFECT - Check for Unlock Eligibility (Stages 2-6)
+  // Stage 1→2: Full 3-beat experience with mini check-in
+  // Stages 3–6: Existing celebration messages
   // ============================================
   
   useEffect(() => {
@@ -1955,50 +1977,62 @@ const getFallbackResultsMessage = (
       if (nextStage > 6) return;
       
       hasCheckedUnlock.current = true;
-      
       setPendingUnlockStage(nextStage);
-      setUnlockFlowState('eligible_shown');
-      
-const unlockMessages: { [key: number]: string } = {
-  2: progress?.unlockProgress?.isAccelerated
-    ? `⚡ **Neural Priming stabilized — ahead of schedule.**
 
-Your consistency was exceptional. You've met the accelerated criteria:
-- ≥95% adherence ✓
-- ≥+0.5 average delta improvement ✓
-- Stage competence ≥4/5 ✓
+      // Stage 1→2 gets the full 3-beat experience with mini check-in
+      if (progress.currentStage === 1) {
+        setUnlockFlowState('mini_checkin');
 
-Your nervous system responded faster than the standard timeline. That's earned, not given.
+        const firstName = getUserName();
+        const intro = firstName
+          ? `${firstName}, before we look at your progress — quick pulse check.`
+          : `Before we look at your progress — quick pulse check.`;
 
-**Unlock Stage 2: Embodied Awareness?**`
-    : `Stage 1 - Neural Priming complete. Congrats! Your nervous system has been stabilizing the signal — you've done the work. Stage 2 takes what you've built and puts it into motion. People describe it as the moment when calm stops being a practice and becomes who they are. Ready to install Stage 2 - "Embodied Mode"?`,
-  3: processTemplate(unlockCelebrations.stage3.achievement, {
-    adherence: Math.round(progress?.adherencePercentage || 80),
-    consecutiveDays: progress?.consecutiveDays || 14,
-    avgDelta: 0.50
-  }),
-  4: processTemplate(unlockCelebrations.stage4.achievement, {
-    adherence: Math.round(progress?.adherencePercentage || 80),
-    consecutiveDays: progress?.consecutiveDays || 14,
-    avgDelta: 0.50
-  }),
-  5: processTemplate(unlockCelebrations.stage5.achievement, {
-    adherence: Math.round(progress?.adherencePercentage || 80),
-    consecutiveDays: progress?.consecutiveDays || 14,
-    avgDelta: 0.60
-  }),
-  6: processTemplate(unlockCelebrations.stage6.achievement, {
-    adherence: Math.round(progress?.adherencePercentage || 80),
-    consecutiveDays: progress?.consecutiveDays || 14,
-    avgDelta: 0.70
-  })
-};
-      
-      const message = unlockMessages[nextStage] || `🔓 **Congratulations!** You're eligible to unlock Stage ${nextStage}.`;
-      
-  setTimeout(async () => {
-        await postAssistantMessage(message);
-      }, 1500);
+        setTimeout(async () => {
+          await postAssistantMessage(
+            `${intro}\n\n` +
+            `Rate each area based on **this past week** (not just today). Scale of 0–5:\n\n` +
+            `1. **Regulation** — How easily have you been calming yourself when stressed?\n` +
+            `2. **Awareness** — How quickly have you noticed when lost in thought?\n` +
+            `3. **Outlook** — How open and positive have you felt toward life?\n` +
+            `4. **Attention** — How focused have you been on what matters?\n\n` +
+            `Give me four numbers (e.g. **3 4 3 2**)`
+          );
+        }, 1500);
+
+      } else {
+        // Stages 3–6: existing celebration messages
+        setUnlockFlowState('eligible_shown');
+
+        const unlockMessages: { [key: number]: string } = {
+          3: processTemplate(unlockCelebrations.stage3.achievement, {
+            adherence: Math.round(progress?.adherencePercentage || 80),
+            consecutiveDays: progress?.consecutiveDays || 14,
+            avgDelta: 0.50
+          }),
+          4: processTemplate(unlockCelebrations.stage4.achievement, {
+            adherence: Math.round(progress?.adherencePercentage || 80),
+            consecutiveDays: progress?.consecutiveDays || 14,
+            avgDelta: 0.50
+          }),
+          5: processTemplate(unlockCelebrations.stage5.achievement, {
+            adherence: Math.round(progress?.adherencePercentage || 80),
+            consecutiveDays: progress?.consecutiveDays || 14,
+            avgDelta: 0.60
+          }),
+          6: processTemplate(unlockCelebrations.stage6.achievement, {
+            adherence: Math.round(progress?.adherencePercentage || 80),
+            consecutiveDays: progress?.consecutiveDays || 14,
+            avgDelta: 0.70
+          })
+        };
+
+        const message = unlockMessages[nextStage] || `🔓 **Congratulations!** You're eligible to unlock Stage ${nextStage}.`;
+
+        setTimeout(async () => {
+          await postAssistantMessage(message);
+        }, 1500);
+      }
     }
   }, [progress, progressLoading, sprintRenewalState.isActive, weeklyCheckInActive]);
 
@@ -2184,7 +2218,374 @@ When you're ready to learn more, click the "Unlock Stage 7?" button in your dash
   // HANDLE UNLOCK CONFIRMATION
   // ============================================
   
-  const handleUnlockConfirmation = async (confirmed: boolean) => {
+  // ============================================
+  // UNLOCK BEAT FLOW - HELPER
+  // ============================================
+
+  function getCurrentWeekMonday(): string {
+    const now = new Date();
+    const day = now.getDay();
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(now);
+    monday.setDate(diff);
+    return `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}-${String(monday.getDate()).padStart(2, '0')}`;
+  }
+
+  // ============================================
+  // HANDLE MINI CHECK-IN RESPONSE (pre-Beat 1)
+  // Parses 4 numbers, saves to weekly_deltas, fires Beat 1
+  // ============================================
+  const handleMiniCheckinResponse = async (userMessage: string) => {
+    if (!user || !progress) return;
+
+    // Parse 4 numbers from input (handles "3 4 3 2" or "3,4,3,2" etc.)
+    const nums = userMessage.match(/\d+(\.\d+)?/g)?.map(Number);
+    if (!nums || nums.length < 4) {
+      await postAssistantMessage(
+        `I need four numbers — one for each domain. Try again:\n\n` +
+        `**Regulation, Awareness, Outlook, Attention** (e.g. **3 4 3 2**)`
+      );
+      return;
+    }
+
+    const [regulation, awareness, outlook, attention] = nums.map(n => Math.min(5, Math.max(0, n)));
+    const avgScore = (regulation + awareness + outlook + attention) / 4;
+
+    const baseline = progress.baselineScores || {
+      regulation: 2.5, awareness: 2.5, outlook: 2.5, attention: 2.5, rewiredIndex: 50
+    };
+
+    const regDelta = regulation - baseline.regulation;
+    const awareDelta = awareness - baseline.awareness;
+    const outlookDelta = outlook - baseline.outlook;
+    const attnDelta = attention - baseline.attention;
+    const avgDelta = (regDelta + awareDelta + outlookDelta + attnDelta) / 4;
+    const rewiredIndex = Math.round(avgScore * 20);
+
+    const supabase = createClient();
+    const weekOf = getCurrentWeekMonday();
+
+    // Calculate week start (Sunday-based, matching saveWeeklyCheckIn)
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay());
+    weekStart.setHours(0, 0, 0, 0);
+    const weekStartISO = weekStart.toISOString().split('T')[0];
+
+    // Save in exact same format as saveWeeklyCheckIn
+    try {
+      await supabase.from('weekly_checkins').insert({
+        user_id: user.id,
+        regulation_score: regulation,
+        awareness_score: awareness,
+        outlook_score: outlook,
+        attention_score: attention,
+        qualitative_score: Math.round(avgScore),
+        stage: progress.currentStage || 1
+      });
+
+      await supabase
+        .from('user_progress')
+        .update({ last_weekly_checkin: new Date().toISOString() })
+        .eq('user_id', user.id);
+
+      await supabase.from('weekly_deltas').upsert({
+        user_id: user.id,
+        week_of: weekStartISO,
+        regulation_score: regulation,
+        awareness_score: awareness,
+        outlook_score: outlook,
+        attention_score: attention,
+        regulation_delta: regDelta,
+        awareness_delta: awareDelta,
+        outlook_delta: outlookDelta,
+        attention_delta: attnDelta,
+        average_delta: avgDelta,
+        qualitative_rating: Math.round(((regulation + awareness + outlook + attention) / 4) * 100) / 100,
+        stage_at_checkin: progress.currentStage || 1
+      }, { onConflict: 'user_id,week_of' });
+    } catch (err) {
+      console.error('[UnlockFlow] Failed to save mini check-in scores:', err);
+      // Continue anyway — don't block the unlock experience
+    }
+
+    setMiniCheckinScores({ regulation, awareness, outlook, attention });
+
+    // Fire Beat 1
+    await fireBeat1({
+      currentScores: { regulation, awareness, outlook, attention },
+      baseline,
+      deltas: { regulation: regDelta, awareness: awareDelta, outlook: outlookDelta, attention: attnDelta, average: avgDelta },
+      rewiredIndex,
+      rewiredDelta: rewiredIndex - baseline.rewiredIndex,
+      adherence: progress.adherencePercentage,
+      consecutiveDays: progress.consecutiveDays,
+      patternProfile: progress.patternProfile || null,
+    });
+  };
+
+  // ============================================
+  // FIRE BEAT 1 — Transformation mirror
+  // ============================================
+  const fireBeat1 = async (data: {
+    currentScores: { regulation: number; awareness: number; outlook: number; attention: number };
+    baseline: { regulation: number; awareness: number; outlook: number; attention: number; rewiredIndex: number };
+    deltas: { regulation: number; awareness: number; outlook: number; attention: number; average: number };
+    rewiredIndex: number;
+    rewiredDelta: number;
+    adherence: number;
+    consecutiveDays: number;
+    patternProfile: { primaryPattern: string | null; coreChallenge: string | null; mirrorSummary: string | null } | null;
+  }) => {
+    const { currentScores, baseline, deltas, rewiredIndex, rewiredDelta, adherence, consecutiveDays, patternProfile } = data;
+
+    const fmt = (n: number) => n.toFixed(1);
+    const delta = (n: number) => n >= 0 ? `+${n.toFixed(1)}` : n.toFixed(1);
+
+    const domainEntries = [
+      { name: 'Regulation', delta: deltas.regulation },
+      { name: 'Awareness', delta: deltas.awareness },
+      { name: 'Outlook', delta: deltas.outlook },
+      { name: 'Attention', delta: deltas.attention },
+    ];
+    const strongest = domainEntries.reduce((a, b) => a.delta > b.delta ? a : b);
+    const weakest = domainEntries.reduce((a, b) => a.delta < b.delta ? a : b);
+
+    // Generate AI insight
+    let aiInsight = '';
+    try {
+      const insightPrompt = `You are the IOS System Installer — witty, direct, scientifically grounded. NO cheerleading.
+
+Write exactly 2-3 sentences interpreting this user's Stage 1 progress data. Be specific to their numbers. Connect the strongest-moving domain to a real-world felt experience. Call out the weakest domain honestly as the growth edge. If pattern profile is available, reference it.
+
+Data:
+- Days completed: ${consecutiveDays}
+- Adherence: ${adherence}%
+- REwired Index: ${baseline.rewiredIndex} → ${rewiredIndex} (${delta(rewiredDelta)} points)
+- Strongest moving domain: ${strongest.name} (${delta(strongest.delta)})
+- Weakest moving domain: ${weakest.name} (${delta(weakest.delta)})
+- Pattern profile: ${patternProfile?.mirrorSummary || patternProfile?.coreChallenge || 'not available'}
+
+Tone rules:
+- Start with something specific about their pattern or strongest domain, NOT generic praise
+- Name a real-world implication (e.g. "that's the half-second pause before you react")
+- Call out the weakest domain honestly — it's the growth edge
+- 2-3 sentences MAX, no emojis, no exclamation points, no "great job"
+- Example: "That +0.6 in Regulation isn't a stat — it's the half-second pause before you react that wasn't there before. Awareness is still the lagging edge, which means patterns are still running below conscious detection. Stage 2 starts to fix that."`;
+
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: insightPrompt }],
+          context: 'unlock_insight',
+          temperature: 0.7,
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        aiInsight = result.content || result.message || result.response || '';
+      }
+    } catch (e) {
+      console.error('[UnlockFlow] AI insight failed:', e);
+    }
+
+    if (!aiInsight) {
+      aiInsight = `That ${delta(strongest.delta)} in ${strongest.name} is the system responding — your nervous system learned something real. ${weakest.name} is the growth edge, and that's exactly what Stage 2 is designed to develop.`;
+    }
+
+    setUnlockBeat1Data({ aiInsight, gate1Choice: null, gate2Choice: null });
+    setUnlockFlowState('gate1_shown');
+
+    const firstName = getUserName();
+    const beat1Message =
+      `${firstName ? `${firstName}, stop` : 'Stop'} for a second.\n\n` +
+      `Something worth acknowledging just happened.\n\n` +
+      `You just completed **${consecutiveDays} consecutive days** of Stage 1: Neural Priming. ` +
+      `That puts you in the top minority of people who start this and actually follow through.\n\n` +
+      `Here's what the data shows:\n\n` +
+      `**REwired Index:** ${baseline.rewiredIndex} → **${rewiredIndex}** *(${delta(rewiredDelta)} points)*\n\n` +
+      `**Domain shifts since Day 1:**\n` +
+      `- Regulation: ${fmt(baseline.regulation)} → ${fmt(currentScores.regulation)} *(${delta(deltas.regulation)})*\n` +
+      `- Awareness: ${fmt(baseline.awareness)} → ${fmt(currentScores.awareness)} *(${delta(deltas.awareness)})*\n` +
+      `- Outlook: ${fmt(baseline.outlook)} → ${fmt(currentScores.outlook)} *(${delta(deltas.outlook)})*\n` +
+      `- Attention: ${fmt(baseline.attention)} → ${fmt(currentScores.attention)} *(${delta(deltas.attention)})*\n\n` +
+      `${aiInsight}`;
+
+    await postAssistantMessage(beat1Message);
+  };
+
+  // ============================================
+  // HANDLE GATE 1 BUTTON (after Beat 1)
+  // ============================================
+  const handleUnlockGate1 = async (choice: 'A' | 'B' | 'C') => {
+    setUnlockBeat1Data(prev => prev ? { ...prev, gate1Choice: choice } : null);
+    setUnlockFlowState('beat2_pending');
+
+    const bridges: Record<string, string> = {
+      A: `Good. That feeling is data. Your nervous system isn't performing calm anymore — it's starting to *be* it. Here's where that takes you...`,
+      B: `Most people don't — because the changes happen underneath conscious awareness first. That's exactly how nervous system rewiring works. You feel it before you can name it. Here's what you've actually been building...`,
+      C: `Fair. Stage 1 isn't dramatic — it's foundational. What you built here isn't visible yet because it's structural. Stage 2 is where it starts showing up in ways you can actually feel. Here's the full picture...`,
+    };
+
+    await postAssistantMessage(bridges[choice]);
+
+    setTimeout(async () => {
+      await fireBeat2();
+    }, 800);
+  };
+
+  // ============================================
+  // FIRE BEAT 2 — Roadmap
+  // ============================================
+  const fireBeat2 = async () => {
+    setUnlockFlowState('gate2_shown');
+
+    const patternProfile = progress?.patternProfile;
+    const domainDeltas = progress?.domainDeltas;
+    const weakest = domainDeltas ? (() => {
+      const entries = [
+        { name: 'Regulation', delta: domainDeltas.regulation },
+        { name: 'Awareness', delta: domainDeltas.awareness },
+        { name: 'Outlook', delta: domainDeltas.outlook },
+        { name: 'Attention', delta: domainDeltas.attention },
+      ];
+      return entries.reduce((a, b) => a.delta < b.delta ? a : b).name;
+    })() : 'Attention';
+
+    // Generate AI roadmap note
+    let aiRoadmapNote = '';
+    try {
+      const roadmapPrompt = `You are the IOS System Installer. Write exactly 2 sentences connecting this user's specific situation to what Stages 2-4 will address. Make it feel like the system was built for them. Direct, no fluff.
+
+User's weakest domain: ${weakest}
+Pattern profile: ${patternProfile?.mirrorSummary || patternProfile?.coreChallenge || patternProfile?.primaryPattern || 'not available'}
+
+Example: "You came in noting that reactivity was bleeding into your relationships — Stage 3 is specifically designed to catch that pattern before it fires. By Stage 5, you'll be training your nervous system to stay open even when it wants to shut down."
+
+Two sentences only. No preamble.`;
+
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: roadmapPrompt }],
+          context: 'unlock_roadmap',
+          temperature: 0.7,
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        aiRoadmapNote = result.content || result.message || result.response || '';
+      }
+    } catch (e) {
+      console.error('[UnlockFlow] AI roadmap note failed:', e);
+    }
+
+    if (!aiRoadmapNote) {
+      aiRoadmapNote = `${weakest} is your growth edge — that's exactly what the next stages are designed to train. Each stage builds the foundation the next one requires.`;
+    }
+
+    const beat2Message =
+      `The IOS has 7 stages. Each one unlocks a new layer of how you operate. Here's the arc:\n\n` +
+      `**Stage 1: Neural Priming** ✓\n` +
+      `*Stabilize the signal. You built the foundation — a regulated baseline your nervous system can return to.*\n\n` +
+      `**Stage 2: Embodied Awareness** ← *You're unlocking this*\n` +
+      `*Bring awareness into your body, not just your breath. Calm stops being a practice and starts being physical.*\n\n` +
+      `**Stage 3: Cue Training**\n` +
+      `*Catch unconscious patterns before they run you. This is where the deep rewiring happens.*\n\n` +
+      `**Stage 4: Flow Mode**\n` +
+      `*Convert coherence into performance. Sustained attention becomes a trainable skill.*\n\n` +
+      `**Stage 5: Relational Coherence**\n` +
+      `*Stay regulated in connection — the hardest stage, and the most impactful.*\n\n` +
+      `**Stage 6: Integration**\n` +
+      `*Make all of this permanent. Awareness becomes your stable trait, not a daily effort.*\n\n` +
+      `**Stage 7: Accelerated Expansion** *(Application only)*\n` +
+      `*Advanced integration for those ready to go further than most people ever will.*\n\n` +
+      `${aiRoadmapNote}`;
+
+    await postAssistantMessage(beat2Message);
+  };
+
+  // ============================================
+  // HANDLE GATE 2 BUTTON (after Beat 2)
+  // ============================================
+  const handleUnlockGate2 = async (choice: 'A' | 'B' | 'C') => {
+    setUnlockBeat1Data(prev => prev ? { ...prev, gate2Choice: choice } : null);
+    setUnlockFlowState('beat3_shown');
+
+    const bridges: Record<string, string> = {
+      A: `Then let's make sure you actually get there. One question before we unlock Stage 2...`,
+      B: `It is. And Stage 2 is what makes Stage 3 possible — you can't catch patterns you can't yet feel in your body. You're closer than you think. One question first...`,
+      C: `Then you're in the right place. Before we move forward — one question...`,
+    };
+
+    await postAssistantMessage(bridges[choice]);
+
+    setTimeout(async () => {
+      await postAssistantMessage(
+        `**What's actually different about how you show up now compared to when you started?**\n\n` +
+        `Not what you think *should* be different. What do you actually *notice* — even if it's small?`
+      );
+    }, 600);
+  };
+
+  // ============================================
+  // HANDLE BEAT 3 REFLECTION (text input or "not sure" button)
+  // ============================================
+  const handleUnlockBeat3Reflection = async (userInput: string, skipped = false) => {
+    setUnlockFlowState('unlock_ready');
+
+    if (skipped) {
+      await postAssistantMessage(
+        `That's actually the right answer — nervous system changes happen beneath conscious awareness first. You feel it before you can name it.\n\n` +
+        `Trust the data. The numbers moved. Your system is responding.\n\n` +
+        `Stage 2 is where it starts to become something you can actually feel in real time.\n\n` +
+        `Ready to install it?`
+      );
+    } else {
+      let reflection = '';
+      try {
+        const reflectPrompt = `The user just completed Stage 1 of a nervous system training program and is about to unlock Stage 2. They answered this reflection question: "${userInput}"
+
+Write exactly ONE sentence reflecting their observation back to them and naming the mechanism behind it. Be specific to what they said. Direct, no fluff, no cheerleading.
+
+Example: "You're noticing the pause before the reaction — that's regulation becoming automatic."
+Example: "The irritability is lower because the baseline nervous system activation is lower — less signal, less noise."
+
+One sentence only. No preamble.`;
+
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: [{ role: 'user', content: reflectPrompt }],
+            context: 'unlock_reflection',
+            temperature: 0.7,
+          }),
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          reflection = result.content || result.message || result.response || '';
+        }
+      } catch (e) {
+        console.error('[UnlockFlow] AI reflection failed:', e);
+      }
+
+      if (!reflection) reflection = `That's Stage 1 working.`;
+
+      await postAssistantMessage(
+        `${reflection}\n\n` +
+        `Stage 2 takes that and brings it into the body — movement, breath, proprioception. The calm you've trained becomes something you can feel, not just think.\n\n` +
+        `Ready to install it?`
+      );
+    }
+  };
+
+  // ============================================
     if (confirmed && pendingUnlockStage) {
       // Check if subscription is required (Stage 2+) and user doesn't have one
       if (pendingUnlockStage >= 2 && !hasActiveSubscription) {
@@ -4446,6 +4847,24 @@ if (regressionIntervention?.isActive) {
       setLoading(false);
       return;
     }
+
+    // 3a. Unlock mini check-in (pre-Beat 1 scores collection)
+    if (unlockFlowState === 'mini_checkin') {
+      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+      setLoading(true);
+      await handleMiniCheckinResponse(userMessage);
+      setLoading(false);
+      return;
+    }
+
+    // 3b. Unlock Beat 3 reflection (text input)
+    if (unlockFlowState === 'beat3_shown') {
+      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+      setLoading(true);
+      await handleUnlockBeat3Reflection(userMessage);
+      setLoading(false);
+      return;
+    }
     
     // 4. Awaiting Micro-Action Start confirmation
     if (awaitingMicroActionStart) {
@@ -5185,7 +5604,7 @@ Ready to start your first practice?`;
               </div>
             )}
             
-            {/* Unlock Confirmation Buttons */}
+            {/* Unlock Confirmation Buttons — Stages 3-6 (classic flow) */}
             {unlockFlowState === 'eligible_shown' && pendingUnlockStage && !loading && (
               <div className="flex justify-center gap-4">
                 <button
@@ -5199,6 +5618,72 @@ Ready to start your first practice?`;
                   className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-xl transition-colors shadow-lg"
                 >
                   Not yet
+                </button>
+              </div>
+            )}
+
+            {/* GATE 1 — after Beat 1 (Stage 1→2 only) */}
+            {unlockFlowState === 'gate1_shown' && !loading && (
+              <div className="flex flex-col gap-2 mt-3 max-w-md mx-auto w-full">
+                {[
+                  { key: 'A' as const, label: "That's real — I feel it" },
+                  { key: 'B' as const, label: "I didn't realize I'd moved that much" },
+                  { key: 'C' as const, label: "Honestly, I expected more" },
+                ].map(btn => (
+                  <button
+                    key={btn.key}
+                    onClick={() => handleUnlockGate1(btn.key)}
+                    className="w-full text-left px-4 py-3 rounded-lg bg-white/10 hover:bg-white/20 
+                               border border-white/20 text-white text-sm transition-all"
+                  >
+                    {btn.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* GATE 2 — after Beat 2 (Stage 1→2 only) */}
+            {unlockFlowState === 'gate2_shown' && !loading && (
+              <div className="flex flex-col gap-2 mt-3 max-w-md mx-auto w-full">
+                {[
+                  { key: 'A' as const, label: "I can see where this is going" },
+                  { key: 'B' as const, label: "Stage 3 is what I really need" },
+                  { key: 'C' as const, label: "This is exactly what I signed up for" },
+                ].map(btn => (
+                  <button
+                    key={btn.key}
+                    onClick={() => handleUnlockGate2(btn.key)}
+                    className="w-full text-left px-4 py-3 rounded-lg bg-white/10 hover:bg-white/20 
+                               border border-white/20 text-white text-sm transition-all"
+                  >
+                    {btn.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* BEAT 3 — "Not sure yet" escape hatch */}
+            {unlockFlowState === 'beat3_shown' && !loading && (
+              <div className="mt-3 flex justify-center">
+                <button
+                  onClick={() => handleUnlockBeat3Reflection('', true)}
+                  className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 
+                             border border-white/20 text-white/60 text-sm transition-all"
+                >
+                  I'm not sure yet
+                </button>
+              </div>
+            )}
+
+            {/* FINAL UNLOCK BUTTON — Stage 1→2 */}
+            {unlockFlowState === 'unlock_ready' && pendingUnlockStage && !loading && (
+              <div className="mt-4 flex justify-center">
+                <button
+                  onClick={() => handleUnlockConfirmation(true)}
+                  className="px-6 py-4 rounded-xl bg-[#ff9e19] hover:bg-[#ffb347] 
+                             text-black font-semibold text-base transition-all shadow-lg"
+                >
+                  Yes — unlock Stage 2: Embodied Awareness
                 </button>
               </div>
             )}
