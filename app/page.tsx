@@ -1116,7 +1116,7 @@ export default function Home() {
         <div className="container" style={{ position: 'relative', zIndex: 1 }}>
           <div className="reveal" style={{ textAlign: 'center' }}>
             <img
-              src="PLACEHOLDER_BASE64_2"
+              src="logol"
               alt="unbecoming"
               style={{ maxWidth: '420px', width: '90%', margin: '0 auto 36px', display: 'block' }}
             />
