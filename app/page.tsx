@@ -1599,7 +1599,7 @@ export default function Home() {
           <p className="cta-sub">
             The sequence is designed. The science is embedded. The system runs itself. Your only job is 8 minutes tomorrow morning.
           </p>
-          <a href="https://unbecoming.app/signup" className="btn-primary">Install Stage 1 - It&apos;s Free</a>
+          <a href="https://unbecoming.app/auth/signup" className="btn-primary">Install Stage 1 - It&apos;s Free</a>
           <div className="cta-proof-strip">
             {['No credit card', 'No device required', 'Starts at 8 min/day', 'No expertise needed', 'Scales to 16 min at full installation'].map((item) => (
               <div key={item} className="cta-proof-item"><span>✦</span> {item}</div>
