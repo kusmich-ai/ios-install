@@ -1080,8 +1080,8 @@ export default function Home() {
           <img src="logol.png" alt="unbecoming" style={{ height: '28px', display: 'block' }} />
         </a>
         <div className="nav-right">
-          <a href="https://unbecoming.app/signin" className="nav-login">Log In</a>
-          <a href="https://unbecoming.app/signup" className="nav-cta">Begin Installation</a>
+          <a href="https://unbecoming.app/auth/signin" className="nav-login">Log In</a>
+          <a href="https://unbecoming.app/auth/signup" className="nav-cta">Begin Installation</a>
         </div>
       </nav>
 
