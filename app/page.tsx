@@ -1077,7 +1077,7 @@ export default function Home() {
       {/* NAV */}
       <nav>
         <a href="#" className="nav-logo-img" style={{ display: 'block' }}>
-          <img src="logol" alt="unbecoming" style={{ height: '28px', display: 'block' }} />
+          <img src="/logol.png" alt="unbecoming" style={{ height: '28px', display: 'block' }} />
         </a>
         <div className="nav-right">
           <a href="https://unbecoming.app/signin" className="nav-login">Log In</a>
