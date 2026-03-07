@@ -1340,7 +1340,7 @@ export default function Home() {
             <em>
               Unbecoming runs all of them.<br />
               Simultaneously. In the correct developmental sequence.<br />
-              As a 16-minute daily ritual that installs itself.
+              As a stacked 16-minute daily ritual that installs itself.
             </em>
             <span className="accent-line">Without you needing to understand any of it.</span>
           </blockquote>
@@ -1360,24 +1360,24 @@ export default function Home() {
           <div className="stages-timeline">
             {[
               {
-                num: '01', name: 'Neural Priming', tagline: '"Stabilize the signal. Teach your nervous system calm."',
+                num: '01', name: 'Neural Priming', tagline: '"Stabilize and Regulate the signal. Teach your nervous system calm coherence."',
                 pills: ['🫁 Resonance Breathing - 5 min', '👁 Awareness Rep - 3 min'],
                 toolPills: [],
                 science: 'Installing: vagal tone baseline · metacognitive observer function · autonomic regulation capacity',
                 time: '8 minutes',
               },
               {
-                num: '02', name: 'Embodied Awareness', tagline: '"Bring awareness into motion."',
+                num: '02', name: 'Embodied Awareness', tagline: '"Bring meta-awareness into motion."',
                 pills: ['+ 🧘 Somatic Flow - 2 min'],
                 toolPills: [],
                 science: 'Installing: proprioceptive mapping · interoceptive awareness · cerebrospinal coherence',
                 time: '10 minutes',
               },
               {
-                num: '03', name: 'Cue Training', tagline: '"Act from coherence."',
+                num: '03', name: 'Cue Training', tagline: '"Catch patterns before they become you."',
                 pills: ['+ ⚡ The Cue - 2 min'],
                 toolPills: ['🔑 Reframe Protocol unlocked'],
-                science: 'Installing: identity-based habit loops · self-efficacy foundation · dorsolateral prefrontal activation',
+                science: 'Installing: reticular priming · identity-schema consolidation · salience network calibration',
                 time: '12 minutes',
               },
               {
