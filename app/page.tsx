@@ -1612,7 +1612,7 @@ export default function Home() {
             Two systems.<br /><em>One installation.</em>
           </h2>
           <p className="mechanism-body reveal" style={{ marginBottom: '36px' }}>
-            The IOS rewires both layers simultaneously — because lasting change requires the hardware and the software to upgrade together.
+            The Stack rewires both layers simultaneously because lasting change requires the hardware and the software to upgrade together.
           </p>
 
           <div className="nos-mos-grid reveal">
@@ -1621,7 +1621,7 @@ export default function Home() {
               <div className="nos-mos-title">Neural Operating System</div>
               <div className="nos-mos-subtitle">NOS — The Hardware</div>
               <p className="nos-mos-body">
-                Your nervous system is the hardware. Most people run in constant threat-response mode, burning out the system. The NOS protocols give your body a new baseline — one of coherent regulation, not chronic activation.
+                Your nervous system is the hardware. Most people run in constant threat-response mode, burning out the system. The NOS protocols give your body a new baseline - one of coherent regulation, not chronic activation.
               </p>
               <ul className="nos-mos-list">
                 <li>Measurable HRV improvement within 14 days</li>
@@ -1636,10 +1636,10 @@ export default function Home() {
               <div className="nos-mos-title">Mental Operating System</div>
               <div className="nos-mos-subtitle">MOS — The Software</div>
               <p className="nos-mos-body">
-                Your mind is the software. Most self-help teaches you to add more apps. The MOS protocols upgrade the entire operating system — how you process, interpret, and respond to reality itself.
+                Your mind is the software. Most self-help teaches you to add more apps. The MOS protocols upgrade the entire operating system - how you process, interpret, and respond to reality itself.
               </p>
               <ul className="nos-mos-list">
-                <li>Identity installation through 21-day evidence cycles</li>
+                <li>Training your reticular activated system through 21-day cue training</li>
                 <li>Flow state training for sustained deep work</li>
                 <li>Cognitive reframing — not positive thinking, precision debugging</li>
                 <li>Meta-awareness: watching the mind, not being run by it</li>
