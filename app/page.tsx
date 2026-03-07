@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 
 export default function Home() {
   const [tableOpen, setTableOpen] = useState(false);
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
   const revealRefs = useRef<HTMLElement[]>([]);
 
   useEffect(() => {
@@ -555,6 +556,122 @@ export default function Home() {
         .m-mechanism { font-size: 12px; color: var(--white-dim); line-height: 1.55; }
         .m-practice { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--white-dim); letter-spacing: 0.03em; line-height: 1.5; }
 
+        /* ── NOS / MOS ── */
+        #nos-mos {
+          padding: 100px 0;
+          background: linear-gradient(to bottom, transparent, rgba(255,158,25,0.025), transparent);
+        }
+
+        .nos-mos-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 2px;
+          margin-bottom: 2px;
+        }
+
+        .nos-mos-card {
+          background: var(--bg2);
+          border: 1px solid var(--border-subtle);
+          padding: 36px 32px;
+          transition: border-color 0.3s;
+        }
+        .nos-mos-card:hover { border-color: var(--border); }
+
+        .nos-mos-icon {
+          font-size: 22px;
+          color: var(--amber);
+          margin-bottom: 16px;
+          display: block;
+          line-height: 1;
+        }
+
+        .nos-mos-title {
+          font-family: 'Cormorant Garamond', serif;
+          font-size: clamp(20px, 2.8vw, 28px);
+          font-weight: 400;
+          color: var(--white);
+          margin-bottom: 4px;
+          line-height: 1.2;
+        }
+
+        .nos-mos-subtitle {
+          font-family: 'DM Mono', monospace;
+          font-size: 10px;
+          letter-spacing: 0.2em;
+          text-transform: uppercase;
+          color: var(--amber);
+          margin-bottom: 16px;
+        }
+
+        .nos-mos-body {
+          font-size: 14px;
+          color: var(--white-dim);
+          line-height: 1.7;
+          margin-bottom: 20px;
+        }
+
+        .nos-mos-list {
+          list-style: none;
+          display: flex;
+          flex-direction: column;
+          gap: 9px;
+        }
+
+        .nos-mos-list li {
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
+          font-size: 13px;
+          color: var(--white-dim);
+          line-height: 1.5;
+        }
+
+        .nos-mos-list li::before {
+          content: '✦';
+          color: var(--amber);
+          font-size: 8px;
+          margin-top: 5px;
+          flex-shrink: 0;
+        }
+
+        .nos-mos-bridge {
+          background: var(--amber-dim);
+          border: 1px solid var(--border);
+          padding: 20px 32px;
+          display: grid;
+          grid-template-columns: 1fr 1fr 1fr;
+        }
+
+        .nos-mos-bridge-item {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 0 20px;
+        }
+        .nos-mos-bridge-item:first-child { padding-left: 0; }
+        .nos-mos-bridge-item:not(:last-child) {
+          border-right: 1px solid var(--border);
+        }
+
+        .bridge-old {
+          font-family: 'DM Mono', monospace;
+          font-size: 11px;
+          color: rgba(255,100,100,0.55);
+          text-decoration: line-through;
+        }
+        .bridge-arrow {
+          color: var(--white-dim);
+          font-size: 11px;
+          flex-shrink: 0;
+        }
+        .bridge-new {
+          font-family: 'DM Mono', monospace;
+          font-size: 11px;
+          color: var(--amber);
+          font-weight: 500;
+          letter-spacing: 0.04em;
+        }
+
         /* INSIGHT QUOTE */
         #insight {
           padding: 100px 0;
@@ -917,6 +1034,159 @@ export default function Home() {
         }
         .proof-desc { font-size: 13px; color: var(--white-dim); line-height: 1.65; }
 
+        /* ── TESTIMONIALS ── */
+        #testimonials {
+          padding: 100px 0;
+        }
+
+        .testimonial-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr 1fr;
+          gap: 2px;
+          margin-bottom: 2px;
+        }
+
+        .testimonial-card {
+          background: var(--bg2);
+          border: 1px solid var(--border-subtle);
+          padding: 32px;
+          transition: border-color 0.3s;
+        }
+        .testimonial-card:hover { border-color: var(--border); }
+
+        .testimonial-stat {
+          font-family: 'Cormorant Garamond', serif;
+          font-size: clamp(38px, 5vw, 56px);
+          font-weight: 300;
+          color: var(--amber);
+          line-height: 1;
+          margin-bottom: 4px;
+        }
+
+        .testimonial-stat-label {
+          font-family: 'DM Mono', monospace;
+          font-size: 9px;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          color: var(--white-dim);
+          margin-bottom: 20px;
+          line-height: 1.5;
+        }
+
+        .testimonial-quote {
+          font-family: 'Cormorant Garamond', serif;
+          font-size: clamp(15px, 1.8vw, 18px);
+          font-weight: 300;
+          font-style: italic;
+          color: var(--white-dim);
+          line-height: 1.65;
+          margin-bottom: 20px;
+        }
+        .testimonial-quote em { color: var(--white); font-style: normal; }
+
+        .testimonial-byline {
+          padding-top: 16px;
+          border-top: 1px solid var(--border-subtle);
+        }
+        .testimonial-name {
+          font-family: 'DM Mono', monospace;
+          font-size: 11px;
+          color: var(--white);
+          letter-spacing: 0.08em;
+          margin-bottom: 2px;
+        }
+        .testimonial-role {
+          font-family: 'DM Mono', monospace;
+          font-size: 10px;
+          color: var(--white-dim);
+          letter-spacing: 0.06em;
+        }
+
+        .testimonial-closer {
+          background: var(--amber-dim);
+          border: 1px solid var(--border);
+          border-left: 3px solid var(--amber);
+          padding: 32px 40px;
+        }
+
+        .testimonial-closer-quote {
+          font-family: 'Cormorant Garamond', serif;
+          font-size: clamp(20px, 3vw, 30px);
+          font-weight: 300;
+          font-style: italic;
+          color: var(--white);
+          line-height: 1.5;
+          margin-bottom: 16px;
+        }
+        .testimonial-closer-quote em { color: var(--amber); font-style: normal; }
+
+        .testimonial-closer-attr {
+          font-family: 'DM Mono', monospace;
+          font-size: 11px;
+          color: var(--white-dim);
+          letter-spacing: 0.1em;
+        }
+
+        /* ── FAQ ── */
+        #faq { padding: 100px 0; }
+
+        .faq-list {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          margin-top: 16px;
+        }
+
+        .faq-item {
+          background: var(--bg2);
+          border: 1px solid var(--border-subtle);
+          overflow: hidden;
+          transition: border-color 0.3s;
+        }
+        .faq-item.open { border-color: var(--border); }
+
+        .faq-trigger {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 24px;
+          padding: 24px 28px;
+          background: none;
+          border: none;
+          cursor: pointer;
+          text-align: left;
+          transition: background 0.2s;
+        }
+        .faq-trigger:hover { background: var(--bg3); }
+
+        .faq-question {
+          font-family: 'Cormorant Garamond', serif;
+          font-size: clamp(17px, 2vw, 21px);
+          font-weight: 400;
+          color: var(--white);
+          line-height: 1.3;
+        }
+
+        .faq-arrow {
+          font-family: 'DM Mono', monospace;
+          font-size: 20px;
+          color: var(--amber);
+          flex-shrink: 0;
+          transition: transform 0.3s ease;
+          line-height: 1;
+        }
+        .faq-item.open .faq-arrow { transform: rotate(45deg); }
+
+        .faq-answer {
+          padding: 0 28px 28px;
+          font-size: 14px;
+          color: var(--white-dim);
+          line-height: 1.75;
+          border-top: 1px solid var(--border-subtle);
+          padding-top: 20px;
+        }
+
         /* CTA */
         #cta {
           padding: 120px 0;
@@ -1053,6 +1323,11 @@ export default function Home() {
           .vs-col { padding: 0 !important; }
           .vs-unified { grid-template-columns: 1fr; }
           .proof-grid { grid-template-columns: 1fr; }
+          .nos-mos-grid { grid-template-columns: 1fr; }
+          .nos-mos-bridge { grid-template-columns: 1fr; }
+          .nos-mos-bridge-item { padding: 12px 0 !important; border-right: none !important; border-bottom: 1px solid var(--border); }
+          .nos-mos-bridge-item:last-child { border-bottom: none; }
+          .testimonial-grid { grid-template-columns: 1fr; }
           .hero-proof-strip { flex-direction: column; }
           .hero-proof-item { border-right: none; border-bottom: 1px solid var(--border-subtle); }
           .hero-proof-item:last-child { border-bottom: none; }
@@ -1062,7 +1337,7 @@ export default function Home() {
         }
       `}</style>
 
-      {/* Noise texture overlay (replaces body::before) */}
+      {/* Noise texture overlay */}
       <div
         style={{
           position: 'fixed',
@@ -1329,6 +1604,65 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── NOS / MOS ── */}
+      <section id="nos-mos">
+        <div className="container">
+          <p className="section-label reveal">The Architecture</p>
+          <h2 className="mechanism-intro reveal" style={{ marginBottom: '10px' }}>
+            Two systems.<br /><em>One installation.</em>
+          </h2>
+          <p className="mechanism-body reveal" style={{ marginBottom: '36px' }}>
+            The IOS rewires both layers simultaneously — because lasting change requires the hardware and the software to upgrade together.
+          </p>
+
+          <div className="nos-mos-grid reveal">
+            <div className="nos-mos-card">
+              <span className="nos-mos-icon">〰</span>
+              <div className="nos-mos-title">Neural Operating System</div>
+              <div className="nos-mos-subtitle">NOS — The Hardware</div>
+              <p className="nos-mos-body">
+                Your nervous system is the hardware. Most people run in constant threat-response mode, burning out the system. The NOS protocols give your body a new baseline — one of coherent regulation, not chronic activation.
+              </p>
+              <ul className="nos-mos-list">
+                <li>Measurable HRV improvement within 14 days</li>
+                <li>Vagal tone optimization through resonance training</li>
+                <li>Embodied presence — awareness that lives in the body, not just the mind</li>
+                <li>Threat-response rewiring at the physiological level</li>
+              </ul>
+            </div>
+
+            <div className="nos-mos-card">
+              <span className="nos-mos-icon">◈</span>
+              <div className="nos-mos-title">Mental Operating System</div>
+              <div className="nos-mos-subtitle">MOS — The Software</div>
+              <p className="nos-mos-body">
+                Your mind is the software. Most self-help teaches you to add more apps. The MOS protocols upgrade the entire operating system — how you process, interpret, and respond to reality itself.
+              </p>
+              <ul className="nos-mos-list">
+                <li>Identity installation through 21-day evidence cycles</li>
+                <li>Flow state training for sustained deep work</li>
+                <li>Cognitive reframing — not positive thinking, precision debugging</li>
+                <li>Meta-awareness: watching the mind, not being run by it</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="nos-mos-bridge reveal">
+            {[
+              { old: 'Learning', next: 'Installation' },
+              { old: 'Information', next: 'Transformation' },
+              { old: 'Willpower', next: 'System Design' },
+            ].map((item) => (
+              <div key={item.old} className="nos-mos-bridge-item">
+                <span className="bridge-old">{item.old}</span>
+                <span className="bridge-arrow">→</span>
+                <span className="bridge-new">{item.next}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* INSIGHT QUOTE */}
       <section id="insight">
         <div className="container">
@@ -1581,6 +1915,99 @@ export default function Home() {
                 <div className="proof-metric">{card.metric}</div>
                 <div className="proof-metric-label">{card.label}</div>
                 <p className="proof-desc">{card.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── TESTIMONIALS ── */}
+      <section id="testimonials">
+        <div className="container">
+          <p className="section-label reveal">Real Results</p>
+
+          <div className="testimonial-grid reveal">
+            <div className="testimonial-card">
+              <div className="testimonial-stat">5×</div>
+              <div className="testimonial-stat-label">Revenue Growth</div>
+              <p className="testimonial-quote">
+                &ldquo;My business did $60k the first year. $90k the next. After this protocol, I&apos;ll cross the{' '}
+                <em>$300k mark.</em> Something in the way I operate completely changed.&rdquo;
+              </p>
+              <div className="testimonial-byline">
+                <div className="testimonial-name">Jesse</div>
+                <div className="testimonial-role">Entrepreneur</div>
+              </div>
+            </div>
+
+            <div className="testimonial-card">
+              <div className="testimonial-stat">7</div>
+              <div className="testimonial-stat-label">Consecutive $1M+ Months</div>
+              <p className="testimonial-quote">
+                &ldquo;Since doing this I have had <em>7 million dollar months in a row.</em> I have never done that before. Something just started clicking. Hard to describe.&rdquo;
+              </p>
+              <div className="testimonial-byline">
+                <div className="testimonial-name">Brian</div>
+                <div className="testimonial-role">Business Owner</div>
+              </div>
+            </div>
+
+            <div className="testimonial-card">
+              <div className="testimonial-stat">36</div>
+              <div className="testimonial-stat-label">Days Free From Anxiety & Sleep Medication</div>
+              <p className="testimonial-quote">
+                &ldquo;<em>36 days without anxiety or sleep pills</em> after finishing Stage 7. Complete freedom I hadn&apos;t experienced in years.&rdquo;
+              </p>
+              <div className="testimonial-byline">
+                <div className="testimonial-name">Martin</div>
+                <div className="testimonial-role">Stage 7 Graduate</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="testimonial-closer reveal">
+            <p className="testimonial-closer-quote">
+              &ldquo;This has <em>completely changed who I am</em> for the better. I am in such an amazing place and want to thank you from the bottom of my heart.&rdquo;
+            </p>
+            <span className="testimonial-closer-attr">— Alan</span>
+          </div>
+        </div>
+      </section>
+
+      {/* ── FAQ ── */}
+      <section id="faq">
+        <div className="container">
+          <p className="section-label reveal">Common Questions</p>
+
+          <div className="faq-list">
+            {[
+              {
+                q: 'How is this different from meditation apps like Calm or Headspace?',
+                a: 'Those apps teach you a practice. The IOS installs a complete operating system. Meditation apps address symptoms — stress, sleep, momentary calm. The Stack rewires the underlying architecture: your nervous system\'s baseline and your mind\'s default patterns. You don\'t just follow guided audio. The system tracks your readiness, advances you on competence, and adapts to your specific journey.',
+              },
+              {
+                q: 'How much time does this actually take?',
+                a: 'Stage 1 is 8 minutes a day — two practices, no equipment required. As you progress through the stages, rituals stack but they\'re designed to integrate into your existing morning and evening, not add hours to your day. The full installation at Stage 6 is 16 minutes. Most people find the ROI on that time is significant because their performance and clarity in everything else improves.',
+              },
+              {
+                q: 'What if I\'ve tried everything and nothing has stuck?',
+                a: 'That\'s exactly who this is for. You\'ve tried adding more tools, more practices, more discipline. The IOS takes a different approach: it upgrades the underlying system. If everything else has been software patches on a faulty operating system, this is the kernel update. The reason other approaches didn\'t stick isn\'t you — it\'s that they were applied without the prerequisite nervous system foundation to hold them.',
+              },
+            ].map((item, i) => (
+              <div
+                key={i}
+                className={`faq-item reveal${openFaq === i ? ' open' : ''}`}
+              >
+                <button
+                  className="faq-trigger"
+                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                >
+                  <span className="faq-question">{item.q}</span>
+                  <span className="faq-arrow">+</span>
+                </button>
+                {openFaq === i && (
+                  <div className="faq-answer">{item.a}</div>
+                )}
               </div>
             ))}
           </div>
