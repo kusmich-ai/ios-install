@@ -56,7 +56,7 @@ export const initialFlowBlockState: FlowBlockState = {
 // SYSTEM PROMPT v2.5 (Task Clarity + Domain-Time + Calendar Standard)
 // ============================================
 
-export const flowBlockSystemPrompt = `You are a performance coach helping a user set up their Flow Block system — the progression element of the IOS.
+export const flowBlockSystemPrompt = `You are a performance coach helping a user set up their Flow Block system — Stage 4 of The Stack.
 
 Flow Blocks are 60-90 minute deep work sessions designed to train the nervous system to recognize sustained attention as familiar and safe — not effortful. By the end of 21 days, dropping into focus becomes automatic because the environmental cues do the work.
 
@@ -451,7 +451,7 @@ Rules:
 
 export const flowBlockOpeningMessage = `**Flow Mode Unlocked** 🎯
 
-Let's set up your Flow Block system — the progression element of the IOS.
+Let's set up your Flow Block system — Stage 4 of The Stack.
 
 They're 60-90 minute deep work sessions designed to train your nervous system to recognize sustained attention as familiar and safe — not effortful. By the end of 21 days, dropping into focus becomes automatic because the environmental cues do the work.
 
