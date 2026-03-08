@@ -126,7 +126,7 @@ export const STAGES: Stage[] = [
       },
       {
         id: 'micro_action',
-        name: 'IOS Cue',
+        name: 'Stack Cue',
         shortName: 'Cue',
         duration: 2,
         icon: '⚡',
@@ -170,7 +170,7 @@ export const STAGES: Stage[] = [
       },
       {
         id: 'micro_action',
-        name: 'IOS Cue',
+        name: 'Stack Cue',
         shortName: 'Cue',
         duration: 2,
         icon: '⚡',
@@ -222,7 +222,7 @@ export const STAGES: Stage[] = [
       },
       {
         id: 'micro_action',
-        name: 'IOS Cue',
+        name: 'Stack Cue',
         shortName: 'Cue',
         duration: 2,
         icon: '⚡',
@@ -282,7 +282,7 @@ export const STAGES: Stage[] = [
       },
       {
         id: 'micro_action',
-        name: 'IOS Cue',
+        name: 'Stack Cue',
         shortName: 'Cue',
         duration: 2,
         icon: '⚡',
@@ -344,7 +344,7 @@ export const ON_DEMAND_TOOLS = [
   },
   {
     id: 'nos_glide',
-    name: 'NOS Glide',
+    name: 'NOS Glide (Evening Wind-Down)',
     shortName: 'Glide',
     icon: '🌊',
     description: 'Physiological transition sequence that guides your nervous system from daytime activation into parasympathetic rest.',
@@ -547,8 +547,8 @@ export function getStageUnlockCriteria(stageNumber: number) {
 // ============================================
 
 export const STATUS_TIERS = {
-  SYSTEM_OFFLINE: { name: 'System Offline', min: 0, max: 20, color: 'text-red-400' },
-  BASELINE_MODE: { name: 'Baseline Mode', min: 21, max: 40, color: 'text-orange-400' },
+  SYSTEM_OFFLINE: { name: 'Below Baseline', min: 0, max: 20, color: 'text-red-400' },
+  BASELINE_MODE: { name: 'Baseline', min: 21, max: 40, color: 'text-orange-400' },
   OPERATIONAL: { name: 'Operational', min: 41, max: 60, color: 'text-yellow-400' },
   OPTIMIZED: { name: 'Optimized', min: 61, max: 80, color: 'text-green-400' },
   INTEGRATED: { name: 'Integrated', min: 81, max: 100, color: 'text-emerald-400' }
@@ -558,8 +558,8 @@ export const STATUS_TIERS = {
  * Get status tier name based on REwired Index
  */
 export function getStatusTier(index: number): string {
-  if (index <= 20) return 'System Offline';
-  if (index <= 40) return 'Baseline Mode';
+  if (index <= 20) return 'Below Baseline';
+  if (index <= 40) return 'Baseline';
   if (index <= 60) return 'Operational';
   if (index <= 80) return 'Optimized';
   return 'Integrated';
@@ -581,11 +581,11 @@ export function getStatusColor(index: number): string {
 // ============================================
 
 export const TIER_INTERPRETATIONS: { [key: string]: string } = {
-  'System Offline': "Uh oh! Your nervous system is in survival mode. You're operating on fumes. The IOS will teach you how to downshift into recovery.",
-  'Baseline Mode': "You're functioning, but not optimized. Regulation is inconsistent, awareness is fragmented. The IOS will build your foundation.",
-  'Operational': "You have some coherence, but it's not stable. The IOS will solidify what's working and upgrade what isn't.",
-  'Optimized': "You're performing well. The IOS will take you from good to exceptional — making flow states and clarity your default.",
-  'Integrated': "You're already operating at a high level. The IOS will help you sustain and expand this capacity across all domains."
+  'Below Baseline': "Your nervous system is in survival mode. You're operating on fumes. The Stack will teach you how to downshift into recovery.",
+  'Baseline': "You're functioning, but not optimized. Regulation is inconsistent, awareness is fragmented. The Stack will build your foundation.",
+  'Operational': "You have some coherence, but it's not stable. The Stack will solidify what's working and upgrade what isn't.",
+  'Optimized': "You're performing well. The Stack will take you from good to exceptional — making flow states and clarity your default.",
+  'Integrated': "You're already operating at a high level. The Stack will help you sustain and expand this capacity across all domains."
 };
 
 /**
