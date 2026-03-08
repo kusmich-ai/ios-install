@@ -1,5 +1,5 @@
 // /lib/templates/templateLibrary.ts
-// All template strings for the IOS System Installer
+// All template strings for the UNbecoming Guide
 
 import { getRitualListForStage, getMorningRitualTime } from './helpers';
 
@@ -28,7 +28,7 @@ When you're done, click "Done" in the {{toolbarReference}} to log it.`,
     // When user marks practice as complete
     completionResponse: `Resonance Breathing logged. ✓
 
-Your vagal tone just got a firmware update. That coherent state you're feeling? That's what we're training to become your baseline.
+Your vagal tone just got an upgrade. That coherent state you're feeling? That's what we're training to become your baseline.
 
 {{nextPracticePrompt}}`,
 
@@ -149,9 +149,9 @@ These movements mobilize the vagus nerve along the spine, enhance cerebrospinal 
 **Guided video:** [Somatic Flow](https://www.unbecoming.app/somatic)`
   },
 
-  // IOS CUE (Stage 3+)
+  // STACK CUE (Stage 3+)
   micro_action: {
-    startPrompt: `Time for your **IOS Cue**.
+    startPrompt: `Time for your **Stack Cue**.
 
 Your cue: **{{currentIdentity}}**
 Your loop: **Notice → Label → Release**
@@ -160,14 +160,14 @@ Run your 60-second morning imprint, then carry the cue through your day.
 
 Click **"Done"** in the {{toolbarReference}} when your morning imprint is complete.`,
 
-    completionResponse: `IOS Cue logged. ✓
+    completionResponse: `Stack Cue logged. ✓
 
 Day {{identityDayInCycle}} of 21. Morning imprint set — now carry the cue through your day. Notice → Label → Release.
 
 {{nextPracticePrompt}}`,
 
     // Special: When action needs to be set (new sprint or first time)
-    identityNeeded: `Time to set your **21-day IOS Cue**.
+    identityNeeded: `Time to set your **21-day Stack Cue**.
 
 We'll select one detection cue and install the recognition loop your nervous system will train for the next 21 days.
 
@@ -358,11 +358,11 @@ But you also have two **on-demand tools** available from Day 1. These aren't dai
 
 **Decentering Practice** — When you notice you're stuck in a thought loop, identified with a role, or fused with an emotion ("I AM anxious" instead of "I notice anxiety"), this practice helps you create space between you and the experience. It's a short conversational exercise — just ask me to run it whenever you need it.
 
-**NOS Glide** — An evening wind-down tool for when your nervous system won't shut off at night. Racing mind, restless body, "wired but tired." It sequences your system from activation into rest. I'll walk you through it next.
+**NOS Glide (Evening Wind-Down)** — An evening wind-down tool for when your nervous system won't shut off at night. Racing mind, restless body, "wired but tired." It sequences your system from activation into rest. I'll walk you through it next.
 
 Make sense so far?`,
 
-      nosGlideWalkthrough: `Good. Let me give you a quick overview of the **NOS Glide**.
+      nosGlideWalkthrough: `Good. Let me give you a quick overview of the **NOS Glide (Evening Wind-Down)**.
 
 Your NOS (nervous system) doesn't respond to "relax" — it responds to **transitions**. The Glide is a 3-step physiological sequence you can use before bed:
 
@@ -388,7 +388,7 @@ Ready for your full Stage 1 overview?`,
 
 **On-Demand Tools (Use When Needed):**
 • Decentering Practice — when stuck in thought loops or identity fusion
-• NOS Glide — evening wind-down when your system won't shut off
+• NOS Glide (Evening Wind-Down) — evening wind-down when your system won't shut off
 
 Your {{toolbarReference}} will let you know if you have completed your daily rituals and your progress.
 
@@ -396,7 +396,7 @@ Access both on-demand tools anytime via your {{toolbarReference}} under "On-Dema
 
 **Starting tomorrow morning** — do both rituals, then come back and let me know how it went.
 
-And if you're having trouble winding down tonight — try the NOS Glide. Consider it your first assignment.
+And if you're having trouble winding down tonight — try the NOS Glide (Evening Wind-Down). Consider it your first assignment.
 
 See you then. Your nervous system is about to start learning.`
     },
@@ -480,7 +480,7 @@ You've proven your nervous system can maintain coherence. Now we bring awareness
 **ON-DEMAND TOOL NOW AVAILABLE:**
 
 **Meta-Reflection**
-A 10 minute weekly session to observe how perception formed and to capture a usable kernel in the format: Signal → Interpretation → Action.
+A 10 minute weekly session to observe how perception formed and to capture a usable insight in the format: Signal → Interpretation → Action.
 
 *When to use it:*
 - Weekly (I'll prompt you on Sundays, or run it on your own day)
@@ -625,9 +625,9 @@ You've embodied awareness. Now we train it to catch patterns before they become 
 
 **NEW RITUAL UNLOCKING:**
 
-**IOS Cue** — A detection training system for your RAS (The Reticular Activating System). You'll select one cue word targeting a dominant unconscious pattern, then train a simple recognition loop: Notice → Label → Release.
+**Stack Cue** — A detection training system for your RAS (The Reticular Activating System). You'll select one cue word targeting a dominant unconscious pattern, then train a simple recognition loop: Notice → Label → Release.
 
-We'll run the IOS Cue setup to select your cue and install the loop. Takes about 2-3 minutes.
+We'll run the Stack Cue setup to select your cue and install the detection loop. Takes about 2-3 minutes.
 
 ---
 
@@ -648,7 +648,7 @@ Use it whenever an interpretation is amplifying the signal (You're making a bigg
 
 ---
 
-Ready to set up your IOS Cue?`
+Ready to set up your Stack Cue?`
     }
   },
 
@@ -661,7 +661,7 @@ Ready to set up your IOS Cue?`
 
 Your awareness is now stable enough to detect what used to run on autopilot. This stage trains your nervous system to catch unconscious patterns in real time using a simple detection loop.
 
-**New practice unlocking:** IOS Cue
+**New practice unlocking:** Stack Cue
 
 Your updated morning ritual:
 ${getRitualListForStage(3)}
@@ -670,10 +670,10 @@ ${getRitualListForStage(3)}
 
 We'll select your first cue and install the recognition loop. Takes about 2-3 minutes.
 
-Ready to set up your IOS Cue?`,
+Ready to set up your Stack Cue?`,
 
       practices: {
-        micro_action: `**NEW RITUAL: IOS CUE — 2 MINS**
+        micro_action: `**NEW RITUAL: STACK CUE — 2 MINS**
 
 **What it does:**
 Trains your RAS (reticular activating system) to detect unconscious patterns — the same system that makes you notice blue BMWs after you think about buying one. Except instead of cars, it filters your thoughts too.
@@ -698,7 +698,7 @@ Ready to begin?`
 1. Resonance Breathing — 5 mins
 2. Somatic Flow — 3 mins
 3. Awareness Rep — 2 mins
-4. **IOS Cue — 2 mins** (new)
+4. **Stack Cue — 2 mins** (new)
 
 **Total: ${getMorningRitualTime(3)}**
 
@@ -855,7 +855,7 @@ Ready to design your system?`
 1. Resonance Breathing — 5 mins
 2. Somatic Flow — 1 mins
 3. Awareness Rep — 2 mins
-4. IOS Cue — 2 mins
+4. Stack Cue — 2 mins
 
 **Daily (scheduled):**
 5. Flow Block — 60-90 mins
@@ -987,7 +987,7 @@ Make sense?`
 1. Resonance Breathing — 5 mins
 2. Somatic Flow — 1-2 mins
 3. Awareness Rep — 2 mins
-4. IOS Cue — 2 mins
+4. Stack Cue — 2 mins
 
 **Daily:**
 5. Flow Block — 60-90 mins (scheduled)
@@ -1062,20 +1062,20 @@ Your nervous system encodes lessons during sleep. This practice ensures there's 
 
 **FULL SYSTEM NOW ACTIVE:**
 
-You now have the complete IOS toolkit:
+You now have the complete Stack:
 
 **Daily Rituals:**
 - Resonance Breathing (regulation)
 - Somatic Flow (embodiment)  
 - Awareness Rep (meta-awareness)
-- IOS Cue (pattern detection)
+- Stack Cue (pattern detection)
 - Flow Block (performance)
 - Co-Regulation (relationship)
 - Nightly Debrief (integration)
 
 **On-Demand Tools:**
 - Decentering Practice (identity fusion)
-- NOS Glide (evening wind-down)
+- NOS Glide (Evening Wind-Down)
 - Meta-Reflection (weekly integration)
 - Reframe Protocol (trigger response)
 - Thought Hygiene (cognitive clearing)
@@ -1131,13 +1131,13 @@ That's it. 2 minutes. Every night.
 Make sense?`
       },
 
-      wrapUp: `Your **Stage 6 schedule** — the full IOS runtime:
+      wrapUp: `Your **Stage 6 schedule** — your full Stack:
 
 **Morning Rituals:**
 1. Resonance Breathing — 5 mins
 2. Somatic Flow — 1-2 mins
 3. Awareness Rep — 2 mins
-4. IOS Cue — 2 mins
+4. Stack Cue — 2 mins
 
 **Daily:**
 5. Flow Block — 60-90 mins
@@ -1148,7 +1148,7 @@ Make sense?`
 
 **Total: ${getMorningRitualTime(6)}**
 
-This is the complete system. You're now running the full IOS.
+This is the complete system. You're now running the full Stack.
 
 **Stage 7 (Accelerated Expansion)** requires manual application when you're ready for advanced integration tools.`
     },
@@ -1222,11 +1222,11 @@ For now, continue the Stage 6 practices. Welcome to Embodied Consciousness.`
 
 **Tagline:** *Awareness engineers itself.*
 
-You've installed the complete IOS and established a new STATE. Now we accelerate its evolution with advanced integration tools.
+You've built the complete Stack and established a new STATE. Now we accelerate its evolution with advanced integration tools.
 
 This stage is personalized. Your protocol will be designed in our live conversation.
 
-The IOS is now self-evolving. You are the feedback loop.`
+The Stack is now self-evolving. You are the feedback loop.`
     },
 
     dailyPrompts: {
@@ -1237,13 +1237,13 @@ The IOS is now self-evolving. You are the feedback loop.`
 
 Your personalized protocol continues. Check your custom schedule for today's practices.
 
-The IOS is self-evolving. You are the feedback loop.`
+The Stack is self-evolving. You are the feedback loop.`
     },
 
     unlock: {
       eligible: `You've reached the final stage. There is no further unlock.
 
-The IOS is complete. Continue your personalized Accelerated Expansion protocol.
+The Stack is complete. Continue your personalized Accelerated Expansion protocol.
 
 Welcome, Conductor.`,
 
@@ -1361,7 +1361,7 @@ export const introFlowTemplates = {
     0: { text: "Yes, let's learn the rituals", buttonLabel: "Yes, let's go" },
     1: { text: "Got it, makes sense. What's next?", buttonLabel: "Got it, next ritual" },
     2: { text: "Makes sense, I'm ready", buttonLabel: "Got it, tell me about the tools" },
-    3: { text: "Makes sense. Show me the NOS Glide", buttonLabel: "Got it, show me NOS Glide" },
+    3: { text: "Makes sense. Show me the NOS Glide", buttonLabel: "Got it, show me the NOS Glide" },
     4: { text: "Ready for my Stage 1 overview", buttonLabel: "Ready, let's go" },
     5: null,
     6: null
@@ -1380,7 +1380,7 @@ Back to the walkthrough. Make sense so far? Ready for the next ritual?`,
 Back to the intro. Ready to hear about your on-demand tools?`,
     3: `---
 
-Back to the NOS Glide overview. Ready to continue?`,
+Back to the NOS Glide (Evening Wind-Down) overview. Ready to continue?`,
     4: `---
 
 Okay, back to wrapping up. Ready to get started?`
@@ -1399,7 +1399,7 @@ export function getIntroRedirectMessage(currentStep: number): string {
 export const stage7ConversationTemplates = {
   intro: `**System Integration Complete.** 🎯
 
-You've done something rare. Stage 6 isn't just a milestone — it's proof that awareness has become your operating system. Most people never get here.
+You've done something rare. Stage 6 isn't just a milestone — it's proof that awareness has become your foundation. Most people never get here.
 
 There's one more stage. **Stage 7: Accelerated Expansion.**
 
@@ -1419,7 +1419,7 @@ It includes:
 • **Supervised psychedelic experience** — working with 5-MeO in a held, supported container
 • **Neurotech** — brain entrainment and neurofeedback to normalize beneficial brain-wave states
 • **Molecule protocols** — strategic use of nootropics and supplements
-• **Continued daily practice** — the IOS remains your foundation
+• **Continued daily practice** — The Stack remains your foundation
 • **Weekly 1:1 support** — you'll never walk alone
 
 This isn't a retreat. It's not coaching. It's not a one-off ceremony.
@@ -1452,7 +1452,7 @@ The application takes about 10 minutes.`,
 
   stage6Continuation: `That's completely valid.
 
-Stage 6 is a complete operating system. The daily practices you've built — the breathing, the awareness, the identity work, the flow states, the relational coherence, the nightly integration — this is a way of life.
+Stage 6 is a complete system. The daily practices you've built — the breathing, the awareness, the identity work, the flow states, the relational coherence, the nightly integration — this is a way of life.
 
 Many people stay here permanently. Not because they're "stuck," but because it's enough.
 
@@ -1466,7 +1466,7 @@ Stage 7 isn't the right fit for everyone, and that's completely okay. The protoc
 
 Stage 6 is a complete system. The practices you've built are powerful on their own. Many people stay at this level permanently — not because they're stuck, but because it's enough.
 
-Continue showing up. The IOS is installed. You are the operator.
+Continue showing up. The Stack is installed. You are the operator.
 
 If anything changes in the future, you can always revisit this conversation.`,
 
@@ -1544,7 +1544,7 @@ Don't analyze — just notice and name it.`
   meta_reflection: {
     unlockIntro: `**Meta-Reflection** — Now Available
 
-A 10–15 minute weekly session to observe how perception formed and to capture a usable kernel in the format: Signal → Interpretation → Action.
+A 10–15 minute weekly session to observe how perception formed and to capture a usable insight in the format: Signal → Interpretation → Action.
 
 Best used:
 - Weekly (I'll prompt you on Sundays, or run it on your own day)
@@ -1595,7 +1595,7 @@ Use it when:
 
 Access it via {{toolbarReference}} under "On-Demand Tools."`,
 
-    startPrompt: `Time to clear your mental cache.
+    startPrompt: `Time to clear your mind.
 
 What's still running in the background of your mind — taking up bandwidth? Tasks, conversations, worries, whatever's looping.
 
@@ -1603,7 +1603,7 @@ Don't overthink it. Don't dig. Just dump what's floating to the surface.`
   },
 
   nos_glide: {
-    unlockIntro: `**NOS Glide** — Now Available
+    unlockIntro: `**NOS Glide (Evening Wind-Down)** — Now Available
 
 A 5-10 minute physiological transition sequence that guides your nervous system from daytime activation into parasympathetic rest. Not a training rep — a transition tool you reach for when you need it.
 
@@ -1615,7 +1615,7 @@ Use it when:
 
 Access it via {{toolbarReference}} under "On-Demand Tools."`,
 
-    startPrompt: `Let's run the **NOS Glide**.
+    startPrompt: `Let's run the **NOS Glide (Evening Wind-Down)**.
 
 Find a comfortable position — seated on the edge of your bed or lying down.
 
@@ -1684,13 +1684,13 @@ export function getStreakMessage(consecutiveDays: number, adherence: number): st
 // ============================================
 
 export const coachTemplates = {
-  stage1Introduction: `Quick note — as you go deeper into the IOS, you'll notice two coaches in your header: **Nic** and **Fehren**.
+  stage1Introduction: `Quick note — as you go deeper into The Stack, you'll notice two coaches in your header: **Nic** and **Fehren**.
 
 **Nic** (⚡) is your Mind & Nervous System coach. Direct, analytical, mechanism-focused. Go to him when you want to understand *why* something is happening — patterns, cognitive loops, performance strategy, or the neuroscience behind what you're experiencing and how to get over it with non-cheerleader direct energy.
 
 **Fehren** (💙) is your Heart & Body coach. Warm, spacious, feeling-first. Go to her when something needs to be *felt* before it's figured out — emotional weight, relational tension, somatic signals, or when you need permission to just be with what's here.
 
-They're different from me (the IOS Installer). I run your protocols, track your progression, and walk you through anything in the IOS frame. They hold space for the stuff that comes up *because* of the work.
+They're different from me (the UNbecoming guide). I run your protocols, track your progression, and walk you through anything in The Stack. They hold space for the stuff that comes up *because* of the work.
 
 Right now you can sample a few messages with each. Full coaching unlocks in Stage 2. No rush — just know they're there when you need them.`,
 
@@ -1700,7 +1700,7 @@ Right now you can sample a few messages with each. Full coaching unlocks in Stag
 
 → Something nervous system or strategic? Talk to Nic.
 → Something emotional or somatic? Talk to Fehren.
-→ Daily practices, progression or overall IOS stuff? Stay here with me.
+→ Daily practices, progression or overall Stack stuff? Stay here with me.
 
 You don't need to use all three every day. Most days, this chat handles everything. The coaches are for when something comes up that needs more space than a protocol can give — a difficult conversation, a pattern you can't shake, a feeling that won't resolve.
 
