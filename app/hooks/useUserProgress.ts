@@ -183,8 +183,8 @@ export function getCurrentWeekMonday(): string {
 }
 
 function getTierFromIndex(index: number): string {
-  if (index <= 20) return 'System Offline';
-  if (index <= 40) return 'Baseline Mode';
+  if (index <= 20) return 'Below Baseline';
+  if (index <= 40) return 'Baseline';
   if (index <= 60) return 'Operational';
   if (index <= 80) return 'Optimized';
   return 'Integrated';
