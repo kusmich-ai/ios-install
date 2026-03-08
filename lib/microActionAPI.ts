@@ -1,6 +1,6 @@
 // ============================================
 // lib/microActionAPI.ts
-// IOS Cue — RAS Detection Training Protocol API
+// Stack Cue — RAS Detection Training Protocol API
 // Version 5.0 — Complete Rewrite
 //
 // Philosophy:
@@ -10,7 +10,7 @@
 // - Power comes from being ordinary, mechanical, non-special
 // - Notice → Label → Release. Nothing more.
 //
-// Replaces: Morning Micro-Action / Aligned Action / Identity Installation
+// Replaces: Morning Micro-Action / Aligned Action / Identity Installation (now: Stack Cue)
 // ============================================
 
 import { withToolLayers } from '@/lib/prompts/withToolLayers';
@@ -72,10 +72,10 @@ export const IOS_CUES = {
 } as const;
 
 // ============================================
-// SYSTEM PROMPT (v5.0 — IOS CUE SETUP)
+// SYSTEM PROMPT (v5.0 — STACK CUE SETUP)
 // ============================================
 
-export const microActionSystemPrompt = withToolLayers(`You are guiding a user through setting up their IOS Cue — a practice that retrains the brain's filtering system to catch interpretation before it becomes identity.
+export const microActionSystemPrompt = withToolLayers(`You are guiding a user through setting up their Stack Cue — a practice that retrains the brain's filtering system to catch interpretation before it becomes identity.
 
 ## YOUR ROLE
 Guide the user through understanding the practice and selecting their cue. Be clear, direct, and practical. No spiritual language. No identity language. Keep it mechanical and grounded.
@@ -103,7 +103,7 @@ When your mind generates a meaning — 'This means I'm not good enough' or 'They
 
 That's how patterns become 'you.' Not through logic. Through repetition.
 
-The IOS Cue retrains that filter. You teach your system to notice the birth of meaning before it takes hold, and to meet it with ease rather than tension. When you catch interpretation early enough, it never acquires the weight to become identity. Then you are free.
+The Stack Cue retrains that filter. You teach your system to notice the birth of meaning before it takes hold, and to meet it with ease rather than tension. When you catch interpretation early enough, it never acquires the weight to become identity. Then you are free.
 
 The practice takes about 2 minutes of structured time per day, plus brief catches throughout the day. It's simple, mechanical, and non-special. That's what makes it work.
 
@@ -174,7 +174,7 @@ That's the whole practice for 21 days."
 
 Present the summary and ask for commitment:
 
-"Your IOS Cue for the next 21 days:
+"Your Stack Cue for the next 21 days:
 
 Cue: [Selected cue word]
 Loop: Notice → Label → Release
@@ -203,13 +203,13 @@ Then include the completion marker:
 // OPENING MESSAGES
 // ============================================
 
-export const microActionOpeningMessage = `**IOS Cue — Stage 3** ⚡
+export const microActionOpeningMessage = `**Stack Cue — Stage 3** ⚡
 
 This is a new kind of practice — different from what you've been doing.
 
 Stages 1 and 2 trained your nervous system to regulate and your attention to notice. Now we take that awareness into daily life.
 
-The IOS Cue trains your brain's filtering system to catch the moment meaning gets added to experience — before it becomes a story, a reaction, or an identity.
+The Stack Cue trains your brain's filtering system to catch the moment meaning gets added to experience — before it becomes a story, a reaction, or an identity.
 
 Let me walk you through how it works. Takes about 3 minutes to set up.
 
@@ -220,7 +220,7 @@ Ready?`;
 // ============================================
 
 export const microActionReturningMessage = (previousCue: string, _previousAction: string) =>
-  `**New IOS Cue Sprint** ⚡
+  `**New Stack Cue Sprint** ⚡
 
 Last cue: **${previousCue}**
 
@@ -303,7 +303,7 @@ export function buildAPIMessages(
 // EXTRACTION SYSTEM
 // ============================================
 
-export const extractionSystemPrompt = `You are a data extraction system. Extract the selected IOS Cue and loop from this conversation.
+export const extractionSystemPrompt = `You are a data extraction system. Extract the selected Stack Cue and loop from this conversation.
 
 Output ONLY valid JSON:
 {
@@ -315,7 +315,7 @@ Output ONLY valid JSON:
 RULES:
 - identity_statement should be ONLY the cue word or short phrase (e.g., "Interpretation")
 - micro_action is always "Notice → Label → Release"
-- execution_cue is always null (not used in IOS Cue)
+- execution_cue is always null (not used in Stack Cue)
 - Output ONLY valid JSON — no markdown, no explanation, no preamble
 - If unclear, output: {"identity_statement": "Interpretation", "micro_action": "Notice → Label → Release", "execution_cue": null}`;
 
@@ -330,7 +330,7 @@ export function buildMicroActionExtractionMessages(
     { role: 'system', content: extractionSystemPrompt },
     {
       role: 'user',
-      content: `Extract the IOS Cue selection from this conversation:\n\n${transcript}`,
+      content: `Extract the Stack Cue selection from this conversation:\n\n${transcript}`,
     },
   ];
 }
@@ -426,7 +426,7 @@ export function parseCompletionMarker(
     };
   }
 
-  // IOS Cue format
+  // Stack Cue format
   const cueAltMatch = response.match(/CUE:\s*"?([^"\n]+)"?/i);
   const loopAltMatch = response.match(/LOOP:\s*"?([^"\n]+)"?/i);
 
@@ -482,7 +482,7 @@ export function getCueDescription(cueWord: string): string {
 // ============================================
 
 export function getMorningPrompt(cueWord: string): string {
-  return `**IOS Cue — Morning Imprint**
+  return `**Stack Cue — Morning Imprint**
 
 6 slow breaths. On each exhale: *"${cueWord}."*
 
@@ -490,7 +490,7 @@ Prime the filter. 90 seconds. Go.`;
 }
 
 export function getEveningPrompt(cueWord: string): string {
-  return `**IOS Cue — Night Compression**
+  return `**Stack Cue — Night Compression**
 
 Recall one ${cueWord.toLowerCase()} you caught today. Just one. Feel the body soften.
 
@@ -498,7 +498,7 @@ No story. Let sleep lock it in.`;
 }
 
 export function getDailyReminder(cueWord: string, sprintDay: number): string {
-  return `**IOS Cue** · Day ${sprintDay} of 21 · Cue: ${cueWord}
+  return `**Stack Cue** · Day ${sprintDay} of 21 · Cue: ${cueWord}
 
 Throughout the day: Notice → Label → Release. Just single reps.`;
 }
