@@ -170,7 +170,7 @@ Daily proof: *${microAction}*
 
 Day 1 of 21 begins now. Same identity, deeper embodiment. Your nervous system already knows this pattern — now we're reinforcing it further.
 
-See you tomorrow morning for your micro-action.`;
+See you tomorrow morning for your Stack Cue.`;
 }
 
 export function getFlowBlockContinueMessage(): string {
@@ -258,5 +258,5 @@ Daily proof: *${newMicroAction}*
 
 Day 1 of 21 begins now. This is the next level of who you're becoming.
 
-See you tomorrow morning for your micro-action.`;
+See you tomorrow morning for your Stack Cue.`;
 }
