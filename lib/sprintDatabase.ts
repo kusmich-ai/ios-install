@@ -1,7 +1,7 @@
 // ============================================
 // lib/sprintDatabase.ts
 // Sprint tracking for Identity and Flow Block 21-day cycles
-// Version 4.0 - Full execution_cue support for Cue Kernel alignment
+// Version 4.0 - Full execution_cue support for Stack Cue alignment
 // ============================================
 
 import { createClient } from '@/lib/supabase-client';
