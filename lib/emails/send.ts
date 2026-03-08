@@ -3,7 +3,7 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const FROM_ADDRESS = 'IOS System Installer <ios@unbecoming.app>';
+const FROM_ADDRESS = 'UNbecoming App <unbecoming@unbecoming.app>';
 
 export async function sendEmail(
   to: string, 
