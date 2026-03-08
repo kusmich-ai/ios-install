@@ -237,14 +237,14 @@ const stageRituals: { [key: number]: { list: string; total: string } } = {
     list: `1. **Resonance Breathing** - 5 mins
 2. **Somatic Flow** - 2 mins
 3. **Awareness Rep** - 2 mins
-4. **IOS Cue** - 2 mins`,
+4. **Stack Cue** - 2 mins`,
     total: '12-13 minutes'
   },
   4: {
     list: `1. **Resonance Breathing** - 5 mins
 2. **Somatic Flow** - 2 mins
 3. **Awareness Rep** - 2 mins
-4. **IOS Cue** - 2 mins
+4. **Stack Cue** - 2 mins
 5. **Flow Block** - 60-90 mins (scheduled)`,
     total: '12-13 minutes morning + Flow Block'
   },
@@ -252,7 +252,7 @@ const stageRituals: { [key: number]: { list: string; total: string } } = {
     list: `1. **Resonance Breathing** - 5 mins
 2. **Somatic Flow** - 2 mins
 3. **Awareness Rep** - 2 mins
-4. **IOS Cue** - 2 mins
+4. **Stack Cue** - 2 mins
 5. **Flow Block** - 60-90 mins (scheduled)
 6. **Co-Regulation Practice** - 2 mins (evening)`,
     total: '12-13 minutes morning + Flow Block + evening practice'
@@ -261,7 +261,7 @@ const stageRituals: { [key: number]: { list: string; total: string } } = {
     list: `1. **Resonance Breathing** - 5 mins
 2. **Somatic Flow** - 2 mins
 3. **Awareness Rep** - 2 mins
-4. **IOS Cue** - 2 mins
+4. **Stack Cue** - 2 mins
 5. **Flow Block** - 60-90 mins (scheduled)
 6. **Co-Regulation Practice** - 2 mins (evening)
 7. **Nightly Debrief** - 2 mins (before sleep)`,
@@ -310,7 +310,7 @@ async function getFirstTimeOpeningMessage(baselineData: BaselineData, userName: 
   // Use static tier interpretation for consistency (no API call)
   const tierInterpretation = TIER_INTERPRETATIONS[tier] || TIER_INTERPRETATIONS['Operational'];
   
-  return `Hey${userName ? `, ${userName}` : ''}. Welcome to the IOS — the Integrated Operating System.
+  return `Hey${userName ? `, ${userName}` : ''}. Welcome to The Stack.
 
 **Your baseline diagnostic is complete.**
 
@@ -322,13 +322,13 @@ ${tierInterpretation}
 
 **So what is this, exactly?**
 
-The IOS is a neural transformation protocol. It rewires how your nervous system regulates, how your mind focuses, and how you show up in the world.
+The Stack is a neural transformation protocol. It rewires how your nervous system regulates, how your mind focuses, and how you show up in the world.
 
 This isn't meditation. It's not therapy. It's systems engineering for your brain and body.
 
 **How it works:**
 
-There are **7 progressive stages**. Each one installs new capabilities — like firmware updates for your operating system.
+There are **7 progressive stages**. Each one builds new capabilities — each layer unlocking the next.
 
 You don't unlock the next stage by waiting. You unlock it by **proving competence**: consistent practice, measurable improvement, and qualitative readiness. The system adapts to you.
 
@@ -379,7 +379,7 @@ What else can I help you with?`;
       'hrvb': 'Resonance Breathing',
       'awareness_rep': 'Awareness Rep',
       'somatic_flow': 'Somatic Flow',
-      'micro_action': 'IOS Cue',
+      'micro_action': 'Stack Cue',
       'flow_block': 'Flow Block',
       'co_regulation': 'Co-Regulation Practice',
       'nightly_debrief': 'Nightly Debrief'
@@ -436,7 +436,7 @@ ${rituals.list}
 Use the toolbar to start, or pick up where we left off.`;
   }
   
-  return `Good morning${userName ? `, ${userName}` : ''}. Day ${totalDays} of building your operating system. That's impressive.
+  return `Good morning${userName ? `, ${userName}` : ''}. Day ${totalDays} of building The Stack. That's impressive.
 
 ${streakMessage}${adherenceMessage}
 
@@ -2354,7 +2354,7 @@ When you're ready to learn more, click the "Unlock Stage 7?" button in your dash
     // Generate AI insight
     let aiInsight = '';
     try {
-      const insightPrompt = `You are the IOS System Installer — witty, direct, scientifically grounded. NO cheerleading.
+      const insightPrompt = `You are the UNbecoming Guide — witty, direct, scientifically grounded. NO cheerleading.
 
 Write exactly 2-3 sentences interpreting this user's Stage 1 progress data. Be specific to their numbers. Connect the strongest-moving domain to a real-world felt experience. Call out the weakest domain honestly as the growth edge. If pattern profile is available, reference it.
 
@@ -2457,7 +2457,7 @@ Tone rules:
     // Generate AI roadmap note
     let aiRoadmapNote = '';
     try {
-      const roadmapPrompt = `You are the IOS System Installer. Write exactly 2 sentences connecting this user's specific situation to what Stages 2-4 will address. Make it feel like the system was built for them. Direct, no fluff.
+      const roadmapPrompt = `You are the UNbecoming Guide. Write exactly 2 sentences connecting this user's specific situation to what Stages 2-4 will address. Make it feel like the system was built for them. Direct, no fluff.
 
 User's weakest domain: ${weakest}
 Pattern profile: ${patternProfile?.mirrorSummary || patternProfile?.coreChallenge || patternProfile?.primaryPattern || 'not available'}
@@ -2489,7 +2489,7 @@ Two sentences only. No preamble.`;
     }
 
     const beat2Message =
-      `The IOS has 7 stages. Each one unlocks a new layer of how you operate. Here's the arc:\n\n` +
+      `The Stack has 7 stages. Each one unlocks a new layer of how you operate. Here's the arc:\n\n` +
       `**Stage 1: Neural Priming** ✓\n` +
       `*Stabilize the signal. You built the foundation — a regulated baseline your nervous system can return to.*\n\n` +
       `**Stage 2: Embodied Awareness** ← *You're unlocking this*\n` +
@@ -2730,7 +2730,7 @@ Your new practices are now available.`
         // Show success message
         setMessages(prev => [...prev, { 
           role: 'assistant', 
-          content: `**Welcome to the full IOS System!** 🎉
+          content: `**Welcome to The Stack — full access!** 🎉
 
 Your subscription is now active. You have full access to all stages and practices.
 
@@ -3027,7 +3027,7 @@ const handleStage7QuickReply = useCallback(async (action: string) => {
           setMicroActionState(initialMicroActionState);
           setMessages(prev => [...prev, { 
             role: 'assistant', 
-            content: "I had trouble saving your IOS Cue. Let's try setting it up again - just say 'set up ios cue' when you're ready." 
+            content: "I had trouble saving your Stack Cue. Let's try setting it up again - just say 'set up stack cue' when you're ready." 
           }]);
         }
       } else {
@@ -3205,7 +3205,7 @@ info?.microAction || 'Notice → Label → Release'
       
       setSprintRenewalState(initialSprintRenewalState);
       
-      const evolutionContext = `The user is advancing their IOS Cue from "${previousCoherence}" to a new cue. They said: "${userInput}". Help them select the next cue word using the decision tree: A) Interpretation (meaning-making), B) Effort (force/pressure/urgency), C) Attention collapse (checking out/scrolling). Confirm the cue and remind them of the loop: Notice → Label → Release.`;
+      const evolutionContext = `The user is advancing their Stack Cue from "${previousCoherence}" to a new cue. They said: "${userInput}". Help them select the next cue word using the decision tree: A) Interpretation (meaning-making), B) Effort (force/pressure/urgency), C) Attention collapse (checking out/scrolling). Confirm the cue and remind them of the loop: Notice → Label → Release.`;
       
       setMicroActionState(prev => ({
         ...prev,
@@ -4144,7 +4144,7 @@ Give me your four numbers (e.g., "4 3 4 5").`;
         console.error('Chat initialization error:', err);
         setMessages([{ 
           role: 'assistant', 
-          content: `Hey${getUserName() ? `, ${getUserName()}` : ''}. Welcome to the IOS. How can I help you today?` 
+          content: `Hey${getUserName() ? `, ${getUserName()}` : ''}. Welcome to The Stack. How can I help you today?` 
         }]);
       }
       
@@ -4885,7 +4885,7 @@ if (regressionIntervention?.isActive) {
         setAwaitingMicroActionStart(false);
         setMessages(prev => [...prev, { 
           role: 'assistant', 
-          content: "No problem. You can set up your IOS Cue anytime by clicking the ⚡ icon or saying 'set up ios cue'."
+          content: "No problem. You can set up your Stack Cue anytime by clicking the ⚡ icon or saying 'set up stack cue'."
         }]);
       }
       return;
@@ -5279,7 +5279,7 @@ Ready to start your first practice?`;
     return (
   <div className="flex h-[100dvh] bg-[#1a1a1a]">
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-gray-400">Loading your IOS...</div>
+          <div className="text-gray-400">Loading your Stack...</div>
         </div>
       </div>
     );
@@ -5329,7 +5329,7 @@ Ready to start your first practice?`;
         {/* Header with Coach Buttons */}
         <header className="h-14 border-b border-white/[0.06] flex items-center justify-between px-4 bg-[#1a1a1a] flex-shrink-0">
           <div className="text-sm text-gray-500">
-            IOS System Installer
+            UNbecoming
           </div>
 <div className="flex items-center gap-2">
   <Link 
@@ -5699,7 +5699,7 @@ Ready to start your first practice?`;
                   onClick={handleStartNewStageIntro}
                   className="px-6 py-3 bg-[#ff9e19] hover:bg-orange-600 text-white font-semibold rounded-xl transition-colors shadow-lg"
                 >
-                  {pendingUnlockStage === 3 ? 'Start IOS Cue Training' :
+                  {pendingUnlockStage === 3 ? 'Start Stack Cue Training' :
                    pendingUnlockStage === 4 ? 'Set Up Flow Blocks' :
                    pendingUnlockStage === 5 ? 'Learn Co-Regulation Practice' :
                    pendingUnlockStage === 6 ? 'Learn Nightly Debrief' :
@@ -5782,7 +5782,7 @@ Ready to start your first practice?`;
             </form>
             <p className="text-xs text-gray-500 mt-2 text-center">
               {microActionState.isActive
-                ? "Setting up your IOS Cue - type your responses"
+                ? "Setting up your Stack Cue - type your responses"
                 : flowBlockState.isActive
                   ? "Setting up your Flow Blocks - type your responses"
                   : currentQuickReply 
