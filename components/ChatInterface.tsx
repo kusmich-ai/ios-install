@@ -1653,31 +1653,8 @@ const getFallbackResultsMessage = (
         : undefined,
       flowBlockSetupCompleted: extendedProgress?.flowBlockSetupCompleted || flowBlockState.isComplete,
       toolsIntroduced: extendedProgress?.toolsIntroduced || [],
-      weeklyCheckInDue: (() => {
-        const lastCheckin = extendedProgress?.lastWeeklyCheckin;
-        const now = new Date();
-        const today = now.getDay();
-        
-        if (!lastCheckin) {
-          return daysInStage >= 7;
-        }
-        
-        const lastCheckinDate = new Date(lastCheckin);
-        const daysSinceCheckin = Math.floor((now.getTime() - lastCheckinDate.getTime()) / (1000 * 60 * 60 * 24));
-        
-        if (daysSinceCheckin >= 7) {
-          return true;
-        }
-        
-        if (today === 0) {
-          const startOfWeek = new Date(now);
-          startOfWeek.setDate(now.getDate() - now.getDay());
-          startOfWeek.setHours(0, 0, 0, 0);
-          return lastCheckinDate < startOfWeek;
-        }
-        
-  return false;
-      })(),
+      
+      weeklyCheckInDue: false,
       weeklyCheckInActive,
       isMobile
     };
