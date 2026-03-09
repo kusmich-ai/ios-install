@@ -4588,7 +4588,7 @@ microActionState.extractedAction || 'Notice → Label → Release',
   }, [messages, progress, getUserName]);
 
   const triggerPostRitualCheckin = async (retryCount = 0) => {
-    if (loading) {
+    if (loading || weeklyCheckInActive || weeklyCheckInDue) {
       // If something else is loading, retry after a short delay (up to 3 retries)
       if (retryCount < 3) {
         setTimeout(() => triggerPostRitualCheckin(retryCount + 1), 1000);
