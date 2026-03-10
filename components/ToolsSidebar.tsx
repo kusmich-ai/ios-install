@@ -124,7 +124,8 @@ export default function ToolsSidebar({
   onToolClick,
   onProgressUpdate,
   onPracticeCompleted,
-  isRefreshing = false
+isRefreshing = false,
+  onInstallClick
 }: ToolsSidebarProps) {
   const [dailyExpanded, setDailyExpanded] = useState(true);
   const [toolsExpanded, setToolsExpanded] = useState(true);
