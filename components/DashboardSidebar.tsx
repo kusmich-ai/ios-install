@@ -464,7 +464,8 @@ export default function DashboardSidebar({
   streakFreezeAvailable,
   weeklyCheckInDue,
   onRequestCheckIn,
-  onStage7Click,
+onStage7Click,
+  onInstallClick,
 }: DashboardSidebarProps) {
   
   // Use sprintDay with fallback to identitySprintDay for backwards compatibility
