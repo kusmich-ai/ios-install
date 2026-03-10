@@ -2680,6 +2680,16 @@ Your new practices are now available.`
   
   type PlanType = 'quarterly' | 'biannual' | 'annual' | 'quarterly_coaching' | 'biannual_coaching' | 'annual_coaching';
   
+  const upgradeUrl = (() => {
+    const p = new URLSearchParams();
+    const extP = progress as any;
+    if (getUserName()) p.set('name', getUserName());
+    if (progress?.consecutiveDays) p.set('days', String(progress.consecutiveDays));
+    if (baselineData?.rewiredIndex) p.set('index', String(baselineData.rewiredIndex));
+    if (extP?.latestAvgDelta) p.set('delta', Number(extP.latestAvgDelta).toFixed(1));
+    return `/upgrade?${p.toString()}`;
+  })();
+
   const handleUpgrade = async (plan: PlanType) => {
     try {
       await startCheckout(plan);
