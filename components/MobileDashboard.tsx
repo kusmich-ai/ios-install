@@ -441,7 +441,7 @@ export default function MobileDashboard({
   adherencePercentage = 0, consecutiveDays = 0, coherenceStatement,
   currentIdentity, microAction, sprintDay, identitySprintDay,
   flowBlockWeeklyMap, flowBlockSprintDay, totalDaysInApp, daysInStage,
-  calmTrend, streakFreezeAvailable, weeklyCheckInDue, onRequestCheckIn, onStage7Unlock,
+calmTrend, streakFreezeAvailable, weeklyCheckInDue, onRequestCheckIn, onStage7Unlock, onInstallClick,
 }: MobileDashboardProps) {
   const [isOpen, setIsOpen] = useState(false);
 
