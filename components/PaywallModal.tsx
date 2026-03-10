@@ -10,9 +10,10 @@ interface PaywallModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUpgrade: (plan: PlanType) => Promise<void>;
+  upgradeUrl?: string;
 }
 
-export function PaywallModal({ isOpen, onClose, onUpgrade }: PaywallModalProps) {
+export function PaywallModal({ isOpen, onClose, onUpgrade, upgradeUrl = '/upgrade' }: PaywallModalProps) {
   const [selectedTrack, setSelectedTrack] = useState<'installer' | 'coaching'>('installer');
   const [selectedPlan, setSelectedPlan] = useState<PlanType>('annual');
   const [loading, setLoading] = useState(false);
