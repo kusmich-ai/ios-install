@@ -5,6 +5,7 @@
 // v3: Added milestone message logic (Step 8)
 // v4: Added weeklyCheckInDue (Step 13)
 // v5: Added baselineScores + patternProfile for Stage 1→2 unlock flow
+// v6: Added lastAwarenessRepScript for 11-script rotation system
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -113,6 +114,9 @@ export interface UserProgress {
     coreChallenge: string | null;
     mirrorSummary: string | null;
   } | null;
+
+  // v6: Awareness Rep rotation tracking
+  lastAwarenessRepScript: string | null;
 }
 
 // ============================================
@@ -692,6 +696,9 @@ export function useUserProgress() {
           coreChallenge: patternProfileData.core_challenge || null,
           mirrorSummary: patternProfileData.mirror_summary || null,
         } : null,
+
+        // v6: Awareness Rep rotation
+        lastAwarenessRepScript: progressData.last_awareness_rep_script || null,
       };
 
       console.log('[useUserProgress] Setting progress:', {
@@ -707,6 +714,7 @@ export function useUserProgress() {
         weeklyCheckInDue: newProgress.weeklyCheckInDue,
         baselineScores: newProgress.baselineScores,
         patternProfile: newProgress.patternProfile,
+        lastAwarenessRepScript: newProgress.lastAwarenessRepScript,
       });
 
       setProgress(newProgress);
