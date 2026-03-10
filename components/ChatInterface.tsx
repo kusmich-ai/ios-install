@@ -5318,6 +5318,7 @@ Ready to start your first practice?`;
           streakFreezeAvailable={progress?.streakFreezeAvailable}
           weeklyCheckInDue={progress?.weeklyCheckInDue}
           onRequestCheckIn={handleRequestCheckIn}
+          onInstallClick={handleInstallNowClick}
         />
       )}
       {/* Main Chat Area */}
