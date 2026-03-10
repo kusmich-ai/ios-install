@@ -377,7 +377,7 @@ export default function FloatingActionButton({
             {/* Stage 2 teaser — visible all of Stage 1 */}
             {progress.currentStage === 1 && (
               <div className="mt-4">
-                <Stage2TeaserPanel unlockEligible={progress.unlockEligible ?? false} />
+                <Stage2TeaserPanel unlockEligible={progress.unlockEligible ?? false} onInstallClick={onInstallClick} />
               </div>
             )}
           </div>
