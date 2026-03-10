@@ -680,7 +680,7 @@ export default function Home() {
 
         .insight-quote {
           font-family: 'Cormorant Garamond', serif;
-          font-size: clamp(26px, 4.5vw, 52px);
+          font-size: clamp(22px, 4.5vw, 52px);
           font-weight: 300;
           line-height: 1.25;
           color: var(--white);
@@ -1670,7 +1670,7 @@ export default function Home() {
             Therapists deploy one of these methods.<br />
             Coaches maybe use two.<br />
             Researchers study them in isolation for careers.<br />
-            Retreat programs deliver one for a weekend<br />and call it a transformation.<br /><br />
+            Retreat programs deliver one for a weekend and call it a transformation.<br /><br />
             <em>
               Unbecoming runs all of them.<br />
               Simultaneously. In the correct developmental sequence.<br />
