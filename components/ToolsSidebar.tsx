@@ -1,6 +1,7 @@
 // components/ToolsSidebar.tsx
 // LUXURY VISUAL UPGRADE - 100% logic preserved, only styling changed
 // v2.5: CuePhaseCard integration for 3-phase Cue ritual
+// v2.6: Awareness Rep 11-script rotation system
 'use client';
 
 import { useState } from 'react';
@@ -37,6 +38,13 @@ import { useCoRegulation } from '@/components/CoRegulationModal';
 import { useNightlyDebrief } from '@/components/NightlyDebriefModal';
 import { useLoopDeLooping } from '@/components/LoopDeLoopingModal';
 import { useNosGlide } from '@/components/NosGlideModal';
+// v2.6: Awareness Rep rotation
+import { 
+  getNextScript, 
+  getScriptAudioPath, 
+  getScriptInfo,
+  type AwarenessRepScript 
+} from '@/lib/awarenessRepRotation';
 
 interface ToolsSidebarProps {
   progress: UserProgress;
@@ -132,9 +140,12 @@ isRefreshing = false,
   const [completing, setCompleting] = useState<string | null>(null);
   const [completionError, setCompletionError] = useState<string | null>(null);
 
+  // v2.6: Track which awareness rep script is currently being played
+  const [currentAwarenessScript, setCurrentAwarenessScript] = useState<AwarenessRepScript | null>(null);
+
   // Initialize modal hooks - UNCHANGED
-  const { open: openResonance, Modal: ResonanceModal } = useResonanceBreathing();
   const { open: openAwarenessRep, Modal: AwarenessRepModal } = useAwarenessRep();
+  const { open: openResonance, Modal: ResonanceModal } = useResonanceBreathing();
   const { open: openSomaticFlow, Modal: SomaticFlowModal } = useSomaticFlow();
   const { open: openCoRegulation, Modal: CoRegulationModal } = useCoRegulation();
   const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebrief();
@@ -152,12 +163,18 @@ const getPracticeStatus = (practiceId: string): 'completed' | 'pending' | 'locke
   return 'pending';
 };
 
-  // UNCHANGED: handleStartPractice
+  // UPDATED: handleStartPractice — awareness_rep now uses rotation
   const handleStartPractice = (practiceId: string) => {
     if (practiceId === 'hrvb') {
       openResonance();
     } else if (practiceId === 'awareness_rep') {
-      openAwarenessRep();
+      // v2.6: Compute next script in rotation, pass audio path to modal
+      const lastScript = progress.lastAwarenessRepScript as AwarenessRepScript | null;
+      const nextScript = getNextScript(progress.currentStage, lastScript);
+      const audioPath = getScriptAudioPath(nextScript);
+      setCurrentAwarenessScript(nextScript);
+      console.log(`[ToolsSidebar] Awareness Rep rotation: ${nextScript} (${getScriptInfo(nextScript).name})`);
+      openAwarenessRep(audioPath);
     } else if (practiceId === 'somatic_flow') {
       openSomaticFlow(); 
     } else if (practiceId === 'co_regulation') {
@@ -185,13 +202,27 @@ const getPracticeStatus = (practiceId: string): 'completed' | 'pending' | 'locke
     }
   };
 
-  // UNCHANGED: handleModalComplete
+  // UPDATED: handleModalComplete — saves awareness rep rotation after completion
   const handleModalComplete = async (practiceId: string, practiceName: string) => {
     console.log(`[ToolsSidebar] Modal completed: ${practiceId}`);
     
     // Only log if not already completed today
     if (getPracticeStatus(practiceId) !== 'completed') {
       await handleMarkComplete(practiceId, practiceName);
+    }
+
+    // v2.6: After awareness rep completes, save which script was played
+    if (practiceId === 'awareness_rep' && currentAwarenessScript) {
+      try {
+        await fetch('/api/practices/update-awareness-rep-script', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, script: currentAwarenessScript }),
+        });
+        console.log(`[ToolsSidebar] Awareness Rep rotation saved: ${currentAwarenessScript}`);
+      } catch (err) {
+        console.error('[ToolsSidebar] Failed to save awareness rep rotation:', err);
+      }
     }
   };
 
