@@ -5853,6 +5853,7 @@ streakFreezeAvailable={progress?.streakFreezeAvailable}
           onProgressUpdate={handleProgressUpdate}
           onPracticeCompleted={handlePracticeCompleted}
           isRefreshing={isRefreshing}
+          onInstallClick={handleInstallNowClick}
         />
       )}
 
