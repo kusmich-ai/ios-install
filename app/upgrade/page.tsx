@@ -1,34 +1,85 @@
-// /app/upgrade/page.tsx
 'use client';
 
-import { useState } from 'react';
-import { 
-  Zap, Brain, Shield, Sparkles, Star, Users, ChevronDown, 
-  CheckCircle2, ArrowRight, MessageCircle, X, Send,
-  TrendingUp, Clock, Heart, Target, Waves, Lock, Loader2, User
+import { useState, useEffect, useRef, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import {
+  Zap, Brain, Shield, CheckCircle2, ArrowRight, MessageCircle,
+  X, Send, ChevronDown, Waves, Target, Clock, Loader2,
+  TrendingUp, Heart, Star, Lock, Flame, User
 } from 'lucide-react';
 import Image from 'next/image';
 import { useSubscriptionActions } from '@/app/hooks/useSubscription';
 
 type PlanType = 'quarterly' | 'biannual' | 'annual' | 'quarterly_coaching' | 'biannual_coaching' | 'annual_coaching';
 
-export default function UpgradePage() {
+// ─── Progress data from URL params (future: pull from Supabase directly) ───────
+interface UserProgress {
+  days: number;
+  rewiredIndex: number | null;
+  delta: number | null;
+  firstName: string | null;
+}
+
+function parseProgressFromParams(searchParams: URLSearchParams): UserProgress {
+  return {
+    days: parseInt(searchParams.get('days') || '0') || 0,
+    rewiredIndex: searchParams.get('index') ? parseFloat(searchParams.get('index')!) : null,
+    delta: searchParams.get('delta') ? parseFloat(searchParams.get('delta')!) : null,
+    firstName: searchParams.get('name') || null,
+  };
+}
+
+// ─── Intersection observer hook for scroll reveals ────────────────────────────
+function useReveal(threshold = 0.1) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) setVisible(true); },
+      { threshold }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  return [ref, visible] as const;
+}
+
+function Reveal({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
+  const [ref, visible] = useReveal();
+  return (
+    <div
+      ref={ref}
+      className={className}
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(20px)',
+        transition: `opacity 0.8s cubic-bezier(0.23,1,0.32,1) ${delay}s, transform 0.8s cubic-bezier(0.23,1,0.32,1) ${delay}s`,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+// ─── Main page (wrapped in Suspense for useSearchParams) ─────────────────────
+function UpgradePageInner() {
+  const searchParams = useSearchParams();
+  const userProgress = parseProgressFromParams(searchParams);
+
   const [selectedTrack, setSelectedTrack] = useState<'installer' | 'coaching'>('installer');
   const [selectedPlan, setSelectedPlan] = useState<PlanType>('annual');
-  const [showChat, setShowChat] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [showChat, setShowChat] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
-  
+
   const { startCheckout } = useSubscriptionActions();
 
   const handleTrackChange = (track: 'installer' | 'coaching') => {
     setSelectedTrack(track);
-    if (track === 'installer') {
-      setSelectedPlan('annual');
-    } else {
-      setSelectedPlan('annual_coaching');
-    }
+    setSelectedPlan(track === 'installer' ? 'annual' : 'annual_coaching');
   };
 
   const handleCheckout = async () => {
@@ -48,736 +99,673 @@ export default function UpgradePage() {
     document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Dynamic button text based on selected track
-  const getButtonText = () => {
-    if (selectedTrack === 'coaching') {
-      return 'Upgrade To The Full IOS Installer + Live Coaching';
-    }
-    return 'Upgrade To The Full IOS Installer Now';
-  };
+  const getButtonText = () =>
+    selectedTrack === 'coaching'
+      ? 'Continue to Stages 2–7 + Live Coaching'
+      : 'Continue the Installation — Stages 2–7';
+
+  // Greeting line based on available data
+  const greeting = userProgress.firstName ? `${userProgress.firstName},` : '';
+  const daysLabel = userProgress.days > 0 ? `${userProgress.days} days` : 'your time';
+  const hasMetrics = userProgress.rewiredIndex !== null || userProgress.delta !== null;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
-      
-      {/* ===== HERO SECTION ===== */}
-      <section className="relative min-h-screen flex items-center justify-center px-4 py-20 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#ff9e19]/5 via-transparent to-transparent" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#ff9e19]/5 rounded-full blur-[120px]" />
-        
+    <div className="min-h-screen bg-[#0a0a0a] text-white overflow-x-hidden">
+
+      {/* ─── HERO: Acknowledge the journey ─────────────────────────────────── */}
+      <section className="relative min-h-screen flex items-center justify-center px-4 py-24 overflow-hidden">
+        {/* Ambient glow */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#ff9e19]/4 via-transparent to-transparent pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#ff9e19]/4 rounded-full blur-[100px] pointer-events-none" />
+
         <div className="relative max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#ff9e19]/10 border border-[#ff9e19]/20 rounded-full mb-8">
-            <Zap className="w-4 h-4 text-[#ff9e19]" />
-            <span className="text-sm text-[#ff9e19] font-medium">For High-Performers Who Want To Get Unstuck and Unstoppable</span>
+
+          {/* Stage badge */}
+          <div
+            className="inline-flex items-center gap-2 px-5 py-2 bg-[#ff9e19]/10 border border-[#ff9e19]/25 rounded-full mb-10"
+            style={{ opacity: 0, animation: 'fadeUp 0.8s 0.2s cubic-bezier(0.23,1,0.32,1) forwards' }}
+          >
+            <CheckCircle2 className="w-4 h-4 text-[#ff9e19]" />
+            <span className="text-sm text-[#ff9e19] font-medium tracking-wide">Stage 1 Complete — Neural Priming ✓</span>
           </div>
 
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.1] mb-6">
-            You Don't Need Another Book, Course, App, Seminar, or Tactic.<br/>
-            <span className="text-[#ff9e19]">You Need STATE Installation.</span>
+          {/* Headline */}
+          <h1
+            className="text-4xl sm:text-5xl md:text-6xl font-bold leading-[1.08] mb-6 tracking-tight"
+            style={{ opacity: 0, animation: 'fadeUp 0.9s 0.4s cubic-bezier(0.23,1,0.32,1) forwards' }}
+          >
+            {greeting && <span className="block text-gray-400 text-3xl sm:text-4xl font-normal mb-3">{greeting}</span>}
+            You didn't imagine it.<br />
+            <span className="text-[#ff9e19]">Something actually changed.</span>
           </h1>
 
-          <p className="text-xl sm:text-2xl text-gray-400 max-w-3xl mx-auto mb-8 leading-relaxed">
-            The IOS Installer rewires your nervous system and mental architecture for thriving. 
-            Not learning. Not implementation. <span className="text-white font-medium">Complete neural state upgrade.</span>
+          {/* Sub */}
+          <p
+            className="text-xl text-gray-400 max-w-2xl mx-auto mb-6 leading-relaxed"
+            style={{ opacity: 0, animation: 'fadeUp 0.9s 0.55s cubic-bezier(0.23,1,0.32,1) forwards' }}
+          >
+            In {daysLabel}, your nervous system built a new baseline.
+            That coherence you've been feeling? That's the foundation.
+            <span className="text-white font-medium"> Stages 2–7 are the building.</span>
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <button 
+          {/* Dynamic metrics block — shows only if data passed */}
+          {hasMetrics && (
+            <div
+              className="flex flex-wrap justify-center gap-6 mb-10"
+              style={{ opacity: 0, animation: 'fadeUp 0.9s 0.65s cubic-bezier(0.23,1,0.32,1) forwards' }}
+            >
+              {userProgress.rewiredIndex !== null && (
+                <div className="px-6 py-4 bg-[#ff9e19]/10 border border-[#ff9e19]/20 rounded-2xl text-center">
+                  <div className="text-3xl font-bold text-[#ff9e19]">{userProgress.rewiredIndex}</div>
+                  <div className="text-xs text-gray-400 mt-1">REwired Index</div>
+                </div>
+              )}
+              {userProgress.delta !== null && (
+                <div className="px-6 py-4 bg-[#ff9e19]/10 border border-[#ff9e19]/20 rounded-2xl text-center">
+                  <div className="text-3xl font-bold text-[#ff9e19]">+{userProgress.delta}</div>
+                  <div className="text-xs text-gray-400 mt-1">Avg. Delta</div>
+                </div>
+              )}
+              {userProgress.days > 0 && (
+                <div className="px-6 py-4 bg-[#ff9e19]/10 border border-[#ff9e19]/20 rounded-2xl text-center">
+                  <div className="text-3xl font-bold text-[#ff9e19]">{userProgress.days}</div>
+                  <div className="text-xs text-gray-400 mt-1">Days Completed</div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* CTAs */}
+          <div
+            className="flex flex-col sm:flex-row gap-4 justify-center"
+            style={{ opacity: 0, animation: 'fadeUp 0.9s 0.7s cubic-bezier(0.23,1,0.32,1) forwards' }}
+          >
+            <button
               onClick={scrollToPrice}
-              className="px-8 py-4 bg-[#ff9e19] hover:bg-[#ffb04d] text-black font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-lg"
+              className="px-8 py-4 bg-[#ff9e19] hover:bg-[#ffb04d] text-black font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-lg shadow-lg shadow-[#ff9e19]/20"
             >
               <Zap className="w-5 h-5" />
-              Install The IOS Now
+              Continue the Installation
             </button>
-            <button 
+            <button
               onClick={() => setShowChat(true)}
               className="px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all flex items-center justify-center gap-2 text-lg"
             >
               <MessageCircle className="w-5 h-5" />
-              Have Questions? Chat With Us
+              Have Questions?
             </button>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-500">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-[#ff9e19]" />
-              <span>HRV Improvements in less than 14 Days</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-[#ff9e19]" />
-              <span>7-Stage Progressive System For Guaranteed Results</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-[#ff9e19]" />
-              <span>AI Coaches Available 24/7</span>
-            </div>
+          {/* Scroll nudge */}
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
+            <ChevronDown className="w-6 h-6 text-gray-600" />
           </div>
-        </div>
-
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-          <ChevronDown className="w-6 h-6 text-gray-500" />
         </div>
       </section>
 
-      {/* ===== PROBLEM AGITATION ===== */}
+      {/* ─── BRIDGE: What Stage 1 proved ──────────────────────────────────── */}
       <section className="py-20 px-4 border-t border-[#1a1a1a]">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl font-bold text-center mb-6">
-            You've Reached Incredible Heights.<br/>
-            <span className="text-gray-400">So Why Does Something Still Feel... Off?</span>
-          </h2>
-          
-          <p className="text-xl text-gray-400 text-center mb-12 max-w-3xl mx-auto">
-            You know there is even more. That's not a bug in your programming. 
-            It's a signal. <span className="text-white">We call it "The Inner Knock."</span>
-          </p>
-
-          <div className="grid md:grid-cols-2 gap-6">
-            {[
-              { icon: Brain, title: "You've read the books", desc: "Atomic Habits. Think and Grow Rich. The Power of Now. You know the concepts. But knowing isn't installing." },
-              { icon: Target, title: "You've tried the apps", desc: "Calm. Headspace. Waking Up. They work... until they don't. Because they address symptoms, not the operating system." },
-              { icon: Clock, title: "You've done the \"work\"", desc: "Biohacked. Personal Development. Plant Based Medicine. But you're not broken. You're running outdated software on hardware that needs an upgrade." },
-              { icon: TrendingUp, title: "You've hustled harder", desc: "More discipline. More willpower. More pushing through. But willpower is a limited resource. The system needs an upgrade." },
-            ].map((item, i) => (
-              <div key={i} className="p-6 bg-[#111] border border-[#1a1a1a] rounded-xl">
-                <div className="w-12 h-12 bg-red-500/10 rounded-xl flex items-center justify-center mb-4">
-                  <item.icon className="w-6 h-6 text-red-400" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">{item.title}</h3>
-                <p className="text-gray-400">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-12 p-8 bg-gradient-to-r from-[#ff9e19]/10 to-transparent border border-[#ff9e19]/20 rounded-2xl">
-            <p className="text-xl text-center">
-              <span className="text-[#ff9e19] font-semibold">The problem isn't you.</span> It's that you've been trying to 
-              install new software on top of an operating system that was never designed for the life you're building.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ===== THE SOLUTION: UNIQUE MECHANISM ===== */}
-      <section className="py-20 px-4 bg-[#0d0d0d] border-t border-[#1a1a1a]">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#ff9e19]/10 border border-[#ff9e19]/20 rounded-full mb-6">
-              <span className="text-sm text-[#ff9e19] font-medium">THE SOLUTION</span>
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-bold mb-6">
-              Introducing The IOS™<br/>
-              <span className="text-[#ff9e19]">Integrated Operating System</span>
+          <Reveal>
+            <h2 className="text-3xl sm:text-4xl font-bold text-center mb-4">
+              What Stage 1 Actually Did
             </h2>
-            <p className="text-xl text-gray-400 max-w-3xl mx-auto">
-              Not a course you watch. Not a practice you try to remember. Not a "hack". 
-              A complete neural and mental architecture that <span className="text-white font-medium">installs itself through progressive, competence-based unlocking.</span>
+            <p className="text-xl text-gray-400 text-center mb-14 max-w-2xl mx-auto">
+              You didn't just complete a habit. You proved to your nervous system it can change.
+              Here's what was installed.
             </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-8 mb-16">
-            <div className="p-8 bg-[#111] border border-[#1a1a1a] rounded-2xl">
-              <div className="w-16 h-16 bg-[#ff9e19]/10 rounded-2xl flex items-center justify-center mb-6">
-                <Waves className="w-8 h-8 text-[#ff9e19]" />
-              </div>
-              <h3 className="text-2xl font-bold mb-4">Neural Operating System (NOS)</h3>
-              <p className="text-gray-400 mb-6">
-                Your nervous system is the hardware. Most people are running in constant fight-or-flight, 
-                burning out their system. The NOS kernel gives your nervous system a new baseline of coherent regulation (aka deep flow state).
-              </p>
-              <ul className="space-y-3">
-                {[
-                  "Measurable HRV improvement within 14 days",
-                  "Vagal tone optimization through resonance training",
-                  "Awareness and embodied presence",
-                  "Chaos response rewiring at the physiological level"
-                ].map((item, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-[#ff9e19] flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-300">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="p-8 bg-[#111] border border-[#1a1a1a] rounded-2xl">
-              <div className="w-16 h-16 bg-[#ff9e19]/10 rounded-2xl flex items-center justify-center mb-6">
-                <Brain className="w-8 h-8 text-[#ff9e19]" />
-              </div>
-              <h3 className="text-2xl font-bold mb-4">Mental Operating System (MOS)</h3>
-              <p className="text-gray-400 mb-6">
-                Your mind is the software. Most self-help teaches you to add more apps. 
-                The MOS kernel upgrades the entire operating system – how you process, interpret, and respond to reality.
-              </p>
-              <ul className="space-y-3">
-                {[
-                  "Identity installation through micro-action cycles",
-                  "Flow state training for sustained deep work",
-                  "Cognitive reframing protocols (not positive thinking)",
-                  "Meta-awareness: watching the mind, not being run by it"
-                ].map((item, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-[#ff9e19] flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-300">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
+          </Reveal>
 
           <div className="grid sm:grid-cols-3 gap-6">
             {[
-              { old: "Learning", new: "Installation", desc: "You don't learn the IOS. It installs itself through short daily rituals that becomes automatic." },
-              { old: "Information", new: "Transformation", desc: "Not more content to consume (and remember). A progressive system that changes who you are." },
-              { old: "Willpower", new: "System Design", desc: "Stop relying on discipline. Let the architecture of the system do the heavy lifting." },
+              {
+                icon: Waves,
+                title: 'Vagal Tone Rewired',
+                desc: 'Resonance breathing created measurable HRV improvement. Your autonomic baseline is no longer where it started.',
+              },
+              {
+                icon: Brain,
+                title: 'Observer Activated',
+                desc: 'Awareness Rep trained your insula-PCC circuit — the part of the brain that watches the mind instead of being run by it.',
+              },
+              {
+                icon: Flame,
+                title: 'Consistency Installed',
+                desc: "You showed up. That's not small. You've proven the system works — and that you can work the system.",
+              },
             ].map((item, i) => (
-              <div key={i} className="p-6 bg-[#111] border border-[#1a1a1a] rounded-xl text-center">
-                <div className="flex items-center justify-center gap-3 mb-4">
-                  <span className="text-red-400 line-through">{item.old}</span>
-                  <ArrowRight className="w-4 h-4 text-gray-500" />
-                  <span className="text-[#ff9e19] font-semibold">{item.new}</span>
+              <Reveal key={i} delay={i * 0.1}>
+                <div className="p-7 bg-[#111] border border-[#1a1a1a] rounded-2xl h-full">
+                  <div className="w-12 h-12 bg-[#ff9e19]/10 rounded-xl flex items-center justify-center mb-5">
+                    <item.icon className="w-6 h-6 text-[#ff9e19]" />
+                  </div>
+                  <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed">{item.desc}</p>
                 </div>
-                <p className="text-sm text-gray-400">{item.desc}</p>
-              </div>
+              </Reveal>
             ))}
           </div>
+
+          <Reveal delay={0.3}>
+            <div className="mt-10 p-7 bg-gradient-to-r from-[#ff9e19]/8 to-transparent border border-[#ff9e19]/15 rounded-2xl">
+              <p className="text-lg text-center">
+                <span className="text-[#ff9e19] font-semibold">Stage 1 was the foundation.</span>{' '}
+                <span className="text-gray-300">
+                  A regulated nervous system without direction is still incomplete. The next 6 stages
+                  install the architecture on top of that foundation — identity, flow, coherence, and
+                  the ability to sustain it all under real-world pressure.
+                </span>
+              </p>
+            </div>
+          </Reveal>
         </div>
       </section>
 
-      {/* ===== 7 STAGES ===== */}
-      <section className="py-20 px-4 border-t border-[#1a1a1a]">
+      {/* ─── WHAT UNLOCKS: Stages 2–7 ──────────────────────────────────────── */}
+      <section className="py-20 px-4 bg-[#0d0d0d] border-t border-[#1a1a1a]">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-6">
-              7 Progressive Stages.<br/>
-              <span className="text-gray-400">Each Unlocked By Competence, Not Just Time.</span>
-            </h2>
-            <p className="text-xl text-gray-400 max-w-3xl mx-auto">
-              You can't skip ahead. The system advances you when your IOS demonstrates readiness. 
-              This isn't a 30-day challenge. It's a <span className="text-white">complete upgrade architecture.</span>
-            </p>
-          </div>
+          <Reveal>
+            <div className="text-center mb-14">
+              <h2 className="text-3xl sm:text-4xl font-bold mb-4">
+                The 6 Stages That Complete the Installation
+              </h2>
+              <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+                Each stage adds a new practice. Each unlocks only when your system is ready.
+                You can't skip ahead — and you won't want to.
+              </p>
+            </div>
+          </Reveal>
 
-          <div className="space-y-4">
-            {[
-              { stage: 1, name: "Neural Priming", tagline: "Stabilize the signal", desc: "Resonance state training + Awareness reps. The foundation everything builds on.", free: true },
-              { stage: 2, name: "Embodied Awareness", tagline: "Bring awareness into the whole self", desc: "Somatic flow practices. Your body becomes a coherent extension of your awareness." },
-              { stage: 3, name: "Aligned Action Mode", tagline: "Act from coherence", desc: "21-day action installation cycles. Act in alignment" },
-              { stage: 4, name: "Flow Mode", tagline: "Train sustained flow states", desc: "Deep work protocols. Flow blocks become your new normal." },
-              { stage: 5, name: "Relational Coherence", tagline: "Stay open in connection", desc: "Co-regulation practices. Your nervous system stays open and connected." },
-              { stage: 6, name: "Integration", tagline: "Convert insights and states to traits", desc: "Nightly debrief protocols. Daily lessons encode into permanent trait-level changes." },
-              { stage: 7, name: "Accelerated Expansion", tagline: "Awareness engineers itself", desc: "Advanced protocols. Supplements, neurofeedback, and guided expansion (by application only)." },
-            ].map((item, i) => (
-              <div 
-                key={i} 
-                className={`p-6 rounded-xl border transition-all ${
-                  item.free ? 'bg-[#ff9e19]/5 border-[#ff9e19]/20' : 'bg-[#111] border-[#1a1a1a]'
-                }`}
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg flex-shrink-0 ${
-                    item.free ? 'bg-[#ff9e19] text-black' : 'bg-[#1a1a1a] text-[#ff9e19]'
-                  }`}>
+          {/* Stage 1 — already done */}
+          <Reveal>
+            <div className="p-5 rounded-xl border border-[#ff9e19]/30 bg-[#ff9e19]/5 mb-3 flex items-center gap-4">
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center font-bold bg-[#ff9e19] text-black flex-shrink-0">1</div>
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-semibold">Neural Priming</span>
+                  <span className="text-gray-500 text-sm">— Resonance Breathing + Awareness Rep</span>
+                  <span className="px-2 py-0.5 bg-[#ff9e19]/20 text-[#ff9e19] text-xs font-bold rounded-full">INSTALLED ✓</span>
+                </div>
+              </div>
+              <CheckCircle2 className="w-5 h-5 text-[#ff9e19] flex-shrink-0" />
+            </div>
+          </Reveal>
+
+          {/* Stages 2–7 */}
+          {[
+            {
+              stage: 2, name: 'Embodied Awareness', tagline: 'Bring awareness into the whole self',
+              practice: 'Somatic Flow (3 min)',
+              why: 'Your awareness is still mostly in your head. Somatic Flow connects it to your body — proprioception, movement, breath. Coherence becomes physical.',
+            },
+            {
+              stage: 3, name: 'Aligned Action Mode', tagline: 'Act from coherence',
+              practice: '21-Day Evidence Cycles (2–3 min daily)',
+              why: 'Identity without evidence is aspiration. The 21-day cycle installs chosen identity through verifiable daily proof — conditioning the nervous system through action.',
+            },
+            {
+              stage: 4, name: 'Flow Mode', tagline: 'Train sustained flow states',
+              practice: 'Flow Block (60–90 min)',
+              why: 'Deep work isn\'t a strategy — it\'s a trained neurological state. Flow Blocks systematically condition your brain to drop into sustained attention on demand.',
+            },
+            {
+              stage: 5, name: 'Relational Coherence', tagline: 'Stay open in connection',
+              practice: 'Co-Regulation Practice (3–5 min)',
+              why: 'Your nervous system collapses under social stress. This trains the ventral vagal circuit to stay open — not just alone in the morning, but in rooms with other people.',
+            },
+            {
+              stage: 6, name: 'Integration', tagline: 'Convert insights and states to traits',
+              practice: 'Nightly Debrief (2 min)',
+              why: 'Lessons without integration vanish. The Nightly Debrief uses hippocampal consolidation to encode daily lived experience into permanent, trait-level awareness.',
+            },
+            {
+              stage: 7, name: 'Accelerated Expansion', tagline: 'Awareness engineers itself',
+              practice: 'Advanced protocols (by application)',
+              why: 'Supplements, neurofeedback, guided expansion. This is the beyond — for those who\'ve proven complete IOS competence and are ready to accelerate.',
+              locked: true,
+            },
+          ].map((item, i) => (
+            <Reveal key={i} delay={i * 0.07}>
+              <div className={`p-5 rounded-xl border mb-3 transition-all ${item.locked ? 'border-[#1a1a1a] bg-[#0e0e0e] opacity-60' : 'border-[#1e1e1e] bg-[#111] hover:border-[#2a2a2a]'}`}>
+                <div className="flex items-start gap-4">
+                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center font-bold text-base flex-shrink-0 ${item.locked ? 'bg-[#1a1a1a] text-gray-600' : 'bg-[#1a1a1a] text-[#ff9e19]'}`}>
                     {item.stage}
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-lg">{item.name}</h3>
-                      <span className="text-gray-500">—</span>
-                      <span className="text-[#ff9e19] text-sm italic">{item.tagline}</span>
-                      {item.free && (
-                        <span className="px-2 py-0.5 bg-[#ff9e19] text-black text-xs font-bold rounded-full">FREE</span>
-                      )}
+                      <span className="font-semibold">{item.name}</span>
+                      <span className="text-[#ff9e19] text-sm italic">— {item.tagline}</span>
                     </div>
-                    <p className="text-gray-400">{item.desc}</p>
+                    <div className="text-xs text-gray-500 mb-2 font-medium uppercase tracking-wide">+ {item.practice}</div>
+                    <p className="text-sm text-gray-400 leading-relaxed">{item.why}</p>
                   </div>
-                  {!item.free && <Lock className="w-5 h-5 text-gray-600 flex-shrink-0" />}
+                  {item.locked
+                    ? <Lock className="w-4 h-4 text-gray-700 flex-shrink-0 mt-1" />
+                    : <ArrowRight className="w-4 h-4 text-gray-600 flex-shrink-0 mt-1" />
+                  }
                 </div>
               </div>
-            ))}
-          </div>
+            </Reveal>
+          ))}
+
+          <Reveal delay={0.3}>
+            <div className="mt-8 text-center">
+              <button
+                onClick={scrollToPrice}
+                className="inline-flex items-center gap-2 px-8 py-4 bg-[#ff9e19] hover:bg-[#ffb04d] text-black font-bold rounded-xl transition-all text-lg shadow-lg shadow-[#ff9e19]/15"
+              >
+                <Zap className="w-5 h-5" />
+                Unlock Stages 2–7
+              </button>
+            </div>
+          </Reveal>
         </div>
       </section>
 
-      {/* ===== SOCIAL PROOF / TESTIMONIALS ===== */}
-      <section className="py-20 px-4 bg-[#0d0d0d] border-t border-[#1a1a1a]">
+      {/* ─── MEET THE HUMANS BEHIND THE AI ───────────────────────────────── */}
+      <section className="py-20 px-4 border-t border-[#1a1a1a]">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-6">
-              Real Results. <span className="text-[#ff9e19]">Real Upgrades.</span>
-            </h2>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-6 mb-12">
-            <div className="p-8 bg-[#111] border border-[#1a1a1a] rounded-2xl">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-[#ff9e19]/10 rounded-full flex items-center justify-center">
-                  <TrendingUp className="w-6 h-6 text-[#ff9e19]" />
-                </div>
-                <div>
-                  <div className="font-semibold">Jesse</div>
-                  <div className="text-sm text-gray-500">Entrepreneur</div>
-                </div>
-              </div>
-              <p className="text-gray-300 mb-4">
-                "My business did <span className="text-white font-semibold">$60k the first year. $90k the next year.</span> And this year after this protocol, 
-                I'll cross over the <span className="text-[#ff9e19] font-semibold">$300k mark.</span>"
-              </p>
-              <div className="text-sm text-gray-500">5x revenue growth</div>
-            </div>
-
-            <div className="p-8 bg-[#111] border border-[#1a1a1a] rounded-2xl">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-[#ff9e19]/10 rounded-full flex items-center justify-center">
-                  <TrendingUp className="w-6 h-6 text-[#ff9e19]" />
-                </div>
-                <div>
-                  <div className="font-semibold">Brian</div>
-                  <div className="text-sm text-gray-500">Business Owner</div>
-                </div>
-              </div>
-              <p className="text-gray-300 mb-4">
-                "Since doing this I have had <span className="text-[#ff9e19] font-semibold">7 million dollar months in a row.</span> I have never done that before. 
-                Something just started clicking. <span className="text-white font-semibold">Hard to describe.</span>"
-              </p>
-              <div className="text-sm text-gray-500">7 consecutive $1M+ months</div>
-            </div>
-
-            <div className="p-8 bg-[#111] border border-[#1a1a1a] rounded-2xl">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-[#ff9e19]/10 rounded-full flex items-center justify-center">
-                  <Heart className="w-6 h-6 text-[#ff9e19]" />
-                </div>
-                <div>
-                  <div className="font-semibold">Jenna</div>
-                  <div className="text-sm text-gray-500">Transformation Journey</div>
-                </div>
-              </div>
-              <p className="text-gray-300 mb-4">
-                "Words can't express how much this has helped me. I was able to <span className="text-white font-semibold">clearly see the walls I had built and dissolve them</span>, 
-                allowing me to <span className="text-[#ff9e19] font-semibold">love freely.</span> Tremendously healing and transformative."
+          <Reveal>
+            <div className="text-center mb-4">
+              <h2 className="text-3xl sm:text-4xl font-bold mb-3">
+                The Humans Behind Nic AI & Fehren AI
+              </h2>
+              <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+                You've been coached by the AI versions. Here are the real people whose experience,
+                voice, and methodology built them.
               </p>
             </div>
+          </Reveal>
 
-            <div className="p-8 bg-[#111] border border-[#1a1a1a] rounded-2xl">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-[#ff9e19]/10 rounded-full flex items-center justify-center">
-                  <Shield className="w-6 h-6 text-[#ff9e19]" />
-                </div>
-                <div>
-                  <div className="font-semibold">Martin</div>
-                  <div className="text-sm text-gray-500">Stage 7 Graduate</div>
-                </div>
-              </div>
-              <p className="text-gray-300 mb-4">
-                "<span className="text-[#ff9e19] font-semibold">36 days without anxiety or sleep pills</span> after finishing Stage 7."
-              </p>
-              <div className="text-sm text-gray-500">Complete freedom from dependency</div>
-            </div>
-          </div>
-
-          <div className="p-8 bg-gradient-to-r from-[#ff9e19]/10 to-transparent border border-[#ff9e19]/20 rounded-2xl text-center">
-            <p className="text-2xl font-medium mb-4">
-              "This has <span className="text-[#ff9e19]">completely changed who I am</span> for the better. 
-              I am in such an amazing place and want to thank you from the bottom of my heart."
-            </p>
-            <p className="text-gray-500">— Alan</p>
-          </div>
-        </div>
-      </section>
-
-      {/* ===== YOUR GUIDES ===== */}
-<section className="py-20 px-4 border-t border-[#1a1a1a]">
-  <div className="max-w-6xl mx-auto">
-    <div className="text-center mb-16">
-      <h2 className="text-3xl sm:text-4xl font-bold mb-6">Your Guides On This Journey</h2>
-    </div>
-
-    <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
-      {/* Nicholas */}
-      <div className="text-center">
-        <div className="w-32 h-32 rounded-full mx-auto mb-6 overflow-hidden bg-[#1a1a1a]">
-          <Image
-            src="/coaches/nic.avif"
-            alt="Nicholas Kusmich"
-            width={256}
-            height={256}
-            quality={100}
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <h3 className="text-xl font-semibold mb-2">Nicholas Kusmich</h3>
-        <p className="text-[#ff9e19] text-sm mb-4">IOS Systems Architect</p>
-        <p className="text-gray-400 text-sm">
-          Former pastor turned marketing strategist who's generated over $1B in client revenue. 
-          Now dedicated to helping high-performers install the integrated operating system that matches their outer ambitions.
-        </p>
-      </div>
-
-      {/* Fehren */}
-      <div className="text-center">
-        <div className="w-32 h-32 rounded-full mx-auto mb-6 overflow-hidden bg-[#1a1a1a]">
-          <Image
-            src="/coaches/fehren.avif"
-            alt="Fehren Kusmich"
-            width={256}
-            height={256}
-            quality={100}
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <h3 className="text-xl font-semibold mb-2">Fehren Kusmich</h3>
-        <p className="text-[#ff9e19] text-sm mb-4">Heart & Body Specialist</p>
-        <p className="text-gray-400 text-sm">
-          Certified practitioner who brings somatic wisdom and heart-centered guidance. 
-          Her spacious approach creates safety for deep transformation.
-        </p>
-      </div>
-
-      {/* Charok */}
-      <div className="text-center">
-        <div className="w-32 h-32 rounded-full mx-auto mb-6 overflow-hidden bg-[#1a1a1a]">
-          <Image
-            src="/coaches/charok.jpg"
-            alt="Charok Lama"
-            width={256}
-            height={256}
-            quality={100}
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <h3 className="text-xl font-semibold mb-2">Charok Lama</h3>
-        <p className="text-[#ff9e19] text-sm mb-4">Leading Buddhist Teacher & Life Coach</p>
-        <p className="text-gray-400 text-sm">
-          Recognized reincarnation of a Himalayan yogi. Trained at Kopan and Sera Je Monasteries. 
-          Bridges ancient wisdom with modern psychology, fluent in CBT and traditional Buddhist practice.
-        </p>
-      </div>
-
-      {/* Guest Experts */}
-      <div className="text-center">
-        <div className="w-32 h-32 rounded-full mx-auto mb-6 overflow-hidden bg-[#1a1a1a] flex items-center justify-center">
-          <User className="w-16 h-16 text-gray-600" />
-        </div>
-        <h3 className="text-xl font-semibold mb-2">Guest Experts</h3>
-        <p className="text-[#ff9e19] text-sm mb-4">World's Leading Experts</p>
-        <p className="text-gray-400 text-sm">
-          Each month there will be a guest who is a world class leader and authority in their field 
-          bringing their expertise and perspective to relevant topic matters.
-        </p>
-      </div>
-    </div>
-  </div>
-</section>
-
-      {/* ===== WHAT'S INCLUDED ===== */}
-      <section className="py-20 px-4 bg-[#0d0d0d] border-t border-[#1a1a1a]">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-6">Everything You Get With The IOS Installer</h2>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-6 mb-12">
+          {/* Nicholas + Fehren — large cards */}
+          <div className="grid sm:grid-cols-2 gap-6 mt-12 mb-6">
             {[
-              { icon: Zap, title: "All 7 Stage Rituals & Protocols", desc: "From Neural Priming to Accelerated Expansion. Each stage unlocks when you're ready.", value: "Core System" },
-              { icon: Brain, title: "Nic AI & Fehren AI Coaches", desc: "24/7 access to AI coaches trained on hundreds of real coaching conversations. Not chatbots. Coaches.", value: "$1,200 Value" },
-              { icon: Star, title: "Science of Neural Liberation Course", desc: "4 modules, 16 tutorials, 30+ hours of neuroscience-backed transformation education.", value: "$497 Value" },
-              { icon: Target, title: "21-Day Evidence Cycles", desc: "Repeated, verifiable actions that condition the nervous system through proof and updates behavior automatically..", value: "Included" },
-              { icon: Clock, title: "Flow Block Performance System", desc: "Deep work training. 60-90 minute flow states become your new normal.", value: "Included" },
-              { icon: Shield, title: "Cognitive Protocol Suite", desc: "Reframe, Decentering, Thought Hygiene, Meta-Reflection. Real tools, not affirmations.", value: "Included" },
-            ].map((item, i) => (
-              <div key={i} className="flex gap-4 p-6 bg-[#111] border border-[#1a1a1a] rounded-xl">
-                <div className="w-12 h-12 bg-[#ff9e19]/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <item.icon className="w-6 h-6 text-[#ff9e19]" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold">{item.title}</h3>
-                    {item.value !== "Included" && item.value !== "Core System" && (
-                      <span className="text-xs text-[#ff9e19] font-medium">{item.value}</span>
-                    )}
+              {
+                img: '/coaches/nic.avif',
+                name: 'Nicholas Kusmich',
+                role: 'IOS Systems Architect',
+                ai: 'Nic AI',
+                bio: 'Former pastor turned marketing strategist who\'s generated over $1B in client revenue. After years of external achievement without internal coherence, Nicholas built the IOS as the operating system he wished existed. He\'s the architect of everything you\'ve been experiencing.',
+              },
+              {
+                img: '/coaches/fehren.avif',
+                name: 'Fehren Kusmich',
+                role: 'Heart & Body Specialist',
+                ai: 'Fehren AI',
+                bio: 'Certified practitioner bringing somatic wisdom and heart-centered guidance. Fehren\'s approach creates the safety that makes deep transformation possible — particularly through the body-based stages you\'ll encounter in Stage 2 and beyond.',
+              },
+            ].map((person, i) => (
+              <Reveal key={i} delay={i * 0.15}>
+                <div className="p-7 bg-[#111] border border-[#1a1a1a] rounded-2xl flex gap-5 h-full">
+                  <div className="w-20 h-20 rounded-2xl overflow-hidden bg-[#1a1a1a] flex-shrink-0">
+                    <Image src={person.img} alt={person.name} width={160} height={160} quality={100} className="w-full h-full object-cover" />
                   </div>
-                  <p className="text-gray-400 text-sm">{item.desc}</p>
+                  <div>
+                    <div className="text-xs text-[#ff9e19] font-medium uppercase tracking-widest mb-1">{person.ai} → {person.name}</div>
+                    <h3 className="font-semibold text-lg mb-0.5">{person.name}</h3>
+                    <p className="text-[#ff9e19] text-sm mb-3">{person.role}</p>
+                    <p className="text-gray-400 text-sm leading-relaxed">{person.bio}</p>
+                  </div>
                 </div>
-              </div>
+              </Reveal>
+            ))}
+          </div>
+
+          {/* Charok + Guest — smaller */}
+          <div className="grid sm:grid-cols-2 gap-6">
+            {[
+              {
+                img: '/coaches/charok.jpg',
+                name: 'Charok Lama',
+                role: 'Leading Buddhist Teacher & Life Coach',
+                bio: 'Recognized reincarnation of a Himalayan yogi. Trained at Kopan and Sera Je Monasteries. Bridges ancient contemplative wisdom with modern psychology and CBT. Brings the depth of lineage to the IOS framework.',
+              },
+              {
+                img: null,
+                name: 'Guest Experts',
+                role: "World's Leading Authorities",
+                bio: 'Each month, a world-class leader brings their expertise to the community — covering neuroscience, performance, relationships, and the edges of human potential. All sessions recorded.',
+              },
+            ].map((person, i) => (
+              <Reveal key={i} delay={i * 0.15 + 0.2}>
+                <div className="p-6 bg-[#111] border border-[#1a1a1a] rounded-2xl flex gap-4 h-full">
+                  <div className="w-14 h-14 rounded-xl overflow-hidden bg-[#1a1a1a] flex-shrink-0 flex items-center justify-center">
+                    {person.img
+                      ? <Image src={person.img} alt={person.name} width={112} height={112} quality={100} className="w-full h-full object-cover" />
+                      : <User className="w-7 h-7 text-gray-600" />
+                    }
+                  </div>
+                  <div>
+                    <h3 className="font-semibold mb-0.5">{person.name}</h3>
+                    <p className="text-[#ff9e19] text-sm mb-2">{person.role}</p>
+                    <p className="text-gray-400 text-sm leading-relaxed">{person.bio}</p>
+                  </div>
+                </div>
+              </Reveal>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ===== PRICING ===== */}
+      {/* ─── SOCIAL PROOF ──────────────────────────────────────────────────── */}
+      <section className="py-20 px-4 bg-[#0d0d0d] border-t border-[#1a1a1a]">
+        <div className="max-w-5xl mx-auto">
+          <Reveal>
+            <h2 className="text-3xl sm:text-4xl font-bold text-center mb-4">
+              What Happened When They Continued
+            </h2>
+            <p className="text-xl text-gray-400 text-center mb-14 max-w-2xl mx-auto">
+              These aren't beginners. These are people who, like you, completed Stage 1 and kept going.
+            </p>
+          </Reveal>
+
+          <div className="grid md:grid-cols-2 gap-6 mb-10">
+            {[
+              {
+                icon: TrendingUp, name: 'Jesse', label: 'Entrepreneur',
+                quote: '"My business did $60k the first year. $90k the next year. And this year after this protocol, I\'ll cross over the $300k mark."',
+                stat: '5x revenue growth',
+              },
+              {
+                icon: TrendingUp, name: 'Brian', label: 'Business Owner',
+                quote: '"Since doing this I have had 7 million dollar months in a row. I have never done that before. Something just started clicking. Hard to describe."',
+                stat: '7 consecutive $1M+ months',
+              },
+              {
+                icon: Heart, name: 'Jenna', label: 'Personal Transformation',
+                quote: '"Words can\'t express how much this has helped me. I was able to clearly see the walls I had built and dissolve them, allowing me to love freely. Tremendously healing."',
+                stat: null,
+              },
+              {
+                icon: Shield, name: 'Martin', label: 'Stage 7 Graduate',
+                quote: '"36 days without anxiety or sleep pills after finishing Stage 7."',
+                stat: 'Complete freedom from dependency',
+              },
+            ].map((t, i) => (
+              <Reveal key={i} delay={i * 0.1}>
+                <div className="p-7 bg-[#111] border border-[#1a1a1a] rounded-2xl h-full flex flex-col">
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="w-11 h-11 bg-[#ff9e19]/10 rounded-full flex items-center justify-center">
+                      <t.icon className="w-5 h-5 text-[#ff9e19]" />
+                    </div>
+                    <div>
+                      <div className="font-semibold">{t.name}</div>
+                      <div className="text-xs text-gray-500">{t.label}</div>
+                    </div>
+                  </div>
+                  <p className="text-gray-300 text-sm leading-relaxed flex-1">{t.quote}</p>
+                  {t.stat && <div className="mt-4 text-xs text-[#ff9e19] font-medium">{t.stat}</div>}
+                </div>
+              </Reveal>
+            ))}
+          </div>
+
+          <Reveal delay={0.3}>
+            <div className="p-8 bg-gradient-to-r from-[#ff9e19]/8 to-transparent border border-[#ff9e19]/15 rounded-2xl text-center">
+              <p className="text-2xl font-medium mb-3">
+                "This has <span className="text-[#ff9e19]">completely changed who I am</span> for the better.
+                I am in such an amazing place."
+              </p>
+              <p className="text-gray-500 text-sm">— Alan</p>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ─── PRICING ───────────────────────────────────────────────────────── */}
       <section id="pricing" className="py-20 px-4 border-t border-[#1a1a1a]">
         <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-6">Choose Your Installation Path</h2>
-            <p className="text-xl text-gray-400">Stage 1 is free. Stages 2-7 require commitment.</p>
-          </div>
-
-          {/* Track Selector */}
-          <div className="max-w-lg mx-auto mb-8">
-            <div className="flex gap-2 p-1 bg-[#111] border border-[#1a1a1a] rounded-xl">
-              <button
-                onClick={() => handleTrackChange('installer')}
-                className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all ${
-                  selectedTrack === 'installer' ? 'bg-[#ff9e19] text-black' : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                IOS Installer
-              </button>
-              <button
-                onClick={() => handleTrackChange('coaching')}
-                className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all ${
-                  selectedTrack === 'coaching' ? 'bg-[#ff9e19] text-black' : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                Installer + Live Coaching
-              </button>
-            </div>
-          </div>
-
-          {selectedTrack === 'coaching' && (
-            <div className="max-w-2xl mx-auto mb-8 p-6 bg-[#ff9e19]/5 border border-[#ff9e19]/20 rounded-xl">
-              <p className="text-center text-gray-300">
-                <span className="text-[#ff9e19] font-semibold">Everything in the IOS Installer, PLUS:</span> Weekly live coaching calls with Nic, Fehren, and Charok Lama. 
-                Monthly guest expert sessions. Direct Q&A and hot seat coaching. All calls recorded.
+          <Reveal>
+            <div className="text-center mb-10">
+              <h2 className="text-3xl sm:text-4xl font-bold mb-3">
+                Choose How You Continue
+              </h2>
+              <p className="text-xl text-gray-400 max-w-xl mx-auto">
+                Stage 1 proved the system works. Stages 2–7 are where it fully installs.
               </p>
             </div>
+          </Reveal>
+
+          {/* Track selector */}
+          <Reveal>
+            <div className="max-w-md mx-auto mb-8">
+              <div className="flex gap-2 p-1 bg-[#111] border border-[#1a1a1a] rounded-xl">
+                {(['installer', 'coaching'] as const).map((track) => (
+                  <button
+                    key={track}
+                    onClick={() => handleTrackChange(track)}
+                    className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all text-sm ${
+                      selectedTrack === track ? 'bg-[#ff9e19] text-black' : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    {track === 'installer' ? 'IOS Installer' : 'Installer + Live Coaching'}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </Reveal>
+
+          {/* Coaching add-on note */}
+          {selectedTrack === 'coaching' && (
+            <Reveal>
+              <div className="max-w-2xl mx-auto mb-8 p-5 bg-[#ff9e19]/5 border border-[#ff9e19]/15 rounded-xl">
+                <p className="text-center text-gray-300 text-sm">
+                  <span className="text-[#ff9e19] font-semibold">Everything in the Installer, PLUS:</span>{' '}
+                  Weekly live coaching calls with Nicholas, Fehren, and Charok Lama.
+                  Monthly guest expert sessions. Direct Q&A and hot seat coaching. All calls recorded.
+                </p>
+              </div>
+            </Reveal>
           )}
 
-          {/* Pricing Cards */}
-          <div className="grid md:grid-cols-3 gap-6">
-            {selectedTrack === 'installer' ? (
-              <>
-                <div 
-                  onClick={() => setSelectedPlan('annual')} 
+          {/* Pricing cards */}
+          <div className="grid md:grid-cols-3 gap-5">
+            {(selectedTrack === 'installer'
+              ? [
+                  { plan: 'annual' as PlanType, label: 'Annual Access', sub: 'Best for full transformation', price: '$697', monthly: 'Just $58/mo', billing: 'Billed annually', badge: 'SAVE 61%' },
+                  { plan: 'biannual' as PlanType, label: '6 Months Access', sub: 'Solid commitment', price: '$597', monthly: '$100/mo', billing: 'Billed every 6 months', badge: null },
+                  { plan: 'quarterly' as PlanType, label: '3 Months Access', sub: 'Start and see', price: '$447', monthly: '$149/mo', billing: 'Billed every 3 months', badge: null },
+                ]
+              : [
+                  { plan: 'annual_coaching' as PlanType, label: 'Annual Access', sub: 'Best for full transformation', price: '$1,797', monthly: 'Just $150/mo', billing: 'Billed annually', badge: 'BEST VALUE' },
+                  { plan: 'biannual_coaching' as PlanType, label: '6 Months Access', sub: 'Solid commitment', price: '$1,397', monthly: '$233/mo', billing: 'Billed every 6 months', badge: null },
+                  { plan: 'quarterly_coaching' as PlanType, label: '3 Months Access', sub: 'Start and see', price: '$1,038', monthly: '$346/mo', billing: 'Billed every 3 months', badge: null },
+                ]
+            ).map((card) => (
+              <Reveal key={card.plan}>
+                <div
+                  onClick={() => setSelectedPlan(card.plan)}
                   className={`relative p-6 rounded-2xl border-2 cursor-pointer transition-all ${
-                    selectedPlan === 'annual' ? 'border-[#ff9e19] bg-[#ff9e19]/10' : 'border-[#1a1a1a] bg-[#111] hover:border-[#333]'
+                    selectedPlan === card.plan
+                      ? 'border-[#ff9e19] bg-[#ff9e19]/8 shadow-lg shadow-[#ff9e19]/10'
+                      : 'border-[#1a1a1a] bg-[#111] hover:border-[#2a2a2a]'
                   }`}
                 >
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-[#ff9e19] text-black text-xs font-bold rounded-full">SAVE 61%</div>
-                  <div className="text-center pt-4">
-                    <h3 className="text-xl font-bold mb-1">Annual Access</h3>
-                    <p className="text-gray-500 text-sm mb-4">For those committed and serious</p>
-                    <div className="text-4xl font-bold mb-1">$697</div>
-                    <p className="text-[#ff9e19] font-medium">Just $58/month</p>
-                    <p className="text-gray-500 text-sm mt-2">Billed annually</p>
+                  {card.badge && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-[#ff9e19] text-black text-xs font-bold rounded-full whitespace-nowrap">
+                      {card.badge}
+                    </div>
+                  )}
+                  <div className="text-center pt-3">
+                    <h3 className="font-bold text-lg mb-1">{card.label}</h3>
+                    <p className="text-gray-500 text-sm mb-5">{card.sub}</p>
+                    <div className="text-4xl font-bold mb-1">{card.price}</div>
+                    <p className={selectedPlan === card.plan ? 'text-[#ff9e19] font-medium' : 'text-gray-400'}>
+                      {card.monthly}
+                    </p>
+                    <p className="text-gray-600 text-xs mt-2">{card.billing}</p>
                   </div>
                 </div>
-                <div 
-                  onClick={() => setSelectedPlan('biannual')} 
-                  className={`relative p-6 rounded-2xl border-2 cursor-pointer transition-all ${
-                    selectedPlan === 'biannual' ? 'border-[#ff9e19] bg-[#ff9e19]/10' : 'border-[#1a1a1a] bg-[#111] hover:border-[#333]'
-                  }`}
-                >
-                  <div className="text-center">
-                    <h3 className="text-xl font-bold mb-1">6 Months Access</h3>
-                    <p className="text-gray-500 text-sm mb-4">Ready to roll your sleeves up</p>
-                    <div className="text-4xl font-bold mb-1">$597</div>
-                    <p className="text-gray-400">$100/month</p>
-                    <p className="text-gray-500 text-sm mt-2">Billed every 6 months</p>
-                  </div>
-                </div>
-                <div 
-                  onClick={() => setSelectedPlan('quarterly')} 
-                  className={`relative p-6 rounded-2xl border-2 cursor-pointer transition-all ${
-                    selectedPlan === 'quarterly' ? 'border-[#ff9e19] bg-[#ff9e19]/10' : 'border-[#1a1a1a] bg-[#111] hover:border-[#333]'
-                  }`}
-                >
-                  <div className="text-center">
-                    <h3 className="text-xl font-bold mb-1">3 Months Access</h3>
-                    <p className="text-gray-500 text-sm mb-4">Looking to dip your toe</p>
-                    <div className="text-4xl font-bold mb-1">$447</div>
-                    <p className="text-gray-400">$149/month</p>
-                    <p className="text-gray-500 text-sm mt-2">Billed every 3 months</p>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <>
-                <div 
-                  onClick={() => setSelectedPlan('annual_coaching')} 
-                  className={`relative p-6 rounded-2xl border-2 cursor-pointer transition-all ${
-                    selectedPlan === 'annual_coaching' ? 'border-[#ff9e19] bg-[#ff9e19]/10' : 'border-[#1a1a1a] bg-[#111] hover:border-[#333]'
-                  }`}
-                >
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-[#ff9e19] text-black text-xs font-bold rounded-full">BEST VALUE</div>
-                  <div className="text-center pt-4">
-                    <h3 className="text-xl font-bold mb-1">Annual Access</h3>
-                    <p className="text-gray-500 text-sm mb-4">For those committed and serious</p>
-                    <div className="text-4xl font-bold mb-1">$1,797</div>
-                    <p className="text-[#ff9e19] font-medium">Just $150/month</p>
-                    <p className="text-gray-500 text-sm mt-2">Billed annually</p>
-                  </div>
-                </div>
-                <div 
-                  onClick={() => setSelectedPlan('biannual_coaching')} 
-                  className={`relative p-6 rounded-2xl border-2 cursor-pointer transition-all ${
-                    selectedPlan === 'biannual_coaching' ? 'border-[#ff9e19] bg-[#ff9e19]/10' : 'border-[#1a1a1a] bg-[#111] hover:border-[#333]'
-                  }`}
-                >
-                  <div className="text-center">
-                    <h3 className="text-xl font-bold mb-1">6 Months Access</h3>
-                    <p className="text-gray-500 text-sm mb-4">Ready to roll your sleeves up</p>
-                    <div className="text-4xl font-bold mb-1">$1,397</div>
-                    <p className="text-gray-400">$233/month</p>
-                    <p className="text-gray-500 text-sm mt-2">Billed every 6 months</p>
-                  </div>
-                </div>
-                <div 
-                  onClick={() => setSelectedPlan('quarterly_coaching')} 
-                  className={`relative p-6 rounded-2xl border-2 cursor-pointer transition-all ${
-                    selectedPlan === 'quarterly_coaching' ? 'border-[#ff9e19] bg-[#ff9e19]/10' : 'border-[#1a1a1a] bg-[#111] hover:border-[#333]'
-                  }`}
-                >
-                  <div className="text-center">
-                    <h3 className="text-xl font-bold mb-1">3 Months Access</h3>
-                    <p className="text-gray-500 text-sm mb-4">Looking to dip your toe</p>
-                    <div className="text-4xl font-bold mb-1">$1,038</div>
-                    <p className="text-gray-400">$346/month</p>
-                    <p className="text-gray-500 text-sm mt-2">Billed every 3 months</p>
-                  </div>
-                </div>
-              </>
-            )}
+              </Reveal>
+            ))}
           </div>
 
-          {/* Error Message */}
+          {/* Error */}
           {checkoutError && (
             <div className="mt-4 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-center">
-              <p className="text-red-400">{checkoutError}</p>
+              <p className="text-red-400 text-sm">{checkoutError}</p>
             </div>
           )}
 
-          {/* CTA Button */}
-          <div className="mt-8 text-center">
-            <button 
-              onClick={handleCheckout}
-              disabled={checkoutLoading}
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#ff9e19] hover:bg-[#ffb04d] text-black font-bold rounded-xl transition-all text-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {checkoutLoading ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <Zap className="w-5 h-5" />
-                  {getButtonText()}
-                </>
-              )}
-            </button>
-            
-            <p className="mt-4 text-gray-600 text-xs">Auto-renews at same rate until cancelled</p>
-          </div>
+          {/* CTA */}
+          <Reveal delay={0.2}>
+            <div className="mt-8 text-center">
+              <button
+                onClick={handleCheckout}
+                disabled={checkoutLoading}
+                className="inline-flex items-center justify-center gap-2 px-10 py-5 bg-[#ff9e19] hover:bg-[#ffb04d] text-black font-bold rounded-xl transition-all text-lg shadow-xl shadow-[#ff9e19]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {checkoutLoading
+                  ? <><Loader2 className="w-5 h-5 animate-spin" />Processing...</>
+                  : <><Zap className="w-5 h-5" />{getButtonText()}</>
+                }
+              </button>
+              <p className="mt-3 text-gray-600 text-xs">Auto-renews at same rate until cancelled</p>
+            </div>
+          </Reveal>
         </div>
       </section>
 
-      {/* ===== FAQ ===== */}
+      {/* ─── FAQ (warm-audience objections) ───────────────────────────────── */}
       <section className="py-20 px-4 bg-[#0d0d0d] border-t border-[#1a1a1a]">
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-12">Frequently Asked Questions</h2>
+          <Reveal>
+            <h2 className="text-3xl font-bold text-center mb-12">Questions Before You Continue</h2>
+          </Reveal>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             {[
-              { q: "How is this different from meditation apps like Calm or Headspace?", a: "Those apps teach you a practice. The IOS installs a complete operating system. Meditation apps address symptoms (stress, sleep). We rewire the underlying architecture – your nervous system's baseline and your mind's default patterns. Plus, you don't just follow guided audio. You have AI coaches that know your journey and adapt to your specific needs." },
-              { q: "How is this different from therapy?", a: "Therapy is valuable for processing past experiences and treating clinical conditions. The IOS isn't therapy – it's systems engineering. We're not treating dysfunction; we're installing an upgrade. Many of our users continue therapy alongside the IOS; they work together beautifully." },
-              { q: "How is this different from other courses or programs?", a: "Courses give you information. The IOS gives you installation. You don't 'learn' the IOS – it installs itself through progressive practice. You can't skip ahead or binge-watch. The system unlocks when your nervous system demonstrates competence. This isn't another thing to add to your life; it becomes how you operate." },
-              { q: "How much time does this take?", a: "Stage 1 was about 7 minutes per day. As you progress, rituals stack but they're designed to integrate into your existing routine, not add hours to your day. Most users find the ROI on time is massive because their performance in everything else improves." },
-              { q: "What if I've tried everything and nothing works?", a: "That's exactly who this is for. You've tried adding more apps, more practices, more discipline. The IOS takes a different approach: we upgrade the underlying system. If everything else has been software patches on a faulty operating system, this is the kernel update." },
-              { q: "What are the AI coaches like?", a: "Nic AI and Fehren AI are trained on hundreds of real coaching conversations. They know the protocols intimately and adapt to your specific journey. They're not chatbots giving generic advice - they're coaches that hold you accountable, call out your patterns, and guide you through the stages. Available 24/7." },
+              {
+                q: "I've felt improvement in Stage 1 — will Stage 2 feel like starting over?",
+                a: "No. Stage 2 builds directly on what Stage 1 installed. Somatic Flow adds body-based awareness to the nervous system coherence you've already established. You'll feel the connection immediately — not like starting over, like adding a second layer to a solid foundation.",
+              },
+              {
+                q: "What happens to my Nic AI and Fehren AI access?",
+                a: "They stay with you and deepen. As you progress through stages, the AI coaches gain access to more protocols, tools, and context. The conversations get richer, not just longer — because the tools available to them expand with each stage you unlock.",
+              },
+              {
+                q: "What if I miss days or fall off the practice?",
+                a: "The system is built for real life. Missing a day doesn't reset your progress. If you fall off for an extended period, the system recalibrates your starting point rather than punishing you. The goal is sustainable installation, not perfect performance.",
+              },
+              {
+                q: "How much more time does this add to my day?",
+                a: "Stage 2 adds about 3 minutes (Somatic Flow). Stage 3 adds 2–3 minutes. Stages stack gradually — you never go from 7 minutes to 2 hours overnight. Most users at Stage 6 spend 18–22 minutes on their morning stack. The ROI on that time is significant.",
+              },
+              {
+                q: "Can I pause if life gets difficult?",
+                a: "The subscription can be cancelled at any time. But practically: the system is designed to be most valuable during difficult periods, not least. The tools — Reframe, Decentering, Thought Hygiene — are on-demand exactly for those moments.",
+              },
+              {
+                q: "Is the Live Coaching track worth it?",
+                a: "If you want to move faster and have direct access to Nicholas, Fehren, and Charok Lama, yes. Live calls accelerate integration because you can bring your specific situation. If you're self-directed and consistent, the Installer track handles the full journey on its own.",
+              },
             ].map((item, i) => (
-              <div key={i} className="border border-[#1a1a1a] rounded-xl overflow-hidden">
-                <button 
-                  onClick={() => setOpenFaq(openFaq === i ? null : i)} 
-                  className="w-full p-6 text-left flex items-center justify-between gap-4 hover:bg-[#111] transition-colors"
-                >
-                  <span className="font-medium">{item.q}</span>
-                  <ChevronDown className={`w-5 h-5 text-gray-500 transition-transform flex-shrink-0 ${openFaq === i ? 'rotate-180' : ''}`} />
-                </button>
-                {openFaq === i && (
-                  <div className="px-6 pb-6">
-                    <p className="text-gray-400">{item.a}</p>
-                  </div>
-                )}
-              </div>
+              <Reveal key={i}>
+                <div className="border border-[#1a1a1a] rounded-xl overflow-hidden">
+                  <button
+                    onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                    className="w-full p-5 text-left flex items-center justify-between gap-4 hover:bg-[#111] transition-colors"
+                  >
+                    <span className="font-medium text-sm sm:text-base">{item.q}</span>
+                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform flex-shrink-0 ${openFaq === i ? 'rotate-180' : ''}`} />
+                  </button>
+                  {openFaq === i && (
+                    <div className="px-5 pb-5">
+                      <p className="text-gray-400 text-sm leading-relaxed">{item.a}</p>
+                    </div>
+                  )}
+                </div>
+              </Reveal>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ===== FINAL CTA ===== */}
-      <section className="py-20 px-4 border-t border-[#1a1a1a]">
+      {/* ─── FINAL CTA ──────────────────────────────────────────────────────── */}
+      <section className="py-24 px-4 border-t border-[#1a1a1a]">
         <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-6">
-            The Inner Knock Won't Stop.<br/>
-            <span className="text-[#ff9e19]">But You Can Finally Answer It.</span>
-          </h2>
-          <p className="text-xl text-gray-400 mb-8">
-            You're not here by accident. That restless feeling that there must be more? 
-            It's real. And it's not going away until you upgrade the operating system.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button 
-              onClick={scrollToPrice}
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#ff9e19] hover:bg-[#ffb04d] text-black font-bold rounded-xl transition-all text-lg"
-            >
-              <Zap className="w-5 h-5" />
-              Upgrade To The Full IOS Installer
-            </button>
-            <button 
-              onClick={() => setShowChat(true)}
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all text-lg"
-            >
-              <MessageCircle className="w-5 h-5" />
-              Still Have Questions?
-            </button>
-          </div>
+          <Reveal>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-5">
+              The Foundation Is Set.<br />
+              <span className="text-[#ff9e19]">Build On It.</span>
+            </h2>
+            <p className="text-xl text-gray-400 mb-10 max-w-xl mx-auto">
+              Stage 1 changed your baseline. Stages 2–7 change your ceiling.
+              The system is ready. The only question is whether you are.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={scrollToPrice}
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#ff9e19] hover:bg-[#ffb04d] text-black font-bold rounded-xl transition-all text-lg shadow-xl shadow-[#ff9e19]/15"
+              >
+                <Zap className="w-5 h-5" />
+                Continue the Installation
+              </button>
+              <button
+                onClick={() => setShowChat(true)}
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all text-lg"
+              >
+                <MessageCircle className="w-5 h-5" />
+                Still Have Questions?
+              </button>
+            </div>
+          </Reveal>
         </div>
       </section>
 
-      {/* ===== SALES CHAT WIDGET ===== */}
-      {showChat && (
-        <SalesChat onClose={() => setShowChat(false)} />
-      )}
+      {/* ─── Sales chat ────────────────────────────────────────────────────── */}
+      {showChat && <SalesChat onClose={() => setShowChat(false)} />}
+
+      {/* ─── Keyframes ─────────────────────────────────────────────────────── */}
+      <style jsx global>{`
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }
 
-// ===== SALES CHAT COMPONENT =====
+export default function UpgradePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#0a0a0a]" />}>
+      <UpgradePageInner />
+    </Suspense>
+  );
+}
+
+// ─── Sales chat widget ────────────────────────────────────────────────────────
 function SalesChat({ onClose }: { onClose: () => void }) {
   const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([
-    { role: 'assistant', content: "Hey! 👋 I'm here to answer any questions about the IOS Installer. What would you like to know?" }
+    { role: 'assistant', content: "Hey! You've already done the hard part — Stage 1 is installed. What questions do you have about continuing?" }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
-
     const userMessage = input.trim();
     setInput('');
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setLoading(true);
-
     try {
-      const response = await fetch('/api/sales-chat', {
+      const res = await fetch('/api/sales-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          messages: [...messages, { role: 'user', content: userMessage }]
-        }),
+        body: JSON.stringify({ messages: [...messages, { role: 'user', content: userMessage }] }),
       });
-
-      if (!response.ok) throw new Error('Failed to get response');
-
-      const data = await response.json();
+      if (!res.ok) throw new Error('Failed');
+      const data = await res.json();
       setMessages(prev => [...prev, { role: 'assistant', content: data.message }]);
-    } catch (err) {
-      console.error('Chat error:', err);
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: "I'm having trouble connecting right now. Please try again, or you can start your free Stage 1 at /chat to talk with the AI coaches there." 
-      }]);
+    } catch {
+      setMessages(prev => [...prev, { role: 'assistant', content: "Having trouble connecting right now. You can always start your free Stage 1 at /chat and ask the coaches directly." }]);
     } finally {
       setLoading(false);
     }
@@ -786,50 +774,46 @@ function SalesChat({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-[#111] border border-[#1a1a1a] rounded-2xl w-full max-w-lg h-[600px] max-h-[80vh] overflow-hidden flex flex-col">
-        {/* Header */}
+      <div className="relative bg-[#111] border border-[#1a1a1a] rounded-2xl w-full max-w-lg h-[580px] max-h-[80vh] overflow-hidden flex flex-col">
         <div className="p-4 border-b border-[#1a1a1a] flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#ff9e19]/10 rounded-full flex items-center justify-center">
-              <MessageCircle className="w-5 h-5 text-[#ff9e19]" />
+            <div className="w-9 h-9 bg-[#ff9e19]/10 rounded-full flex items-center justify-center">
+              <MessageCircle className="w-4 h-4 text-[#ff9e19]" />
             </div>
             <div>
-              <div className="font-semibold">IOS Sales Advisor</div>
-              <div className="text-xs text-gray-500">Ask me anything about the IOS</div>
+              <div className="font-semibold text-sm">IOS Advisor</div>
+              <div className="text-xs text-gray-500">Ask about continuing</div>
             </div>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-lg transition-colors">
-            <X className="w-5 h-5 text-gray-400" />
+            <X className="w-4 h-4 text-gray-400" />
           </button>
         </div>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {messages.map((msg, i) => (
             <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[80%] p-4 rounded-2xl ${
-                msg.role === 'user' 
-                  ? 'bg-[#ff9e19] text-black rounded-br-md' 
-                  : 'bg-[#1a1a1a] text-gray-300 rounded-bl-md'
+              <div className={`max-w-[80%] p-3.5 rounded-2xl text-sm leading-relaxed ${
+                msg.role === 'user'
+                  ? 'bg-[#ff9e19] text-black rounded-br-sm'
+                  : 'bg-[#1a1a1a] text-gray-300 rounded-bl-sm'
               }`}>
-                <p className="whitespace-pre-wrap">{msg.content}</p>
+                {msg.content}
               </div>
             </div>
           ))}
           {loading && (
             <div className="flex justify-start">
-              <div className="bg-[#1a1a1a] text-gray-300 p-4 rounded-2xl rounded-bl-md">
-                <div className="flex gap-1">
-                  <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                </div>
+              <div className="bg-[#1a1a1a] p-3.5 rounded-2xl rounded-bl-sm flex gap-1">
+                {[0, 150, 300].map((d) => (
+                  <span key={d} className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: `${d}ms` }} />
+                ))}
               </div>
             </div>
           )}
+          <div ref={bottomRef} />
         </div>
 
-        {/* Input */}
         <div className="p-4 border-t border-[#1a1a1a] flex-shrink-0">
           <div className="flex gap-2">
             <input
@@ -837,15 +821,15 @@ function SalesChat({ onClose }: { onClose: () => void }) {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-              placeholder="Ask a question..."
-              className="flex-1 px-4 py-3 bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#ff9e19]/50"
+              placeholder="Ask anything..."
+              className="flex-1 px-4 py-3 bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl text-white placeholder-gray-600 text-sm focus:outline-none focus:border-[#ff9e19]/40"
             />
             <button
               onClick={sendMessage}
               disabled={!input.trim() || loading}
-              className="px-4 py-3 bg-[#ff9e19] hover:bg-[#ffb04d] text-black rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-3 bg-[#ff9e19] hover:bg-[#ffb04d] text-black rounded-xl transition-colors disabled:opacity-40"
             >
-              <Send className="w-5 h-5" />
+              <Send className="w-4 h-4" />
             </button>
           </div>
         </div>
