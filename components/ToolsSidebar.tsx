@@ -45,7 +45,8 @@ interface ToolsSidebarProps {
   onToolClick: (toolId: string) => void;
   onProgressUpdate?: () => Promise<void> | void;
   onPracticeCompleted?: (practiceId: string, practiceName: string) => void;
-  isRefreshing?: boolean;
+isRefreshing?: boolean;
+  onInstallClick?: () => void;
 }
 
 // Map from config practice IDs to database practice_type values
@@ -86,7 +87,7 @@ const TOOL_ICONS: { [key: string]: React.ComponentType<{ className?: string }> }
 // ============================================
 // STAGE 2 TEASER PANEL
 // ============================================
-function Stage2TeaserPanel({ unlockEligible }: { unlockEligible: boolean }) {
+function Stage2TeaserPanel({ unlockEligible, onInstallClick }: { unlockEligible: boolean; onInstallClick?: () => void }) {
   return (
     <div className={`rounded-xl p-4 border transition-all duration-500 ${
       unlockEligible
