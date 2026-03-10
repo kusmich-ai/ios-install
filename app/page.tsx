@@ -680,7 +680,7 @@ export default function Home() {
 
         .insight-quote {
           font-family: 'Cormorant Garamond', serif;
-          font-size: clamp(22px, 4.5vw, 52px);
+          font-size: clamp(22px, 4.5vw, 45px);
           font-weight: 300;
           line-height: 1.25;
           color: var(--white);
