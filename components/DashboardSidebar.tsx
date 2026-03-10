@@ -105,6 +105,7 @@ interface DashboardSidebarProps {
   
   // Handlers
   onStage7Click?: () => void;
+  onInstallClick?: () => void;
 }
 
 // ============================================
