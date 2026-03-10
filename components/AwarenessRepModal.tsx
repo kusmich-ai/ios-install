@@ -6,15 +6,17 @@ import AwarenessRep from "./AwarenessRep";
 // AWARENESS REP MODAL
 // Wrapper component that shows the audio meditation in a full-screen overlay
 // Matches the ResonanceModal pattern for consistency
+// v2.6: Accepts audioSrc for 11-script rotation system
 // ============================================================================
 
 interface AwarenessRepModalProps {
   isOpen: boolean;
   onClose: () => void;
   onComplete?: () => void; // Called when practice finishes (for auto-logging)
+  audioSrc?: string; // v2.6: Optional audio path from rotation system
 }
 
-export function AwarenessRepModal({ isOpen, onClose, onComplete }: AwarenessRepModalProps) {
+export function AwarenessRepModal({ isOpen, onClose, onComplete, audioSrc }: AwarenessRepModalProps) {
   const hasCompletedRef = useRef(false);
 
   // Reset completion flag when modal opens/closes
@@ -56,7 +58,8 @@ export function AwarenessRepModal({ isOpen, onClose, onComplete }: AwarenessRepM
         zIndex: 9999,
       }}
     >
-      <AwarenessRep onComplete={handleSessionComplete} />
+      {/* v2.6: Pass audioSrc to AwarenessRep for rotation */}
+      <AwarenessRep onComplete={handleSessionComplete} audioSrc={audioSrc} />
       
       {/* Close button - top right */}
       <button
@@ -106,14 +109,24 @@ export function AwarenessRepModal({ isOpen, onClose, onComplete }: AwarenessRepM
 
 // ============================================================================
 // HOOK FOR EASY USAGE
-// Use this hook in your parent component to control the modal
+// v2.6: open() now accepts an optional audioPath parameter for rotation
 // ============================================================================
 
 export function useAwarenessRep() {
   const [isOpen, setIsOpen] = useState(false);
+  const [audioSrc, setAudioSrc] = useState<string | undefined>(undefined);
 
-  const open = () => setIsOpen(true);
-  const close = () => setIsOpen(false);
+  // v2.6: open() accepts optional audio path from rotation system
+  const open = (rotationAudioPath?: string) => {
+    setAudioSrc(rotationAudioPath);
+    setIsOpen(true);
+  };
+  
+  const close = () => {
+    setIsOpen(false);
+    setAudioSrc(undefined);
+  };
+  
   const toggle = () => setIsOpen((prev) => !prev);
 
   return {
@@ -122,7 +135,12 @@ export function useAwarenessRep() {
     close,
     toggle,
     Modal: ({ onComplete }: { onComplete?: () => void }) => (
-      <AwarenessRepModal isOpen={isOpen} onClose={close} onComplete={onComplete} />
+      <AwarenessRepModal 
+        isOpen={isOpen} 
+        onClose={close} 
+        onComplete={onComplete}
+        audioSrc={audioSrc}
+      />
     ),
   };
 }
@@ -137,7 +155,7 @@ export function AwarenessRepTriggerButton() {
   return (
     <>
       <button
-        onClick={open}
+        onClick={() => open()}
         style={{
           padding: "1rem 2rem",
           fontSize: "0.9rem",
