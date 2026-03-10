@@ -366,7 +366,7 @@ export function PaywallModal({ isOpen, onClose, onUpgrade, upgradeUrl = '/upgrad
             <span>Auto-renews at same rate until cancelled</span>
           </div>
           <div className="text-center mt-2">
-  <a href="/upgrade" className="text-[#ff9e19] text-sm hover:underline">
+<a href={upgradeUrl} className="text-[#ff9e19] text-sm hover:underline">
     Want to learn more? See full details →
   </a>
 </div>
