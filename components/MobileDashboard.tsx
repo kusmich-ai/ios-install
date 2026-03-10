@@ -81,7 +81,8 @@ interface MobileDashboardProps {
   // Step 13: weekly check-in banner
   weeklyCheckInDue?: boolean;
   onRequestCheckIn?: () => void;
-  onStage7Unlock?: () => void;
+onStage7Unlock?: () => void;
+  onInstallClick?: () => void;
 }
 
 // ============================================
