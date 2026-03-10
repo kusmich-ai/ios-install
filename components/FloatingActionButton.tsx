@@ -1,5 +1,6 @@
 // components/FloatingActionButton.tsx
 // v2.5: CuePhaseCard integration for 3-phase Cue ritual
+// v2.6: Awareness Rep 11-script rotation system
 // Bottom-right pill ABOVE input area, says "Rituals"
 // White pill with amber icon - pops against dark bg, distinct from amber chat elements
 'use client';
@@ -19,6 +20,13 @@ import { useCoRegulation } from '@/components/CoRegulationModal';
 import { useNightlyDebrief } from '@/components/NightlyDebriefModal';
 import { useLoopDeLooping } from '@/components/LoopDeLoopingModal';
 import { useNosGlide } from '@/components/NosGlideModal';
+// v2.6: Awareness Rep rotation
+import { 
+  getNextScript, 
+  getScriptAudioPath, 
+  getScriptInfo,
+  type AwarenessRepScript 
+} from '@/lib/awarenessRepRotation';
 
 interface FloatingActionButtonProps {
   progress: UserProgress;
@@ -89,6 +97,9 @@ export default function FloatingActionButton({
   const [completing, setCompleting] = useState<string | null>(null);
   const [completionError, setCompletionError] = useState<string | null>(null);
 
+  // v2.6: Track which awareness rep script is currently being played
+  const [currentAwarenessScript, setCurrentAwarenessScript] = useState<AwarenessRepScript | null>(null);
+
   const { open: openResonance, Modal: ResonanceModal } = useResonanceBreathing();
   const { open: openAwarenessRep, Modal: AwarenessRepModal } = useAwarenessRep();
   const { open: openSomaticFlow, Modal: SomaticFlowModal } = useSomaticFlow();
@@ -107,9 +118,19 @@ export default function FloatingActionButton({
     return 'pending';
   };
 
+  // UPDATED: handleStartPractice — awareness_rep now uses rotation
   const handleStartPractice = (practiceId: string) => {
     if (practiceId === 'hrvb') { openResonance(); setIsOpen(false); }
-    else if (practiceId === 'awareness_rep') { openAwarenessRep(); setIsOpen(false); }
+    else if (practiceId === 'awareness_rep') {
+      // v2.6: Compute next script in rotation, pass audio path to modal
+      const lastScript = progress.lastAwarenessRepScript as AwarenessRepScript | null;
+      const nextScript = getNextScript(progress.currentStage, lastScript);
+      const audioPath = getScriptAudioPath(nextScript);
+      setCurrentAwarenessScript(nextScript);
+      console.log(`[FAB] Awareness Rep rotation: ${nextScript} (${getScriptInfo(nextScript).name})`);
+      openAwarenessRep(audioPath);
+      setIsOpen(false);
+    }
     else if (practiceId === 'somatic_flow') { openSomaticFlow(); setIsOpen(false); }
     else if (practiceId === 'co_regulation') { openCoRegulation(); setIsOpen(false); }
     else if (practiceId === 'nightly_debrief') { openNightlyDebrief(); setIsOpen(false); }
@@ -117,10 +138,25 @@ export default function FloatingActionButton({
     else { onPracticeClick(practiceId); setIsOpen(false); }
   };
 
+  // UPDATED: handleModalComplete — saves awareness rep rotation after completion
   const handleModalComplete = async (practiceId: string, practiceName: string) => {
     console.log(`[FloatingActionButton] Modal completed: ${practiceId}`);
     if (getPracticeStatus(practiceId) !== 'completed') {
       await handleMarkComplete(practiceId, practiceName);
+    }
+
+    // v2.6: After awareness rep completes, save which script was played
+    if (practiceId === 'awareness_rep' && currentAwarenessScript) {
+      try {
+        await fetch('/api/practices/update-awareness-rep-script', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, script: currentAwarenessScript }),
+        });
+        console.log(`[FAB] Awareness Rep rotation saved: ${currentAwarenessScript}`);
+      } catch (err) {
+        console.error('[FAB] Failed to save awareness rep rotation:', err);
+      }
     }
   };
 
@@ -269,8 +305,6 @@ export default function FloatingActionButton({
                       {/* Action Buttons - ALL LOGIC UNCHANGED */}
                       <div className="flex gap-2">
                         {isMicroAction ? (
-                          // MICRO-ACTION WITHOUT SPRINT - Show setup button
-                          // (hasIdentity case is handled above by CuePhaseCard)
                           <button onClick={() => { handleStartPractice(practice.id); setIsOpen(false); }}
                             className="flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 bg-amber-500 text-white hover:bg-amber-600 shadow-sm shadow-amber-500/20">
                             Set Up IOS Cue
