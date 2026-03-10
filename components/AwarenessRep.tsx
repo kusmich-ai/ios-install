@@ -2,15 +2,21 @@
 import React, { useState, useEffect, useRef } from "react";
 
 // ============================================================================
-// AWARENESS REP - 3:35 GUIDED MEDITATION
+// AWARENESS REP - GUIDED MEDITATION PLAYER
 // A minimal, calming audio experience with subtle visual feedback
+// v2.6: Accepts audioSrc prop for 11-script rotation system
+//       Falls back to /audio/AwarenessRep.mp3 if no src provided
 // ============================================================================
 
 interface AwarenessRepProps {
   onComplete?: () => void; // Called when audio finishes
+  audioSrc?: string; // v2.6: Audio path from rotation system (optional)
 }
 
-export default function AwarenessRep({ onComplete }: AwarenessRepProps) {
+export default function AwarenessRep({ onComplete, audioSrc }: AwarenessRepProps) {
+  // v2.6: Use rotation audio if provided, fall back to original
+  const resolvedAudioSrc = audioSrc || '/audio/AwarenessRep.mp3';
+
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(215); // Default 3:35 (215 seconds)
@@ -25,12 +31,12 @@ export default function AwarenessRep({ onComplete }: AwarenessRepProps) {
   // Try to load audio on mount
   useEffect(() => {
     if (audioRef.current) {
-      console.log('[AwarenessRep] Audio element mounted, src:', audioRef.current.src);
+      console.log('[AwarenessRep] Audio element mounted, src:', resolvedAudioSrc);
       
       // Force load attempt
       audioRef.current.load();
     }
-  }, []);
+  }, [resolvedAudioSrc]);
 
   // Handle audio events
   const handleLoadedMetadata = () => {
@@ -189,10 +195,10 @@ export default function AwarenessRep({ onComplete }: AwarenessRepProps) {
         overflow: "hidden",
       }}
     >
-      {/* HTML Audio Element */}
+      {/* HTML Audio Element — v2.6: uses resolvedAudioSrc from rotation */}
       <audio
         ref={audioRef}
-        src="/audio/AwarenessRep.mp3"
+        src={resolvedAudioSrc}
         preload="auto"
         onLoadStart={handleLoadStart}
         onLoadedMetadata={handleLoadedMetadata}
