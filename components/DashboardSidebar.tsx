@@ -406,7 +406,7 @@ function Stage2UnlockWidget({
 // ============================================
 // STAGE 2 TEASER PANEL
 // ============================================
-function Stage2TeaserPanel({ unlockEligible }: { unlockEligible: boolean }) {
+function Stage2TeaserPanel({ unlockEligible, onInstallClick }: { unlockEligible: boolean; onInstallClick?: () => void }) {
   return (
     <div className={`rounded-xl p-4 border transition-all duration-500 ${
       unlockEligible
@@ -427,9 +427,12 @@ function Stage2TeaserPanel({ unlockEligible }: { unlockEligible: boolean }) {
       </p>
       {unlockEligible && (
         <div className="mt-3 pt-3 border-t border-emerald-500/20">
-          <p className="text-xs font-semibold text-emerald-600">
+          <button
+            onClick={onInstallClick}
+            className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 transition-colors cursor-pointer"
+          >
             Install now →
-          </p>
+          </button>
         </div>
       )}
     </div>
