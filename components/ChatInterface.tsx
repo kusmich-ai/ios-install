@@ -5799,7 +5799,8 @@ Ready to start your first practice?`;
           onToolClick={handleToolClick}
           onProgressUpdate={handleProgressUpdate}
           onPracticeCompleted={handlePracticeCompleted}
-          isRefreshing={isRefreshing}
+    isRefreshing={isRefreshing}
+          onInstallClick={handleInstallNowClick}
         />
       )}
 
@@ -5838,6 +5839,7 @@ Ready to start your first practice?`;
 streakFreezeAvailable={progress?.streakFreezeAvailable}
           weeklyCheckInDue={progress?.weeklyCheckInDue}
           onRequestCheckIn={handleRequestCheckIn}
+          onInstallClick={handleInstallNowClick}
           />
       )}
 
