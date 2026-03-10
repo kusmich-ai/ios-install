@@ -2728,6 +2728,25 @@ Ready to continue your transformation?`
     }
   }, []);
 
+// ============================================
+  // HANDLE "INSTALL NOW" FROM SIDEBAR/MOBILE
+  // ============================================
+  const handleInstallNowClick = useCallback(() => {
+    if (!progress?.unlockEligible) return;
+    
+    const nextStage = (progress?.currentStage || 1) + 1;
+    setPendingUnlockStage(nextStage);
+    setUnlockFlowState('eligible_shown');
+    
+    const currentStageNum = progress?.currentStage || 1;
+    const stageTemplate = stageTemplates[currentStageNum as keyof typeof stageTemplates];
+    if (stageTemplate?.unlock?.eligible) {
+      const templateContext = buildTemplateContext();
+      const processedMessage = processTemplate(stageTemplate.unlock.eligible, templateContext);
+      setMessages(prev => [...prev, { role: 'assistant', content: processedMessage }]);
+    }
+  }, [progress, buildTemplateContext]);
+
   // ============================================
   // HANDLE START NEW STAGE INTRO
   // ============================================
