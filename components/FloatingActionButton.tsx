@@ -27,7 +27,8 @@ interface FloatingActionButtonProps {
   onToolClick: (toolId: string) => void;
   onProgressUpdate?: () => Promise<void> | void;
   onPracticeCompleted?: (practiceId: string, practiceName: string) => void;
-  isRefreshing?: boolean;
+isRefreshing?: boolean;
+  onInstallClick?: () => void;
 }
 
 const PRACTICE_ID_MAP: { [key: string]: string } = {
@@ -49,7 +50,7 @@ const TOOL_ICONS: { [key: string]: React.ComponentType<{ className?: string }> }
 // ============================================
 // STAGE 2 TEASER PANEL
 // ============================================
-function Stage2TeaserPanel({ unlockEligible }: { unlockEligible: boolean }) {
+function Stage2TeaserPanel({ unlockEligible, onInstallClick }: { unlockEligible: boolean; onInstallClick?: () => void }) {
   return (
     <div className={`rounded-xl p-4 border transition-all duration-500 ${
       unlockEligible
@@ -68,9 +69,11 @@ function Stage2TeaserPanel({ unlockEligible }: { unlockEligible: boolean }) {
       <p className="text-xs text-zinc-400 italic leading-relaxed">
         &quot;When coherence stops living in your head and starts living in your body.&quot;
       </p>
-      {unlockEligible && (
+    {unlockEligible && (
         <div className="mt-3 pt-3 border-t border-emerald-500/20">
-          <p className="text-xs font-semibold text-emerald-600">Install now →</p>
+          <button onClick={onInstallClick} className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 transition-colors">
+            Install now →
+          </button>
         </div>
       )}
     </div>
@@ -79,7 +82,8 @@ function Stage2TeaserPanel({ unlockEligible }: { unlockEligible: boolean }) {
 
 export default function FloatingActionButton({
   progress, userId, onPracticeClick, onToolClick,
-  onProgressUpdate, onPracticeCompleted, isRefreshing = false
+  onProgressUpdate, onPracticeCompleted, isRefreshing = false,
+  onInstallClick
 }: FloatingActionButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [completing, setCompleting] = useState<string | null>(null);
