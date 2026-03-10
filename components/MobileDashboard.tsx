@@ -603,7 +603,7 @@ calmTrend, streakFreezeAvailable, weeklyCheckInDue, onRequestCheckIn, onStage7Un
 
          {/* Stage 2 teaser panel — visible all of Stage 1 */}
           {currentStage === 1 && (
-            <Stage2TeaserPanel unlockEligible={unlockEligible ?? false} />
+           <Stage2TeaserPanel unlockEligible={unlockEligible ?? false} onInstallClick={onInstallClick} />
           )}
 
           {/* Stage 2–5 — existing bar widget */}
