@@ -5883,13 +5883,8 @@ streakFreezeAvailable={progress?.streakFreezeAvailable}
       <CoRegulationModal onComplete={() => handlePracticeCompleted('co_regulation')} />
      <NightlyDebriefModal onComplete={() => handlePracticeCompleted('nightly_debrief')} userId={user?.id} />
 
-    {/* Paywall Modal */}
-      <PaywallModal 
-        isOpen={showPaywall}
-        onClose={() => setShowPaywall(false)}
-        onUpgrade={handleUpgrade}
-        upgradeUrl={upgradeUrl}
-      />
+{/* Paywall Modal — disabled, redirect to /upgrade instead */}
+      {/* <PaywallModal isOpen={showPaywall} onClose={() => setShowPaywall(false)} onUpgrade={handleUpgrade} /> */}
 
 {/* Stage Attribution Modal (show-once unlock celebration) */}
       {attributionStage && (
