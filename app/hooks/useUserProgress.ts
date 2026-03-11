@@ -6,10 +6,19 @@
 // v4: Added weeklyCheckInDue (Step 13)
 // v5: Added baselineScores + patternProfile for Stage 1→2 unlock flow
 // v6: Added lastAwarenessRepScript for 11-script rotation system
+// v7: Updated unlock thresholds for Stages 2-6:
+//     - Stages 2, 3, 5, 6: 10-day windows (down from 14)
+//     - Stage 4: stays at 14 days (Flow Block complexity)
+//     - Stage 5: adherence lowered to 80% (was 85%)
+//     - Stage 6: adherence lowered to 80%, delta to 0.4 (was 85% / 0.7)
+//     - Accelerated paths added to Stages 2, 3, 4, 5
+//     - Competence bypass (avg score ≥ 4.0 waives delta) added to all stages
+//     - Adherence = completed days / window days (NOT consecutive streak)
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase-client';
+import { STAGE_WINDOW_DAYS } from '@/lib/stages';
 
 // ============================================
 // TYPES
@@ -130,28 +139,70 @@ interface AcceleratedThreshold {
   qualitative: number;
 }
 
+// ============================================
+// UNLOCK THRESHOLDS (v7)
+//
+// Key design principles:
+// - adherence = % of days completed within window (NOT consecutive streak)
+// - competenceBypass: if avg domain score >= 4.0, delta requirement is waived
+// - Stage 4 keeps 14-day window — Flow Block genuinely needs longer consolidation
+// - Stages 2, 3, 5, 6 use 10-day windows — lighter practices, faster feedback loop
+// - Delta thresholds flatten/decrease at higher stages to account for ceiling effects
+//   (users already partially transformed have less room to show raw improvement)
+// ============================================
 const UNLOCK_THRESHOLDS: { [stage: number]: {
   adherence: number; days: number; delta: number; qualitative: number;
   accelerated?: AcceleratedThreshold;
+  competenceBypass?: number;
 } } = {
   1: {
-    adherence: 70, days: 7, delta: 0.3, qualitative: 3,
-    accelerated: { adherence: 90, days: 5, delta: 0.3, qualitative: 3 }
+    adherence: 70,   // 5/7 days
+    days: 7,
+    delta: 0.3,
+    qualitative: 3,
+    accelerated: { adherence: 90, days: 5, delta: 0.3, qualitative: 3 },
+    competenceBypass: 4.0
   },
   2: {
-    adherence: 80, days: 14, delta: 0.5, qualitative: 3,
-    accelerated: { adherence: 90, days: 10, delta: 0.5, qualitative: 4 }
+    adherence: 80,   // 8/10 days
+    days: 10,
+    delta: 0.4,
+    qualitative: 3,
+    accelerated: { adherence: 90, days: 7, delta: 0.4, qualitative: 3 },
+    competenceBypass: 4.0
   },
   3: {
-    adherence: 80, days: 14, delta: 0.5, qualitative: 3,
-    accelerated: { adherence: 90, days: 10, delta: 0.5, qualitative: 4 }
+    adherence: 80,   // 8/10 days
+    days: 10,
+    delta: 0.4,
+    qualitative: 3,
+    accelerated: { adherence: 90, days: 7, delta: 0.4, qualitative: 3 },
+    competenceBypass: 4.0
   },
-  4: { adherence: 80, days: 14, delta: 0.6, qualitative: 3 },
+  4: {
+    adherence: 80,   // 11/14 days — Flow Block needs full window
+    days: 14,
+    delta: 0.5,
+    qualitative: 3,
+    accelerated: { adherence: 90, days: 10, delta: 0.5, qualitative: 3 },
+    competenceBypass: 4.0
+  },
   5: {
-    adherence: 85, days: 14, delta: 0.7, qualitative: 3,
-    accelerated: { adherence: 90, days: 12, delta: 0.7, qualitative: 4 }
+    adherence: 80,   // 8/10 days (was 85% / 14 days)
+    days: 10,
+    delta: 0.5,
+    qualitative: 3,
+    accelerated: { adherence: 90, days: 7, delta: 0.5, qualitative: 3 },
+    competenceBypass: 4.0
   },
-  6: { adherence: 85, days: 14, delta: 0.7, qualitative: 3 }
+  6: {
+    adherence: 80,   // 8/10 days (was 85% / 14 days / 0.7 delta)
+    days: 10,
+    delta: 0.4,
+    qualitative: 3,
+    // No accelerated path for Stage 6 — integration needs the full window
+    competenceBypass: 4.0
+  }
 };
 
 const STAGE_TOOLS: { [stage: number]: string[] } = {
@@ -209,6 +260,19 @@ function getCalmRatingTrend(ratings: number[]): 'up' | 'flat' | 'down' | 'insuff
   return 'flat';
 }
 
+// ============================================
+// UNLOCK ELIGIBILITY CHECK
+//
+// Adherence model (v7):
+//   adherence = completedDays / windowDays (passed in as a %)
+//   A missed day reduces the ratio but does NOT reset the window.
+//   The window starts at stage_start_date and is evaluated once daysInStage >= threshold.days.
+//
+// Example — Stage 2 (10-day window, 80% required):
+//   Miss day 3 → still need 8 completed out of 10 total days
+//   adherencePercentage = (completed / 10) * 100
+//   Passes if adherencePercentage >= 80
+// ============================================
 function checkBasicUnlockEligibility(
   stage: number,
   adherence: number,
@@ -221,6 +285,8 @@ function checkBasicUnlockEligibility(
 ): boolean {
   const threshold = UNLOCK_THRESHOLDS[stage];
   if (!threshold) return false;
+
+  const COMPETENCE_THRESHOLD = threshold.competenceBypass ?? 4.0;
 
   // ============================================
   // STAGE 1: 3-gate, 4-path logic
@@ -248,7 +314,7 @@ function checkBasicUnlockEligibility(
     const pathB = avgDelta >= 0.3;
 
     // Path C: competence bypass — already operating at high level
-    const pathC = avgScore >= 4.0;
+    const pathC = avgScore >= COMPETENCE_THRESHOLD;
 
     // Path D: hard-week path — high adherence + not declining (no delta required)
     const pathD = adherence >= 85 && (trend === 'up' || trend === 'flat' || trend === 'insufficient');
@@ -258,11 +324,14 @@ function checkBasicUnlockEligibility(
   }
 
   // ============================================
-  // STAGES 2–6: Original hybrid logic (unchanged)
+  // STAGES 2–6: Window-based adherence + delta/competence hybrid
+  //
+  // Standard path: adherence% >= threshold AND days in stage >= window AND (delta OR competence)
+  // Accelerated path: higher adherence% AND fewer days AND (delta OR competence)
+  // Competence bypass: if avg domain score >= 4.0, delta requirement is waived on either path
   // ============================================
-  const COMPETENCE_THRESHOLD = 4.0;
 
-  // Accelerated path check
+  // Accelerated path check (if defined for this stage)
   if (threshold.accelerated) {
     const accel = threshold.accelerated;
     const accelAdherence = adherence >= accel.adherence;
@@ -529,8 +598,9 @@ export function useUserProgress() {
 
       // ============================================
       // STREAK FREEZE AVAILABILITY
+      // Uses per-stage window sizes (v7) — Stage 4 = 14, all others = 10
       // ============================================
-      const freezeWindowDays = progressData.current_stage === 1 ? 7 : 14;
+      const freezeWindowDays = STAGE_WINDOW_DAYS[progressData.current_stage] ?? 14;
       const daysSinceStageStart = Math.floor(
         (todayDate.getTime() - stageStartDate.getTime()) / (1000 * 60 * 60 * 24)
       );
@@ -572,7 +642,7 @@ export function useUserProgress() {
       // UNLOCK PROGRESS
       // ============================================
       const threshold = UNLOCK_THRESHOLDS[progressData.current_stage];
-      const COMPETENCE_THRESHOLD = 4.0;
+      const COMPETENCE_THRESHOLD = threshold?.competenceBypass ?? 4.0;
       
       // Determine if accelerated path is met
       const isAcceleratedEligible = threshold?.accelerated ? (
