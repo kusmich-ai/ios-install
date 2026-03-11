@@ -840,6 +840,7 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   const { open: openNosGlide, Modal: NosGlideModal } = useNosGlide();
   const { open: openCoRegulation, Modal: CoRegulationModal } = useCoRegulation();
 const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebrief();
+  const { open: openLoopDeLooping, Modal: LoopDeLoopingModal } = useLoopDeLooping();
 
   // Subscription hooks for paywall
   const { isActive: hasActiveSubscription, loading: subscriptionLoading, refetch: refetchSubscription } = useSubscription();
