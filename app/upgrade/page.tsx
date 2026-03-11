@@ -193,8 +193,8 @@ function UpgradePageInner() {
   };
 
   const scrollToPrice = () => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
-  const hasMetrics = user.rewiredIndex !== null || user.delta !== null || user.days > 0;
-  const daysText = user.days > 0 ? `${user.days} days` : 'Stage 1';
+const hasMetrics = user_.rewiredIndex !== null || user_.delta !== null || user_.days > 0;
+  const daysText = user_.days > 0 ? `${user_.days} days` : 'Stage 1';
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white overflow-x-hidden">
