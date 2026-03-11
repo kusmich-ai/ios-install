@@ -88,33 +88,33 @@ function Reveal({ children, delay = 0, className = '' }: {
 
 function UpgradePageInner() {
   const params = useSearchParams();
-  const user = parseUserData(params);
+  const urlUser = parseUserData(params);
 
   const [hydratedUser, setHydratedUser] = useState<Partial<UserData>>({});
 
-  // Hydrate from Supabase for logged-in users — enriches URL param data
+  // Hydrate from Supabase for logged-in users — enriches URL param data silently
   useEffect(() => {
     const hydrate = async () => {
       try {
         const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (!authUser) return;
 
         const updates: Partial<UserData> = {};
 
         // First name from auth metadata if not in URL
-        if (!user_.firstName && user.user_metadata?.first_name) {
-          updates.firstName = user.user_metadata.first_name;
+        if (!urlUser.firstName && authUser.user_metadata?.first_name) {
+          updates.firstName = authUser.user_metadata.first_name;
         }
 
         // Progress data from user_progress
         const { data: progress } = await supabase
           .from('user_progress')
-          .select('consecutive_days, adherence_percentage')
-          .eq('user_id', user.id)
+          .select('consecutive_days')
+          .eq('user_id', authUser.id)
           .single();
 
-        if (progress?.consecutive_days && !user_.days) {
+        if (progress?.consecutive_days && !urlUser.days) {
           updates.days = progress.consecutive_days;
         }
 
@@ -122,22 +122,22 @@ function UpgradePageInner() {
         const { data: delta } = await supabase
           .from('weekly_deltas')
           .select('average_delta')
-          .eq('user_id', user.id)
+          .eq('user_id', authUser.id)
           .order('created_at', { ascending: false })
           .limit(1)
           .single();
 
-        if (delta?.average_delta && !user_.delta) {
+        if (delta?.average_delta && !urlUser.delta) {
           updates.delta = parseFloat(Number(delta.average_delta).toFixed(1));
         }
 
         // Most recent nightly debrief insight if not in URL
-        if (!user_.insight) {
+        if (!urlUser.insight) {
           const { data: journal } = await supabase
             .from('journal_entries')
             .select('content')
-            .eq('user_id', user.id)
-            .eq('entry_type', 'nightly_debrief')
+            .eq('user_id', authUser.id)
+            .eq('entry_type', 'debrief_lesson')
             .order('created_at', { ascending: false })
             .limit(1)
             .single();
@@ -159,10 +159,13 @@ function UpgradePageInner() {
     hydrate();
   }, []);
 
-  // Merge URL params with Supabase hydration (URL params take priority)
-  const user_ = {
-    ...hydratedUser,
-    ...user, // URL params win over Supabase if both present
+  // URL params take priority; Supabase fills in anything missing
+  const user: UserData = {
+    days: urlUser.days || hydratedUser.days || 0,
+    rewiredIndex: urlUser.rewiredIndex ?? hydratedUser.rewiredIndex ?? null,
+    delta: urlUser.delta ?? hydratedUser.delta ?? null,
+    firstName: urlUser.firstName ?? hydratedUser.firstName ?? null,
+    insight: urlUser.insight ?? hydratedUser.insight ?? null,
   };
 
   const [selectedTrack, setSelectedTrack] = useState<'installer' | 'coaching'>('installer');
@@ -193,8 +196,8 @@ function UpgradePageInner() {
   };
 
   const scrollToPrice = () => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
-const hasMetrics = user_.rewiredIndex !== null || user_.delta !== null || user_.days > 0;
-  const daysText = user_.days > 0 ? `${user_.days} days` : 'Stage 1';
+  const hasMetrics = user.rewiredIndex !== null || user.delta !== null || user.days > 0;
+  const daysText = user.days > 0 ? `${user.days} days` : 'Stage 1';
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white overflow-x-hidden">
