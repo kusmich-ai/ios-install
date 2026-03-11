@@ -1,4 +1,6 @@
 // app/api/progress/calculate/route.js - SECURED VERSION
+// v2: Stage-specific unlock windows (replaces hardcoded 14-day window)
+//     Stages 2,3,5,6 = 10 days | Stage 4 = 14 days | Stage 1 = 7 days
 import { createClient } from '@supabase/supabase-js';
 import { 
   calculateAdherence, 
@@ -9,6 +11,7 @@ import {
   checkUnlockEligibility,
   getStagePractices
 } from '@/lib/progress-utils';
+import { STAGE_WINDOW_DAYS } from '@/lib/stages';
 import {
   verifyAuth,
   unauthorizedResponse,
@@ -17,7 +20,6 @@ import {
   logAuditEvent,
 } from '@/lib/security/auth';
 import { checkRateLimit } from '@/lib/security/rateLimit';
-import { STAGE_WINDOW_DAYS } from '@/lib/stages';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -160,15 +162,21 @@ async function getFullProgress(userId) {
 async function recalculateProgress(userId) {
   const { data: progressData } = await supabase
     .from('user_progress')
-    .select('current_stage')
+    .select('current_stage, stage_start_date')
     .eq('user_id', userId)
     .single();
 
   const currentStage = progressData?.current_stage || 1;
 
-  const fourteenDaysAgo = new Date();
-  fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
-  const startDate = fourteenDaysAgo.toISOString().split('T')[0];
+  // ============================================
+  // STAGE-SPECIFIC WINDOW (replaces hardcoded 14)
+  // Stage 1=7, Stage 2=10, Stage 3=10, Stage 4=14, Stage 5=10, Stage 6=10
+  // ============================================
+  const stageWindow = STAGE_WINDOW_DAYS[currentStage] ?? 14;
+
+  const windowStart = new Date();
+  windowStart.setDate(windowStart.getDate() - stageWindow);
+  const startDate = windowStart.toISOString().split('T')[0];
 
   const { data: recentLogs } = await supabase
     .from('practice_logs')
@@ -177,7 +185,7 @@ async function recalculateProgress(userId) {
     .gte('practice_date', startDate)
     .order('practice_date', { ascending: false });
 
-  const adherencePercentage = calculateAdherence(recentLogs || [], currentStage, 14);
+  const adherencePercentage = calculateAdherence(recentLogs || [], currentStage, stageWindow);
   const consecutiveDays = calculateConsecutiveDays(recentLogs || [], currentStage);
 
   await supabase
