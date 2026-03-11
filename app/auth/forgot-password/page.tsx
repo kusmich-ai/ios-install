@@ -47,10 +47,23 @@ export default function ForgotPasswordPage() {
           </p>
         </div>
 
-        {message && (
-          <div className="p-4 rounded-lg text-center" style={{ backgroundColor: 'rgba(255, 158, 25, 0.125)', border: '1px solid #ff9e19' }}>
-            <p style={{ color: '#ff9e19' }}>{message}</p>
-          </div>
+      {message && (
+          <>
+            <div className="p-4 rounded-lg text-center" style={{ backgroundColor: 'rgba(255, 158, 25, 0.125)', border: '1px solid #ff9e19' }}>
+              <p style={{ color: '#ff9e19' }}>{message}</p>
+            </div>
+            <div className="p-4 rounded-lg text-left" style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
+              <p className="text-sm font-semibold text-yellow-500 mb-2">⚠️ Check your spam folder</p>
+              <p className="text-xs text-gray-400 leading-relaxed">
+                Reset emails sometimes land in spam or promotions. If you don&apos;t see it within 2 minutes:
+              </p>
+              <ol className="text-xs text-gray-400 mt-2 space-y-1 list-decimal list-inside">
+                <li>Check your <span className="text-white">Spam</span> or <span className="text-white">Promotions</span> folder</li>
+                <li>Move the email to your inbox</li>
+                <li>Add <span className="text-white">unbecoming@unbecoming.app</span> to your contacts</li>
+              </ol>
+            </div>
+          </>
         )}
 
         {error && (
