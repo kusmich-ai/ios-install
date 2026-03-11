@@ -13,8 +13,8 @@ export interface Stage {
   tagline: string;
   practices: Practice[];
   unlockCriteria: {
-    adherence: number; // percentage (primary path)
-    days: number; // window in days
+    adherence: number; // percentage (primary path) — % of days completed within window
+    days: number; // window size in days
     deltaThreshold: number; // minimum avg delta required
     acceleratedDays?: number; // accelerated path: fewer days at higher adherence
     acceleratedAdherence?: number; // adherence % required for accelerated path
@@ -24,6 +24,13 @@ export interface Stage {
     additionalConditions?: string[];
   };
 }
+
+// ============================================
+// ADHERENCE NOTE
+// adherence = completed days / total days in window (NOT consecutive days).
+// A missed day does not reset the window — it just reduces the ratio.
+// e.g. Stage 2: 8 out of 10 days = 80%. Miss day 3, still need 7 of remaining 9.
+// ============================================
 
 export const STAGES: Stage[] = [
   {
@@ -49,13 +56,13 @@ export const STAGES: Stage[] = [
       }
     ],
     unlockCriteria: {
-      adherence: 70,           // 10/14 practices — allows ~2 missed days
-      days: 7,                 // 7-day window
+      adherence: 70,           // 5/7 days within window
+      days: 7,
       deltaThreshold: 0.3,
       acceleratedDays: 5,      // accelerated path: 5 days at 90%+
       acceleratedAdherence: 90,
-      competenceBypass: 4.0,   // already regulated — delta requirement waived
-      hardWeekAdherence: 85,   // hard-week path: high adherence, lower delta
+      competenceBypass: 4.0,
+      hardWeekAdherence: 85,
       hardWeekDelta: 0.1
     }
   },
@@ -90,9 +97,12 @@ export const STAGES: Stage[] = [
       }
     ],
     unlockCriteria: {
-      adherence: 80,
-      days: 14,
-      deltaThreshold: 0.5
+      adherence: 80,           // 8/10 days within window
+      days: 10,
+      deltaThreshold: 0.4,
+      acceleratedDays: 7,      // accelerated path: 7 days at 90%+
+      acceleratedAdherence: 90,
+      competenceBypass: 4.0
     }
   },
   {
@@ -134,9 +144,12 @@ export const STAGES: Stage[] = [
       }
     ],
     unlockCriteria: {
-      adherence: 80,
-      days: 14,
-      deltaThreshold: 0.5
+      adherence: 80,           // 8/10 days within window
+      days: 10,
+      deltaThreshold: 0.4,
+      acceleratedDays: 7,      // accelerated path: 7 days at 90%+
+      acceleratedAdherence: 90,
+      competenceBypass: 4.0
     }
   },
   {
@@ -186,9 +199,12 @@ export const STAGES: Stage[] = [
       }
     ],
     unlockCriteria: {
-      adherence: 80,
+      adherence: 80,           // 11/14 days within window (Flow Block complexity warrants full 14)
       days: 14,
-      deltaThreshold: 0.6
+      deltaThreshold: 0.5,
+      acceleratedDays: 10,     // accelerated path: 10 days at 90%+
+      acceleratedAdherence: 90,
+      competenceBypass: 4.0
     }
   },
   {
@@ -246,9 +262,12 @@ export const STAGES: Stage[] = [
       }
     ],
     unlockCriteria: {
-      adherence: 85,
-      days: 14,
-      deltaThreshold: 0.7
+      adherence: 80,           // 8/10 days within window
+      days: 10,
+      deltaThreshold: 0.5,
+      acceleratedDays: 7,      // accelerated path: 7 days at 90%+
+      acceleratedAdherence: 90,
+      competenceBypass: 4.0
     }
   },
   {
@@ -314,9 +333,10 @@ export const STAGES: Stage[] = [
       }
     ],
     unlockCriteria: {
-      adherence: 85,
-      days: 14,
-      deltaThreshold: 0.7
+      adherence: 80,           // 8/10 days within window
+      days: 10,
+      deltaThreshold: 0.4,
+      competenceBypass: 4.0    // No accelerated path — integration needs full window
     }
   },
   {
@@ -414,6 +434,27 @@ export function getPracticeScheduledDays(practiceId: string): number[] {
 }
 
 // ============================================
+// STAGE WINDOW SIZE MAP
+// Single source of truth for window sizes — used by stages AND useUserProgress
+// ============================================
+export const STAGE_WINDOW_DAYS: { [key: number]: number } = {
+  1: 7,
+  2: 10,
+  3: 10,
+  4: 14,
+  5: 10,
+  6: 10,
+  7: 21
+};
+
+/**
+ * Get the unlock window size (in days) for a given stage
+ */
+export function getStageWindowDays(stageNumber: number): number {
+  return STAGE_WINDOW_DAYS[stageNumber] || 14;
+}
+
+// ============================================
 // STAGE HELPER FUNCTIONS
 // ============================================
 
@@ -492,7 +533,7 @@ export function getStagePracticeIds(stageNumber: number): string[] {
  */
 export function normalizePracticeId(id: string): string {
   const normalized = id.toLowerCase().replace(/[\s-]/g, '_');
-  if (normalized === 'resonance_breathing' || normalized === 'hrvb_breathing') {
+  if (normalized === 'resonance_breathing' || normalized === 'hvb_breathing') {
     return 'hrvb';
   }
   return normalized;
