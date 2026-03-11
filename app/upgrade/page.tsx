@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import { useSubscriptionActions } from '@/app/hooks/useSubscription';
-import { createClient } from '@/utils/supabase/client';
+import { createClient } from '@/lib/supabase-client';
 
 type PlanType = 'quarterly' | 'biannual' | 'annual' | 'quarterly_coaching' | 'biannual_coaching' | 'annual_coaching';
 
