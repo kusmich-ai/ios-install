@@ -1,10 +1,10 @@
 // app/api/cron/notifications/route.ts
 // Runs hourly via Vercel Cron. Checks each user's timezone and activity,
-// then sends the appropriate email notifications.
+// then sends the appropriate email notifications via batch API.
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { sendEmail } from '@/lib/emails/send';
+import { sendBatch, type BatchEmail } from '@/lib/emails/send';
 import {
   morningReminder,
   missedDay,
@@ -173,6 +173,15 @@ async function getSignalTrend(
   return 'stable';
 }
 
+// ============================================
+// Tracking type for post-send logging
+// ============================================
+interface PendingLog {
+  userId: string;
+  notificationType: string;
+  metadata?: Record<string, unknown>;
+}
+
 export async function GET(req: Request) {
   // Verify this is a legitimate cron call
   if (!verifyCronSecret(req)) {
@@ -204,9 +213,11 @@ export async function GET(req: Request) {
     errors: 0,
   };
 
-  // Rate limit: Resend allows 2 requests/sec (all plans).
-  // 600ms pause after each send keeps us safely under the limit.
-  const rateLimitDelay = () => new Promise(resolve => setTimeout(resolve, 600));
+  // ============================================
+  // PHASE 1: Collect all emails to send
+  // ============================================
+  const emailQueue: BatchEmail[] = [];
+  const pendingLogs: PendingLog[] = [];
 
   for (const user of users) {
     results.processed++;
@@ -231,20 +242,22 @@ export async function GET(req: Request) {
       // ============================================
       // MORNING REMINDER — 7am local, if not yet practiced today
       // ============================================
-    if (hour === 7 && user.morning_reminder && !practice.completedToday) {
+      if (hour === 7 && user.morning_reminder && !practice.completedToday) {
         const alreadySent = await wasAlreadySentToday(supabase, user.user_id, 'morning_reminder', timezone);
         
         if (!alreadySent) {
           const email = morningReminder(userName, userStage, unsubscribeUrl);
-          const result = await sendEmail(user.email, email.subject, email.html);
-          await rateLimitDelay();
-          
-          if (result.success) {
-            await logNotification(supabase, user.user_id, 'morning_reminder');
-            results.morning_sent++;
-          } else {
-            results.errors++;
-          }
+          emailQueue.push({
+            to: user.email,
+            subject: email.subject,
+            html: email.html,
+            tag: 'morning_reminder',
+          });
+          pendingLogs.push({
+            userId: user.user_id,
+            notificationType: 'morning_reminder',
+          });
+          results.morning_sent++;
         }
       }
 
@@ -257,15 +270,18 @@ export async function GET(req: Request) {
         if (!alreadySent) {
           const adherence = await getUserAdherence(supabase, user.user_id);
           const email = missedDay(userName, adherence, practice.consecutiveMissed, unsubscribeUrl);
-          const result = await sendEmail(user.email, email.subject, email.html);
-          await rateLimitDelay();
-          
-          if (result.success) {
-            await logNotification(supabase, user.user_id, 'missed_day', { consecutiveMissed: practice.consecutiveMissed });
-            results.missed_day_sent++;
-          } else {
-            results.errors++;
-          }
+          emailQueue.push({
+            to: user.email,
+            subject: email.subject,
+            html: email.html,
+            tag: 'missed_day',
+          });
+          pendingLogs.push({
+            userId: user.user_id,
+            notificationType: 'missed_day',
+            metadata: { consecutiveMissed: practice.consecutiveMissed },
+          });
+          results.missed_day_sent++;
         }
       }
 
@@ -277,15 +293,18 @@ export async function GET(req: Request) {
         
         if (!alreadySent) {
           const email = threeDayAbsence(userName, practice.consecutiveMissed, unsubscribeUrl);
-          const result = await sendEmail(user.email, email.subject, email.html);
-          await rateLimitDelay();
-          
-          if (result.success) {
-            await logNotification(supabase, user.user_id, '3_day_absence', { daysAway: practice.consecutiveMissed });
-            results.absence_sent++;
-          } else {
-            results.errors++;
-          }
+          emailQueue.push({
+            to: user.email,
+            subject: email.subject,
+            html: email.html,
+            tag: '3_day_absence',
+          });
+          pendingLogs.push({
+            userId: user.user_id,
+            notificationType: '3_day_absence',
+            metadata: { daysAway: practice.consecutiveMissed },
+          });
+          results.absence_sent++;
         }
       }
 
@@ -316,21 +335,52 @@ export async function GET(req: Request) {
             trendInsight,
             unsubscribeUrl
           );
-          const result = await sendEmail(user.email, email.subject, email.html);
-          await rateLimitDelay();
-          
-          if (result.success) {
-            await logNotification(supabase, user.user_id, 'weekly_summary');
-            results.weekly_sent++;
-          } else {
-            results.errors++;
-          }
+          emailQueue.push({
+            to: user.email,
+            subject: email.subject,
+            html: email.html,
+            tag: 'weekly_summary',
+          });
+          pendingLogs.push({
+            userId: user.user_id,
+            notificationType: 'weekly_summary',
+          });
+          results.weekly_sent++;
         }
       }
 
     } catch (err) {
       console.error(`[Cron] Error processing user ${user.user_id}:`, err);
       results.errors++;
+    }
+  }
+
+  // ============================================
+  // PHASE 2: Batch send all collected emails
+  // ============================================
+  if (emailQueue.length > 0) {
+    console.log(`[Cron] Sending batch of ${emailQueue.length} emails...`);
+    
+    const batchResult = await sendBatch(emailQueue);
+    
+    if (!batchResult.success) {
+      console.error('[Cron] Batch send had errors:', batchResult.errors);
+      results.errors += batchResult.failed;
+    }
+    
+    console.log(`[Cron] Batch complete: ${batchResult.sent} sent, ${batchResult.failed} failed`);
+  } else {
+    console.log('[Cron] No emails to send this run.');
+  }
+
+  // ============================================
+  // PHASE 3: Log all notifications
+  // ============================================
+  for (const log of pendingLogs) {
+    try {
+      await logNotification(supabase, log.userId, log.notificationType, log.metadata);
+    } catch (err) {
+      console.error(`[Cron] Failed to log notification for ${log.userId}:`, err);
     }
   }
 
