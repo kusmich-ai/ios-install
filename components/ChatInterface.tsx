@@ -2569,8 +2569,15 @@ One sentence only. No preamble.`;
   const handleUnlockConfirmation = async (confirmed: boolean) => {
     if (confirmed && pendingUnlockStage) {
       // Check if subscription is required (Stage 2+) and user doesn't have one
-      if (pendingUnlockStage >= 2 && !hasActiveSubscription) {
-        setShowPaywall(true);
+   if (pendingUnlockStage >= 2 && !hasActiveSubscription) {
+        const extP = progress as any;
+        const upgradeParams = new URLSearchParams();
+        const name = getUserName();
+        if (name) upgradeParams.set('name', name);
+        if (progress?.consecutiveDays) upgradeParams.set('days', String(progress.consecutiveDays));
+        if (baselineData?.rewiredIndex) upgradeParams.set('index', String(baselineData.rewiredIndex));
+        if (extP?.latestAvgDelta) upgradeParams.set('delta', Number(extP.latestAvgDelta).toFixed(1));
+        window.location.href = `/upgrade?${upgradeParams.toString()}`;
         return;
       }
       
