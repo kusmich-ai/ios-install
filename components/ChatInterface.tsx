@@ -1721,6 +1721,10 @@ const getFallbackResultsMessage = (
       onComplete?: () => void;
     }
   ): Promise<void> => {
+    // Detect [[OPEN_TOOL:xxx]] marker and strip from displayed message
+    const toolMatch = message.match(/\[\[OPEN_TOOL:(\w+)\]\]/);
+    const cleanMessage = message.replace(/\[\[OPEN_TOOL:\w+\]\]/g, '').trim();
+    
     const shouldStream = options?.stream ?? true;
     
     if (shouldStream && !isStreaming) {
@@ -1729,13 +1733,31 @@ const getFallbackResultsMessage = (
         streamCancelRef.current = true;
         await new Promise(r => setTimeout(r, 50));
       }
-      await streamTemplateMessage(message, options?.onComplete);
+      await streamTemplateMessage(cleanMessage, options?.onComplete);
     } else {
-      setMessages(prev => [...prev, { role: 'assistant', content: message }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: cleanMessage }]);
       setShowPromptStarters(true);
       if (options?.onComplete) options.onComplete();
     }
-  }, [isStreaming, streamTemplateMessage]);
+    
+    // Auto-open tool modal after message is displayed
+    if (toolMatch?.[1]) {
+      const toolId = toolMatch[1];
+      setTimeout(() => {
+        switch (toolId) {
+          case 'decentering': openDecentering(user?.id); break;
+          case 'meta_reflection': openMetaReflection(user?.id, false); break;
+          case 'reframe': openReframe(user?.id, false); break;
+          case 'thought_hygiene': openThoughtHygiene(user?.id); break;
+          case 'nos_glide': openNosGlide(); break;
+          case 'co_regulation': openCoRegulation(); break;
+          case 'nightly_debrief': openNightlyDebrief(); break;
+          case 'worry_loop_dissolver': openLoopDeLooping(user?.id); break;
+          default: console.warn('[OPEN_TOOL] Unknown tool:', toolId);
+        }
+      }, 1500);
+    }
+  }, [isStreaming, streamTemplateMessage, openDecentering, openMetaReflection, openReframe, openThoughtHygiene, openNosGlide, openCoRegulation, openNightlyDebrief, openLoopDeLooping, user?.id]);
   
   // ============================================
   // EFFECTS - Scroll and Textarea
