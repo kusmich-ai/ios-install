@@ -90,6 +90,81 @@ function UpgradePageInner() {
   const params = useSearchParams();
   const user = parseUserData(params);
 
+  const [hydratedUser, setHydratedUser] = useState<Partial<UserData>>({});
+
+  // Hydrate from Supabase for logged-in users — enriches URL param data
+  useEffect(() => {
+    const hydrate = async () => {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const updates: Partial<UserData> = {};
+
+        // First name from auth metadata if not in URL
+        if (!user_.firstName && user.user_metadata?.first_name) {
+          updates.firstName = user.user_metadata.first_name;
+        }
+
+        // Progress data from user_progress
+        const { data: progress } = await supabase
+          .from('user_progress')
+          .select('consecutive_days, adherence_percentage')
+          .eq('user_id', user.id)
+          .single();
+
+        if (progress?.consecutive_days && !user_.days) {
+          updates.days = progress.consecutive_days;
+        }
+
+        // Latest delta from weekly_deltas
+        const { data: delta } = await supabase
+          .from('weekly_deltas')
+          .select('average_delta')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (delta?.average_delta && !user_.delta) {
+          updates.delta = parseFloat(Number(delta.average_delta).toFixed(1));
+        }
+
+        // Most recent nightly debrief insight if not in URL
+        if (!user_.insight) {
+          const { data: journal } = await supabase
+            .from('journal_entries')
+            .select('content')
+            .eq('user_id', user.id)
+            .eq('entry_type', 'nightly_debrief')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+
+          if (journal?.content) {
+            const firstSentence = journal.content.split(/[.!?]/)[0].trim();
+            const insight = firstSentence.slice(0, 120);
+            if (insight.length > 10) updates.insight = insight;
+          }
+        }
+
+        if (Object.keys(updates).length > 0) {
+          setHydratedUser(updates);
+        }
+      } catch {
+        // silently fail — URL params are sufficient fallback
+      }
+    };
+    hydrate();
+  }, []);
+
+  // Merge URL params with Supabase hydration (URL params take priority)
+  const user_ = {
+    ...hydratedUser,
+    ...user, // URL params win over Supabase if both present
+  };
+
   const [selectedTrack, setSelectedTrack] = useState<'installer' | 'coaching'>('installer');
   const [selectedPlan, setSelectedPlan] = useState<PlanType>('annual');
   const [openFaq, setOpenFaq] = useState<number | null>(null);
