@@ -5435,7 +5435,7 @@ Ready to start your first practice?`;
                       <div 
                         dangerouslySetInnerHTML={{ 
                           __html: renderMarkdown(
-                            msg.content.replace(/\[\[VIDEO_SUGGESTION:[^\]]+\]\]/g, '')
+                            msg.content.replace(/\[\[VIDEO_SUGGESTION:[^\]]+\]\]/g, '').replace(/\[\[OPEN_TOOL:\w+\]\]/g, '')
                           ) 
                         }}
                       />
