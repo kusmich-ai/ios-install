@@ -2584,7 +2584,7 @@ One sentence only. No preamble.`;
             .from('journal_entries')
             .select('content')
             .eq('user_id', user.id)
-            .eq('entry_type', 'nightly_debrief')
+            .eq('entry_type', 'debrief_lesson')
             .order('created_at', { ascending: false })
             .limit(1)
             .single();
