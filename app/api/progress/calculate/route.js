@@ -17,6 +17,7 @@ import {
   logAuditEvent,
 } from '@/lib/security/auth';
 import { checkRateLimit } from '@/lib/security/rateLimit';
+import { STAGE_WINDOW_DAYS } from '@/lib/stages';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
