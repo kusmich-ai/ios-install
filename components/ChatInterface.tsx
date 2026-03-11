@@ -2577,6 +2577,29 @@ One sentence only. No preamble.`;
         if (progress?.consecutiveDays) upgradeParams.set('days', String(progress.consecutiveDays));
         if (baselineData?.rewiredIndex) upgradeParams.set('index', String(baselineData.rewiredIndex));
         if (extP?.latestAvgDelta) upgradeParams.set('delta', Number(extP.latestAvgDelta).toFixed(1));
+// Fetch most recent nightly debrief insight
+        try {
+          const supabase = createClient();
+          const { data: journalData } = await supabase
+            .from('journal_entries')
+            .select('content')
+            .eq('user_id', user.id)
+            .eq('entry_type', 'nightly_debrief')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+          if (journalData?.content) {
+            // Take first sentence only, cap at 120 chars
+            const firstSentence = journalData.content.split(/[.!?]/)[0].trim();
+            const insight = firstSentence.slice(0, 120);
+            if (insight.length > 10) {
+              upgradeParams.set('insight', encodeURIComponent(insight));
+            }
+          }
+        } catch {
+          // silently skip — insight is optional, don't block redirect
+        }
+
         window.location.href = `/upgrade?${upgradeParams.toString()}`;
         return;
       }
