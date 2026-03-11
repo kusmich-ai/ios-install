@@ -136,12 +136,24 @@ function SignUpForm() {
             <p className="font-semibold text-white text-lg">
               {email}
             </p>
-         <p className="text-sm">
+            <p className="text-sm">
               Click the link in the email to verify your account, then sign in to continue.
             </p>
-            <p className="text-sm text-yellow-500 mt-2">
-              ⏱ Note: The email may take up to 5 minutes to arrive.
-            </p>
+
+            <div className="mt-4 p-4 rounded-lg text-left" style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
+              <p className="text-sm font-semibold text-yellow-500 mb-2">⚠️ Important — check your spam folder</p>
+              <p className="text-xs text-gray-400 leading-relaxed">
+                Our confirmation emails sometimes land in spam or promotions. If you don't see it in your inbox within 2 minutes:
+              </p>
+              <ol className="text-xs text-gray-400 mt-2 space-y-1 list-decimal list-inside">
+                <li>Check your <span className="text-white">Spam</span> or <span className="text-white">Promotions</span> folder</li>
+                <li>Move the email to your inbox</li>
+                <li>Add <span className="text-white">unbecoming@unbecoming.app</span> to your contacts</li>
+              </ol>
+              <p className="text-xs text-gray-500 mt-2">
+                This ensures all future emails from us arrive in your inbox.
+              </p>
+            </div>
           </div>
 
           <div className="pt-4">
@@ -157,8 +169,8 @@ function SignUpForm() {
             </Link>
           </div>
 
-        <p className="text-sm text-gray-500 pt-4">
-            Didn't receive the email? Check your spam folder or wait a few minutes and try again.
+          <p className="text-sm text-gray-500 pt-4">
+            Still nothing after 5 minutes? Try signing up again or contact support.
           </p>
         </div>
       </div>
