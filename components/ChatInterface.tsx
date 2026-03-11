@@ -144,6 +144,7 @@ import { useDecentering } from '@/components/DecenteringModal';
 import { useMetaReflection, isWeeklyReflectionDue, isSunday } from '@/components/MetaReflectionModal';
 import { useReframe } from '@/components/ReframeModal';
 import { useThoughtHygiene } from '@/components/ThoughtHygieneModal';
+import { useLoopDeLooping } from '@/components/LoopDeLoopingModal';
 import { useCoRegulation } from '@/components/CoRegulationModal';
 import { useNightlyDebrief } from '@/components/NightlyDebriefModal';
 import { useNosGlide } from '@/components/NosGlideModal';
