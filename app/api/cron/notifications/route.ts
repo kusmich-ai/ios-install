@@ -204,6 +204,10 @@ export async function GET(req: Request) {
     errors: 0,
   };
 
+  // Rate limit: Resend allows 2 requests/sec (all plans).
+  // 600ms pause after each send keeps us safely under the limit.
+  const rateLimitDelay = () => new Promise(resolve => setTimeout(resolve, 600));
+
   for (const user of users) {
     results.processed++;
 
@@ -233,6 +237,7 @@ export async function GET(req: Request) {
         if (!alreadySent) {
           const email = morningReminder(userName, userStage, unsubscribeUrl);
           const result = await sendEmail(user.email, email.subject, email.html);
+          await rateLimitDelay();
           
           if (result.success) {
             await logNotification(supabase, user.user_id, 'morning_reminder');
@@ -253,6 +258,7 @@ export async function GET(req: Request) {
           const adherence = await getUserAdherence(supabase, user.user_id);
           const email = missedDay(userName, adherence, practice.consecutiveMissed, unsubscribeUrl);
           const result = await sendEmail(user.email, email.subject, email.html);
+          await rateLimitDelay();
           
           if (result.success) {
             await logNotification(supabase, user.user_id, 'missed_day', { consecutiveMissed: practice.consecutiveMissed });
@@ -272,6 +278,7 @@ export async function GET(req: Request) {
         if (!alreadySent) {
           const email = threeDayAbsence(userName, practice.consecutiveMissed, unsubscribeUrl);
           const result = await sendEmail(user.email, email.subject, email.html);
+          await rateLimitDelay();
           
           if (result.success) {
             await logNotification(supabase, user.user_id, '3_day_absence', { daysAway: practice.consecutiveMissed });
@@ -310,6 +317,7 @@ export async function GET(req: Request) {
             unsubscribeUrl
           );
           const result = await sendEmail(user.email, email.subject, email.html);
+          await rateLimitDelay();
           
           if (result.success) {
             await logNotification(supabase, user.user_id, 'weekly_summary');
