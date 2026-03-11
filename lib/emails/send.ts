@@ -16,6 +16,10 @@ export async function sendEmail(
       subject,
       html,
       replyTo: 'hello@nicholaskusmich.com',
+      headers: {
+        'List-Unsubscribe': `<https://unbecoming.app/api/notifications/unsubscribe?email=${encodeURIComponent(to)}>`,
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+      },
     });
 
     if (error) {
