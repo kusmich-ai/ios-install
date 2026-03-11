@@ -161,7 +161,8 @@ export async function POST(req) {
     const daysInStage = stageStartDate 
       ? Math.floor((new Date().getTime() - stageStartDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
       : 1;
-    const effectiveDays = Math.min(Math.max(daysInStage, 1), 14);
+    const stageWindow = STAGE_WINDOW_DAYS[currentStage] ?? 14;
+const effectiveDays = Math.min(Math.max(daysInStage, 1), stageWindow);
 
     const windowStart = new Date();
     windowStart.setDate(windowStart.getDate() - effectiveDays);
