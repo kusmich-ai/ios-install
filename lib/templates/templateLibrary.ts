@@ -396,7 +396,9 @@ Access both on-demand tools anytime via your {{toolbarReference}} under "On-Dema
 
 **Starting tomorrow morning** — do both rituals, then come back and let me know how it went.
 
-And if you're having trouble winding down tonight — try the NOS Glide (Evening Wind-Down). Consider it your first assignment.
+And if you're having trouble winding down tonight — try the NOS Glide. Consider it your first assignment.
+
+One thing before you go: Stage 1 is deceptively simple. Two short practices, every day. Your mind might tell you it's not enough — that real change requires something harder, longer, more complex. That voice is wrong. Regulation is the foundation everything else is built on. Without it, nothing sticks. The simplicity is the point — you're training your nervous system, and it learns through repetition, not complexity.
 
 See you then. Your nervous system is about to start learning.`
     },
