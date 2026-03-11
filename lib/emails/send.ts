@@ -69,13 +69,17 @@ export async function sendBatch(emails: BatchEmail[]): Promise<BatchResult> {
     const chunk = emails.slice(i, i + CHUNK_SIZE);
 
     try {
-      const { data, error } = await resend.batch.send(
+   const { data, error } = await resend.batch.send(
         chunk.map((e) => ({
           from: FROM_ADDRESS,
           to: e.to,
           subject: e.subject,
           html: e.html,
           replyTo: 'hello@nicholaskusmich.com',
+          headers: {
+            'List-Unsubscribe': `<https://unbecoming.app/api/notifications/unsubscribe?email=${encodeURIComponent(e.to)}>`,
+            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+          },
         }))
       );
 
