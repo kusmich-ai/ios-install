@@ -3,6 +3,7 @@
 // v2.1: Added Flow Block Schedule section with timeSlot support
 // v2.2: Stage 2 unlock progress widget (Step 10)
 // v2.3: Streak freeze indicator (Step 12)
+// v2.4: Days bar now uses daysInStage (window model) instead of consecutiveDays
 'use client';
 
 import { useState } from 'react';
@@ -401,10 +402,6 @@ function Stage2UnlockWidget({
 }
 
 // ============================================
-// COMPONENT
-// ============================================
-
-// ============================================
 // STAGE 2 TEASER PANEL
 // ============================================
 function Stage2TeaserPanel({ unlockEligible, onInstallClick }: { unlockEligible: boolean; onInstallClick?: () => void }) {
@@ -440,6 +437,10 @@ function Stage2TeaserPanel({ unlockEligible, onInstallClick }: { unlockEligible:
   );
 }
 
+// ============================================
+// COMPONENT
+// ============================================
+
 export default function DashboardSidebar({
   userName,
   currentStage,
@@ -464,7 +465,7 @@ export default function DashboardSidebar({
   streakFreezeAvailable,
   weeklyCheckInDue,
   onRequestCheckIn,
-onStage7Click,
+  onStage7Click,
   onInstallClick,
 }: DashboardSidebarProps) {
   
@@ -473,6 +474,15 @@ onStage7Click,
   
   // Use coherenceStatement with fallback to currentIdentity for backwards compatibility
   const displayStatement = coherenceStatement ?? currentIdentity;
+
+  // ============================================
+  // DAYS IN STAGE — use daysInStage prop (window model).
+  // Falls back to consecutiveDays only if daysInStage is not provided.
+  // NOTE: The Days progress bar always uses daysInStage because we moved from
+  // a streak model (reset on missed day) to a window model (ratio-based).
+  // consecutiveDays is kept for display purposes only (streak counter).
+  // ============================================
+  const effectiveDaysInStage = daysInStage ?? consecutiveDays;
   
   // Calculate current REwired Index
   const currentReg = currentDomainScores?.regulation ?? baselineDomainScores.regulation;
@@ -539,7 +549,7 @@ onStage7Click,
               <p className="text-[10px] font-medium text-zinc-400 uppercase tracking-wider mt-0.5">Days Active</p>
             </div>
             <div className="flex-1 bg-white rounded-xl px-4 py-3 border border-black/[0.04] shadow-sm text-center">
-              <span className="text-lg font-bold text-amber-600">{daysInStage ?? 0}</span>
+              <span className="text-lg font-bold text-amber-600">{effectiveDaysInStage}</span>
               <p className="text-[10px] font-medium text-zinc-400 uppercase tracking-wider mt-0.5">Days in Stage {currentStage}</p>
             </div>
           </div>
@@ -685,12 +695,12 @@ onStage7Click,
             Stage 2–5: existing bar widget + freeze indicator
             ========================================== */}
 
-        {/* Stage 1 — new dot-based widget */}
+        {/* Stage 1 — dot-based widget */}
         {currentStage === 1 && unlockProgress && (
           <Stage2UnlockWidget
             unlockProgress={unlockProgress}
             unlockEligible={unlockEligible ?? false}
-            daysInStage={daysInStage ?? 0}
+            daysInStage={effectiveDaysInStage}
             adherencePercentage={adherencePercentage}
             calmTrend={calmTrend}
             streakFreezeAvailable={streakFreezeAvailable}
@@ -702,7 +712,13 @@ onStage7Click,
           <Stage2TeaserPanel unlockEligible={unlockEligible ?? false} onInstallClick={onInstallClick} />
         )}
 
-        {/* Stage 2–5 — existing bar widget */}
+        {/* ==========================================
+            STAGE 2–5 UNLOCK PROGRESS BAR WIDGET
+            Uses effectiveDaysInStage (window model, not consecutive streak).
+            The Days bar now reflects how many days into the current window
+            the user is — missing a day reduces adherence% but does NOT
+            reset this counter.
+            ========================================== */}
         {unlockProgress && !unlockEligible && currentStage > 1 && currentStage < 6 && (
           <div className="bg-white rounded-xl p-4 border border-black/[0.04] shadow-sm">
             <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">
@@ -727,7 +743,12 @@ onStage7Click,
                 </span>
               </div>
               
-              {/* Days Progress */}
+              {/* ==========================================
+                  DAYS PROGRESS
+                  FIX (v2.4): Uses effectiveDaysInStage instead of consecutiveDays.
+                  Window model = days elapsed since stage_start_date (capped at window size).
+                  Missing a day reduces adherence% but does NOT reset this counter.
+                  ========================================== */}
               <div className="flex items-center gap-2">
                 <span className={`text-xs w-16 font-medium ${unlockProgress.daysMet ? 'text-emerald-600' : 'text-zinc-500'}`}>
                   {unlockProgress.daysMet && <CheckCircle2 className="w-3 h-3 inline mr-1" />}
@@ -736,11 +757,11 @@ onStage7Click,
                 <div className="flex-1 h-1.5 bg-black/[0.04] rounded-full overflow-hidden">
                   <div 
                     className={`h-full transition-all rounded-full ${unlockProgress.daysMet ? 'bg-emerald-500' : 'bg-amber-500'}`}
-                    style={{ width: unlockProgress.daysMet ? '100%' : `${Math.min(100, (consecutiveDays / unlockProgress.requiredDays) * 100)}%` }}
+                    style={{ width: unlockProgress.daysMet ? '100%' : `${Math.min(100, (effectiveDaysInStage / unlockProgress.requiredDays) * 100)}%` }}
                   />
                 </div>
                 <span className="text-xs text-zinc-400 w-10 text-right font-medium">
-                  {unlockProgress.daysMet ? '✓' : `${consecutiveDays}/${unlockProgress.requiredDays}`}
+                  {unlockProgress.daysMet ? '✓' : `${effectiveDaysInStage}/${unlockProgress.requiredDays}`}
                 </span>
               </div>
               
