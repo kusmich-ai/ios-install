@@ -1,7 +1,7 @@
 // ============================================
 // lib/sprintRenewal.ts
 // Sprint Renewal Logic for 21-Day Cycles
-// Handles Continue/Evolve/Pivot flows for Identity and Flow Block sprints
+// Handles Continue/Evolve/Pivot flows for Cue Focus and Flow Block sprints
 // ============================================
 
 // ============================================
@@ -42,7 +42,7 @@ export const initialSprintRenewalState: SprintRenewalState = {
 // ============================================
 
 /**
- * Check if an identity sprint has completed (Day 22+)
+ * Check if a Cue Focus sprint has completed (Day 22+)
  */
 export function isIdentitySprintComplete(sprintDay: number | null | undefined): boolean {
   return sprintDay !== null && sprintDay !== undefined && sprintDay > 21;
@@ -60,18 +60,18 @@ export function isFlowBlockSprintComplete(sprintDay: number | null | undefined):
 // ============================================
 
 /**
- * Get the identity sprint completion message with options
+ * Get the Cue Focus sprint completion message with options
  */
 export function getIdentitySprintCompleteMessage(
   identity: string,
   microAction: string,
   sprintNumber: number
 ): string {
-  return `🎯 **21-Day Identity Sprint Complete!**
+  return `🎯 **21-Day Cue Focus Complete!**
 
-You've completed Sprint ${sprintNumber} as **"${identity}"**.
+You've completed Sprint ${sprintNumber} training the **"${identity}"** cue.
 
-Your daily proof: *${microAction}*
+Your daily practice: *${microAction}*
 
 ---
 
@@ -79,13 +79,13 @@ Your daily proof: *${microAction}*
 
 You have three options:
 
-**Continue** — Keep the same identity. Reset to Day 1 and deepen your embodiment.
+**Continue** — Keep the same cue. Reset to Day 1 and sharpen your recognition further.
 
-**Evolve** — Stretch this identity forward. For example, "Calm Leader" → "Visionary Leader" or "Consistent Creator" → "Prolific Creator".
+**Evolve** — Stretch this cue forward. For example, "Interpretation" → "Meaning-Making" or "Reactivity" → "Reactivity Under Pressure".
 
-**Pivot** — Choose a completely new identity for a different area of your life.
+**Pivot** — Choose a completely different cue to train for the next 21 days.
 
-Which feels right for your next 21 days?`;
+Which feels right for your next Cue Focus?`;
 }
 
 /**
@@ -121,9 +121,9 @@ Which feels right for your next 21 days?`;
 // ============================================
 
 export const identityRenewalQuickReplies = [
-  { id: 'continue', text: 'Continue', label: 'Keep same identity' },
+  { id: 'continue', text: 'Continue', label: 'Keep same cue' },
   { id: 'evolve', text: 'Evolve', label: 'Stretch it forward' },
-  { id: 'pivot', text: 'Pivot', label: 'New identity' }
+  { id: 'pivot', text: 'Pivot', label: 'New cue' }
 ];
 
 export const flowBlockRenewalQuickReplies = [
@@ -142,7 +142,6 @@ export const flowBlockRenewalQuickReplies = [
 export function parseRenewalResponse(userMessage: string): SprintRenewalOption {
   const message = userMessage.toLowerCase().trim();
   
-  // Check for explicit option selections
   if (message === 'continue' || message.includes('continue') || message.includes('same') || message.includes('keep')) {
     return 'continue';
   }
@@ -163,12 +162,12 @@ export function parseRenewalResponse(userMessage: string): SprintRenewalOption {
 // ============================================
 
 export function getIdentityContinueMessage(identity: string, microAction: string): string {
-  return `**Sprint renewed.** ✓
+  return `**Cue Focus renewed.** ✓
 
-Identity: **${identity}**
-Daily proof: *${microAction}*
+Cue: **${identity}**
+Daily practice: *${microAction}*
 
-Day 1 of 21 begins now. Same identity, deeper embodiment. Your nervous system already knows this pattern — now we're reinforcing it further.
+Day 1 of 21 begins now. Same cue, sharper recognition. Your nervous system already knows this pattern — now we're reinforcing it further.
 
 See you tomorrow morning for your Stack Cue.`;
 }
@@ -188,18 +187,18 @@ Ready for today's Flow Block?`;
 // ============================================
 
 export function getIdentityEvolvePrompt(previousIdentity: string): string {
-  return `Good choice. Let's evolve **"${previousIdentity}"**.
+  return `Good choice. Let's evolve the **"${previousIdentity}"** cue.
 
-Evolution means stretching the same core quality forward — taking what's working and amplifying it.
+Evolution means stretching the same core pattern forward — taking what you've been noticing and refining the lens.
 
 Some examples:
-- "Calm Leader" → "Visionary Leader" (adding forward vision)
-- "Consistent Creator" → "Prolific Creator" (amplifying output)
-- "Present Partner" → "Deeply Connected Partner" (deepening quality)
+- "Interpretation" → "Meaning-Making" (zooming out to the broader mechanism)
+- "Reactivity" → "Reactivity Under Pressure" (narrowing to a specific context)
+- "Avoidance" → "Avoidance in Relationships" (getting more precise)
 
-**How would you like to evolve "${previousIdentity}"?**
+**How would you like to evolve the "${previousIdentity}" cue?**
 
-Share what feels like the natural next level, or describe where you want to stretch.`;
+Share what feels like the natural next layer to train.`;
 }
 
 export function getFlowBlockEvolvePrompt(): string {
@@ -222,13 +221,13 @@ Consider:
 // ============================================
 
 export function getIdentityPivotMessage(): string {
-  return `Fresh start. Let's discover your next identity.
+  return `Fresh start. Let's find your next cue to train.
 
-We'll run through the Identity Installation Protocol to find what wants to emerge for the next 21 days.
+We'll run through the Cue Selection process to identify what pattern most wants your attention for the next 21 days.
 
-**Is there currently somewhere in your life that feels misaligned with who you are?**
+**Is there somewhere in your life right now where you keep noticing a pattern that's running on autopilot?**
 
-It could be internal (thoughts, reactive energy, overwhelm) or external (relationships, work, health). Just name what's present.`;
+It could be internal (a thought loop, an emotional reaction, an avoidance) or external (a behaviour in relationships, at work, under pressure). Just name what's present.`;
 }
 
 export function getFlowBlockPivotMessage(): string {
@@ -250,13 +249,13 @@ export function getIdentityEvolutionConfirmation(
   newIdentity: string,
   newMicroAction: string
 ): string {
-  return `**Identity evolved.** ✓
+  return `**Cue evolved.** ✓
 
 From: "${oldIdentity}"
 To: **"${newIdentity}"**
-Daily proof: *${newMicroAction}*
+Daily practice: *${newMicroAction}*
 
-Day 1 of 21 begins now. This is the next level of who you're becoming.
+Day 1 of 21 begins now. Sharper lens, deeper recognition.
 
 See you tomorrow morning for your Stack Cue.`;
 }
