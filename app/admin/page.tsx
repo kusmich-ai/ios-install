@@ -1,6 +1,7 @@
 // app/admin/page.tsx — ADMIN DASHBOARD V2
 // Full metrics dashboard with survival curve, signal trends, enhancement tracking,
 // time-to-unlock, tool usage, engagement depth, and baseline completion
+// v2.1: Stage 1 window updated to 7 days (subtitle + SurvivalCurve x-axis)
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
@@ -372,7 +373,6 @@ function MiniStat({ label, value, color = 'white' }: { label: string; value: str
 
 // ============================================
 // INTERVENTION MODAL
-// Click a user in Needs Attention → take action
 // ============================================
 const INTERVENTION_ACTIONS: { [alertType: string]: Array<{ id: string; label: string; icon: React.ElementType; description: string; color: string }> } = {
   at_risk: [
@@ -405,7 +405,6 @@ function InterventionModal({
 
   const actions = INTERVENTION_ACTIONS[user.alert_type] || [];
 
-  // Load recent interventions for this user
   useEffect(() => {
     async function loadHistory() {
       try {
@@ -462,7 +461,6 @@ function InterventionModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={onClose}>
       <div className="bg-[#111111] border border-[#2a2a2a] rounded-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         
-        {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-[#1a1a1a]">
           <div>
             <h3 className="text-lg font-semibold text-white">{user.first_name}</h3>
@@ -473,7 +471,6 @@ function InterventionModal({
           </button>
         </div>
 
-        {/* Context */}
         <div className="p-5 border-b border-[#1a1a1a]">
           <div className="grid grid-cols-3 gap-3 mb-3">
             <div className="text-center p-2 bg-[#0a0a0a] rounded-lg">
@@ -504,7 +501,6 @@ function InterventionModal({
           </div>
         </div>
 
-        {/* Recent intervention history */}
         {!loadingHistory && recentInterventions.length > 0 && (
           <div className="px-5 pt-4">
             <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Recent Outreach</p>
@@ -519,7 +515,6 @@ function InterventionModal({
           </div>
         )}
 
-        {/* Actions */}
         {sent ? (
           <div className="p-8 text-center">
             <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
@@ -551,7 +546,6 @@ function InterventionModal({
               ))}
             </div>
 
-            {/* Custom message textarea */}
             {selectedAction === 'personal_note' && (
               <div className="mt-3">
                 <textarea 
@@ -563,7 +557,6 @@ function InterventionModal({
               </div>
             )}
 
-            {/* Send button */}
             <button 
               onClick={handleSend}
               disabled={!selectedAction || sending || (selectedAction === 'personal_note' && !customMessage.trim())}
@@ -661,9 +654,13 @@ function NeedsAttentionPanel({ alerts, onUserClick }: { alerts: UserAlert[] | nu
 }
 
 // ============================================
-// STAGE 1 SURVIVAL CURVE (NEW)
+// STAGE 1 SURVIVAL CURVE
+// v2.1: Window = 7 days. Bars + labels + key stats updated accordingly.
 // ============================================
 function SurvivalCurve({ data }: { data: SurvivalRow[] | null }) {
+  // Stage 1 window is 7 days
+  const STAGE_1_WINDOW = 7;
+
   if (!data || data.length === 0) {
     return (
       <div className="bg-[#111111] border border-[#1a1a1a] rounded-lg p-6">
@@ -674,14 +671,19 @@ function SurvivalCurve({ data }: { data: SurvivalRow[] | null }) {
   }
 
   const maxRate = 100;
-  const criticalDays = data.filter(d => (d.day_over_day_change || 0) < -5);
+  // Only look at the window days for drop detection
+  const windowData = data.slice(0, STAGE_1_WINDOW);
+  const criticalDays = windowData.filter(d => (d.day_over_day_change || 0) < -5);
   const biggestDrop = criticalDays.sort((a, b) => (a.day_over_day_change || 0) - (b.day_over_day_change || 0))[0];
 
   return (
     <div className="bg-[#111111] border border-[#1a1a1a] rounded-lg p-6">
-      <SectionHeader title="Stage 1 Survival Curve" subtitle="Day-by-day retention — where do users drop off?" icon={BarChart3} />
+      <SectionHeader
+        title="Stage 1 Survival Curve"
+        subtitle="Day-by-day retention — where do users drop off?"
+        icon={BarChart3}
+      />
       
-      {/* Insight callout */}
       {biggestDrop && (
         <div className="mb-4 p-3 bg-red-500/5 border border-red-500/20 rounded-lg">
           <p className="text-xs text-red-400">
@@ -691,13 +693,17 @@ function SurvivalCurve({ data }: { data: SurvivalRow[] | null }) {
         </div>
       )}
       
-      {/* Bar chart */}
+      {/* Bar chart — D1 through D7 */}
       <div className="flex items-end gap-1 h-40 mb-2">
-        {data.slice(0, 14).map((d) => {
+        {windowData.map((d) => {
           const height = (d.survival_rate / maxRate) * 100;
           const isDropDay = (d.day_over_day_change || 0) < -5;
           return (
-            <div key={d.day_num} className="flex-1 flex flex-col items-center gap-1" title={`Day ${d.day_num}: ${d.active_on_day}/${d.total_started} users (${d.survival_rate}%)`}>
+            <div
+              key={d.day_num}
+              className="flex-1 flex flex-col items-center gap-1"
+              title={`Day ${d.day_num}: ${d.active_on_day}/${d.total_started} users (${d.survival_rate}%)`}
+            >
               <span className="text-[9px] text-gray-500">{d.survival_rate}%</span>
               <div className="w-full relative" style={{ height: `${height}%`, minHeight: '4px' }}>
                 <div className={`w-full h-full rounded-t transition-all ${
@@ -708,27 +714,29 @@ function SurvivalCurve({ data }: { data: SurvivalRow[] | null }) {
           );
         })}
       </div>
+
+      {/* X-axis labels — D1 through D7 */}
       <div className="flex gap-1 mb-4">
-        {data.slice(0, 14).map(d => (
+        {windowData.map(d => (
           <div key={d.day_num} className="flex-1 text-center">
             <span className="text-[9px] text-gray-600">D{d.day_num}</span>
           </div>
         ))}
       </div>
       
-      {/* Key stats */}
+      {/* Key stats — Day 1, Day 3, Day 5, Day 7 */}
       <div className="grid grid-cols-4 gap-4 pt-4 border-t border-[#1a1a1a]">
         <MiniStat label="Day 1" value={`${data[0]?.survival_rate || 0}%`} color="green" />
-        <MiniStat label="Day 7" value={`${data[6]?.survival_rate || 0}%`} color={data[6]?.survival_rate >= 50 ? 'green' : 'red'} />
-        <MiniStat label="Day 10" value={`${data[9]?.survival_rate || 0}%`} color={data[9]?.survival_rate >= 40 ? 'green' : 'red'} />
-        <MiniStat label="Day 14" value={`${data[13]?.survival_rate || 0}%`} color={data[13]?.survival_rate >= 30 ? 'green' : 'red'} />
+        <MiniStat label="Day 3" value={`${data[2]?.survival_rate || 0}%`} color={data[2]?.survival_rate >= 50 ? 'green' : 'red'} />
+        <MiniStat label="Day 5" value={`${data[4]?.survival_rate || 0}%`} color={data[4]?.survival_rate >= 40 ? 'green' : 'red'} />
+        <MiniStat label="Day 7" value={`${data[6]?.survival_rate || 0}%`} color={data[6]?.survival_rate >= 30 ? 'green' : 'red'} />
       </div>
     </div>
   );
 }
 
 // ============================================
-// SIGNAL CHECK TRENDS (NEW)
+// SIGNAL CHECK TRENDS
 // ============================================
 function SignalCheckTrends({ data }: { data: SignalTrendRow[] | null }) {
   if (!data || data.length === 0) {
@@ -749,9 +757,7 @@ function SignalCheckTrends({ data }: { data: SignalTrendRow[] | null }) {
     <div className="bg-[#111111] border border-[#1a1a1a] rounded-lg p-6">
       <SectionHeader title="Signal Check Trends" subtitle="Are practices producing measurable shifts?" icon={Brain} />
       
-      {/* Dual line chart as bars */}
       <div className="space-y-4">
-        {/* Calm */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs text-blue-400 font-medium">Calm (avg across all users)</span>
@@ -768,7 +774,6 @@ function SignalCheckTrends({ data }: { data: SignalTrendRow[] | null }) {
           </div>
         </div>
         
-        {/* Presence */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs text-purple-400 font-medium">Presence (avg across all users)</span>
@@ -785,7 +790,6 @@ function SignalCheckTrends({ data }: { data: SignalTrendRow[] | null }) {
           </div>
         </div>
         
-        {/* Day labels */}
         <div className="flex gap-0.5">
           {data.map(d => (
             <div key={`l-${d.day_in_stage}`} className="flex-1 text-center">
@@ -799,7 +803,7 @@ function SignalCheckTrends({ data }: { data: SignalTrendRow[] | null }) {
 }
 
 // ============================================
-// ENHANCEMENT DELIVERY (NEW)
+// ENHANCEMENT DELIVERY
 // ============================================
 function EnhancementDelivery({ data }: { data: EnhancementRow[] | null }) {
   if (!data || data.length === 0) {
@@ -846,7 +850,7 @@ function EnhancementDelivery({ data }: { data: EnhancementRow[] | null }) {
 }
 
 // ============================================
-// TIME TO UNLOCK (NEW)
+// TIME TO UNLOCK
 // ============================================
 function TimeToUnlock({ data }: { data: TimeToUnlockRow[] | null }) {
   if (!data || data.length === 0) {
@@ -878,13 +882,13 @@ function TimeToUnlock({ data }: { data: TimeToUnlockRow[] | null }) {
               <div className="flex items-center gap-3 pt-2 border-t border-[#1a1a1a]">
                 <div className="flex items-center gap-1">
                   <Zap className="w-3 h-3 text-[#ff9e19]" />
-                  <span className="text-[10px] text-gray-400">By Day 10: <span className="text-white font-medium">{row.unlocked_by_day_10}</span></span>
+                  <span className="text-[10px] text-gray-400">By Day 5: <span className="text-white font-medium">{row.unlocked_by_day_10}</span></span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-gray-400">By Day 14: <span className="text-white font-medium">{row.unlocked_by_day_14}</span></span>
+                  <span className="text-[10px] text-gray-400">By Day 7: <span className="text-white font-medium">{row.unlocked_by_day_14}</span></span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-gray-400">After Day 21: <span className={`font-medium ${row.unlocked_after_day_21 > 0 ? 'text-yellow-500' : 'text-gray-500'}`}>{row.unlocked_after_day_21}</span></span>
+                  <span className="text-[10px] text-gray-400">After Day 7: <span className={`font-medium ${row.unlocked_after_day_21 > 0 ? 'text-yellow-500' : 'text-gray-500'}`}>{row.unlocked_after_day_21}</span></span>
                 </div>
               </div>
             )}
@@ -896,7 +900,7 @@ function TimeToUnlock({ data }: { data: TimeToUnlockRow[] | null }) {
 }
 
 // ============================================
-// TOOL USAGE (NEW)
+// TOOL USAGE
 // ============================================
 function ToolUsagePanel({ data }: { data: ToolUsageRow[] | null }) {
   if (!data || data.length === 0) {
@@ -908,7 +912,6 @@ function ToolUsagePanel({ data }: { data: ToolUsageRow[] | null }) {
     );
   }
 
-  // Sort: tools with eligible users first, then by adoption rate desc
   const sorted = [...data].sort((a, b) => {
     if ((a.eligible_users || 0) > 0 && (b.eligible_users || 0) === 0) return -1;
     if ((a.eligible_users || 0) === 0 && (b.eligible_users || 0) > 0) return 1;
@@ -975,7 +978,7 @@ function ToolUsagePanel({ data }: { data: ToolUsageRow[] | null }) {
 }
 
 // ============================================
-// ENGAGEMENT DEPTH (NEW)
+// ENGAGEMENT DEPTH
 // ============================================
 function EngagementDepth({ data, checkins }: { data: EngagementSummary | null; checkins: WeeklyCheckinStats | null }) {
   if (!data) return null;
@@ -1002,7 +1005,6 @@ function EngagementDepth({ data, checkins }: { data: EngagementSummary | null; c
         ))}
       </div>
       
-      {/* Quick stats row */}
       <div className="flex items-center gap-6 pt-3 border-t border-[#1a1a1a]">
         <div className="text-xs text-gray-400">
           Active users (7d): <span className="text-white font-medium">{data.practicing_users_7d || 0}</span>
@@ -1026,7 +1028,7 @@ function EngagementDepth({ data, checkins }: { data: EngagementSummary | null; c
 }
 
 // ============================================
-// BASELINE COMPLETION (NEW)
+// BASELINE COMPLETION
 // ============================================
 function BaselinePanel({ data }: { data: BaselineCompletion | null }) {
   if (!data) return null;
@@ -1065,9 +1067,7 @@ function BaselinePanel({ data }: { data: BaselineCompletion | null }) {
 }
 
 // ============================================
-// TRANSFORMATION TRACKER (NEW)
-// Baseline → Current → Delta for REwired + 4 domains
-// Plus week-over-week progression chart
+// TRANSFORMATION TRACKER
 // ============================================
 function TransformationTracker({ 
   snapshot, weekly 
@@ -1101,7 +1101,6 @@ function TransformationTracker({
     <div className="bg-[#111111] border border-[#1a1a1a] rounded-lg p-6">
       <SectionHeader title="Transformation Tracker" subtitle={`Baseline → Current (${snapshot.users_with_checkins} users with check-ins)`} icon={TrendingUp} />
       
-      {/* REwired Index Hero */}
       <div className="mb-6 p-4 bg-[#0a0a0a] rounded-lg border border-[#ff9e19]/20">
         <div className="flex items-center justify-between mb-3">
           <span className="text-sm font-medium text-[#ff9e19]">REwired Index</span>
@@ -1115,9 +1114,7 @@ function TransformationTracker({
             <p className="text-[10px] text-gray-600">Baseline</p>
           </div>
           <div className="flex-1 h-3 bg-[#1a1a1a] rounded-full overflow-hidden relative">
-            {/* Baseline marker */}
             <div className="absolute h-full w-0.5 bg-gray-500 z-10" style={{ left: `${(snapshot.baseline_rewired / 100) * 100}%` }} />
-            {/* Current fill */}
             <div className={`h-full rounded-full transition-all ${snapshot.current_rewired >= snapshot.baseline_rewired ? 'bg-[#ff9e19]' : 'bg-red-500'}`}
               style={{ width: `${(snapshot.current_rewired / 100) * 100}%` }} />
           </div>
@@ -1128,7 +1125,6 @@ function TransformationTracker({
         </div>
       </div>
 
-      {/* 4 Domain Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         {domains.map(d => (
           <div key={d.key} className="p-3 bg-[#0a0a0a] rounded-lg">
@@ -1140,14 +1136,12 @@ function TransformationTracker({
             </div>
             <div className="flex items-center gap-3">
               <div className="flex-1">
-                {/* Baseline bar */}
                 <div className="flex items-center gap-1.5 mb-1">
                   <div className="w-full h-2 bg-[#1a1a1a] rounded-full overflow-hidden">
                     <div className={`h-full rounded-full ${d.barColor} opacity-30`} style={{ width: `${(d.baseline / 5) * 100}%` }} />
                   </div>
                   <span className="text-[10px] text-gray-500 w-6 text-right">{d.baseline}</span>
                 </div>
-                {/* Current bar */}
                 <div className="flex items-center gap-1.5">
                   <div className="w-full h-2 bg-[#1a1a1a] rounded-full overflow-hidden">
                     <div className={`h-full rounded-full ${d.barColor}`} style={{ width: `${(d.current / 5) * 100}%` }} />
@@ -1164,7 +1158,6 @@ function TransformationTracker({
         ))}
       </div>
 
-      {/* Week-over-Week Progression Chart */}
       {hasWeeklyData && (
         <div>
           <div className="flex items-center justify-between mb-3 pt-3 border-t border-[#1a1a1a]">
@@ -1197,7 +1190,6 @@ function TransformationTracker({
             ))}
           </div>
 
-          {/* Domain delta trend (mini) */}
           <div className="grid grid-cols-4 gap-3 mt-4 pt-3 border-t border-[#1a1a1a]">
             {[
               { label: 'Regulation', key: 'avg_regulation_delta' as const, color: 'text-emerald-500' },
@@ -1225,7 +1217,7 @@ function TransformationTracker({
 }
 
 // ============================================
-// PRACTICE HEATMAP (existing, cleaned up)
+// PRACTICE HEATMAP
 // ============================================
 function PracticeHeatmap({ data, summary }: { data: PracticeRow[] | null; summary: PracticeSummaryRow[] | null }) {
   if ((!data || data.length === 0) && (!summary || summary.length === 0)) {
@@ -1317,7 +1309,7 @@ function PracticeHeatmap({ data, summary }: { data: PracticeRow[] | null; summar
 }
 
 // ============================================
-// JOURNAL STATS (NEW)
+// JOURNAL STATS
 // ============================================
 function JournalStatsPanel({ data }: { data: JournalStatRow[] | null }) {
   if (!data || data.length === 0) return null;
@@ -1338,7 +1330,7 @@ function JournalStatsPanel({ data }: { data: JournalStatRow[] | null }) {
 }
 
 // ============================================
-// STAGE DISTRIBUTION BAR (existing, cleaned up)
+// STAGE DISTRIBUTION BAR
 // ============================================
 function StageDistributionBar({ data }: { data: DashboardData['stageDistribution'] }) {
   const colors = ['bg-blue-500','bg-cyan-500','bg-emerald-500','bg-yellow-500','bg-orange-500','bg-red-500','bg-purple-500'];
@@ -1368,13 +1360,11 @@ function StageDistributionBar({ data }: { data: DashboardData['stageDistribution
 }
 
 // ============================================
-// CONVERSION FUNNEL (existing)
+// CONVERSION FUNNEL
 // ============================================
 function ConversionFunnel({ data }: { data: DashboardData['funnelMetrics'] }) {
   if (!data) return null;
   
-  // True funnel: how many users passed through each gate
-  // "completed_stage_1" now means users who COMPLETED Stage 1 and reached Stage 2+
   const stages = [
     { label: 'Signed Up', count: data.started, rate: 100, desc: 'Total users' },
     { label: 'Completed S1', count: data.completed_stage_1, rate: data.rate_1_to_2, desc: 'Reached Stage 2' },
@@ -1409,7 +1399,6 @@ function ConversionFunnel({ data }: { data: DashboardData['funnelMetrics'] }) {
           </div>
         ))}
       </div>
-      {/* Explainer */}
       <p className="text-[10px] text-gray-600 mt-3 pt-3 border-t border-[#1a1a1a]">
         Rates show stage-to-stage conversion (% of previous stage that advanced). 0% = no one has completed that stage yet.
       </p>
@@ -1418,7 +1407,7 @@ function ConversionFunnel({ data }: { data: DashboardData['funnelMetrics'] }) {
 }
 
 // ============================================
-// COHORT COMPARISON (existing)
+// COHORT COMPARISON
 // ============================================
 function CohortComparison({ data }: { data: CohortRow[] | null }) {
   if (!data || data.length === 0) return null;
@@ -1462,7 +1451,7 @@ function CohortComparison({ data }: { data: CohortRow[] | null }) {
 }
 
 // ============================================
-// TREND SPARKLINE (existing)
+// TREND SPARKLINE
 // ============================================
 function TrendSparkline({ trends, userId }: { trends: UserTrendRow[] | null; userId: string }) {
   if (!trends) return <span className="text-gray-600 text-xs">—</span>;
@@ -1488,7 +1477,7 @@ function TrendSparkline({ trends, userId }: { trends: UserTrendRow[] | null; use
 }
 
 // ============================================
-// RECENT USERS TABLE (existing)
+// RECENT USERS TABLE
 // ============================================
 function RecentUsersTable({ users, trends }: { users: DashboardData['recentUsers']; trends: UserTrendRow[] | null }) {
   if (!users?.length) return null;
@@ -1636,7 +1625,6 @@ export default function AdminDashboard() {
       {/* ═══ ROW 1: ALERTS ═══ */}
       <NeedsAttentionPanel alerts={data?.userAlerts || null} onUserClick={setSelectedUser} />
 
-      {/* Intervention Modal */}
       {selectedUser && (
         <InterventionModal 
           user={selectedUser} 
@@ -1659,7 +1647,7 @@ export default function AdminDashboard() {
           icon={UserX} color="red" />
       </div>
 
-      {/* ═══ ROW 3: REVENUE (compact) ═══ */}
+      {/* ═══ ROW 3: REVENUE ═══ */}
       {data?.revenueMetrics && (data.revenueMetrics.active_subscriptions > 0 || data.revenueMetrics.in_trial > 0) && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <MetricCard title="Active Subs" value={data.revenueMetrics.active_subscriptions || 0} icon={DollarSign} color="green" />
@@ -1680,9 +1668,10 @@ export default function AdminDashboard() {
       {data?.stageDistribution && <StageDistributionBar data={data.stageDistribution} />}
 
       {/* ═══ ROW 5: STAGE 1 DEEP DIVE ═══ */}
+      {/* v2.1: subtitle updated from "14 days" to "7 days" to match Stage 1 window */}
       <div className="border-l-4 border-[#ff9e19] pl-4">
         <h2 className="text-lg font-bold text-white mb-1">Stage 1 Deep Dive</h2>
-        <p className="text-xs text-gray-500 mb-4">The critical first 14 days — where decisions live</p>
+        <p className="text-xs text-gray-500 mb-4">The critical first 7 days — where decisions live</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
