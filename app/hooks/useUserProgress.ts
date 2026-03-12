@@ -18,7 +18,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase-client';
-import { STAGE_WINDOW_DAYS } from '@/lib/stages';
+import { STAGE_WINDOW_DAYS } from '@/app/config/stages';
 
 // ============================================
 // TYPES
