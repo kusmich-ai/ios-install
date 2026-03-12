@@ -8,7 +8,7 @@ import {
 } from '@/lib/security/auth';
 import { checkRateLimit } from '@/lib/security/rateLimit';
 import { getScheduledPracticeIdsForDate } from '@/app/config/stages';
-import { STAGE_WINDOW_DAYS } from '@/lib/stages';
+import { STAGE_WINDOW_DAYS } from '@/app/config/stages';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
