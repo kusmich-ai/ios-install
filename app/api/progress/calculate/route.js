@@ -11,7 +11,7 @@ import {
   checkUnlockEligibility,
   getStagePractices
 } from '@/lib/progress-utils';
-import { STAGE_WINDOW_DAYS } from '@/lib/stages';
+import { STAGE_WINDOW_DAYS } from '@/app/config/stages';
 import {
   verifyAuth,
   unauthorizedResponse,
