@@ -5126,14 +5126,17 @@ Ready to start your first practice?`;
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             messages: messages.filter(m => typeof m.content === 'string' && !m.content.includes('toolu_')).map(m => ({ role: m.role, content: m.content })).concat([{ role: 'user', content: userMessage }]),
-            context: 'general',
+           context: 'general',
             additionalContext: {
               currentStage: progress?.currentStage || 1,
               daysInStage: progress?.stageStartDate 
                 ? Math.floor((Date.now() - new Date(progress.stageStartDate).getTime()) / (1000 * 60 * 60 * 24))
                 : 0,
               adherence: progress?.adherencePercentage || 0,
-              userName: getUserName()
+              userName: getUserName(),
+              upgradeNudge: (progress?.unlockEligible && !hasActiveSubscription)
+                ? 'This user has earned Stage 2 unlock but has not yet upgraded. After completing your response, append exactly this line on its own at the end: "Stage 2 is ready when you are. [Unlock →](/upgrade)"'
+                : undefined
             }
           })
         });
@@ -5248,7 +5251,10 @@ Ready to start your first practice?`;
               ? Math.floor((Date.now() - new Date(progress.stageStartDate).getTime()) / (1000 * 60 * 60 * 24))
               : 0,
             adherence: progress?.adherencePercentage || 0,
-            userName: getUserName()
+            userName: getUserName(),
+            upgradeNudge: (progress?.unlockEligible && !hasActiveSubscription)
+              ? 'This user has earned Stage 2 unlock but has not yet upgraded. After completing your response, append exactly this line on its own at the end: "Stage 2 is ready when you are. [Unlock →](/upgrade)"'
+              : undefined
           }
         })
       });
