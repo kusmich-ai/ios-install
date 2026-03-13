@@ -1,11 +1,34 @@
 // app/api/cron/nurture-emails/route.ts
 // Daily cron — finds Stage 1 non-converters and sends nurture emails
 // Schedule: daily at 9:00 AM UTC (see vercel.json)
+//
+// EMAIL SEQUENCE — all timing anchored to stage_unlocked_at (not consecutive_days):
+//
+//  nurture_day12  — pre-eligibility momentum email
+//                   Anchor: consecutive_days >= 12, unlock_eligible = FALSE
+//                   Sends to: app (not /upgrade — they're not eligible yet)
+//
+//  nurture_email1 — first offer, same day eligibility is reached
+//                   Anchor: stage_unlocked_at IS NOT NULL (just became eligible)
+//                   Sends to: /upgrade with params
+//
+//  nurture_email2 — social proof nudge, 3 days after eligibility
+//                   Anchor: stage_unlocked_at <= 3 days ago
+//                   Sends to: /upgrade with params
+//
+//  nurture_email3 — decision point, 7 days after eligibility
+//                   Anchor: stage_unlocked_at <= 7 days ago
+//                   Sends to: /upgrade with params
+//
+//  nurture_day30  — cold re-engagement, pure inactivity trigger
+//                   Anchor: last_visit <= 7 days ago (no day count anchor)
+//                   Sends to: app (let the product re-sell itself)
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
 import {
+  day12Email,
   day14Email,
   day17Email,
   day21Email,
@@ -23,73 +46,106 @@ function getAdminClient() {
   );
 }
 
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://unbecoming.app';
+
 // ─────────────────────────────────────────────────────────────────────────────
-// Eligibility queries — each returns user_ids that need that email
+// Eligibility queries
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Day 14 — unlock eligibility just reached, no subscription, email not yet sent
+ * Day 12 — pre-eligibility momentum email.
+ * Anchor: consecutive_days >= 12 AND unlock_eligible = false.
+ * These users are close but haven't earned the unlock yet.
+ * Goal: keep them going for 2 more days. Send to app, not /upgrade.
  */
-async function getDay14Candidates(supabase: ReturnType<typeof getAdminClient>) {
+async function getDay12Candidates(supabase: ReturnType<typeof getAdminClient>) {
   const { data, error } = await supabase
     .from('user_progress')
     .select('user_id, consecutive_days, latest_avg_delta')
     .eq('current_stage', 1)
-    .eq('unlock_eligible', true)
+    .eq('unlock_eligible', false)
     .eq('has_active_subscription', false)
-    .gte('consecutive_days', 14)
+    .gte('consecutive_days', 12)
     .not('user_id', 'in', `(
-      SELECT user_id FROM email_log WHERE email_type = 'nurture_day14'
+      SELECT user_id FROM email_log WHERE email_type = 'nurture_day12'
     )`);
 
-  if (error) throw new Error(`Day14 query failed: ${error.message}`);
+  if (error) throw new Error(`Day12 query failed: ${error.message}`);
   return data || [];
 }
 
 /**
- * Day 17 — eligible 3+ days ago, still no subscription
- * Uses stage_unlocked_at as the eligibility timestamp
+ * Email 1 — first offer, fires when eligibility is first reached.
+ * Anchor: stage_unlocked_at IS NOT NULL (just set) and no subscription.
+ * The UNIQUE constraint on email_log ensures this fires exactly once per user.
  */
-async function getDay17Candidates(supabase: ReturnType<typeof getAdminClient>) {
+async function getEmail1Candidates(supabase: ReturnType<typeof getAdminClient>) {
+  const { data, error } = await supabase
+    .from('user_progress')
+    .select('user_id, consecutive_days, latest_avg_delta, stage_unlocked_at')
+    .eq('current_stage', 1)
+    .eq('unlock_eligible', true)
+    .eq('has_active_subscription', false)
+    .not('stage_unlocked_at', 'is', null)
+    .not('user_id', 'in', `(
+      SELECT user_id FROM email_log WHERE email_type = 'nurture_email1'
+    )`);
+
+  if (error) throw new Error(`Email1 query failed: ${error.message}`);
+  return data || [];
+}
+
+/**
+ * Email 2 — social proof, 3+ days after eligibility reached.
+ * Anchor: stage_unlocked_at <= 3 days ago.
+ */
+async function getEmail2Candidates(supabase: ReturnType<typeof getAdminClient>) {
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
 
   const { data, error } = await supabase
     .from('user_progress')
-    .select('user_id, consecutive_days, latest_avg_delta')
+    .select('user_id, consecutive_days, latest_avg_delta, stage_unlocked_at')
     .eq('current_stage', 1)
     .eq('unlock_eligible', true)
     .eq('has_active_subscription', false)
-    .gte('consecutive_days', 17)
+    .not('stage_unlocked_at', 'is', null)
     .lte('stage_unlocked_at', threeDaysAgo)
     .not('user_id', 'in', `(
-      SELECT user_id FROM email_log WHERE email_type = 'nurture_day17'
+      SELECT user_id FROM email_log WHERE email_type = 'nurture_email2'
     )`);
 
-  if (error) throw new Error(`Day17 query failed: ${error.message}`);
+  if (error) throw new Error(`Email2 query failed: ${error.message}`);
   return data || [];
 }
 
 /**
- * Day 21 — still no subscription after 21+ days
+ * Email 3 — decision point, 7+ days after eligibility reached.
+ * Anchor: stage_unlocked_at <= 7 days ago.
  */
-async function getDay21Candidates(supabase: ReturnType<typeof getAdminClient>) {
+async function getEmail3Candidates(supabase: ReturnType<typeof getAdminClient>) {
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
   const { data, error } = await supabase
     .from('user_progress')
-    .select('user_id, consecutive_days, latest_avg_delta')
+    .select('user_id, consecutive_days, latest_avg_delta, stage_unlocked_at')
     .eq('current_stage', 1)
     .eq('unlock_eligible', true)
     .eq('has_active_subscription', false)
-    .gte('consecutive_days', 21)
+    .not('stage_unlocked_at', 'is', null)
+    .lte('stage_unlocked_at', sevenDaysAgo)
     .not('user_id', 'in', `(
-      SELECT user_id FROM email_log WHERE email_type = 'nurture_day21'
+      SELECT user_id FROM email_log WHERE email_type = 'nurture_email3'
     )`);
 
-  if (error) throw new Error(`Day21 query failed: ${error.message}`);
+  if (error) throw new Error(`Email3 query failed: ${error.message}`);
   return data || [];
 }
 
 /**
- * Day 30 re-engagement — eligible, no sub, AND last_visit was 7+ days ago
+ * Day 30 cold re-engagement — pure inactivity trigger.
+ * Anchor: last_visit <= 7 days ago (not a day count).
+ * No stage_unlocked_at requirement — catches anyone who went cold.
+ * Sends to app, not /upgrade, so the product can re-sell itself.
  */
 async function getDay30Candidates(supabase: ReturnType<typeof getAdminClient>) {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -128,7 +184,7 @@ async function getUserAuthData(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Build personalized upgrade URL
+// URL builders — app vs /upgrade depending on email type
 // ─────────────────────────────────────────────────────────────────────────────
 function buildUpgradeUrl(
   firstName: string | null,
@@ -139,8 +195,12 @@ function buildUpgradeUrl(
   if (firstName) params.set('name', firstName);
   if (days > 0) params.set('days', String(days));
   if (delta !== null) params.set('delta', Number(delta).toFixed(1));
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://unbecoming.app';
-  return `${baseUrl}/upgrade?${params.toString()}`;
+  return `${BASE_URL}/upgrade?${params.toString()}`;
+}
+
+function buildAppUrl(): string {
+  // Sends cold/pre-eligible users back to the app, not the upgrade page
+  return BASE_URL;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -160,32 +220,40 @@ async function logEmail(
 // ─────────────────────────────────────────────────────────────────────────────
 // Send a single nurture email
 // ─────────────────────────────────────────────────────────────────────────────
+type NurtureEmailType =
+  | 'nurture_day12'
+  | 'nurture_email1'
+  | 'nurture_email2'
+  | 'nurture_email3'
+  | 'nurture_day30';
+
 async function sendNurtureEmail(
   supabase: ReturnType<typeof getAdminClient>,
   userId: string,
-  emailType: 'nurture_day14' | 'nurture_day17' | 'nurture_day21' | 'nurture_day30',
+  emailType: NurtureEmailType,
   progressData: { consecutive_days: number; latest_avg_delta: number | null }
 ) {
   const authData = await getUserAuthData(supabase, userId);
   if (!authData) return { success: false, reason: 'no_auth_data' };
 
-  const upgradeUrl = buildUpgradeUrl(
-    authData.firstName,
-    progressData.consecutive_days,
-    progressData.latest_avg_delta
-  );
+  // Day 12 and Day 30 send to app — pre-eligible or cold users
+  const sendsToApp = emailType === 'nurture_day12' || emailType === 'nurture_day30';
+  const destinationUrl = sendsToApp
+    ? buildAppUrl()
+    : buildUpgradeUrl(authData.firstName, progressData.consecutive_days, progressData.latest_avg_delta);
 
   const emailData = {
     firstName: authData.firstName,
     days: progressData.consecutive_days,
     delta: progressData.latest_avg_delta,
-    upgradeUrl,
+    upgradeUrl: destinationUrl,
   };
 
-  const templateMap = {
-    nurture_day14: day14Email,
-    nurture_day17: day17Email,
-    nurture_day21: day21Email,
+  const templateMap: Record<NurtureEmailType, (data: typeof emailData) => { subject: string; html: string }> = {
+    nurture_day12: day12Email,
+    nurture_email1: day14Email,
+    nurture_email2: day17Email,
+    nurture_email3: day21Email,
     nurture_day30: day30Email,
   };
 
@@ -212,7 +280,6 @@ async function sendNurtureEmail(
 // CRON HANDLER
 // ─────────────────────────────────────────────────────────────────────────────
 export async function GET(request: Request) {
-  // Verify cron secret to prevent unauthorized calls
   const authHeader = request.headers.get('authorization');
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -220,38 +287,47 @@ export async function GET(request: Request) {
 
   const supabase = getAdminClient();
   const results = {
-    day14: { attempted: 0, sent: 0, failed: 0 },
-    day17: { attempted: 0, sent: 0, failed: 0 },
-    day21: { attempted: 0, sent: 0, failed: 0 },
-    day30: { attempted: 0, sent: 0, failed: 0 },
+    day12:   { attempted: 0, sent: 0, failed: 0 },
+    email1:  { attempted: 0, sent: 0, failed: 0 },
+    email2:  { attempted: 0, sent: 0, failed: 0 },
+    email3:  { attempted: 0, sent: 0, failed: 0 },
+    day30:   { attempted: 0, sent: 0, failed: 0 },
   };
 
   try {
-    // ── Day 14 ──────────────────────────────────────────────────────────────
-    const day14Users = await getDay14Candidates(supabase);
-    for (const u of day14Users) {
-      results.day14.attempted++;
-      const result = await sendNurtureEmail(supabase, u.user_id, 'nurture_day14', u);
-      result.success ? results.day14.sent++ : results.day14.failed++;
+    // ── Day 12 — pre-eligibility momentum ───────────────────────────────────
+    const day12Users = await getDay12Candidates(supabase);
+    for (const u of day12Users) {
+      results.day12.attempted++;
+      const result = await sendNurtureEmail(supabase, u.user_id, 'nurture_day12', u);
+      result.success ? results.day12.sent++ : results.day12.failed++;
     }
 
-    // ── Day 17 ──────────────────────────────────────────────────────────────
-    const day17Users = await getDay17Candidates(supabase);
-    for (const u of day17Users) {
-      results.day17.attempted++;
-      const result = await sendNurtureEmail(supabase, u.user_id, 'nurture_day17', u);
-      result.success ? results.day17.sent++ : results.day17.failed++;
+    // ── Email 1 — first offer (day eligibility reached) ──────────────────────
+    const email1Users = await getEmail1Candidates(supabase);
+    for (const u of email1Users) {
+      results.email1.attempted++;
+      const result = await sendNurtureEmail(supabase, u.user_id, 'nurture_email1', u);
+      result.success ? results.email1.sent++ : results.email1.failed++;
     }
 
-    // ── Day 21 ──────────────────────────────────────────────────────────────
-    const day21Users = await getDay21Candidates(supabase);
-    for (const u of day21Users) {
-      results.day21.attempted++;
-      const result = await sendNurtureEmail(supabase, u.user_id, 'nurture_day21', u);
-      result.success ? results.day21.sent++ : results.day21.failed++;
+    // ── Email 2 — social proof (3 days after eligibility) ────────────────────
+    const email2Users = await getEmail2Candidates(supabase);
+    for (const u of email2Users) {
+      results.email2.attempted++;
+      const result = await sendNurtureEmail(supabase, u.user_id, 'nurture_email2', u);
+      result.success ? results.email2.sent++ : results.email2.failed++;
     }
 
-    // ── Day 30 re-engagement ─────────────────────────────────────────────────
+    // ── Email 3 — decision point (7 days after eligibility) ──────────────────
+    const email3Users = await getEmail3Candidates(supabase);
+    for (const u of email3Users) {
+      results.email3.attempted++;
+      const result = await sendNurtureEmail(supabase, u.user_id, 'nurture_email3', u);
+      result.success ? results.email3.sent++ : results.email3.failed++;
+    }
+
+    // ── Day 30 — cold re-engagement (inactivity trigger) ─────────────────────
     const day30Users = await getDay30Candidates(supabase);
     for (const u of day30Users) {
       results.day30.attempted++;
