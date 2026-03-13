@@ -2842,11 +2842,18 @@ Ready to continue your transformation?`
     }
  // Stages 2, 5, 6 don't need special setup flows - just the confirmation message
     
-    // Show coach unlock reminder for Stage 2
+// Show coach unlock reminder for Stage 2
     if (pendingUnlockStage === 2) {
       setTimeout(async () => {
         await postAssistantMessage(coachTemplates.stage2Unlock);
       }, 4000);
+    }
+    
+    // Mention new Somatic Flow versions unlock at Stages 3, 4, 5
+    if (pendingUnlockStage === 3 || pendingUnlockStage === 4 || pendingUnlockStage === 5) {
+      setTimeout(async () => {
+        await postAssistantMessage(`A new Somatic Flow variation has unlocked with this stage — you'll see it rotate into your morning practice automatically.`);
+      }, 5000);
     }
     
     setPendingUnlockStage(null);
