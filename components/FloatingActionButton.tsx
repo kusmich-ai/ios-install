@@ -14,7 +14,7 @@ import { getScheduledPracticesForDate, getUnlockedOnDemandTools } from '@/app/co
 import type { UserProgress } from '@/app/hooks/useUserProgress';
 import { useResonanceBreathing } from '@/components/ResonanceModal';
 import { useAwarenessRep } from '@/components/AwarenessRepModal';
-import { useSomaticFlow } from '@/components/SomaticFlowModal';
+import { useSomaticFlow, type SomaticFlowVersion } from '@/components/SomaticFlowModal';
 import CuePhaseCard from './CuePhaseCard';
 import { useCoRegulation } from '@/components/CoRegulationModal';
 import { useNightlyDebrief } from '@/components/NightlyDebriefModal';
