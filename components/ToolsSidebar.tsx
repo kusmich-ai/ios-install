@@ -299,8 +299,8 @@ const getPracticeStatus = (practiceId: string): 'completed' | 'pending' | 'locke
       <AwarenessRepModal 
         onComplete={() => handleModalComplete('awareness_rep', 'Awareness Rep')} 
       />
-     <SomaticFlowModal
-        currentVersion={progress.somaticFlowCurrentVersion ?? 'original'}
+<SomaticFlowModal
+        currentVersion={(progress.somaticFlowCurrentVersion ?? 'original') as SomaticFlowVersion}
         hasSeenDemo={progress.somaticFlowDemosSeen?.includes(progress.somaticFlowCurrentVersion ?? 'original') ?? true}
         onComplete={() => handleModalComplete('somatic_flow', 'Somatic Flow')}
         onProgressRefetch={onProgressUpdate}
