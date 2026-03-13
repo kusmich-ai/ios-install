@@ -1,262 +1,380 @@
-// lib/emails/nurture-templates.ts
-// Post-offer nurture sequence for Stage 1 completers who haven't upgraded
+// app/api/cron/nurture-emails/route.ts
+// Daily cron — finds Stage 1 non-converters and sends nurture emails
+// Schedule: daily at 9:00 AM UTC (see vercel.json)
+//
+// EMAIL SEQUENCE — all timing anchored to stage_unlocked_at (not consecutive_days):
+//
+//  nurture_day12  — pre-eligibility momentum email
+//                   Anchor: consecutive_days >= 12, unlock_eligible = FALSE
+//                   Sends to: app (not /upgrade — they're not eligible yet)
+//
+//  nurture_email1 — first offer, same day eligibility is reached
+//                   Anchor: stage_unlocked_at IS NOT NULL (just became eligible)
+//                   Sends to: /upgrade with params
+//
+//  nurture_email2 — social proof nudge, 3 days after eligibility
+//                   Anchor: stage_unlocked_at <= 3 days ago
+//                   Sends to: /upgrade with params
+//
+//  nurture_email3 — decision point, 7 days after eligibility
+//                   Anchor: stage_unlocked_at <= 7 days ago
+//                   Sends to: /upgrade with params
+//
+//  nurture_day30  — cold re-engagement, pure inactivity trigger
+//                   Anchor: last_visit <= 7 days ago (no day count anchor)
+//                   Sends to: app (let the product re-sell itself)
 
-interface NurtureEmailData {
-  firstName: string | null;
-  days: number;
-  delta: number | null;
-  upgradeUrl: string;
+import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+import { Resend } from 'resend';
+import {
+  day12Email,
+  day14Email,
+  day17Email,
+  day21Email,
+  day30Email,
+} from '@/lib/emails/nurture-templates';
+
+export const dynamic = 'force-dynamic';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+// Service-role client — needed to read auth.users for email + name
+function getAdminClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
 }
 
-function baseWrapper(content: string): string {
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Unbecoming</title>
-</head>
-<body style="margin:0;padding:0;background:#0a0a0a;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0a;min-height:100vh;">
-    <tr>
-      <td align="center" style="padding:48px 16px;">
-        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://unbecoming.app';
 
-          <!-- Logo / wordmark -->
-          <tr>
-            <td style="padding-bottom:40px;">
-              <span style="font-size:13px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#ff9e19;">UNBECOMING</span>
-            </td>
-          </tr>
-
-          <!-- Card -->
-          <tr>
-            <td style="background:#111;border:1px solid #1a1a1a;border-radius:16px;padding:40px 40px 32px;">
-              ${content}
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td style="padding-top:28px;text-align:center;">
-              <p style="margin:0 0 8px;font-size:11px;color:#333;line-height:1.6;">
-                You're receiving this because you're in Stage 1 of The Stack.
-              </p>
-              <p style="margin:0;font-size:11px;color:#333;">
-                <a href="{{unsubscribe_url}}" style="color:#444;text-decoration:underline;">Unsubscribe</a>
-              </p>
-            </td>
-          </tr>
-
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
-}
-
-function ctaButton(label: string, url: string): string {
-  return `<table cellpadding="0" cellspacing="0" style="margin:28px 0 0;">
-    <tr>
-      <td style="background:#ff9e19;border-radius:10px;">
-        <a href="${url}" style="display:inline-block;padding:14px 28px;font-size:14px;font-weight:700;color:#000;text-decoration:none;letter-spacing:0.02em;">${label}</a>
-      </td>
-    </tr>
-  </table>`;
-}
-
-function divider(): string {
-  return `<hr style="border:none;border-top:1px solid #1a1a1a;margin:28px 0;" />`;
+// ─────────────────────────────────────────────────────────────────────────────
+// Helper — fetch user_ids who already received a given email type
+// Supabase JS client doesn't support subqueries in .not(), so we do two steps:
+// 1. fetch already-sent ids, 2. exclude them in the main query
+// ─────────────────────────────────────────────────────────────────────────────
+async function getAlreadySentIds(
+  supabase: ReturnType<typeof getAdminClient>,
+  emailType: string
+): Promise<string[]> {
+  const { data } = await supabase
+    .from('email_log')
+    .select('user_id')
+    .eq('email_type', emailType);
+  return (data || []).map((r: { user_id: string }) => r.user_id);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// EMAIL 0 — Day 12: Pre-eligibility momentum
-// Anchor: consecutive_days >= 12 AND unlock_eligible = false
-// Goal: keep them going 2 more days. Sends to app, not /upgrade.
+// Eligibility queries
 // ─────────────────────────────────────────────────────────────────────────────
-export function day12Email(data: NurtureEmailData): { subject: string; html: string } {
-  const name = data.firstName ? `${data.firstName},` : 'Hey,';
-  const deltaLine = data.delta !== null
-    ? `<p style="margin:0 0 20px;font-size:15px;color:#888;line-height:1.7;">Your domains have moved <span style="color:#ff9e19;font-weight:600;">+${data.delta}</span> from baseline. The system is responding.</p>`
-    : '';
 
-  const content = `
-    <h1 style="margin:0 0 6px;font-size:24px;font-weight:700;color:#fff;line-height:1.2;">${name} 2 days away.</h1>
-    <p style="margin:0 0 24px;font-size:13px;color:#ff9e19;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;">${data.days} days in · Stage 2 unlock approaching</p>
+/**
+ * Day 12 — pre-eligibility momentum email.
+ * Anchor: consecutive_days >= 12 AND unlock_eligible = false.
+ * Goal: keep them going 2 more days. Sends to app, not /upgrade.
+ */
+async function getDay12Candidates(supabase: ReturnType<typeof getAdminClient>) {
+  const sentIds = await getAlreadySentIds(supabase, 'nurture_day12');
 
-    <p style="margin:0 0 20px;font-size:15px;color:#ccc;line-height:1.7;">You're ${data.days} days in. Stage 2 unlock requires 14 days of consistent practice — you're 2 away.</p>
+  let query = supabase
+    .from('user_progress')
+    .select('user_id, consecutive_days, latest_avg_delta')
+    .eq('current_stage', 1)
+    .eq('unlock_eligible', false)
+    .eq('has_active_subscription', false)
+    .gte('consecutive_days', 12);
 
-    ${deltaLine}
+  if (sentIds.length > 0) {
+    query = query.not('user_id', 'in', `(${sentIds.map(id => `"${id}"`).join(',')})`);
+  }
 
-    <p style="margin:0 0 20px;font-size:15px;color:#888;line-height:1.7;">This is the window where most people stop. Not because they want to — but because the habit hasn't fully installed yet and something disrupts the rhythm.</p>
+  const { data, error } = await query;
+  if (error) throw new Error(`Day12 query failed: ${error.message}`);
+  return data || [];
+}
 
-    <p style="margin:0 0 8px;font-size:15px;color:#fff;font-weight:500;line-height:1.7;">Two more days. Then Stage 2 unlocks and the system goes deeper.</p>
+/**
+ * Email 1 — first offer, fires when eligibility is first reached.
+ * Anchor: stage_unlocked_at IS NOT NULL.
+ */
+async function getEmail1Candidates(supabase: ReturnType<typeof getAdminClient>) {
+  const sentIds = await getAlreadySentIds(supabase, 'nurture_email1');
 
-    ${ctaButton('Open The Stack →', data.upgradeUrl)}
+  let query = supabase
+    .from('user_progress')
+    .select('user_id, consecutive_days, latest_avg_delta, stage_unlocked_at')
+    .eq('current_stage', 1)
+    .eq('unlock_eligible', true)
+    .eq('has_active_subscription', false)
+    .not('stage_unlocked_at', 'is', null);
 
-    ${divider()}
+  if (sentIds.length > 0) {
+    query = query.not('user_id', 'in', `(${sentIds.map(id => `"${id}"`).join(',')})`);
+  }
 
-    <p style="margin:0;font-size:12px;color:#555;line-height:1.6;">Resonance Breathing + Awareness Rep. 8 minutes. That's all that's needed today.</p>
-  `;
+  const { data, error } = await query;
+  if (error) throw new Error(`Email1 query failed: ${error.message}`);
+  return data || [];
+}
 
-  return {
-    subject: "You're 2 days away.",
-    html: baseWrapper(content),
+/**
+ * Email 2 — social proof, 3+ days after eligibility reached.
+ * Anchor: stage_unlocked_at <= 3 days ago.
+ */
+async function getEmail2Candidates(supabase: ReturnType<typeof getAdminClient>) {
+  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+  const sentIds = await getAlreadySentIds(supabase, 'nurture_email2');
+
+  let query = supabase
+    .from('user_progress')
+    .select('user_id, consecutive_days, latest_avg_delta, stage_unlocked_at')
+    .eq('current_stage', 1)
+    .eq('unlock_eligible', true)
+    .eq('has_active_subscription', false)
+    .not('stage_unlocked_at', 'is', null)
+    .lte('stage_unlocked_at', threeDaysAgo);
+
+  if (sentIds.length > 0) {
+    query = query.not('user_id', 'in', `(${sentIds.map(id => `"${id}"`).join(',')})`);
+  }
+
+  const { data, error } = await query;
+  if (error) throw new Error(`Email2 query failed: ${error.message}`);
+  return data || [];
+}
+
+/**
+ * Email 3 — decision point, 7+ days after eligibility reached.
+ * Anchor: stage_unlocked_at <= 7 days ago.
+ */
+async function getEmail3Candidates(supabase: ReturnType<typeof getAdminClient>) {
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const sentIds = await getAlreadySentIds(supabase, 'nurture_email3');
+
+  let query = supabase
+    .from('user_progress')
+    .select('user_id, consecutive_days, latest_avg_delta, stage_unlocked_at')
+    .eq('current_stage', 1)
+    .eq('unlock_eligible', true)
+    .eq('has_active_subscription', false)
+    .not('stage_unlocked_at', 'is', null)
+    .lte('stage_unlocked_at', sevenDaysAgo);
+
+  if (sentIds.length > 0) {
+    query = query.not('user_id', 'in', `(${sentIds.map(id => `"${id}"`).join(',')})`);
+  }
+
+  const { data, error } = await query;
+  if (error) throw new Error(`Email3 query failed: ${error.message}`);
+  return data || [];
+}
+
+/**
+ * Day 30 cold re-engagement — pure inactivity trigger.
+ * Anchor: last_visit <= 7 days ago.
+ * Sends to app, not /upgrade.
+ */
+async function getDay30Candidates(supabase: ReturnType<typeof getAdminClient>) {
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const sentIds = await getAlreadySentIds(supabase, 'nurture_day30');
+
+  let query = supabase
+    .from('user_progress')
+    .select('user_id, consecutive_days, latest_avg_delta')
+    .eq('current_stage', 1)
+    .eq('unlock_eligible', true)
+    .eq('has_active_subscription', false)
+    .lte('last_visit', sevenDaysAgo);
+
+  if (sentIds.length > 0) {
+    query = query.not('user_id', 'in', `(${sentIds.map(id => `"${id}"`).join(',')})`);
+  }
+
+  const { data, error } = await query;
+  if (error) throw new Error(`Day30 query failed: ${error.message}`);
+  return data || [];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Fetch user email + first name from auth.users
+// ─────────────────────────────────────────────────────────────────────────────
+async function getUserAuthData(
+  supabase: ReturnType<typeof getAdminClient>,
+  userId: string
+): Promise<{ email: string; firstName: string | null } | null> {
+  const { data, error } = await supabase.auth.admin.getUserById(userId);
+  if (error || !data?.user?.email) return null;
+
+  const firstName =
+    data.user.user_metadata?.first_name ||
+    data.user.user_metadata?.name?.split(' ')[0] ||
+    null;
+
+  return { email: data.user.email, firstName };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// URL builders — app vs /upgrade depending on email type
+// ─────────────────────────────────────────────────────────────────────────────
+function buildUpgradeUrl(
+  firstName: string | null,
+  days: number,
+  delta: number | null
+): string {
+  const params = new URLSearchParams();
+  if (firstName) params.set('name', firstName);
+  if (days > 0) params.set('days', String(days));
+  if (delta !== null) params.set('delta', Number(delta).toFixed(1));
+  return `${BASE_URL}/upgrade?${params.toString()}`;
+}
+
+function buildAppUrl(): string {
+  // Sends cold/pre-eligible users back to the app, not the upgrade page
+  return BASE_URL;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Log sent email — prevents duplicates on next cron run
+// ─────────────────────────────────────────────────────────────────────────────
+async function logEmail(
+  supabase: ReturnType<typeof getAdminClient>,
+  userId: string,
+  emailType: string
+) {
+  await supabase.from('email_log').insert({
+    user_id: userId,
+    email_type: emailType,
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Send a single nurture email
+// ─────────────────────────────────────────────────────────────────────────────
+type NurtureEmailType =
+  | 'nurture_day12'
+  | 'nurture_email1'
+  | 'nurture_email2'
+  | 'nurture_email3'
+  | 'nurture_day30';
+
+async function sendNurtureEmail(
+  supabase: ReturnType<typeof getAdminClient>,
+  userId: string,
+  emailType: NurtureEmailType,
+  progressData: { consecutive_days: number; latest_avg_delta: number | null }
+) {
+  const authData = await getUserAuthData(supabase, userId);
+  if (!authData) return { success: false, reason: 'no_auth_data' };
+
+  // Day 12 and Day 30 send to app — pre-eligible or cold users
+  const sendsToApp = emailType === 'nurture_day12' || emailType === 'nurture_day30';
+  const destinationUrl = sendsToApp
+    ? buildAppUrl()
+    : buildUpgradeUrl(authData.firstName, progressData.consecutive_days, progressData.latest_avg_delta);
+
+  const emailData = {
+    firstName: authData.firstName,
+    days: progressData.consecutive_days,
+    delta: progressData.latest_avg_delta,
+    upgradeUrl: destinationUrl,
   };
+
+  const templateMap: Record<NurtureEmailType, (data: typeof emailData) => { subject: string; html: string }> = {
+    nurture_day12: day12Email,
+    nurture_email1: day14Email,
+    nurture_email2: day17Email,
+    nurture_email3: day21Email,
+    nurture_day30: day30Email,
+  };
+
+  const { subject, html } = templateMap[emailType](emailData);
+
+  const { error } = await resend.emails.send({
+    from: 'Nicholas Kusmich <nic@unbecoming.app>',
+    to: authData.email,
+    subject,
+    html,
+    headers: {
+      'List-Unsubscribe': `<mailto:unsubscribe@unbecoming.app?subject=unsubscribe>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    },
+  });
+
+  if (error) return { success: false, reason: error.message };
+
+  await logEmail(supabase, userId, emailType);
+  return { success: true };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// EMAIL 1 — Eligibility reached: "You earned it."
-// Anchor: stage_unlocked_at IS NOT NULL (just became eligible)
-// Body mirrors the /upgrade hero. Sends to /upgrade with params.
+// CRON HANDLER
 // ─────────────────────────────────────────────────────────────────────────────
-export function day14Email(data: NurtureEmailData): { subject: string; html: string } {
-  const name = data.firstName ? `${data.firstName},` : 'Hey,';
-  const deltaLine = data.delta !== null
-    ? `<p style="margin:0 0 20px;font-size:15px;color:#888;line-height:1.7;">Your average domain delta is <span style="color:#ff9e19;font-weight:600;">+${data.delta}</span>. That's not a feeling — it's a measurement. Regulation, Awareness, Outlook, Attention — all of them moved.</p>`
-    : '';
+export async function GET(request: Request) {
+  const authHeader = request.headers.get('authorization');
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
-  const content = `
-    <h1 style="margin:0 0 6px;font-size:24px;font-weight:700;color:#fff;line-height:1.2;">${name} you earned it.</h1>
-    <p style="margin:0 0 24px;font-size:13px;color:#ff9e19;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;">${data.days} days · Stage 1 Complete</p>
-
-    <p style="margin:0 0 20px;font-size:15px;color:#ccc;line-height:1.7;">The changes happening inside you right now aren't dramatic. They're not supposed to be.</p>
-
-    <p style="margin:0 0 20px;font-size:15px;color:#fff;font-weight:500;line-height:1.7;">Rewiring doesn't announce itself. It just quietly becomes your new normal.</p>
-
-    ${deltaLine}
-
-    <p style="margin:0 0 20px;font-size:15px;color:#888;line-height:1.7;">You built the vagal tone baseline. The observer function came online. Your nervous system has evidence it can be directed. That proof is the prerequisite for everything that follows.</p>
-
-    <p style="margin:0 0 8px;font-size:15px;color:#ccc;line-height:1.7;">Stage 2 adds 2 minutes. It moves awareness from your head into your body. The full Stack runs at 16 minutes a day — and it's waiting.</p>
-
-    ${ctaButton('Continue the Installation →', data.upgradeUrl)}
-
-    ${divider()}
-
-    <p style="margin:0;font-size:12px;color:#555;line-height:1.6;">Annual access is $1.91/day. Less than a coffee — for the full installation.</p>
-  `;
-
-  return {
-    subject: 'You earned it.',
-    html: baseWrapper(content),
+  const supabase = getAdminClient();
+  const results = {
+    day12:   { attempted: 0, sent: 0, failed: 0 },
+    email1:  { attempted: 0, sent: 0, failed: 0 },
+    email2:  { attempted: 0, sent: 0, failed: 0 },
+    email3:  { attempted: 0, sent: 0, failed: 0 },
+    day30:   { attempted: 0, sent: 0, failed: 0 },
   };
-}
 
-// ─────────────────────────────────────────────────────────────────────────────
-// EMAIL 2 — 3 days after eligibility: "Still here?"
-// Social proof focused. Softer tone.
-// ─────────────────────────────────────────────────────────────────────────────
-export function day17Email(data: NurtureEmailData): { subject: string; html: string } {
-  const name = data.firstName ? `${data.firstName} —` : 'Hey —';
+  try {
+    // ── Day 12 — pre-eligibility momentum ───────────────────────────────────
+    const day12Users = await getDay12Candidates(supabase);
+    for (const u of day12Users) {
+      results.day12.attempted++;
+      const result = await sendNurtureEmail(supabase, u.user_id, 'nurture_day12', u);
+      result.success ? results.day12.sent++ : results.day12.failed++;
+    }
 
-  const content = `
-    <h1 style="margin:0 0 20px;font-size:24px;font-weight:700;color:#fff;line-height:1.2;">${name} still here.</h1>
+    // ── Email 1 — first offer (day eligibility reached) ──────────────────────
+    const email1Users = await getEmail1Candidates(supabase);
+    for (const u of email1Users) {
+      results.email1.attempted++;
+      const result = await sendNurtureEmail(supabase, u.user_id, 'nurture_email1', u);
+      result.success ? results.email1.sent++ : results.email1.failed++;
+    }
 
-    <p style="margin:0 0 20px;font-size:15px;color:#888;line-height:1.7;">Stage 2 is still unlocked and waiting. No pressure — but here's what happened when other people who were exactly where you are right now kept going.</p>
+    // ── Email 2 — social proof (3 days after eligibility) ────────────────────
+    const email2Users = await getEmail2Candidates(supabase);
+    for (const u of email2Users) {
+      results.email2.attempted++;
+      const result = await sendNurtureEmail(supabase, u.user_id, 'nurture_email2', u);
+      result.success ? results.email2.sent++ : results.email2.failed++;
+    }
 
-    <!-- Testimonial 1 -->
-    <div style="background:#0d0d0d;border:1px solid #1e1e1e;border-radius:12px;padding:20px 24px;margin:0 0 12px;">
-      <p style="margin:0 0 10px;font-size:14px;color:#ccc;line-height:1.7;font-style:italic;">"My business did $60k the first year. $90k the next. After this protocol, I'll cross the $300k mark. Something in the way I operate completely changed."</p>
-      <p style="margin:0;font-size:12px;color:#ff9e19;font-weight:600;">Jesse — Entrepreneur · 5× revenue growth</p>
-    </div>
+    // ── Email 3 — decision point (7 days after eligibility) ──────────────────
+    const email3Users = await getEmail3Candidates(supabase);
+    for (const u of email3Users) {
+      results.email3.attempted++;
+      const result = await sendNurtureEmail(supabase, u.user_id, 'nurture_email3', u);
+      result.success ? results.email3.sent++ : results.email3.failed++;
+    }
 
-    <!-- Testimonial 2 -->
-    <div style="background:#0d0d0d;border:1px solid #1e1e1e;border-radius:12px;padding:20px 24px;margin:0 0 20px;">
-      <p style="margin:0 0 10px;font-size:14px;color:#ccc;line-height:1.7;font-style:italic;">"Since doing this I have had 7 million dollar months in a row. I have never done that before. Something just started clicking."</p>
-      <p style="margin:0;font-size:12px;color:#ff9e19;font-weight:600;">Brian — Business Owner · 7 consecutive $1M+ months</p>
-    </div>
+    // ── Day 30 — cold re-engagement (inactivity trigger) ─────────────────────
+    const day30Users = await getDay30Candidates(supabase);
+    for (const u of day30Users) {
+      results.day30.attempted++;
+      const result = await sendNurtureEmail(supabase, u.user_id, 'nurture_day30', u);
+      result.success ? results.day30.sent++ : results.day30.failed++;
+    }
 
-    <p style="margin:0 0 8px;font-size:15px;color:#888;line-height:1.7;">They didn't feel a dramatic shift at Stage 1 either. The compound effect is what happens in Stages 2–7.</p>
+    console.log('[nurture-emails cron]', JSON.stringify(results));
+    return NextResponse.json({ ok: true, results });
 
-    ${ctaButton('See What Stage 2 Installs →', data.upgradeUrl)}
-
-    ${divider()}
-
-    <p style="margin:0;font-size:12px;color:#555;line-height:1.6;">Questions? Just reply to this email.</p>
-  `;
-
-  return {
-    subject: 'Still here?',
-    html: baseWrapper(content),
-  };
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// EMAIL 3 — 7 days after eligibility: "Stage 1 is complete. What happens now?"
-// Decision point framing. Honest, not desperate.
-// ─────────────────────────────────────────────────────────────────────────────
-export function day21Email(data: NurtureEmailData): { subject: string; html: string } {
-  const name = data.firstName ? data.firstName : 'Hey';
-
-  const content = `
-    <h1 style="margin:0 0 20px;font-size:24px;font-weight:700;color:#fff;line-height:1.2;">${name}, Stage 1 is complete.<br />What happens now?</h1>
-
-    <p style="margin:0 0 20px;font-size:15px;color:#888;line-height:1.7;">Honest answer: nothing changes automatically. The system doesn't progress on its own.</p>
-
-    <p style="margin:0 0 20px;font-size:15px;color:#ccc;line-height:1.7;">You can stay in Stage 1 indefinitely. The breathing practice and Awareness Rep are yours. Your nervous system baseline shifted. That's real and it's permanent.</p>
-
-    <p style="margin:0 0 20px;font-size:15px;color:#ccc;line-height:1.7;">But here's what staying in Stage 1 means: you're maintaining, not building. The observer function is online — but without Stage 2, it doesn't go deeper into the body. Without Stage 3, the patterns you can now notice continue to run unchallenged. Without Stage 4, attention stays where it's always been.</p>
-
-    <!-- What stages complete -->
-    <div style="border-top:1px solid #1a1a1a;margin:28px 0;padding-top:28px;">
-      <p style="margin:0 0 12px;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#ff9e19;">What Stages 2–7 complete</p>
-      <table cellpadding="0" cellspacing="0" width="100%">
-        ${['Stage 2: Awareness moves into the body — Somatic Flow (2 min)',
-           'Stage 3: Patterns get caught before they run — The Cue (2 min)',
-           'Stage 4: Attention becomes trainable — Flow Block',
-           'Stage 5: Regulation holds under relational pressure',
-           'Stage 6: Insight converts to permanent trait-level change',
-        ].map(s => `<tr><td style="padding:5px 0;font-size:13px;color:#888;line-height:1.6;"><span style="color:#ff9e19;margin-right:8px;">✦</span>${s}</td></tr>`).join('')}
-      </table>
-    </div>
-
-    <p style="margin:0 0 8px;font-size:15px;color:#ccc;line-height:1.7;">The full Stack runs at 16 minutes a day. The foundation you built makes all of it possible. It's your call.</p>
-
-    ${ctaButton('Continue the Installation →', data.upgradeUrl)}
-
-    ${divider()}
-
-    <p style="margin:0;font-size:12px;color:#555;line-height:1.6;">$1.91/day on annual. One month of therapy costs more than a year of this.</p>
-  `;
-
-  return {
-    subject: 'Stage 1 is complete. What happens now?',
-    html: baseWrapper(content),
-  };
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// EMAIL 4 — Day 30 cold re-engagement: "Your installation is paused."
-// Anchor: last_visit >= 7 days ago (pure inactivity trigger).
-// Sends to app, not /upgrade — let the product re-sell itself.
-// ─────────────────────────────────────────────────────────────────────────────
-export function day30Email(data: NurtureEmailData): { subject: string; html: string } {
-  const name = data.firstName ? `${data.firstName},` : 'Hey,';
-
-  const content = `
-    <h1 style="margin:0 0 20px;font-size:24px;font-weight:700;color:#fff;line-height:1.2;">${name} your installation is paused.</h1>
-
-    <p style="margin:0 0 20px;font-size:15px;color:#888;line-height:1.7;">No judgment — life happens. But here's what's true:</p>
-
-    <div style="background:#ff9e19;border-radius:10px;padding:20px 24px;margin:0 0 24px;">
-      <p style="margin:0;font-size:15px;color:#000;font-weight:600;line-height:1.6;">You built something real in ${data.days} days. The nervous system baseline you established doesn't expire. It's still here.</p>
-    </div>
-
-    <p style="margin:0 0 20px;font-size:15px;color:#888;line-height:1.7;">The Stage 2 unlock you earned is still active. Somatic Flow, The Cue, Flow Block, Co-Regulation, Nightly Debrief — all of it is waiting where you left it.</p>
-
-    <p style="margin:0 0 8px;font-size:15px;color:#ccc;line-height:1.7;">Resuming from Stage 2 doesn't mean starting over. It means building on what's already installed.</p>
-
-    ${ctaButton('Resume the Installation →', data.upgradeUrl)}
-
-    ${divider()}
-
-    <p style="margin:0;font-size:12px;color:#555;line-height:1.6;">The system is patient. It'll be here when you're ready.</p>
-  `;
-
-  return {
-    subject: 'Your installation is paused.',
-    html: baseWrapper(content),
-  };
+  } catch (err) {
+    console.error('[nurture-emails cron] fatal error:', err);
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : 'Unknown error' },
+      { status: 500 }
+    );
+  }
 }
