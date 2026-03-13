@@ -2376,8 +2376,14 @@ ${context === 'breakthrough_response'
            systemPrompt += STAGE1_EXPERIENCE_LAYER;
          }
 
-         systemPrompt += `\n\n## JOURNAL LOGGING INSTRUCTION\nYou have a \`log_journal_entry\` tool available. After delivering any of the following, ALWAYS call it to log the moment:\n- Science explanations (entry_type: "science_drip")\n- Milestone celebrations (entry_type: "milestone")\n- Signal check trend narrations (entry_type: "signal_trend")\n- Micro-decentering moments (entry_type: "micro_decentering")\n- Day 7 Mirror reflections (entry_type: "day7_mirror")\n- Weekly narratives (entry_type: "weekly_narrative")\n- Pattern surfacing insights (entry_type: "pattern_surfacing")\n- Coach guest moments (entry_type: "coach_guest")\n\nDo NOT log routine signal checks, greetings, or simple confirmations. When in doubt, log it — the journal is the user's transformation record.`;
+      systemPrompt += `\n\n## JOURNAL LOGGING INSTRUCTION\nYou have a \`log_journal_entry\` tool available. After delivering any of the following, ALWAYS call it to log the moment:\n- Science explanations (entry_type: "science_drip")\n- Milestone celebrations (entry_type: "milestone")\n- Signal check trend narrations (entry_type: "signal_trend")\n- Micro-decentering moments (entry_type: "micro_decentering")\n- Day 7 Mirror reflections (entry_type: "day7_mirror")\n- Weekly narratives (entry_type: "weekly_narrative")\n- Pattern surfacing insights (entry_type: "pattern_surfacing")\n- Coach guest moments (entry_type: "coach_guest")\n\nDo NOT log routine signal checks, greetings, or simple confirmations. When in doubt, log it — the journal is the user's transformation record.`;
         }
+
+        // Upgrade nudge — appended after all other context
+        if (additionalContext?.upgradeNudge) {
+          systemPrompt += `\n\n${additionalContext.upgradeNudge}`;
+        }
+
         break;
       }
     }
