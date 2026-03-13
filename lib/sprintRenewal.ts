@@ -77,11 +77,9 @@ Your daily practice: *${microAction}*
 
 **What's next?**
 
-You have three options:
+You have two options:
 
 **Continue** — Keep the same cue. Reset to Day 1 and sharpen your recognition further.
-
-**Evolve** — Stretch this cue forward. For example, "Interpretation" → "Meaning-Making" or "Reactivity" → "Reactivity Under Pressure".
 
 **Pivot** — Choose a completely different cue to train for the next 21 days.
 
@@ -122,7 +120,6 @@ Which feels right for your next 21 days?`;
 
 export const identityRenewalQuickReplies = [
   { id: 'continue', text: 'Continue', label: 'Keep same cue' },
-  { id: 'evolve', text: 'Evolve', label: 'Stretch it forward' },
   { id: 'pivot', text: 'Pivot', label: 'New cue' }
 ];
 
