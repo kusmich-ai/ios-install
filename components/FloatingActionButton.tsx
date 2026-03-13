@@ -207,7 +207,12 @@ export default function FloatingActionButton({
       <AwarenessRepModal onComplete={() => handleModalComplete('awareness_rep', 'Awareness Rep')} />
       <CoRegulationModal onComplete={() => handleModalComplete('co_regulation', 'Co-Regulation Practice')} />
       <NightlyDebriefModal onComplete={() => handleModalComplete('nightly_debrief', 'Nightly Debrief')} userId={userId} />
-      <SomaticFlowModal onComplete={() => handleModalComplete('somatic_flow', 'Somatic Flow')} completionCount={progress.somaticFlowCompletions} />
+     <SomaticFlowModal
+        currentVersion={progress.somaticFlowCurrentVersion ?? 'original'}
+        hasSeenDemo={progress.somaticFlowDemosSeen?.includes(progress.somaticFlowCurrentVersion ?? 'original') ?? true}
+        onComplete={() => handleModalComplete('somatic_flow', 'Somatic Flow')}
+        onProgressRefetch={onProgressUpdate}
+      />
       <LoopDeLoopingModal />
       <NosGlideModal />
 
