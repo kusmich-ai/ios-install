@@ -6,14 +6,8 @@
 // v4: Added weeklyCheckInDue (Step 13)
 // v5: Added baselineScores + patternProfile for Stage 1→2 unlock flow
 // v6: Added lastAwarenessRepScript for 11-script rotation system
-// v7: Updated unlock thresholds for Stages 2-6:
-//     - Stages 2, 3, 5, 6: 10-day windows (down from 14)
-//     - Stage 4: stays at 14 days (Flow Block complexity)
-//     - Stage 5: adherence lowered to 80% (was 85%)
-//     - Stage 6: adherence lowered to 80%, delta to 0.4 (was 85% / 0.7)
-//     - Accelerated paths added to Stages 2, 3, 4, 5
-//     - Competence bypass (avg score ≥ 4.0 waives delta) added to all stages
-//     - Adherence = completed days / window days (NOT consecutive streak)
+// v7: Updated unlock thresholds for Stages 2-6
+// v8: Added somatic flow version rotation system (replaces video-mandatory logic)
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -55,12 +49,12 @@ export interface UserProgress {
   dataDate: string;
   createdAt: string | null;
   
-  // Aligned Action Sprint fields (updated from Identity)
-  coherenceStatement: string | null;  // NEW - primary field
-  currentIdentity: string | null;     // KEEP for backwards compatibility
+  // Aligned Action Sprint fields
+  coherenceStatement: string | null;
+  currentIdentity: string | null;
   microAction: string | null;
-  sprintDay: number | null;           // NEW - primary field
-  identitySprintDay: number | null;   // KEEP for backwards compatibility
+  sprintDay: number | null;
+  identitySprintDay: number | null;
   identitySprintNumber: number | null;
   identitySprintStart: string | null;
   
@@ -70,8 +64,13 @@ export interface UserProgress {
   flowBlockSprintStart: string | null;
   flowBlockSprintDay: number | null;
   
-  // Practice completion counts (for adaptive UI - e.g. video-mandatory vs self-guided)
+  // Practice completion counts (kept for backwards compat, no longer used for video gating)
   somaticFlowCompletions: number;
+
+  // v8: Somatic Flow version rotation
+  somaticFlowCurrentVersion: string;       // version to show today ('original' | 'v2' | 'v3' | 'v4')
+  somaticFlowVersionsUnlocked: string[];   // versions available at current stage
+  somaticFlowDemosSeen: string[];          // versions whose demo has been watched at least once
   
   // Progress tracking
   daysInStage: number;
@@ -97,10 +96,9 @@ export interface UserProgress {
   milestoneMessagesSent: number[];
 
   // Weekly check-in status (Step 13)
-  // true = Stage 2+ and no check-in recorded for the current calendar week
   weeklyCheckInDue: boolean;
   
-  // Stage attribution "seen" flags (for show-once unlock modals)
+  // Stage attribution "seen" flags
   stage_1_attribution_seen: boolean;
   stage_2_attribution_seen: boolean;
   stage_3_attribution_seen: boolean;
@@ -108,7 +106,7 @@ export interface UserProgress {
   stage_5_attribution_seen: boolean;
   stage_6_attribution_seen: boolean;
 
-  // Baseline scores (raw, for unlock flow transformation mirror)
+  // Baseline scores
   baselineScores: {
     regulation: number;
     awareness: number;
@@ -117,14 +115,14 @@ export interface UserProgress {
     rewiredIndex: number;
   };
 
-  // Pattern profile (from Mirror onboarding)
+  // Pattern profile
   patternProfile: {
     primaryPattern: string | null;
     coreChallenge: string | null;
     mirrorSummary: string | null;
   } | null;
 
-  // v6: Awareness Rep rotation tracking
+  // Awareness Rep rotation
   lastAwarenessRepScript: string | null;
 }
 
@@ -139,24 +137,13 @@ interface AcceleratedThreshold {
   qualitative: number;
 }
 
-// ============================================
-// UNLOCK THRESHOLDS (v7)
-//
-// Key design principles:
-// - adherence = % of days completed within window (NOT consecutive streak)
-// - competenceBypass: if avg domain score >= 4.0, delta requirement is waived
-// - Stage 4 keeps 14-day window — Flow Block genuinely needs longer consolidation
-// - Stages 2, 3, 5, 6 use 10-day windows — lighter practices, faster feedback loop
-// - Delta thresholds flatten/decrease at higher stages to account for ceiling effects
-//   (users already partially transformed have less room to show raw improvement)
-// ============================================
 const UNLOCK_THRESHOLDS: { [stage: number]: {
   adherence: number; days: number; delta: number; qualitative: number;
   accelerated?: AcceleratedThreshold;
   competenceBypass?: number;
 } } = {
   1: {
-    adherence: 70,   // 5/7 days
+    adherence: 70,
     days: 7,
     delta: 0.3,
     qualitative: 3,
@@ -164,7 +151,7 @@ const UNLOCK_THRESHOLDS: { [stage: number]: {
     competenceBypass: 4.0
   },
   2: {
-    adherence: 80,   // 8/10 days
+    adherence: 80,
     days: 10,
     delta: 0.4,
     qualitative: 3,
@@ -172,7 +159,7 @@ const UNLOCK_THRESHOLDS: { [stage: number]: {
     competenceBypass: 4.0
   },
   3: {
-    adherence: 80,   // 8/10 days
+    adherence: 80,
     days: 10,
     delta: 0.4,
     qualitative: 3,
@@ -180,7 +167,7 @@ const UNLOCK_THRESHOLDS: { [stage: number]: {
     competenceBypass: 4.0
   },
   4: {
-    adherence: 80,   // 11/14 days — Flow Block needs full window
+    adherence: 80,
     days: 14,
     delta: 0.5,
     qualitative: 3,
@@ -188,7 +175,7 @@ const UNLOCK_THRESHOLDS: { [stage: number]: {
     competenceBypass: 4.0
   },
   5: {
-    adherence: 80,   // 8/10 days (was 85% / 14 days)
+    adherence: 80,
     days: 10,
     delta: 0.5,
     qualitative: 3,
@@ -196,11 +183,10 @@ const UNLOCK_THRESHOLDS: { [stage: number]: {
     competenceBypass: 4.0
   },
   6: {
-    adherence: 80,   // 8/10 days (was 85% / 14 days / 0.7 delta)
+    adherence: 80,
     days: 10,
     delta: 0.4,
     qualitative: 3,
-    // No accelerated path for Stage 6 — integration needs the full window
     competenceBypass: 4.0
   }
 };
@@ -218,6 +204,38 @@ const STAGE_TOOLS: { [stage: number]: string[] } = {
 const MILESTONE_DAYS = [1, 2, 4, 5, 6];
 
 // ============================================
+// SOMATIC FLOW VERSION ROTATION HELPERS (v8)
+//
+// Versions unlock progressively by stage:
+//   Stage 2:  original only
+//   Stage 3:  original + v2
+//   Stage 4:  original + v2 + v3
+//   Stage 5+: original + v2 + v3 + v4
+//
+// Rotation is sequential — next version after last served.
+// On first encounter with a new version, demo button is prominent.
+// After demo watched once, it becomes secondary reference.
+// ============================================
+
+export function getSomaticFlowUnlockedVersions(stage: number): string[] {
+  if (stage >= 5) return ['original', 'v2', 'v3', 'v4'];
+  if (stage >= 4) return ['original', 'v2', 'v3'];
+  if (stage >= 3) return ['original', 'v2'];
+  return ['original'];
+}
+
+export function getNextSomaticFlowVersion(
+  lastVersion: string | null,
+  unlockedVersions: string[]
+): string {
+  if (unlockedVersions.length === 1) return unlockedVersions[0];
+  if (!lastVersion || !unlockedVersions.includes(lastVersion)) return unlockedVersions[0];
+  const currentIndex = unlockedVersions.indexOf(lastVersion);
+  const nextIndex = (currentIndex + 1) % unlockedVersions.length;
+  return unlockedVersions[nextIndex];
+}
+
+// ============================================
 // HELPER FUNCTIONS
 // ============================================
 
@@ -226,11 +244,9 @@ function getLocalDateString(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
 
-// Returns the Monday of the current calendar week as YYYY-MM-DD
-// Exported so ChatInterface can use the same logic for mini check-in saves
 export function getCurrentWeekMonday(): string {
   const now = new Date();
-  const day = now.getDay(); // 0 = Sunday
+  const day = now.getDay();
   const diff = now.getDate() - day + (day === 0 ? -6 : 1);
   const monday = new Date(now);
   monday.setDate(diff);
@@ -245,7 +261,6 @@ function getTierFromIndex(index: number): string {
   return 'Integrated';
 }
 
-// Helper: determine calm rating trend direction over last 3 data points
 function getCalmRatingTrend(ratings: number[]): 'up' | 'flat' | 'down' | 'insufficient' {
   if (ratings.length < 3) return 'insufficient';
   const last3 = ratings.slice(-3);
@@ -260,19 +275,6 @@ function getCalmRatingTrend(ratings: number[]): 'up' | 'flat' | 'down' | 'insuff
   return 'flat';
 }
 
-// ============================================
-// UNLOCK ELIGIBILITY CHECK
-//
-// Adherence model (v7):
-//   adherence = completedDays / windowDays (passed in as a %)
-//   A missed day reduces the ratio but does NOT reset the window.
-//   The window starts at stage_start_date and is evaluated once daysInStage >= threshold.days.
-//
-// Example — Stage 2 (10-day window, 80% required):
-//   Miss day 3 → still need 8 completed out of 10 total days
-//   adherencePercentage = (completed / 10) * 100
-//   Passes if adherencePercentage >= 80
-// ============================================
 function checkBasicUnlockEligibility(
   stage: number,
   adherence: number,
@@ -288,50 +290,26 @@ function checkBasicUnlockEligibility(
 
   const COMPETENCE_THRESHOLD = threshold.competenceBypass ?? 4.0;
 
-  // ============================================
-  // STAGE 1: 3-gate, 4-path logic
-  // Primary signal = daily calm ratings (no weekly check-in required)
-  // ============================================
   if (stage === 1) {
-    // GATE 1 — Adherence (standard OR accelerated path)
     const standardAdherenceMet = adherence >= 70 && daysInStage >= 7;
     const acceleratedAdherenceMet = adherence >= 90 && daysInStage >= 5;
     const gate1 = standardAdherenceMet || acceleratedAdherenceMet;
     if (!gate1) return false;
 
-    // GATE 3 — No regression (sustained downward trend = not ready)
     const trend = getCalmRatingTrend(recentCalmRatings);
     if (trend === 'down') return false;
 
-    // GATE 2 — Signal shift (first passing path wins)
-    // Path A: avg calm ratings >= baseline regulation + 0.3 (no check-in needed)
     const avgCalm = recentCalmRatings.length >= 3
       ? recentCalmRatings.reduce((s, r) => s + r, 0) / recentCalmRatings.length
       : null;
     const pathA = avgCalm !== null && avgCalm >= baselineCalmScore + 0.3;
-
-    // Path B: weekly check-in avg delta >= 0.3 (if check-in was completed)
     const pathB = avgDelta >= 0.3;
-
-    // Path C: competence bypass — already operating at high level
     const pathC = avgScore >= COMPETENCE_THRESHOLD;
-
-    // Path D: hard-week path — high adherence + not declining (no delta required)
     const pathD = adherence >= 85 && (trend === 'up' || trend === 'flat' || trend === 'insufficient');
 
-    const gate2 = pathA || pathB || pathC || pathD;
-    return gate2;
+    return pathA || pathB || pathC || pathD;
   }
 
-  // ============================================
-  // STAGES 2–6: Window-based adherence + delta/competence hybrid
-  //
-  // Standard path: adherence% >= threshold AND days in stage >= window AND (delta OR competence)
-  // Accelerated path: higher adherence% AND fewer days AND (delta OR competence)
-  // Competence bypass: if avg domain score >= 4.0, delta requirement is waived on either path
-  // ============================================
-
-  // Accelerated path check (if defined for this stage)
   if (threshold.accelerated) {
     const accel = threshold.accelerated;
     const accelAdherence = adherence >= accel.adherence;
@@ -341,7 +319,6 @@ function checkBasicUnlockEligibility(
     if (accelAdherence && accelDays && accelDelta && accelQual) return true;
   }
 
-  // Standard path
   const adherenceMet = adherence >= threshold.adherence;
   const daysMet = daysInStage >= threshold.days;
   const deltaMet = avgDelta >= threshold.delta || avgScore >= COMPETENCE_THRESHOLD;
@@ -413,10 +390,7 @@ export function useUserProgress() {
         throw progressError;
       }
 
-      // ============================================
-      // AUTO-RESET: If 7+ days since last practice, reset stage_start_date
-      // so returning users get a fresh start instead of "40 days in Stage 1"
-      // ============================================
+      // Auto-reset: If 7+ days since last practice, reset stage_start_date
       const { data: lastPracticeLog } = await supabase
         .from('practice_logs')
         .select('practice_date')
@@ -431,24 +405,16 @@ export function useUserProgress() {
         const daysSinceLastPractice = Math.floor((now.getTime() - lastPracticeDate.getTime()) / (1000 * 60 * 60 * 24));
         
         if (daysSinceLastPractice >= 7) {
-          console.log(`[useUserProgress] Auto-reset: ${daysSinceLastPractice} days since last practice. Resetting stage_start_date.`);
           const newStartDate = new Date().toISOString();
-          
           await supabase
             .from('user_progress')
-            .update({
-              stage_start_date: newStartDate,
-              consecutive_days: 0
-            })
+            .update({ stage_start_date: newStartDate, consecutive_days: 0 })
             .eq('user_id', user.id);
-          
-          // Update local data so the rest of this fetch uses the new values
           progressData.stage_start_date = newStartDate;
           progressData.consecutive_days = 0;
         }
       }
 
-      // NOTE: week_of included for weeklyCheckInDue calculation (Step 13)
       const { data: latestDelta } = await supabase
         .from('weekly_deltas')
         .select('week_of,regulation_score,awareness_score,outlook_score,attention_score,regulation_delta,awareness_delta,outlook_delta,attention_delta,average_delta,qualitative_rating')
@@ -477,21 +443,13 @@ export function useUserProgress() {
         .map((log: { calm_score: number | null }) => log.calm_score)
         .filter((r: number | null): r is number => r !== null);
 
-      const { count: somaticFlowCount, error: sfCountError } = await supabase
+      const { count: somaticFlowCount } = await supabase
         .from('practice_logs')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
         .eq('practice_type', 'somatic_flow')
         .eq('completed', true);
 
-      if (sfCountError) {
-        console.error('Error fetching somatic flow count:', sfCountError);
-      }
-
-      // ============================================
-      // FETCH ACTIVE IDENTITY SPRINT
-      // Reads from identity_sprints table
-      // ============================================
       const { data: identitySprintArray } = await supabase
         .from('identity_sprints')
         .select('*')
@@ -512,9 +470,6 @@ export function useUserProgress() {
 
       const flowBlockSprint = flowBlockSprintArray?.[0] || null;
 
-      // ============================================
-      // FETCH PATTERN PROFILE (Mirror onboarding data)
-      // ============================================
       const { data: patternProfileData } = await supabase
         .from('pattern_profiles')
         .select('primary_pattern, core_challenge, mirror_summary')
@@ -535,12 +490,10 @@ export function useUserProgress() {
       const identitySprintDay = calculateSprintDay(identitySprint?.start_date);
       const flowBlockSprintDay = calculateSprintDay(flowBlockSprint?.start_date);
 
-      // Calculate domain scores - FIXED: Use actual scores if available, fallback to baseline + delta
       const baselineScores = baselineDomainScores || {
         regulation: 2.5, awareness: 2.5, outlook: 2.5, attention: 2.5
       };
 
-      // FIXED: Prefer actual scores from weekly_deltas, fallback to baseline + delta calculation
       const domainScores = {
         regulation: latestDelta?.regulation_score != null 
           ? Number(latestDelta.regulation_score)
@@ -564,7 +517,6 @@ export function useUserProgress() {
             : baselineScores.attention
       };
 
-      // Calculate deltas (for unlock progress checking)
       const domainDeltas = {
         regulation: latestDelta?.regulation_delta != null ? Number(latestDelta.regulation_delta) : domainScores.regulation - baselineScores.regulation,
         awareness: latestDelta?.awareness_delta != null ? Number(latestDelta.awareness_delta) : domainScores.awareness - baselineScores.awareness,
@@ -596,10 +548,7 @@ export function useUserProgress() {
       const todayDate = new Date();
       const daysInStage = Math.floor((todayDate.getTime() - stageStartDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
-      // ============================================
-      // STREAK FREEZE AVAILABILITY
-      // Uses per-stage window sizes (v7) — Stage 4 = 14, all others = 10
-      // ============================================
+      // Streak freeze
       const freezeWindowDays = STAGE_WINDOW_DAYS[progressData.current_stage] ?? 14;
       const daysSinceStageStart = Math.floor(
         (todayDate.getTime() - stageStartDate.getTime()) / (1000 * 60 * 60 * 24)
@@ -615,9 +564,7 @@ export function useUserProgress() {
 
       const streakFreezeAvailable = !freezeUsedInCurrentWindow;
 
-      // ============================================
-      // MILESTONE MESSAGE AVAILABILITY (Step 8)
-      // ============================================
+      // Milestone messages
       const milestoneMessagesSent: number[] = Array.isArray(progressData.milestone_messages_sent)
         ? progressData.milestone_messages_sent
         : [];
@@ -628,23 +575,26 @@ export function useUserProgress() {
         !milestoneMessagesSent.includes(daysInStage)
       ) ? daysInStage : null;
 
-      // ============================================
-      // WEEKLY CHECK-IN STATUS (Step 13)
-      // Stage 2+ only. Due if no check-in this calendar week.
-      // Compares latestDelta.week_of against this Monday's date.
-      // ============================================
+      // Weekly check-in
       const thisMonday = getCurrentWeekMonday();
       const weeklyCheckInDue = progressData.current_stage >= 2 && (
         !latestDelta?.week_of || latestDelta.week_of < thisMonday
       );
 
       // ============================================
-      // UNLOCK PROGRESS
+      // SOMATIC FLOW VERSION ROTATION (v8)
       // ============================================
+      const somaticFlowLastVersion: string = progressData.somatic_flow_last_version || 'original';
+      const somaticFlowDemosSeen: string[] = Array.isArray(progressData.somatic_flow_demos_seen)
+        ? progressData.somatic_flow_demos_seen
+        : [];
+      const somaticFlowVersionsUnlocked = getSomaticFlowUnlockedVersions(progressData.current_stage);
+      const somaticFlowCurrentVersion = getNextSomaticFlowVersion(somaticFlowLastVersion, somaticFlowVersionsUnlocked);
+
+      // Unlock progress
       const threshold = UNLOCK_THRESHOLDS[progressData.current_stage];
       const COMPETENCE_THRESHOLD = threshold?.competenceBypass ?? 4.0;
       
-      // Determine if accelerated path is met
       const isAcceleratedEligible = threshold?.accelerated ? (
         progressData.adherence_percentage >= threshold.accelerated.adherence &&
         daysInStage >= threshold.accelerated.days &&
@@ -663,9 +613,6 @@ export function useUserProgress() {
         baselineScores.regulation
       );
 
-      // Step 14: gate booleans must agree with unlockEligible.
-      // If eligible (via any path — standard, accelerated, or Stage 1 multi-path),
-      // force all gates green so the UI widget matches the AI's verdict.
       const unlockProgress = threshold ? {
         adherenceMet: unlockEligible || progressData.adherence_percentage >= threshold.adherence,
         daysMet: unlockEligible || daysInStage >= threshold.days,
@@ -677,24 +624,14 @@ export function useUserProgress() {
         isAccelerated: isAcceleratedEligible,
         acceleratedDays: threshold.accelerated?.days || null
       } : {
-        adherenceMet: false,
-        daysMet: false,
-        deltaMet: false,
-        qualitativeMet: false,
-        requiredAdherence: 0,
-        requiredDays: 0,
-        requiredDelta: 0,
-        isAccelerated: false,
-        acceleratedDays: null
+        adherenceMet: false, daysMet: false, deltaMet: false, qualitativeMet: false,
+        requiredAdherence: 0, requiredDays: 0, requiredDelta: 0,
+        isAccelerated: false, acceleratedDays: null
       };
 
       lastFetchDate.current = today;
       lastFetchTime.current = Date.now();
 
-      // ============================================
-      // BUILD PROGRESS OBJECT
-      // Maps DB column 'identity_statement' to UI field 'coherenceStatement'
-      // ============================================
       const newProgress: UserProgress = {
         currentStage: progressData.current_stage,
         stageStartDate: progressData.stage_start_date,
@@ -711,11 +648,6 @@ export function useUserProgress() {
         dataDate: today,
         createdAt: progressData.created_at || null,
         
-        // ============================================
-        // ALIGNED ACTION SPRINT FIELDS
-        // Database columns: identity_statement, micro_action
-        // UI displays as: coherenceStatement (aligned action)
-        // ============================================
         coherenceStatement: identitySprint?.identity_statement || null,
         currentIdentity: identitySprint?.identity_statement || null,
         microAction: identitySprint?.micro_action || null,
@@ -730,6 +662,11 @@ export function useUserProgress() {
         flowBlockSprintDay: flowBlockSprintDay,
         
         somaticFlowCompletions: somaticFlowCount ?? 0,
+
+        // v8: Somatic Flow rotation
+        somaticFlowCurrentVersion,
+        somaticFlowVersionsUnlocked,
+        somaticFlowDemosSeen,
         
         daysInStage,
         unlockProgress,
@@ -740,8 +677,6 @@ export function useUserProgress() {
 
         milestonePendingDay,
         milestoneMessagesSent,
-
-        // Step 13
         weeklyCheckInDue,
         
         stage_1_attribution_seen: progressData.stage_1_attribution_seen ?? false,
@@ -751,7 +686,6 @@ export function useUserProgress() {
         stage_5_attribution_seen: progressData.stage_5_attribution_seen ?? false,
         stage_6_attribution_seen: progressData.stage_6_attribution_seen ?? false,
 
-        // v5: Baseline scores for unlock transformation mirror
         baselineScores: {
           regulation: baselineScores.regulation,
           awareness: baselineScores.awareness,
@@ -760,14 +694,12 @@ export function useUserProgress() {
           rewiredIndex: baselineRewiredIndex,
         },
 
-        // v5: Pattern profile from Mirror onboarding
         patternProfile: patternProfileData ? {
           primaryPattern: patternProfileData.primary_pattern || null,
           coreChallenge: patternProfileData.core_challenge || null,
           mirrorSummary: patternProfileData.mirror_summary || null,
         } : null,
 
-        // v6: Awareness Rep rotation
         lastAwarenessRepScript: progressData.last_awareness_rep_script || null,
       };
 
@@ -778,7 +710,9 @@ export function useUserProgress() {
         adherence: newProgress.adherencePercentage,
         unlockEligible: newProgress.unlockEligible,
         domainScores: newProgress.domainScores,
-        somaticFlowCompletions: newProgress.somaticFlowCompletions,
+        somaticFlowCurrentVersion: newProgress.somaticFlowCurrentVersion,
+        somaticFlowVersionsUnlocked: newProgress.somaticFlowVersionsUnlocked,
+        somaticFlowDemosSeen: newProgress.somaticFlowDemosSeen,
         streakFreezeAvailable: newProgress.streakFreezeAvailable,
         milestonePendingDay: newProgress.milestonePendingDay,
         weeklyCheckInDue: newProgress.weeklyCheckInDue,
@@ -807,10 +741,6 @@ export function useUserProgress() {
     const checkNewDay = () => {
       const today = getLocalDateString();
       if (lastFetchDate.current && lastFetchDate.current !== today) {
-        console.log('[useUserProgress] New day detected! Refreshing...', {
-          was: lastFetchDate.current,
-          now: today
-        });
         fetchProgress(true);
       }
     };
@@ -828,7 +758,6 @@ export function useUserProgress() {
       const isStale = timeSinceLastFetch > 5 * 60 * 1000;
       
       if (isNewDay || isStale) {
-        console.log('[useUserProgress] Window focused, refreshing...');
         fetchProgress(true);
       }
     };
@@ -838,17 +767,10 @@ export function useUserProgress() {
   }, [fetchProgress]);
 
   const refetchProgress = useCallback(() => {
-    console.log('[useUserProgress] Manual refetch triggered');
     return fetchProgress(true);
   }, [fetchProgress]);
 
-  return { 
-    progress, 
-    loading, 
-    error, 
-    refetchProgress,
-    isRefreshing
-  };
+  return { progress, loading, error, refetchProgress, isRefreshing };
 }
 
 // ============================================
@@ -858,33 +780,27 @@ export function useUserProgress() {
 function buildDailyPractices(stage: number, completedIds: Set<string>) {
   const practices: { id: string; name: string; completed: boolean }[] = [];
   
-  // Stage 1+: HRVB + Awareness Rep
   practices.push(
     { id: 'hrvb', name: 'Resonance Breathing', completed: completedIds.has('hrvb') },
     { id: 'awareness_rep', name: 'Awareness Rep', completed: completedIds.has('awareness_rep') }
   );
   
-  // Stage 2+: Somatic Flow
   if (stage >= 2) {
     practices.push({ id: 'somatic_flow', name: 'Somatic Flow', completed: completedIds.has('somatic_flow') });
   }
   
-  // Stage 3+: Morning Micro-Action
   if (stage >= 3) {
     practices.push({ id: 'micro_action', name: 'Morning Aligned Action', completed: completedIds.has('micro_action') });
   }
   
-  // Stage 4+: Flow Block
   if (stage >= 4) {
     practices.push({ id: 'flow_block', name: 'Flow Block', completed: completedIds.has('flow_block') });
   }
   
-  // Stage 5+: Co-Regulation
   if (stage >= 5) {
     practices.push({ id: 'co_regulation', name: 'Co-Regulation', completed: completedIds.has('co_regulation') });
   }
   
-  // Stage 6+: Nightly Debrief
   if (stage >= 6) {
     practices.push({ id: 'nightly_debrief', name: 'Nightly Debrief', completed: completedIds.has('nightly_debrief') });
   }
