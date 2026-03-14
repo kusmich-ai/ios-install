@@ -228,7 +228,83 @@ export function day21Email(data: NurtureEmailData): { subject: string; html: str
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// EMAIL 4 — Day 30 cold re-engagement: "Your installation is paused."
+// RE-ENGAGEMENT A — Days 1-6 dropoff
+// Anchor: last_visit > 14 days ago + consecutive_days < 7 + not eligible + no sub
+// Angle: "You started something. It's still here."
+// Sends to app.
+// ─────────────────────────────────────────────────────────────────────────────
+export function reengagementEarlyEmail(data: NurtureEmailData): { subject: string; html: string } {
+  const name = data.firstName ? `${data.firstName},` : 'Hey,';
+
+  const content = `
+    <h1 style="margin:0 0 20px;font-size:24px;font-weight:700;color:#fff;line-height:1.2;">${name} you started something.</h1>
+
+    <p style="margin:0 0 20px;font-size:15px;color:#888;line-height:1.7;">It's still here. Exactly where you left it.</p>
+
+    <p style="margin:0 0 20px;font-size:15px;color:#ccc;line-height:1.7;">The Stack doesn't expire. Your baseline diagnostic is saved. Your progress is saved. The practices are waiting.</p>
+
+    <p style="margin:0 0 20px;font-size:15px;color:#888;line-height:1.7;">Starting is the hardest part — and you already did that. Coming back is just one morning practice. 8 minutes.</p>
+
+    <div style="background:#111;border:1px solid #1e1e1e;border-radius:12px;padding:20px 24px;margin:0 0 24px;">
+      <p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#ff9e19;letter-spacing:0.08em;text-transform:uppercase;">Stage 1 — Neural Priming</p>
+      <p style="margin:0;font-size:13px;color:#888;line-height:1.7;">🫁 Resonance Breathing — 5 min<br/>👁 Awareness Rep — 3 min<br/>Total: 8 minutes</p>
+    </div>
+
+    <p style="margin:0 0 8px;font-size:15px;color:#ccc;line-height:1.7;">No catch-up required. Just today's practice.</p>
+
+    ${ctaButton('Open The Stack →', data.upgradeUrl)}
+
+    ${divider()}
+
+    <p style="margin:0;font-size:12px;color:#555;line-height:1.6;">The system is patient. It'll be here when you're ready.</p>
+  `;
+
+  return {
+    subject: 'You started something.',
+    html: baseWrapper(content),
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RE-ENGAGEMENT B — Days 7-13 dropoff
+// Anchor: last_visit > 14 days ago + consecutive_days 7-13 + not eligible + no sub
+// Angle: "You built X days. The gap doesn't erase it."
+// Sends to app.
+// ─────────────────────────────────────────────────────────────────────────────
+export function reengagementMidEmail(data: NurtureEmailData): { subject: string; html: string } {
+  const name = data.firstName ? `${data.firstName},` : 'Hey,';
+  const daysText = data.days > 0 ? `${data.days} days` : 'real progress';
+  const deltaLine = data.delta !== null
+    ? `<p style="margin:0 0 20px;font-size:15px;color:#888;line-height:1.7;">Your domains moved <span style="color:#ff9e19;font-weight:600;">+${data.delta}</span> from baseline before you stopped. That delta doesn't reset. The nervous system kept what it learned.</p>`
+    : '';
+
+  const content = `
+    <h1 style="margin:0 0 20px;font-size:24px;font-weight:700;color:#fff;line-height:1.2;">${name} ${daysText} of real work.</h1>
+
+    <p style="margin:0 0 20px;font-size:15px;color:#888;line-height:1.7;">The gap doesn't erase it.</p>
+
+    <p style="margin:0 0 20px;font-size:15px;color:#ccc;line-height:1.7;">You built a vagal tone baseline. You started training the observer function. That doesn't disappear when the streak breaks — the nervous system retains what it practiced.</p>
+
+    ${deltaLine}
+
+    <p style="margin:0 0 20px;font-size:15px;color:#888;line-height:1.7;">You were ${data.days > 0 ? `${14 - data.days} days` : 'close'} from Stage 2 eligibility. That's still true. The unlock criteria picks up from where your data sits — not from zero.</p>
+
+    <div style="background:#ff9e19;border-radius:10px;padding:20px 24px;margin:0 0 24px;">
+      <p style="margin:0;font-size:15px;color:#000;font-weight:600;line-height:1.6;">Coming back isn't starting over. It's continuing.</p>
+    </div>
+
+    ${ctaButton('Continue Where You Left Off →', data.upgradeUrl)}
+
+    ${divider()}
+
+    <p style="margin:0;font-size:12px;color:#555;line-height:1.6;">8 minutes today. That's all that's needed.</p>
+  `;
+
+  return {
+    subject: `${data.days > 0 ? `${data.days} days` : 'Your progress'} didn't disappear.`,
+    html: baseWrapper(content),
+  };
+}
 // Anchor: last_visit >= 7 days ago (pure inactivity trigger).
 // Sends to app, not /upgrade — let the product re-sell itself.
 // ─────────────────────────────────────────────────────────────────────────────
