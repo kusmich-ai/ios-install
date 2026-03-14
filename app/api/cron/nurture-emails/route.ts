@@ -33,6 +33,8 @@ import {
   day17Email,
   day21Email,
   day30Email,
+  reengagementEarlyEmail,
+  reengagementMidEmail,
 } from '@/lib/emails/nurture-templates';
 
 export const dynamic = 'force-dynamic';
@@ -172,6 +174,63 @@ async function getEmail3Candidates(supabase: ReturnType<typeof getAdminClient>) 
 }
 
 /**
+ * Re-engagement A — Days 1-6 dropoff.
+ * Anchor: last_visit > 14 days ago + consecutive_days < 7
+ * + unlock_eligible = false + no subscription.
+ * Sends to app — they're not eligible yet, get them back in the door.
+ */
+async function getReengagementEarlyCandidates(supabase: ReturnType<typeof getAdminClient>) {
+  const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+  const sentIds = await getAlreadySentIds(supabase, 'reengagement_early');
+
+  let query = supabase
+    .from('user_progress')
+    .select('user_id, consecutive_days, latest_avg_delta')
+    .eq('current_stage', 1)
+    .eq('unlock_eligible', false)
+    .eq('has_active_subscription', false)
+    .lt('consecutive_days', 7)
+    .lte('last_visit', fourteenDaysAgo);
+
+  if (sentIds.length > 0) {
+    query = query.not('user_id', 'in', `(${sentIds.map(id => `"${id}"`).join(',')})`);
+  }
+
+  const { data, error } = await query;
+  if (error) throw new Error(`ReengagementEarly query failed: ${error.message}`);
+  return data || [];
+}
+
+/**
+ * Re-engagement B — Days 7-13 dropoff.
+ * Anchor: last_visit > 14 days ago + consecutive_days 7-13
+ * + unlock_eligible = false + no subscription.
+ * Sends to app — they were close, remind them progress doesn't reset.
+ */
+async function getReengagementMidCandidates(supabase: ReturnType<typeof getAdminClient>) {
+  const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+  const sentIds = await getAlreadySentIds(supabase, 'reengagement_mid');
+
+  let query = supabase
+    .from('user_progress')
+    .select('user_id, consecutive_days, latest_avg_delta')
+    .eq('current_stage', 1)
+    .eq('unlock_eligible', false)
+    .eq('has_active_subscription', false)
+    .gte('consecutive_days', 7)
+    .lte('consecutive_days', 13)
+    .lte('last_visit', fourteenDaysAgo);
+
+  if (sentIds.length > 0) {
+    query = query.not('user_id', 'in', `(${sentIds.map(id => `"${id}"`).join(',')})`);
+  }
+
+  const { data, error } = await query;
+  if (error) throw new Error(`ReengagementMid query failed: ${error.message}`);
+  return data || [];
+}
+
+/**
  * Day 30 cold re-engagement — pure inactivity trigger.
  * Anchor: last_visit <= 7 days ago.
  * Sends to app, not /upgrade.
@@ -257,7 +316,9 @@ type NurtureEmailType =
   | 'nurture_email1'
   | 'nurture_email2'
   | 'nurture_email3'
-  | 'nurture_day30';
+  | 'nurture_day30'
+  | 'reengagement_early'
+  | 'reengagement_mid';
 
 async function sendNurtureEmail(
   supabase: ReturnType<typeof getAdminClient>,
@@ -268,8 +329,11 @@ async function sendNurtureEmail(
   const authData = await getUserAuthData(supabase, userId);
   if (!authData) return { success: false, reason: 'no_auth_data' };
 
-  // Day 12 and Day 30 send to app — pre-eligible or cold users
-  const sendsToApp = emailType === 'nurture_day12' || emailType === 'nurture_day30';
+  // Day 12, Day 30, and re-engagement emails send to app
+  const sendsToApp = emailType === 'nurture_day12'
+    || emailType === 'nurture_day30'
+    || emailType === 'reengagement_early'
+    || emailType === 'reengagement_mid';
   const destinationUrl = sendsToApp
     ? buildAppUrl()
     : buildUpgradeUrl(authData.firstName, progressData.consecutive_days, progressData.latest_avg_delta);
@@ -287,6 +351,8 @@ async function sendNurtureEmail(
     nurture_email2: day17Email,
     nurture_email3: day21Email,
     nurture_day30: day30Email,
+    reengagement_early: reengagementEarlyEmail,
+    reengagement_mid: reengagementMidEmail,
   };
 
   const { subject, html } = templateMap[emailType](emailData);
@@ -319,11 +385,13 @@ export async function GET(request: Request) {
 
   const supabase = getAdminClient();
   const results = {
-    day12:   { attempted: 0, sent: 0, failed: 0 },
-    email1:  { attempted: 0, sent: 0, failed: 0 },
-    email2:  { attempted: 0, sent: 0, failed: 0 },
-    email3:  { attempted: 0, sent: 0, failed: 0 },
-    day30:   { attempted: 0, sent: 0, failed: 0 },
+    day12:             { attempted: 0, sent: 0, failed: 0 },
+    email1:            { attempted: 0, sent: 0, failed: 0 },
+    email2:            { attempted: 0, sent: 0, failed: 0 },
+    email3:            { attempted: 0, sent: 0, failed: 0 },
+    day30:             { attempted: 0, sent: 0, failed: 0 },
+    reengagementEarly: { attempted: 0, sent: 0, failed: 0 },
+    reengagementMid:   { attempted: 0, sent: 0, failed: 0 },
   };
 
   try {
@@ -365,6 +433,22 @@ export async function GET(request: Request) {
       results.day30.attempted++;
       const result = await sendNurtureEmail(supabase, u.user_id, 'nurture_day30', u);
       result.success ? results.day30.sent++ : results.day30.failed++;
+    }
+
+    // ── Re-engagement A — Days 1-6 dropoff (14+ days silent) ─────────────────
+    const reengagementEarlyUsers = await getReengagementEarlyCandidates(supabase);
+    for (const u of reengagementEarlyUsers) {
+      results.reengagementEarly.attempted++;
+      const result = await sendNurtureEmail(supabase, u.user_id, 'reengagement_early', u);
+      result.success ? results.reengagementEarly.sent++ : results.reengagementEarly.failed++;
+    }
+
+    // ── Re-engagement B — Days 7-13 dropoff (14+ days silent) ────────────────
+    const reengagementMidUsers = await getReengagementMidCandidates(supabase);
+    for (const u of reengagementMidUsers) {
+      results.reengagementMid.attempted++;
+      const result = await sendNurtureEmail(supabase, u.user_id, 'reengagement_mid', u);
+      result.success ? results.reengagementMid.sent++ : results.reengagementMid.failed++;
     }
 
     console.log('[nurture-emails cron]', JSON.stringify(results));
