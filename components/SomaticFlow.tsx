@@ -278,6 +278,26 @@ export default function SomaticFlow({
           transition: "background 0.3s ease",
         }} />
 
+        {/* Context-aware X: in video mode goes back to instructions */}
+        <button
+          onClick={(e) => { e.stopPropagation(); handleCloseVideo(); }}
+          style={{
+            position: "absolute", top: "1.5rem", right: "1.5rem",
+            width: "44px", height: "44px",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            border: "1px solid rgba(245, 242, 236, 0.3)",
+            borderRadius: "50%", color: "#F5F2EC",
+            cursor: "pointer", zIndex: 10001,
+          }}
+          aria-label="Back to instructions"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+
         {/* Title */}
         <div style={{
           position: "absolute", top: "5%", left: 0, right: 0, textAlign: "center",
