@@ -106,6 +106,7 @@ const VERSION_CONTENT: Record<SomaticFlowVersion, VersionContent> = {
 interface SomaticFlowProps {
   onComplete?: () => void;
   onDemoWatched?: () => void;   // called once when user watches demo for this version
+  onClose?: () => void;         // closes the entire modal (from parent)
   currentVersion?: SomaticFlowVersion;
   hasSeenDemo?: boolean;        // true = demo button secondary; false = demo button prominent
 }
@@ -117,6 +118,7 @@ interface SomaticFlowProps {
 export default function SomaticFlow({
   onComplete,
   onDemoWatched,
+  onClose,
   currentVersion = 'original',
   hasSeenDemo = true,
 }: SomaticFlowProps) {
