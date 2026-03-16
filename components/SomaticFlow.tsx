@@ -419,6 +419,28 @@ export default function SomaticFlow({
         overflow: "auto",
         boxSizing: "border-box",
       }}>
+        {/* X button — in text mode closes entire modal */}
+        {onClose && (
+          <button
+            onClick={onClose}
+            style={{
+              position: "fixed", top: "1.5rem", right: "1.5rem",
+              width: "44px", height: "44px",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              backgroundColor: "rgba(0, 0, 0, 0.5)",
+              border: "1px solid rgba(245, 242, 236, 0.3)",
+              borderRadius: "50%", color: "#F5F2EC",
+              cursor: "pointer", zIndex: 10001,
+            }}
+            aria-label="Close somatic flow"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        )}
+
         {/* Title */}
         <div style={{ textAlign: "center", paddingTop: "0.5rem" }}>
           <h1 style={{
