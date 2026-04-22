@@ -160,7 +160,7 @@ export default function MirrorPage() {
 
   const processAnalysis = async () => {
     if (!gptOutput.trim()) {
-      setError('Please paste ChatGPT\'s response first.');
+      setError('Please paste the LLM\'s response first.');
       return;
     }
 
