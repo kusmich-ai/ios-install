@@ -646,7 +646,7 @@ export default function MirrorPage() {
             Mirror Exercise
           </h2>
           <p className="text-gray-400">
-            Copy the prompt below to ChatGPT, then paste its response back here.
+            Copy the prompt below to ChatGPT, Claude, or any LLM, then paste its response back here.
           </p>
         </div>
 
