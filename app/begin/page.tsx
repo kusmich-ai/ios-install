@@ -445,9 +445,12 @@ export default function BeginPage() {
             <p className="hero-sub">That response is the beginning.</p>
           </div>
 
-          <div className="scroll-cue">
-            <div className="scroll-line" />
-          </div>
+<div className="scroll-cue">
+  <div className="scroll-line" />
+  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" style={{ opacity: 0.4 }}>
+    <path d="M1 1L6 6L11 1" stroke="#555555" strokeWidth="1.5" strokeLinecap="round" />
+  </svg>
+</div>
         </div>
 
         <div className="content-area">
