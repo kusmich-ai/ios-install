@@ -685,7 +685,7 @@ export default function MirrorPage() {
         {/* Step 2: Paste Response */}
         <div className="bg-[#111111] rounded-xl border border-[#1a1a1a] p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-white font-medium">Step 2: Paste ChatGPT's response</span>
+           <span className="text-white font-medium">Step 2: Paste the response here</span>
             {gptOutput.length > 0 && gptOutput.length < 500 && (
               <span className="text-yellow-500 text-sm">
                 Response seems short
