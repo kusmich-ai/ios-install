@@ -767,7 +767,7 @@ Your practices:
 1. Resonance Breathing - 5 mins
 2. Somatic Flow - 3 mins  
 3. Awareness Rep - 2 mins
-4. Morning Micro-Action - 2-3 mins
+4. Stack Cue - 2 mins
 5. Flow Block - 60-90 mins
 6. Co-Regulation - 3-5 mins
 7. Nightly Debrief - 2 mins
