@@ -24,12 +24,12 @@ function SignUpForm() {
     const minLength = pwd.length >= 8
     const hasUpperCase = /[A-Z]/.test(pwd)
     const hasNumber = /[0-9]/.test(pwd)
-    
+
     return {
       minLength,
       hasUpperCase,
       hasNumber,
-      isValid: minLength && hasUpperCase && hasNumber
+      isValid: minLength && hasUpperCase && hasNumber,
     }
   }
 
@@ -63,6 +63,8 @@ function SignUpForm() {
       // Create full name from first + last
       const fullName = `${firstName.trim()} ${lastName.trim()}`.trim()
 
+      // Sign up — the DB trigger (handle_new_user) will automatically
+      // create the user_profiles row from this metadata.
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -73,30 +75,15 @@ function SignUpForm() {
             first_name: firstName.trim(),
             last_name: lastName.trim(),
             referral_source: referralSource,
-          }
+          },
         },
       })
 
       if (signUpError) throw signUpError
 
-      // Create user_profiles record if signup successful
-      if (data.user) {
-        const { error: profileError } = await supabase
-          .from('user_profiles')
-          .upsert({
-            id: data.user.id,
-            first_name: firstName.trim(),
-            last_name: lastName.trim(),
-            full_name: fullName,
-            referral_source: referralSource,
-            updated_at: new Date().toISOString(),
-          })
-        
-        if (profileError) {
-          console.error('Profile creation error:', profileError)
-          // Don't throw - auth succeeded, profile can be fixed later
-        }
-      }
+      // NOTE: No manual user_profiles insert here anymore.
+      // The on_auth_user_created trigger handles it with SECURITY DEFINER privileges,
+      // which bypasses RLS and works even before email confirmation.
 
       // Check if user has a session (email confirmation disabled)
       if (data.session) {
@@ -110,7 +97,6 @@ function SignUpForm() {
         setAwaitingConfirmation(true)
         setLoading(false)
       }
-      
     } catch (error: any) {
       console.error('Sign up error:', error)
       setError(error.message)
@@ -121,34 +107,49 @@ function SignUpForm() {
   // Show email confirmation screen
   if (awaitingConfirmation) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0a0a0a' }}>
-        <div className="max-w-md w-full space-y-6 p-8 rounded-lg shadow-lg text-center" style={{ backgroundColor: '#111111' }}>
-          <div className="text-6xl mb-4" style={{ color: '#ff9e19' }}>📧</div>
-          
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: '#0a0a0a' }}
+      >
+        <div
+          className="max-w-md w-full space-y-6 p-8 rounded-lg shadow-lg text-center"
+          style={{ backgroundColor: '#111111' }}
+        >
+          <div className="text-6xl mb-4" style={{ color: '#ff9e19' }}>
+            📧
+          </div>
+
           <h2 className="text-3xl font-bold" style={{ color: '#ff9e19' }}>
             Check Your Email
           </h2>
-          
+
           <div className="space-y-4 text-gray-300">
-            <p>
-              We've sent a confirmation link to:
-            </p>
-            <p className="font-semibold text-white text-lg">
-              {email}
-            </p>
+            <p>We've sent a confirmation link to:</p>
+            <p className="font-semibold text-white text-lg">{email}</p>
             <p className="text-sm">
               Click the link in the email to verify your account, then sign in to continue.
             </p>
 
-            <div className="mt-4 p-4 rounded-lg text-left" style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
-              <p className="text-sm font-semibold text-yellow-500 mb-2">⚠️ Important — check your spam folder</p>
+            <div
+              className="mt-4 p-4 rounded-lg text-left"
+              style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}
+            >
+              <p className="text-sm font-semibold text-yellow-500 mb-2">
+                ⚠️ Important — check your spam folder
+              </p>
               <p className="text-xs text-gray-400 leading-relaxed">
-                Our confirmation emails sometimes land in spam or promotions. If you don't see it in your inbox within 2 minutes:
+                Our confirmation emails sometimes land in spam or promotions. If you don't see it in
+                your inbox within 2 minutes:
               </p>
               <ol className="text-xs text-gray-400 mt-2 space-y-1 list-decimal list-inside">
-                <li>Check your <span className="text-white">Spam</span> or <span className="text-white">Promotions</span> folder</li>
+                <li>
+                  Check your <span className="text-white">Spam</span> or{' '}
+                  <span className="text-white">Promotions</span> folder
+                </li>
                 <li>Move the email to your inbox</li>
-                <li>Add <span className="text-white">unbecoming@unbecoming.app</span> to your contacts</li>
+                <li>
+                  Add <span className="text-white">unbecoming@unbecoming.app</span> to your contacts
+                </li>
               </ol>
               <p className="text-xs text-gray-500 mt-2">
                 This ensures all future emails from us arrive in your inbox.
@@ -160,9 +161,9 @@ function SignUpForm() {
             <Link
               href="/auth/signin"
               className="inline-block px-8 py-3 rounded-lg font-semibold transition-all"
-              style={{ 
+              style={{
                 backgroundColor: '#ff9e19',
-                color: '#0a0a0a'
+                color: '#0a0a0a',
               }}
             >
               Go to Sign In
@@ -179,8 +180,14 @@ function SignUpForm() {
 
   // Show signup form
   return (
-    <div className="min-h-screen flex items-center justify-center py-8" style={{ backgroundColor: '#0a0a0a' }}>
-      <div className="max-w-md w-full space-y-6 p-8 rounded-lg shadow-lg" style={{ backgroundColor: '#111111' }}>
+    <div
+      className="min-h-screen flex items-center justify-center py-8"
+      style={{ backgroundColor: '#0a0a0a' }}
+    >
+      <div
+        className="max-w-md w-full space-y-6 p-8 rounded-lg shadow-lg"
+        style={{ backgroundColor: '#111111' }}
+      >
         <div>
           <h2 className="text-3xl font-bold text-center" style={{ color: '#ff9e19' }}>
             Create Account
@@ -189,9 +196,16 @@ function SignUpForm() {
             Join the IOS transformation journey
           </p>
         </div>
-        
+
         {error && (
-          <div className="p-3 rounded text-sm" style={{ backgroundColor: '#ff9e1920', color: '#ff9e19', border: '1px solid #ff9e19' }}>
+          <div
+            className="p-3 rounded text-sm"
+            style={{
+              backgroundColor: '#ff9e1920',
+              color: '#ff9e19',
+              border: '1px solid #ff9e19',
+            }}
+          >
             {error}
           </div>
         )}
@@ -208,10 +222,10 @@ function SignUpForm() {
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
               className="w-full px-3 py-2 rounded focus:outline-none focus:ring-2"
-              style={{ 
-                backgroundColor: '#0a0a0a', 
+              style={{
+                backgroundColor: '#0a0a0a',
                 color: '#ffffff',
-                border: '1px solid #2a2a2a'
+                border: '1px solid #2a2a2a',
               }}
               placeholder="John"
               required
@@ -230,10 +244,10 @@ function SignUpForm() {
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
               className="w-full px-3 py-2 rounded focus:outline-none focus:ring-2"
-              style={{ 
-                backgroundColor: '#0a0a0a', 
+              style={{
+                backgroundColor: '#0a0a0a',
                 color: '#ffffff',
-                border: '1px solid #2a2a2a'
+                border: '1px solid #2a2a2a',
               }}
               placeholder="Doe"
               disabled={loading}
@@ -251,10 +265,10 @@ function SignUpForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-3 py-2 rounded focus:outline-none focus:ring-2"
-              style={{ 
-                backgroundColor: '#0a0a0a', 
+              style={{
+                backgroundColor: '#0a0a0a',
                 color: '#ffffff',
-                border: '1px solid #2a2a2a'
+                border: '1px solid #2a2a2a',
               }}
               placeholder="you@example.com"
               required
@@ -273,17 +287,17 @@ function SignUpForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-3 py-2 rounded focus:outline-none focus:ring-2"
-              style={{ 
-                backgroundColor: '#0a0a0a', 
+              style={{
+                backgroundColor: '#0a0a0a',
                 color: '#ffffff',
-                border: '1px solid #2a2a2a'
+                border: '1px solid #2a2a2a',
               }}
               placeholder="Min 8 characters"
               minLength={8}
               required
               disabled={loading}
             />
-            
+
             {/* Password Strength Indicators */}
             {password && (
               <div className="mt-2 space-y-1 text-xs">
@@ -302,7 +316,10 @@ function SignUpForm() {
 
           {/* Confirm Password Field */}
           <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium mb-1 text-gray-300">
+            <label
+              htmlFor="confirmPassword"
+              className="block text-sm font-medium mb-1 text-gray-300"
+            >
               Confirm Password *
             </label>
             <input
@@ -311,10 +328,10 @@ function SignUpForm() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="w-full px-3 py-2 rounded focus:outline-none focus:ring-2"
-              style={{ 
-                backgroundColor: '#0a0a0a', 
+              style={{
+                backgroundColor: '#0a0a0a',
                 color: '#ffffff',
-                border: '1px solid #2a2a2a'
+                border: '1px solid #2a2a2a',
               }}
               placeholder="Confirm your password"
               minLength={8}
@@ -327,9 +344,9 @@ function SignUpForm() {
             type="submit"
             disabled={loading || !passwordValidation.isValid}
             className="w-full py-3 rounded font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ 
+            style={{
               backgroundColor: '#ff9e19',
-              color: '#0a0a0a'
+              color: '#0a0a0a',
             }}
           >
             {loading ? 'Creating account...' : 'Sign Up'}
@@ -350,11 +367,16 @@ function SignUpForm() {
 // Suspense boundary required for useSearchParams() in Next.js App Router
 export default function SignUp() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0a0a0a' }}>
-        <div className="text-gray-400">Loading...</div>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div
+          className="min-h-screen flex items-center justify-center"
+          style={{ backgroundColor: '#0a0a0a' }}
+        >
+          <div className="text-gray-400">Loading...</div>
+        </div>
+      }
+    >
       <SignUpForm />
     </Suspense>
   )
