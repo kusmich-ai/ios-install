@@ -22,7 +22,7 @@ function useReveal(threshold = 0.15) {
   return [ref, visible];
 }
 
-function Section({ children, delay = 0, className = "" }) {
+function Section({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
   const [ref, visible] = useReveal(0.12);
   return (
     <div
