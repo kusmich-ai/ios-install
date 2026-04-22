@@ -4,7 +4,7 @@
 // File: lib/mirrorPrompt.ts
 // 
 // This file contains all text content for The Mirror feature,
-// including the ChatGPT analysis prompt, intro text, and the
+// including the LLM analysis prompt, intro text, and the
 // Guided Reflection alternative flow.
 //
 // PHILOSOPHY ALIGNMENT:
@@ -75,7 +75,7 @@ export const MIRROR_INTRO_TEXT = {
     "Maps each pattern to the IOS stages that train awareness of it"
   ],
   
-  requirements: "This works best if you've had meaningful conversations with ChatGPT about your life, goals, struggles, relationships, or decisions. The more history, the deeper the insights.",
+  requirements: "This works best if you've had meaningful conversations with ChatGPT, Claude, or another LLM about your life, goals, struggles, relationships, or decisions. The more history, the deeper the insights.",
   time: "~5 minutes",
   privacy: "Your analysis stays between you and IOS. We use it only to personalize your journey.",
 
@@ -84,10 +84,10 @@ export const MIRROR_INTRO_TEXT = {
   // ============================================
   historyNotice: {
     title: "This works best with conversation history",
-    description: "The Mirror is most powerful when you have 50+ personal conversations in ChatGPT — the kind where you processed decisions, relationships, emotions, or life challenges. Not work/technical conversations.",
-    question: "Do you have that kind of ChatGPT history?",
+    description: "The Mirror is most powerful when you have 50+ personal conversations in ChatGPT, Claude, or another LLM — the kind where you processed decisions, relationships, emotions, or life challenges. Not work/technical conversations.",
+    question: "Do you have that kind of conversation history with an AI?",
     options: {
-      yes: "Yes, I've used ChatGPT for personal processing",
+      yes: "Yes, I've used ChatGPT, Claude, or another LLM for personal processing",
       no: "No, or mostly work/technical conversations",
       unsure: "I'm not sure"
     }
@@ -124,8 +124,8 @@ export const MIRROR_INSTRUCTIONS = {
     description: "Copy the prompt"
   },
   step2: {
-    title: "Open ChatGPT",
-    description: "Go to ChatGPT"
+    title: "Open Your LLM",
+    description: "Go to ChatGPT, Claude, or your preferred LLM"
   },
   step3: {
     title: "Paste & Run",
@@ -148,12 +148,12 @@ export const MIRROR_INSTRUCTIONS = {
 export const QUALITY_MESSAGES = {
   1: {
     title: "Limited Insights",
-    message: "Your ChatGPT history didn't provide enough depth for a full Mirror analysis. This happens if you haven't had many meaningful conversations there yet. You can proceed without it, or come back after having more in-depth conversations with ChatGPT.",
+    message: "Your conversation history didn't provide enough depth for a full Mirror analysis. This happens if you haven't had many meaningful conversations with an LLM yet. You can proceed without it, or come back after having more in-depth conversations with ChatGPT, Claude, or another LLM.",
     showSkip: true
   },
   2: {
     title: "Basic Patterns Detected",
-    message: "We found some patterns, but there's limited evidence. The insights may be surface-level. You can proceed with this, or try again with a more detailed ChatGPT analysis.",
+    message: "We found some patterns, but there's limited evidence. The insights may be surface-level. You can proceed with this, or try again with a more detailed LLM analysis.",
     showSkip: true
   },
   3: {
@@ -185,7 +185,7 @@ export const QUALITY_MESSAGES = {
 // ============================================
 
 export const GUIDED_REFLECTION_FLOW = {
-  intro: `Since we don't have your ChatGPT history to analyze, I'm going to ask you directly about your current experience.
+  intro: `Since we don't have your conversation history to analyze, I'm going to ask you directly about your current experience.
 
 These questions surface patterns that are already running — not to fix them, but to see them clearly. Awareness of a pattern is different from being trapped in it.
 
