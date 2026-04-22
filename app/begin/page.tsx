@@ -445,12 +445,35 @@ export default function BeginPage() {
             <p className="hero-sub">That response is the beginning.</p>
           </div>
 
-<div className="scroll-cue">
-  <div className="scroll-line" />
-  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" style={{ opacity: 0.4 }}>
-    <path d="M1 1L6 6L11 1" stroke="#555555" strokeWidth="1.5" strokeLinecap="round" />
-  </svg>
-</div>
+.scroll-cue {
+  position: absolute;
+  bottom: 3rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.scroll-label {
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 300;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  opacity: 0.5;
+}
+
+.scroll-chevron {
+  animation: nudge 2.4s ease-in-out infinite;
+}
+
+@keyframes nudge {
+  0%, 100% { transform: translateY(0); opacity: 0.4; }
+  50% { transform: translateY(5px); opacity: 0.7; }
+}
         </div>
 
         <div className="content-area">
