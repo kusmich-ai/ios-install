@@ -190,19 +190,26 @@ export default function BeginPage() {
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 8px;
-          animation: breathe 4s ease-in-out infinite;
+          gap: 6px;
         }
 
-        .scroll-line {
-          width: 1px;
-          height: 32px;
-          background: linear-gradient(to bottom, var(--text-dim), transparent);
+        .scroll-label {
+          font-family: var(--font-body);
+          font-size: 0.7rem;
+          font-weight: 300;
+          letter-spacing: 0.2em;
+          text-transform: uppercase;
+          color: var(--text-secondary);
+          opacity: 0.5;
         }
 
-        @keyframes breathe {
-          0%, 100% { opacity: 0.2; }
-          50% { opacity: 0.5; }
+        .scroll-chevron {
+          animation: nudge 2.4s ease-in-out infinite;
+        }
+
+        @keyframes nudge {
+          0%, 100% { transform: translateY(0); opacity: 0.4; }
+          50% { transform: translateY(5px); opacity: 0.7; }
         }
 
         .content-area {
@@ -445,35 +452,12 @@ export default function BeginPage() {
             <p className="hero-sub">That response is the beginning.</p>
           </div>
 
-.scroll-cue {
-  position: absolute;
-  bottom: 3rem;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
-
-.scroll-label {
-  font-family: var(--font-body);
-  font-size: 0.7rem;
-  font-weight: 300;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--text-secondary);
-  opacity: 0.5;
-}
-
-.scroll-chevron {
-  animation: nudge 2.4s ease-in-out infinite;
-}
-
-@keyframes nudge {
-  0%, 100% { transform: translateY(0); opacity: 0.4; }
-  50% { transform: translateY(5px); opacity: 0.7; }
-}
+          <div className="scroll-cue">
+            <span className="scroll-label">scroll</span>
+            <svg width="14" height="10" viewBox="0 0 14 10" fill="none" className="scroll-chevron">
+              <path d="M1 1L7 7L13 1" stroke="#888888" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+          </div>
         </div>
 
         <div className="content-area">
