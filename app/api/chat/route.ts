@@ -565,7 +565,7 @@ Discuss the unreliability of motivation vs. systems. Ask what made them show up 
 
 Stage 1: Resonance Breathing (5 min) + Awareness Rep (2 min)
 Stage 2: + Somatic Flow (3 min)
-Stage 3: + Morning Micro-Action (2-3 min)
+Stage 3: + Stack Cue (2 min)
 Stage 4: + Flow Block (60-90 min)
 Stage 5: + Co-Regulation (3-5 min)
 Stage 6: + Nightly Debrief (2 min)
