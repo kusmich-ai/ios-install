@@ -6,7 +6,7 @@ const ACCENT = "#ff9e19";
 const BG = "#0a0a0a";
 const CARD_BG = "#111111";
 
-function useReveal(threshold = 0.15) {
+function useReveal(threshold: number = 0.15) {
   const ref = useRef(null);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
