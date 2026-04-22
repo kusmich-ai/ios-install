@@ -6,8 +6,8 @@ const ACCENT = "#ff9e19";
 const BG = "#0a0a0a";
 const CARD_BG = "#111111";
 
-function useReveal(threshold: number = 0.15) {
-  const ref = useRef(null);
+function useReveal(threshold: number = 0.15): [React.RefObject<HTMLDivElement | null>, boolean] {
+  const ref = useRef<HTMLDivElement | null>(null);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     const el = ref.current;
