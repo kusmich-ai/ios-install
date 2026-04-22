@@ -695,7 +695,7 @@ export default function MirrorPage() {
           <textarea
             value={gptOutput}
             onChange={(e) => setGptOutput(e.target.value)}
-            placeholder="Paste ChatGPT's full response here..."
+            placeholder="Paste the full response here (ChatGPT, Claude, or any LLM)..."
             className="w-full h-48 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-4 text-gray-300 text-sm font-mono resize-none focus:outline-none focus:border-[#ff9e19]/50"
             disabled={isProcessing}
           />
