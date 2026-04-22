@@ -1,29 +1,39 @@
 'use client';
 
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 const ACCENT = "#ff9e19";
 const BG = "#0a0a0a";
 const CARD_BG = "#111111";
 
-function useReveal(threshold: number = 0.15): [React.RefObject<HTMLDivElement | null>, boolean] {
-  const ref = useRef<HTMLDivElement | null>(null);
+function useReveal(threshold: number = 0.15) {
+  const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setVisible(true); },
+      ([entry]) => {
+        if (entry.isIntersecting) setVisible(true);
+      },
       { threshold }
     );
     obs.observe(el);
     return () => obs.disconnect();
   }, [threshold]);
-  return [ref, visible];
+  return { ref, visible };
 }
 
-function Section({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
-  const [ref, visible] = useReveal(0.12);
+function Section({
+  children,
+  delay = 0,
+  className = "",
+}: {
+  children: React.ReactNode;
+  delay?: number;
+  className?: string;
+}) {
+  const { ref, visible } = useReveal(0.12);
   return (
     <div
       ref={ref}
@@ -99,7 +109,6 @@ export default function BeginPage() {
           overflow-x: hidden;
         }
 
-        /* Nav */
         .begin-nav {
           position: fixed;
           top: 0;
@@ -142,7 +151,6 @@ export default function BeginPage() {
           color: var(--text-primary);
         }
 
-        /* Hero */
         .hero {
           min-height: 100vh;
           display: flex;
@@ -197,7 +205,6 @@ export default function BeginPage() {
           50% { opacity: 0.5; }
         }
 
-        /* Content sections */
         .content-area {
           max-width: 600px;
           margin: 0 auto;
@@ -212,7 +219,6 @@ export default function BeginPage() {
           height: clamp(3rem, 6vh, 5rem);
         }
 
-        /* Typography */
         .display-text {
           font-family: var(--font-display);
           font-weight: 300;
@@ -241,11 +247,6 @@ export default function BeginPage() {
           line-height: 1.7;
         }
 
-        .accent-text {
-          color: var(--accent);
-        }
-
-        /* Stage 1 detail */
         .stage-practices {
           display: flex;
           flex-direction: column;
@@ -294,7 +295,6 @@ export default function BeginPage() {
           flex-shrink: 0;
         }
 
-        /* Commitment card */
         .commitment-card {
           border: 1px solid #ffffff08;
           border-radius: 12px;
@@ -340,14 +340,12 @@ export default function BeginPage() {
           color: var(--text-secondary);
         }
 
-        /* Progression note */
         .progression-note {
           border-left: 2px solid ${ACCENT}22;
           padding-left: 1.2rem;
           margin-top: 0.5rem;
         }
 
-        /* CTA */
         .cta-area {
           text-align: center;
           padding: 4rem 0;
@@ -388,7 +386,6 @@ export default function BeginPage() {
           letter-spacing: 0.03em;
         }
 
-        /* Footer */
         .quiet-footer {
           text-align: center;
           padding: 4rem 2rem 3rem;
@@ -414,7 +411,6 @@ export default function BeginPage() {
       `}</style>
 
       <div className="begin-container">
-        {/* ─── NAV ─── */}
         <nav className="begin-nav">
           <a href="https://www.unbecoming.app" className="begin-nav-logo">
             <img
@@ -427,7 +423,6 @@ export default function BeginPage() {
           </a>
         </nav>
 
-        {/* ─── HERO ─── */}
         <div className="hero">
           <div
             style={{
@@ -455,13 +450,11 @@ export default function BeginPage() {
           </div>
         </div>
 
-        {/* ─── CONTENT ─── */}
         <div className="content-area">
-          {/* Section 1: Orient */}
           <Section>
             <p className="body-text">
-              What you felt during the film wasn't inspiration.
-              It wasn't motivation. It was your nervous system
+              What you felt during the film wasn&apos;t inspiration.
+              It wasn&apos;t motivation. It was your nervous system
               recognizing something it already knew.
             </p>
           </Section>
@@ -471,7 +464,7 @@ export default function BeginPage() {
           <Section delay={0.1}>
             <p className="body-text">
               That recognition fades without a container.
-              Not because it wasn't real — but because the default
+              Not because it wasn&apos;t real — but because the default
               patterns that run your operating system will reassert
               themselves within hours.
             </p>
@@ -481,7 +474,6 @@ export default function BeginPage() {
           <Divider />
           <div className="section-gap" />
 
-          {/* Section 2: What this is */}
           <Section>
             <p className="display-text" style={{ marginBottom: "1.8rem" }}>
               This is not a course.<br />
@@ -507,7 +499,7 @@ export default function BeginPage() {
               Ancient wisdom practices and modern neuroscience — distilled,
               sequenced, and installed into one daily ritual that adapts to
               you. It measures where you are. It unlocks the next stage only
-              when your nervous system proves it's ready. You don't advance
+              when your nervous system proves it&apos;s ready. You don&apos;t advance
               by consuming more —{" "}
               <strong>you advance by demonstrating calm</strong>.
             </p>
@@ -517,7 +509,6 @@ export default function BeginPage() {
           <Divider />
           <div className="section-gap" />
 
-          {/* Section 3: Stage 1 */}
           <Section>
             <p className="display-text" style={{ marginBottom: "0.5rem" }}>
               Stage 1
@@ -578,7 +569,7 @@ export default function BeginPage() {
               <p className="dim-text">
                 Stage 1 is the foundation. There are seven stages total —
                 each one adding a single practice as your nervous system
-                earns the capacity for it. You don't need to think about
+                earns the capacity for it. You don&apos;t need to think about
                 any of that now. Just start here.
               </p>
             </div>
@@ -586,7 +577,6 @@ export default function BeginPage() {
 
           <div className="section-gap" />
 
-          {/* Section 4: What it asks */}
           <Section>
             <div className="commitment-card">
               <p className="commitment-label">What this asks of you</p>
@@ -618,8 +608,8 @@ export default function BeginPage() {
 
           <Section delay={0.1}>
             <p className="dim-text" style={{ textAlign: "center" }}>
-              You don't need to learn anything. You don't need to
-              understand how it works. You don't need to believe in a
+              You don&apos;t need to learn anything. You don&apos;t need to
+              understand how it works. You don&apos;t need to believe in a
               single thing.
               <br />
               <br />
@@ -631,7 +621,6 @@ export default function BeginPage() {
           <Divider />
           <div className="section-gap" />
 
-          {/* CTA */}
           <Section>
             <div className="cta-area">
               <a href="/auth/signup" className="cta-btn" role="button">
@@ -648,10 +637,9 @@ export default function BeginPage() {
 
           <div className="section-gap" />
 
-          {/* Footer */}
           <div className="quiet-footer">
             <p>
-              Awareness doesn't need improvement. It needs a container.
+              Awareness doesn&apos;t need improvement. It needs a container.
             </p>
             <p className="footer-copy">© 2026 Unbecoming</p>
           </div>
