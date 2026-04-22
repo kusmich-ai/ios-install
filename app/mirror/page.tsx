@@ -663,7 +663,7 @@ export default function MirrorPage() {
         {/* Step 1: Prompt to Copy */}
         <div className="bg-[#111111] rounded-xl border border-[#1a1a1a] p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-white font-medium">Step 1: Copy this prompt to ChatGPT</span>
+            <span className="text-white font-medium">Step 1: Copy this prompt to ChatGPT, Claude, or any LLM</span>
             <button
               onClick={copyPrompt}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
