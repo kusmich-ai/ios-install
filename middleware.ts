@@ -46,6 +46,7 @@ export async function middleware(request: NextRequest) {
   // ============================================
   const publicRoutes = [
     '/',
+    '/begin',
     '/auth/signin',
     '/auth/signup',
     '/auth/callback',
