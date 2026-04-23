@@ -389,10 +389,10 @@ export const ON_DEMAND_TOOLS = [
     when: 'When reflecting on the week or after a meaningful shift',
     unlockedAt: 2
   },
-  {
+{
     id: 'reframe',
-    name: 'Reframe Protocol',
-    shortName: 'Reframe',
+    name: 'Interpretation Audit',
+    shortName: 'Audit',
     icon: '🔀',
     description: '2-minute interpretation audit that separates what actually happened from what the mind added.',
     when: 'When a situation feels sticky, charged, or personal',
