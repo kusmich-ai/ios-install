@@ -857,7 +857,7 @@ Type 'done' when ready."
 On a scale of 1-5 (1 = still muddied, 5 = clear to move on), how clear does your mind feel now?"
 
 ## IF CLARITY IS LOW (1-3)
-"Your clarity is still low. This suggests something deeper needs attention. I'd recommend running the Reframe Protocol to work through what's actually stuck."
+"Your clarity is still low. This suggests something deeper needs attention. I'd recommend running the Interpretation Audit to work through what's actually stuck."
 
 ## TONE
 - Calm, efficient, grounded
