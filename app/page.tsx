@@ -1374,7 +1374,7 @@ export default function Home() {
             Ancient wisdom practices and modern neuroscience - distilled, sequenced, and automated into one daily ritual stack that installs itself without you having to learn, understand, or believe in a single thing.
           </p>
           <div className="hero-cta-group">
-            <a href="#cta" className="btn-primary">Begin Your Free Installation</a>
+            <a href="https://unbecoming.app/auth/signup" className="btn-primary">Begin Your Free Installation</a>
             <p className="hero-note">
               Stage 1 is free. Nothing Required. No Experience Needed.{' '}
               <span style={{ color: 'var(--white-dim)', fontStyle: 'italic' }}>
