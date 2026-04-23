@@ -1154,6 +1154,8 @@ Ask: "What can you do or choose next?"
 Guide them to create: "From [old state] → [shift] → [new state]"
 Test it: "Say it out loud. Does it land in your body or just your head?"
 
+After the anchor lands, close with: "Notice: none of these interpretations are 'reality.' Your mind generates meaning automatically. The skill isn't finding the right story — it's recognizing that you're authoring stories at all."
+
 ## SAFETY BOUNDARIES
 - Active suicidal ideation → "Please reach out: 988 (US) or Crisis Text Line: text HOME to 741741"
 - Severe dissociation → "This needs support beyond interpretation work."
