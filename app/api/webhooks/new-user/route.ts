@@ -98,52 +98,6 @@ async function addToGHL(params: {
 }
 
 // ============================================
-// SUBSTACK: Add subscriber (unofficial endpoint)
-// ============================================
-async function addToSubstack(email: string): Promise<{ success: boolean; detail: string }> {
-  const publication = process.env.SUBSTACK_PUBLICATION
-
-  if (!publication) {
-    return { success: false, detail: 'SUBSTACK_PUBLICATION not configured' }
-  }
-
-  try {
-    const response = await fetch(
-      `https://${publication}.substack.com/api/v1/free?nojs=true`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          // Substack sometimes rejects requests without a common user-agent
-          'User-Agent': 'Mozilla/5.0 (compatible; UnbecomingApp/1.0)',
-        },
-        body: JSON.stringify({
-          email,
-          first_url: 'https://unbecoming.app',
-          first_referrer: '',
-          current_url: 'https://unbecoming.app',
-          current_referrer: '',
-          referral_code: '',
-          source: 'subscribe_page',
-        }),
-      }
-    )
-
-    const responseText = await response.text()
-
-    if (!response.ok) {
-      return { success: false, detail: `${response.status}: ${responseText.slice(0, 300)}` }
-    }
-
-    console.log(`✅ Substack subscriber added: ${email} | response: ${responseText.slice(0, 200)}`)
-    return { success: true, detail: 'subscribed' }
-  } catch (err) {
-    return { success: false, detail: err instanceof Error ? err.message : 'unknown error' }
-  }
-}
-
-// ============================================
 // SLACK: Send enrollment notification
 // ============================================
 async function sendSlackNotification(params: {
@@ -257,14 +211,11 @@ export async function POST(request: NextRequest) {
       ? 'Awaken with 5'
       : source.charAt(0).toUpperCase() + source.slice(1)
 
-    // Fetch email once, share across GHL + Substack calls
-    const emailPromise = getUserEmail(record.id)
-
-    // Fire Slack + GHL + Substack in parallel (none blocks the others)
-    const [slackResult, ghlResult, substackResult] = await Promise.allSettled([
+    // Fire Slack + GHL in parallel (neither blocks the other)
+    const [slackResult, ghlResult] = await Promise.allSettled([
       sendSlackNotification({ name, sourceEmoji, sourceLabel, createdAt }),
       (async () => {
-        const email = await emailPromise
+        const email = await getUserEmail(record.id)
         if (!email) {
           return { success: false, detail: 'Could not fetch email from auth.users' }
         }
@@ -274,13 +225,6 @@ export async function POST(request: NextRequest) {
           lastName: record.last_name,
           source,
         })
-      })(),
-      (async () => {
-        const email = await emailPromise
-        if (!email) {
-          return { success: false, detail: 'Could not fetch email from auth.users' }
-        }
-        return addToSubstack(email)
       })(),
     ])
 
@@ -293,14 +237,9 @@ export async function POST(request: NextRequest) {
       ghlResult.status === 'fulfilled'
         ? ghlResult.value
         : { success: false, detail: String(ghlResult.reason) }
-    const substackStatus =
-      substackResult.status === 'fulfilled'
-        ? substackResult.value
-        : { success: false, detail: String(substackResult.reason) }
 
     if (!slackStatus.success) console.error('[Slack] Failed:', slackStatus.detail)
     if (!ghlStatus.success) console.error('[GHL] Failed:', ghlStatus.detail)
-    if (!substackStatus.success) console.error('[Substack] Failed:', substackStatus.detail)
 
     // Always return 200 so Supabase doesn't retry and cause duplicates
     return NextResponse.json(
@@ -308,7 +247,6 @@ export async function POST(request: NextRequest) {
         message: 'Processed',
         slack: slackStatus,
         ghl: ghlStatus,
-        substack: substackStatus,
       },
       { status: 200 }
     )
