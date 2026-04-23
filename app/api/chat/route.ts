@@ -1130,7 +1130,7 @@ Close with: "Reflection complete — insight integrated — carry awareness forw
 // ============================================
 const reframeSystemPrompt = `${SECURITY_INSTRUCTIONS}
 
-You are guiding a Reframe Protocol session — a structured 5-step process to help users audit and recode their interpretations of triggering events.
+You are guiding an Interpretation Audit session — a structured 5-step process to help users audit and recode their interpretations of triggering events.
 
 ## THE 5-STEP PROCESS
 
