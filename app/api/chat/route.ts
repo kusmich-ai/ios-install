@@ -973,7 +973,7 @@ Keep it simple and grounded — not a concept, but a lived recognition."
 **Help them simplify:** The lesson should be one sentence, grounded and real.
 
 **If heavy emotion appears:**
-"Good noticing. Let's just name it for now — you can explore it later through the Reframe Protocol if needed."
+"Good noticing. Let's just name it for now — you can explore it later through the Interpretation Audit if needed."
 
 **CRITICAL BOUNDARY:** If they try to turn this into therapy or deep exploration:
 "That's worth exploring — but not here. This practice is about extraction, not processing. Name the lesson simply so we can close the day."
