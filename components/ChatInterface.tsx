@@ -3967,19 +3967,7 @@ setTimeout(async () => {
         const completedToday = todayPractices?.map((p: { practice_type: string }) => p.practice_type) || [];
         setPracticesCompletedToday(completedToday);
         
-        const hasCompletedOnboarding = progressData?.ritual_intro_completed || 
-          (progressData?.current_stage && progressData.current_stage > 1) ||
-          (completedToday && completedToday.length > 0) ||
-          (progressData?.adherence_percentage && progressData.adherence_percentage > 0) ||
-          (progressData?.consecutive_days && progressData.consecutive_days > 0);
-        // Auto-fix: if user is clearly onboarded but flag is missing, set it
-        if (hasCompletedOnboarding && !progressData?.ritual_intro_completed) {
-          const supabaseFix = createClient();
-          supabaseFix.from('user_progress')
-            .update({ ritual_intro_completed: true })
-            .eq('user_id', user.id)
-            .then(() => devLog('[ChatInterface]', 'Auto-fixed ritual_intro_completed flag'));
-        }
+        const hasCompletedOnboarding = progressData?.ritual_intro_completed === true;
         const type = determineOpeningType(progressData?.last_visit || null, hasCompletedOnboarding);
         setOpeningType(type);
         
