@@ -5415,7 +5415,10 @@ Ready to start your first practice?`;
         
        <div className="flex-1 overflow-y-auto bg-[#1a1a1a]">
   <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-    <ClinicalAssessmentBanner userId={user?.id || ''} />
+   {progress?.ritual_intro_completed && (
+  <ClinicalAssessmentBanner userId={user?.id || ''} />
+)}
+
     {messages.map((msg, idx) => (
             <div
                 key={idx}
