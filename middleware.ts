@@ -1,7 +1,44 @@
-// middleware.ts - UPDATED with Mirror rerun support + Profile routes + Public Tools
+// middleware.ts - Sprint 2: simplified onboarding waterfall
+//
+// Onboarding gates: agreement (terms + consent) → baseline (rewired index) → /chat
+// Coach, profile, and public-tools routes bypass onboarding checks.
+// Old onboarding routes (/screening, /legal-agreements, /assessment, /mirror)
+// redirect to whichever new step the user still needs — they'll be removed
+// from the codebase entirely in Sprint 2 / Phase 6.
+
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+
+const PUBLIC_ROUTES = [
+  '/',
+  '/begin',
+  '/privacy',
+  '/terms',
+  '/auth/signin',
+  '/auth/signup',
+  '/auth/callback',
+  '/auth/forgot-password',
+  '/auth/reset-password',
+]
+
+const DEPRECATED_ONBOARDING_ROUTES = [
+  '/screening',
+  '/legal-agreements',
+  '/assessment',
+  '/mirror',
+]
+
+type OnboardingState = {
+  hasAgreement: boolean
+  hasBaseline: boolean
+}
+
+function nextOnboardingStep(state: OnboardingState): string {
+  if (!state.hasAgreement) return '/onboarding/agreement'
+  if (!state.hasBaseline) return '/onboarding/baseline'
+  return '/chat'
+}
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
@@ -33,26 +70,10 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Get current path and search params
   const path = request.nextUrl.pathname
-  const searchParams = request.nextUrl.searchParams
-  const isRerun = searchParams.get('rerun') === 'true'
 
   // CRITICAL: Refresh session before checking auth
   const { data: { session } } = await supabase.auth.getSession()
-
-  // ============================================
-  // PUBLIC ROUTES (no auth required)
-  // ============================================
-  const publicRoutes = [
-    '/',
-    '/begin',
-    '/auth/signin',
-    '/auth/signup',
-    '/auth/callback',
-    '/auth/forgot-password',
-    '/auth/reset-password'
-  ]
 
   // ============================================
   // PUBLIC TOOLS - No auth required
@@ -61,224 +82,89 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
-  if (publicRoutes.includes(path)) {
-    // If authenticated user hits signin/signup, redirect to their next step
+  // ============================================
+  // PUBLIC ROUTES (no auth required)
+  // ============================================
+  if (PUBLIC_ROUTES.includes(path)) {
+    // If an authenticated user lands on signin/signup, route them forward.
     if (session && (path === '/auth/signin' || path === '/auth/signup')) {
-      // Check their progress to determine where to send them
       try {
-        // Check screening status
-        const { data: screening } = await supabase
-          .from('screening_responses')
-          .select('clearance_status')
-          .eq('user_id', session.user.id)
-          .maybeSingle()
-
-        if (!screening) {
-          // No screening completed - send to screening
-          return NextResponse.redirect(new URL('/screening', request.url))
-        }
-
-        // Check legal from user_profiles
-        const { data: profile } = await supabase
-          .from('user_profiles')
-          .select('has_accepted_terms, has_accepted_consent')
-          .eq('id', session.user.id)
-          .single()
-
-        if (!profile || !profile.has_accepted_terms || !profile.has_accepted_consent) {
-          // No legal acceptance - send to legal
-          return NextResponse.redirect(new URL('/legal-agreements', request.url))
-        }
-
-        // Has legal - check baseline
-        const { data: baseline } = await supabase
-          .from('baseline_assessments')
-          .select('id')
-          .eq('user_id', session.user.id)
-          .maybeSingle()
-
-        if (!baseline) {
-          // No baseline - send to assessment
-          return NextResponse.redirect(new URL('/assessment', request.url))
-        }
-
-        // Has baseline - check The Mirror
-        const { data: patternProfile } = await supabase
-          .from('pattern_profiles')
-          .select('id, skipped')
-          .eq('user_id', session.user.id)
-          .maybeSingle()
-
-        if (!patternProfile) {
-          // No pattern profile - send to mirror
-          return NextResponse.redirect(new URL('/mirror', request.url))
-        }
-
-        // Everything complete - send to chat
-        return NextResponse.redirect(new URL('/chat', request.url))
+        const state = await loadOnboardingState(supabase, session.user.id)
+        return NextResponse.redirect(new URL(nextOnboardingStep(state), request.url))
       } catch (error) {
-        console.error('Error checking user progress:', error)
-        // On error, send to screening (safest default)
-        return NextResponse.redirect(new URL('/screening', request.url))
+        console.error('Error checking user progress on public auth route:', error)
+        return NextResponse.redirect(new URL('/onboarding/agreement', request.url))
       }
     }
-
-    // Public route, not authenticated or not on auth page - allow access
     return response
   }
 
   // ============================================
   // PROTECTED ROUTES (auth required)
   // ============================================
-  
   if (!session) {
-    // Not authenticated - redirect to signin
     return NextResponse.redirect(new URL('/auth/signin', request.url))
   }
 
+  // Coach and profile routes don't enforce onboarding state.
+  if (path.startsWith('/coach/')) return response
+  if (path.startsWith('/profile/')) return response
+
   // ============================================
-  // COACH ROUTES - Just need auth, skip onboarding checks
+  // ONBOARDING + CHAT GATING
+  // Only paths that participate in onboarding need the state lookup.
   // ============================================
-  if (path.startsWith('/coach/')) {
-    // User is authenticated, allow access to coach pages
+  const needsOnboardingState =
+    path.startsWith('/onboarding/') ||
+    path === '/chat' ||
+    path.startsWith('/chat/') ||
+    DEPRECATED_ONBOARDING_ROUTES.includes(path)
+
+  if (!needsOnboardingState) {
     return response
   }
 
-  // ============================================
-  // PROFILE ROUTES - Just need auth, skip onboarding checks
-  // ============================================
-  if (path.startsWith('/profile/')) {
-    // User is authenticated, allow access to profile pages
-    return response
+  let state: OnboardingState
+  try {
+    state = await loadOnboardingState(supabase, session.user.id)
+  } catch (error) {
+    console.error('Error loading onboarding state:', error)
+    // Fail open to the agreement step rather than blocking access entirely.
+    return NextResponse.redirect(new URL('/onboarding/agreement', request.url))
   }
 
-  // User is authenticated - check if they're on the right step
-
-  // If on screening page - check if already completed
-  if (path === '/screening') {
-    try {
-      const { data: screening } = await supabase
-        .from('screening_responses')
-        .select('clearance_status')
-        .eq('user_id', session.user.id)
-        .maybeSingle()
-
-      if (screening && screening.clearance_status === 'granted') {
-        // Already passed screening - send to legal
-        return NextResponse.redirect(new URL('/legal-agreements', request.url))
-      }
-    } catch (error) {
-      console.error('Error checking screening:', error)
-    }
+  // Old onboarding routes redirect into the new flow at whichever step the
+  // user still needs. They will be removed from the codebase in Phase 6;
+  // this redirect bridges any user with a stale link or bookmark.
+  if (DEPRECATED_ONBOARDING_ROUTES.includes(path)) {
+    return NextResponse.redirect(new URL(nextOnboardingStep(state), request.url))
   }
 
-  // Check legal from user_profiles
-  if (path === '/legal-agreements' || path === '/legal') {
-    try {
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('has_accepted_terms, has_accepted_consent')
-        .eq('id', session.user.id)
-        .single()
-
-      if (profile && profile.has_accepted_terms && profile.has_accepted_consent) {
-        // Already accepted legal - send to assessment
-        return NextResponse.redirect(new URL('/assessment', request.url))
-      }
-    } catch (error) {
-      console.error('Error checking legal:', error)
-    }
+  // If the user is already past the step they're trying to view, move them on.
+  if (path === '/onboarding/agreement' && state.hasAgreement) {
+    return NextResponse.redirect(
+      new URL(state.hasBaseline ? '/chat' : '/onboarding/baseline', request.url)
+    )
   }
 
-  // If on assessment - check if already completed
-  if (path === '/assessment') {
-    try {
-      const { data: baseline } = await supabase
-        .from('baseline_assessments')
-        .select('id')
-        .eq('user_id', session.user.id)
-        .maybeSingle()
-
-      if (baseline) {
-        // Already completed assessment - send to mirror (not chat)
-        return NextResponse.redirect(new URL('/mirror', request.url))
-      }
-    } catch (error) {
-      console.error('Error checking baseline:', error)
-    }
+  if (path === '/onboarding/baseline' && state.hasBaseline) {
+    return NextResponse.redirect(new URL('/chat', request.url))
   }
+
+  // /onboarding/index-reveal is a results display — no gating.
 
   // ============================================
-  // THE MIRROR - Check if completed or skipped
-  // ============================================
-  if (path === '/mirror') {
-    try {
-      // First verify user has completed baseline (required before mirror)
-      const { data: baseline } = await supabase
-        .from('baseline_assessments')
-        .select('id')
-        .eq('user_id', session.user.id)
-        .maybeSingle()
-
-      if (!baseline) {
-        // No baseline yet - send to assessment first
-        return NextResponse.redirect(new URL('/assessment', request.url))
-      }
-
-      // If rerun=true query param, allow access regardless of existing profile
-      if (isRerun) {
-        // Allow access to re-run The Mirror
-        return response
-      }
-
-      // Check if already completed or skipped The Mirror
-      const { data: patternProfile } = await supabase
-        .from('pattern_profiles')
-        .select('id, skipped')
-        .eq('user_id', session.user.id)
-        .maybeSingle()
-
-      if (patternProfile) {
-        // Already completed or skipped - send to chat
-        return NextResponse.redirect(new URL('/chat', request.url))
-      }
-
-      // No pattern profile - allow access to /mirror
-    } catch (error) {
-      console.error('Error checking mirror status:', error)
-    }
-  }
-
-  // ============================================
-  // CHAT - Ensure all onboarding steps completed
+  // CHAT - Enforce both gates + Stage 2+ subscription
   // ============================================
   if (path === '/chat' || path.startsWith('/chat/')) {
+    if (!state.hasAgreement) {
+      return NextResponse.redirect(new URL('/onboarding/agreement', request.url))
+    }
+    if (!state.hasBaseline) {
+      return NextResponse.redirect(new URL('/onboarding/baseline', request.url))
+    }
+
     try {
-      // Check baseline first
-      const { data: baseline } = await supabase
-        .from('baseline_assessments')
-        .select('id')
-        .eq('user_id', session.user.id)
-        .maybeSingle()
-
-      if (!baseline) {
-        // No baseline - send to assessment
-        return NextResponse.redirect(new URL('/assessment', request.url))
-      }
-
-      // Check The Mirror (must be completed or skipped)
-      const { data: patternProfile } = await supabase
-        .from('pattern_profiles')
-        .select('id, skipped')
-        .eq('user_id', session.user.id)
-        .maybeSingle()
-
-      if (!patternProfile) {
-        // No pattern profile - send to mirror
-        return NextResponse.redirect(new URL('/mirror', request.url))
-      }
-
-      // Check subscription for Stage 2+ users
       const { data: progress } = await supabase
         .from('user_progress')
         .select('current_stage')
@@ -294,30 +180,51 @@ export async function middleware(request: NextRequest) {
           .eq('user_id', session.user.id)
           .maybeSingle()
 
-        const isSubscriptionActive = 
-          subscription?.status === 'active' || 
+        const isSubscriptionActive =
+          subscription?.status === 'active' ||
           subscription?.status === 'trialing' ||
-          (subscription?.cancel_at_period_end && 
-           subscription?.current_period_end && 
-           new Date(subscription.current_period_end) > new Date())
+          (subscription?.cancel_at_period_end &&
+            subscription?.current_period_end &&
+            new Date(subscription.current_period_end) > new Date())
 
         if (!isSubscriptionActive) {
-          // Redirect to pricing with context
           const pricingUrl = new URL('/pricing', request.url)
           pricingUrl.searchParams.set('reason', 'subscription_required')
           pricingUrl.searchParams.set('stage', currentStage.toString())
           return NextResponse.redirect(pricingUrl)
         }
       }
-
-      // All checks passed - allow access to chat
     } catch (error) {
       console.error('Error checking chat access:', error)
     }
   }
 
-  // Allow access to current route
   return response
+}
+
+async function loadOnboardingState(
+  supabase: ReturnType<typeof createServerClient>,
+  userId: string
+): Promise<OnboardingState> {
+  const [profileRes, baselineRes] = await Promise.all([
+    supabase
+      .from('user_profiles')
+      .select('has_accepted_terms, has_accepted_consent')
+      .eq('id', userId)
+      .single(),
+    supabase
+      .from('baseline_assessments')
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle(),
+  ])
+
+  return {
+    hasAgreement: !!(
+      profileRes.data?.has_accepted_terms && profileRes.data?.has_accepted_consent
+    ),
+    hasBaseline: !!baselineRes.data,
+  }
 }
 
 export const config = {

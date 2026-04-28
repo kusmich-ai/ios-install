@@ -76,14 +76,14 @@ export default async function ChatPage() {
 
     if (dataError) {
       console.error('Database error:', dataError);
-      redirect('/assessment');
+      redirect('/onboarding/baseline');
     }
 
     console.log('Data received:', allUserData?.length, 'records');
 
     if (!allUserData || allUserData.length === 0) {
       console.log('No baseline data found');
-      redirect('/assessment');
+      redirect('/onboarding/baseline');
     }
 
     const dataMap = allUserData.reduce((acc, item) => {
@@ -104,7 +104,7 @@ export default async function ChatPage() {
     
     if (missingKeys.length > 0) {
       console.log('Missing keys:', missingKeys);
-      redirect('/assessment');
+      redirect('/onboarding/baseline');
     }
 
     console.log('Parsing baseline data...');
@@ -120,7 +120,7 @@ export default async function ChatPage() {
 
     if (!baselineData) {
       console.log('Baseline data is null after parsing');
-      redirect('/assessment');
+      redirect('/onboarding/baseline');
     }
 
     console.log('Rendering ChatInterface...');
@@ -148,11 +148,11 @@ export default async function ChatPage() {
           <h1 className="text-xl font-bold text-red-500 mb-4">Error Loading Chat</h1>
           <p className="text-gray-300 mb-4">{errorMessage}</p>
           <div className="space-y-2">
-            <a 
-              href="/assessment" 
+            <a
+              href="/onboarding/baseline"
               className="block w-full px-4 py-2 text-center bg-orange-500 text-white rounded-lg hover:bg-orange-600"
             >
-              Go to Assessment
+              Go to Baseline
             </a>
             <a 
               href="/auth/signin" 

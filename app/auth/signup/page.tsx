@@ -17,7 +17,6 @@ function SignUpForm() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false)
 
   // Password strength validation
   const validatePassword = (pwd: string) => {
@@ -65,7 +64,7 @@ function SignUpForm() {
 
       // Sign up — the DB trigger (handle_new_user) will automatically
       // create the user_profiles row from this metadata.
-      const { data, error: signUpError } = await supabase.auth.signUp({
+      const { error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -85,97 +84,13 @@ function SignUpForm() {
       // The on_auth_user_created trigger handles it with SECURITY DEFINER privileges,
       // which bypasses RLS and works even before email confirmation.
 
-      // Check if user has a session (email confirmation disabled)
-      if (data.session) {
-        // Email confirmation is DISABLED - user is auto-logged in
-        console.log('✅ Auto-signed in, redirecting to screening...')
-        router.refresh()
-        setTimeout(() => router.push('/screening'), 100)
-      } else {
-        // Email confirmation is ENABLED - show confirmation message
-        console.log('📧 Email confirmation required')
-        setAwaitingConfirmation(true)
-        setLoading(false)
-      }
+      router.refresh()
+      setTimeout(() => router.push('/onboarding/agreement'), 100)
     } catch (error: any) {
       console.error('Sign up error:', error)
       setError(error.message)
       setLoading(false)
     }
-  }
-
-  // Show email confirmation screen
-  if (awaitingConfirmation) {
-    return (
-      <div
-        className="min-h-screen flex items-center justify-center"
-        style={{ backgroundColor: '#0a0a0a' }}
-      >
-        <div
-          className="max-w-md w-full space-y-6 p-8 rounded-lg shadow-lg text-center"
-          style={{ backgroundColor: '#111111' }}
-        >
-          <div className="text-6xl mb-4" style={{ color: '#ff9e19' }}>
-            📧
-          </div>
-
-          <h2 className="text-3xl font-bold" style={{ color: '#ff9e19' }}>
-            Check Your Email
-          </h2>
-
-          <div className="space-y-4 text-gray-300">
-            <p>We've sent a confirmation link to:</p>
-            <p className="font-semibold text-white text-lg">{email}</p>
-            <p className="text-sm">
-              Click the link in the email to verify your account, then sign in to continue.
-            </p>
-
-            <div
-              className="mt-4 p-4 rounded-lg text-left"
-              style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}
-            >
-              <p className="text-sm font-semibold text-yellow-500 mb-2">
-                ⚠️ Important — check your spam folder
-              </p>
-              <p className="text-xs text-gray-400 leading-relaxed">
-                Our confirmation emails sometimes land in spam or promotions. If you don't see it in
-                your inbox within 2 minutes:
-              </p>
-              <ol className="text-xs text-gray-400 mt-2 space-y-1 list-decimal list-inside">
-                <li>
-                  Check your <span className="text-white">Spam</span> or{' '}
-                  <span className="text-white">Promotions</span> folder
-                </li>
-                <li>Move the email to your inbox</li>
-                <li>
-                  Add <span className="text-white">unbecoming@unbecoming.app</span> to your contacts
-                </li>
-              </ol>
-              <p className="text-xs text-gray-500 mt-2">
-                This ensures all future emails from us arrive in your inbox.
-              </p>
-            </div>
-          </div>
-
-          <div className="pt-4">
-            <Link
-              href="/auth/signin"
-              className="inline-block px-8 py-3 rounded-lg font-semibold transition-all"
-              style={{
-                backgroundColor: '#ff9e19',
-                color: '#0a0a0a',
-              }}
-            >
-              Go to Sign In
-            </Link>
-          </div>
-
-          <p className="text-sm text-gray-500 pt-4">
-            Still nothing after 5 minutes? Try signing up again or contact support.
-          </p>
-        </div>
-      </div>
-    )
   }
 
   // Show signup form
@@ -193,7 +108,7 @@ function SignUpForm() {
             Create Account
           </h2>
           <p className="mt-2 text-center text-sm text-gray-400">
-            Join the IOS transformation journey
+            Join UNbecoming
           </p>
         </div>
 

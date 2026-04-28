@@ -32,9 +32,10 @@ function SignInForm() {
 
       if (signInError) throw signInError
 
-      // Force refresh the page to ensure middleware runs with new session
+      // Force refresh the page to ensure middleware runs with new session.
+      // Middleware will route the user to the right step based on their state.
       router.refresh()
-      router.push('/screening')
+      router.push('/onboarding/agreement')
       
     } catch (error: any) {
       console.error('Sign in error:', error)
