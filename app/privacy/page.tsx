@@ -104,7 +104,7 @@ export default function PrivacyPolicy() {
             
             <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">1.1 Our Commitment to Privacy</h3>
             <p className="text-gray-700 leading-relaxed mb-4">
-              The IOS System collects and processes sensitive personal information, including health-related data and mental state information. 
+              UNbecoming collects and processes sensitive personal information, including health-related data and mental state information.
               We take your privacy extremely seriously and are committed to protecting your personal information.
             </p>
             <p className="text-gray-700 leading-relaxed mb-4">
@@ -119,7 +119,7 @@ export default function PrivacyPolicy() {
 
             <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">1.2 Who This Policy Applies To</h3>
             <p className="text-gray-700 leading-relaxed mb-4">
-              This Privacy Policy applies to all users of the IOS System, regardless of location.
+              This Privacy Policy applies to all users of UNbecoming, regardless of location.
             </p>
             <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
               <p className="font-semibold text-blue-900 mb-2">For Canadian Users:</p>
@@ -132,11 +132,11 @@ export default function PrivacyPolicy() {
 
             <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">1.3 Acceptance of This Policy</h3>
             <p className="text-gray-700 leading-relaxed mb-4">
-              By using the IOS System, you consent to the collection, use, and processing of your information as described in this Privacy Policy.
+              By using UNbecoming, you consent to the collection, use, and processing of your information as described in this Privacy Policy.
             </p>
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
               <p className="text-red-900 font-semibold">
-                If you do not agree with this Privacy Policy, do not use the IOS System.
+                If you do not agree with this Privacy Policy, do not use UNbecoming.
               </p>
             </div>
           </section>
@@ -146,39 +146,33 @@ export default function PrivacyPolicy() {
             <h2 className="text-2xl font-bold text-gray-900 mb-4">2. Information We Collect</h2>
             
             <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">2.1 Information You Provide Directly</h3>
-            
+
             <div className="mb-6">
               <h4 className="text-lg font-semibold text-gray-800 mb-2">Account Information:</h4>
               <ul className="list-disc pl-6 text-gray-700 space-y-1">
-                <li>Name (full legal name)</li>
+                <li>Name (first name required; last name optional)</li>
                 <li>Email address</li>
-                <li>Date of birth / Age</li>
-                <li>Country of residence</li>
-                <li>Emergency contact information</li>
-              </ul>
-            </div>
-
-            <div className="mb-6">
-              <h4 className="text-lg font-semibold text-gray-800 mb-2">Medical & Psychiatric Information:</h4>
-              <ul className="list-disc pl-6 text-gray-700 space-y-1">
-                <li>Mental health diagnoses and history</li>
-                <li>Physical health conditions</li>
-                <li>Current medications (names, dosages, prescribers)</li>
-                <li>Substance use history</li>
-                <li>Healthcare provider information</li>
-                <li>Medical screening questionnaire responses</li>
+                <li>Password (encrypted, never stored in plain text)</li>
               </ul>
             </div>
 
             <div className="mb-6">
               <h4 className="text-lg font-semibold text-gray-800 mb-2">Baseline Assessment Data:</h4>
               <ul className="list-disc pl-6 text-gray-700 space-y-1">
-                <li>Calm Core Assessment (perceived stress)</li>
-                <li>Observer Index (decentering/meta-awareness)</li>
-                <li>Vitality Index (positive affect)</li>
-                <li>Focus Diagnostic (attentional control)</li>
-                <li>Presence Test (breath counting performance)</li>
-                <li>REwired Index scores</li>
+                <li>Self-rating scores across four domains (Regulation, Awareness, Outlook, Attention) on a 0–5 scale</li>
+                <li>Calculated REwired Index score</li>
+                <li>Timestamps of baseline completion</li>
+              </ul>
+            </div>
+
+            <div className="mb-6">
+              <h4 className="text-lg font-semibold text-gray-800 mb-2">Practice &amp; Progress Data:</h4>
+              <ul className="list-disc pl-6 text-gray-700 space-y-1">
+                <li>Stage progression (current stage, days in stage)</li>
+                <li>Ritual completion records (Resonance Breathing, Awareness Rep, etc.)</li>
+                <li>Signal check responses (optional capacity ratings)</li>
+                <li>Optional notes/journal entries</li>
+                <li>Pattern Profile insights (when generated)</li>
               </ul>
             </div>
 
@@ -211,7 +205,7 @@ export default function PrivacyPolicy() {
           <section id="section-3" className="scroll-mt-20 mt-12">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">3. How We Use Your Information</h2>
             <p className="text-gray-700 leading-relaxed mb-4">
-              We use your information to provide and operate the IOS System, ensure safety, communicate with you, 
+              We use your information to provide and operate UNbecoming, ensure safety, communicate with you, 
               improve our services, and comply with legal obligations.
             </p>
             <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4">
@@ -277,7 +271,7 @@ export default function PrivacyPolicy() {
             <div className="bg-gray-100 rounded-lg p-6">
               <h3 className="text-xl font-bold text-gray-900 mb-3">Acknowledgment</h3>
               <p className="text-gray-700 leading-relaxed mb-4">
-                By using the IOS System, you acknowledge that you have read, understood, and agree to this Privacy Policy.
+                By using UNbecoming, you acknowledge that you have read, understood, and agree to this Privacy Policy.
               </p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
                 <div>

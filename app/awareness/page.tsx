@@ -278,8 +278,8 @@ export default function AwarenessPage() {
 
         {/* Footer */}
         <div className="mt-16 text-center">
-          <a 
-            href="https://www.unbecoming.app"
+          <a
+            href="/"
             className="text-[#f5f2ec]/20 text-xs hover:text-[#f5f2ec]/40 transition-colors"
           >
             unbecoming.app

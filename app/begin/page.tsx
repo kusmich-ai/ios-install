@@ -419,9 +419,9 @@ export default function BeginPage() {
 
       <div className="begin-container">
         <nav className="begin-nav">
-          <a href="https://www.unbecoming.app" className="begin-nav-logo">
+          <a href="/" className="begin-nav-logo">
             <img
-              src="https://www.unbecoming.app/logol.png"
+              src="/logol.png"
               alt="Unbecoming"
             />
           </a>

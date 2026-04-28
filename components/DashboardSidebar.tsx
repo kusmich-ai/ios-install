@@ -534,7 +534,7 @@ export default function DashboardSidebar({
               className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg text-xs font-medium transition-colors border border-purple-200/50"
             >
               <TrendingUp className="w-3.5 h-3.5" />
-              IOS Journal
+              UNbecoming Journal
             </Link>
           </div>
         </div>

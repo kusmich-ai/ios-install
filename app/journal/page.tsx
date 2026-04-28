@@ -118,7 +118,7 @@ export default function JournalPage() {
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <h1 className="text-lg font-semibold text-white">IOS Journal</h1>
+            <h1 className="text-lg font-semibold text-white">UNbecoming Journal</h1>
             <p className="text-xs text-zinc-500">{entries.length} entries logged</p>
           </div>
         </div>

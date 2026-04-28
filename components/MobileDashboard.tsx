@@ -720,7 +720,7 @@ calmTrend, streakFreezeAvailable, weeklyCheckInDue, onRequestCheckIn, onStage7Un
                 <TrendingUp className="w-4 h-4 text-purple-600" />
               </div>
               <div className="flex-1">
-                <h3 className="text-sm font-semibold text-zinc-800">IOS Journal</h3>
+                <h3 className="text-sm font-semibold text-zinc-800">UNbecoming Journal</h3>
                 <p className="text-xs text-zinc-500">Your transformation timeline</p>
               </div>
               <svg className="w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
