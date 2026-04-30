@@ -369,7 +369,10 @@ export const ON_DEMAND_TOOLS = [
     icon: '🌊',
     description: 'Physiological transition sequence that guides your nervous system from daytime activation into parasympathetic rest.',
     when: 'When your system won\'t shut off at night — racing mind, restless body, "wired but tired"',
-    unlockedAt: 1
+    // Sprint 3: hidden from all stages while we evaluate the tool's place in
+    // the system. unlockedAt: 99 effectively cuts UI access without removing
+    // the tool definition. Sprint 3.5 will fully remove the tool.
+    unlockedAt: 99
   },
   {
     id: 'worry_loop_dissolver',
