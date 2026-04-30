@@ -306,8 +306,7 @@ ${getRitualListForStage(1)}
 
 **Total: ${getMorningRitualTime(1)}** every morning, immediately upon waking.
 
-These aren't optional. They're the foundation. Without them, nothing else sticks.
-They are very simple, but don't let that fool you. They are the foundation for everything you're building.
+These aren't optional. They're the foundation — without them, nothing else sticks. They're also deceptively simple, so don't let that fool you. Everything else you'll build sits on top of these two.
 
 Ready to learn each ritual?`,
 
@@ -315,29 +314,30 @@ Ready to learn each ritual?`,
         hrvb: `**RITUAL 1: RESONANCE BREATHING — 5 MINS**
 
 **What it does:**
-Stimulates your vagus nerve, increases heart rate variability, raises RMSSD. Translation: trains your nervous system to shift from stress to coherence on command.
+Stimulates your vagus nerve and increases heart rate variability. Translation: trains your nervous system to shift from stress to coherence on command.
 
 **When:** First thing after waking, before anything else.
 
 **How:**
-Wake up. Sit up in bed or on a chair. Spine long, shoulders relaxed.
-We're using a 4-second inhale, 6-second exhale rhythm — this hits your resonance frequency and maximizes vagal tone.
+Tomorrow morning, you'll do this in bed right after waking — sitting up, spine long, shoulders relaxed. Today, we'll practice it in a minute so you understand the rhythm before it becomes routine.
 
-**Here is a guided video to preview if needed so you can get familiar:** [Resonance Breathing Video](https://www.unbecoming.app/breathe)
+We're using a 4-second inhale, 6-second exhale rhythm — this is the rate at which your heart and nervous system sync up most efficiently.
 
-When ready, every morning you will initiate this with the {{toolbarReference}}.
+You'll experience this firsthand in just a minute — for now, just understand what it is.
+
+When ready, every morning you'll initiate this with {{toolbarReference}}.
 
 That's ritual one. Make sense?`,
 
         awareness_rep: `**RITUAL 2: AWARENESS REP — 2 MINS**
 
 **What it does:**
-Strengthens meta-cognition circuitry (insula-PCC connectivity). It decenters you, separating you from your thoughts and feelings.
+Builds the meta-awareness muscle — the part of you that can step back and watch your own thoughts and feelings instead of being run by them.
 
 **When:** Right after Resonance Breathing, while still seated.
 
 **How:**
-This decentering practice notices whatever is here — sounds, sensations, thoughts — and helps separate you from those things.
+You sit with whatever's here — sounds, sensations, thoughts — and practice noticing them without getting hooked.
 
 You're not trying to change anything or "get somewhere." Just notice that you're noticing.
 
@@ -345,9 +345,9 @@ When you drift into thought (you will), notice that too, and return.
 
 That's the practice. Recognizing you're not the things you experience.
 
-**This audio will guide you through the process when ready:** [Awareness Rep Audio](https://www.unbecoming.app/awareness)
+You'll experience this firsthand in just a minute — for now, just understand what it is.
 
-You will initiate this with the {{toolbarReference}} daily every morning.
+You'll initiate this with {{toolbarReference}} every morning, right after Resonance Breathing.
 
 Make sense?`
       },
@@ -356,25 +356,11 @@ Make sense?`
 
 But you also have two **on-demand tools** available from Day 1. These aren't daily rituals — they're tools you reach for when you need them.
 
-**Decentering Practice** — When you notice you're stuck in a thought loop, identified with a role, or fused with an emotion ("I AM anxious" instead of "I notice anxiety"), this practice helps you create space between you and the experience. It's a short conversational exercise — just ask me to run it whenever you need it.
+**Decentering Practice** — for moments when thoughts or emotions feel like they're running you. A short conversational exercise that creates space between you and the experience. Ask me to run it whenever you need it.
 
-**NOS Glide (Evening Wind-Down)** — An evening wind-down tool for when your nervous system won't shut off at night. Racing mind, restless body, "wired but tired." It sequences your system from activation into rest. I'll walk you through it next.
+**Worry Loop Dissolver** — when you can't stop worrying about something specific. It interrupts the loop and helps the nervous system release the grip.
 
-Make sense so far?`,
-
-      nosGlideWalkthrough: `Good. Let me give you a quick overview of the **NOS Glide (Evening Wind-Down)**.
-
-Your NOS (nervous system) doesn't respond to "relax" — it responds to **transitions**. The Glide is a 3-step physiological sequence you can use before bed:
-
-**1. Breath Descent** (~60s) — Your familiar 4-in, 6-out rhythm, but with a different intention. Morning breathing is calibration. This is descent. You're telling your system: the day is done.
-
-**2. Progressive Release** (~60-90s) — Tense and release muscle groups (legs → arms → jaw → abdomen). Stress gets stored as tension. This finishes the activation cycle.
-
-**3. Earned Stillness** (~60-120s) — Do nothing. Your system has been sequenced down. The stillness isn't forced — it's earned.
-
-Total: 5-10 minutes. Use it whenever you need it — not every night, just when your system is running hot. If you fall asleep during it, that's success.
-
-You can ask me to guide you through it anytime, or run it on your own once you know the steps.
+Both are available anytime from your toolbar.
 
 Ready for your full Stage 1 overview?`,
 
@@ -387,20 +373,24 @@ Ready for your full Stage 1 overview?`,
 4. Then check in with me
 
 **On-Demand Tools (Use When Needed):**
-• Decentering Practice — when stuck in thought loops or identity fusion
-• NOS Glide (Evening Wind-Down) — evening wind-down when your system won't shut off
+- Decentering Practice — for moments when thoughts or emotions feel like they're running you
+- Worry Loop Dissolver — when you can't stop worrying about something specific
 
-Your {{toolbarReference}} will let you know if you have completed your daily rituals and your progress.
+Your **{{toolbarReference}}** will track your progress and let you know when each ritual is complete.
 
-Access both on-demand tools anytime via your {{toolbarReference}} under "On-Demand Tools."
+**A few other things to know:**
 
-**Starting tomorrow morning** — do both rituals, then come back and let me know how it went.
+I'm here for daily conversation, not just rituals. Ask me anything — about the rituals, your patterns, what's coming up for you.
 
-And if you're having trouble winding down tonight — try the NOS Glide. Consider it your first assignment.
+You also have two coaches available: **Nic** and **Fehren**. Each brings a different lens — try both and see which lands. They're at the top of your chat.
 
-One thing before you go: Stage 1 is deceptively simple. Two short practices, every day. Your mind might tell you it's not enough — that real change requires something harder, longer, more complex. That voice is wrong. Regulation is the foundation everything else is built on. Without it, nothing sticks. The simplicity is the point — you're training your nervous system, and it learns through repetition, not complexity.
+The **Course Library** has deeper content as you progress. Worth exploring as you build the foundation.
 
-See you then. Your nervous system is about to start learning.`
+One thing before you go: Stage 1 is deceptively simple. Two short rituals, every day. Your mind might tell you it's not enough — that real change requires something harder, longer, more complex. That voice is wrong. Regulation is the foundation everything else is built on. Without it, nothing sticks. The simplicity is the point — you're training your nervous system, and it learns through repetition, not complexity.
+
+Find 5 minutes where you won't be interrupted — phone away, notifications off, somewhere comfortable to sit. When you're ready, hit the button below.
+
+Let's start now.`
     },
 
     dailyPrompts: {
@@ -1304,7 +1294,7 @@ Keep the consistency. See you next week.`,
 
 **Average Delta: {{avgDelta}}** ➡️
 
-Stable. Not dropping, not surging. Sometimes integration looks like this — the system is consolidating before the next jump.
+Stable. Not dropping, not surging. Sometimes integration looks like this — your nervous system is consolidating before the next jump.
 
 Keep showing up. The compound effect is building.`,
 
@@ -1363,12 +1353,11 @@ export const introFlowTemplates = {
     0: { text: "Yes, let's learn the rituals", buttonLabel: "Yes, let's go" },
     1: { text: "Got it, makes sense. What's next?", buttonLabel: "Got it, next ritual" },
     2: { text: "Makes sense, I'm ready", buttonLabel: "Got it, tell me about the tools" },
-    3: { text: "Makes sense. Show me the NOS Glide", buttonLabel: "Got it, show me the NOS Glide" },
-    4: { text: "Ready for my Stage 1 overview", buttonLabel: "Ready, let's go" },
-    5: null,
-    6: null
+    3: { text: "Ready for my Stage 1 overview", buttonLabel: "Ready, let's go" },
+    4: { text: "Start my first Resonance Breathing", buttonLabel: "Start my first Resonance Breathing" },
+    5: null
   } as { [key: number]: { text: string; buttonLabel: string } | null },
-  
+
   // Redirect messages to get user back on track after answering their question
   redirectMessages: {
     0: `---
@@ -1381,9 +1370,6 @@ Back to the walkthrough. Make sense so far? Ready for the next ritual?`,
 
 Back to the intro. Ready to hear about your on-demand tools?`,
     3: `---
-
-Back to the NOS Glide (Evening Wind-Down) overview. Ready to continue?`,
-    4: `---
 
 Okay, back to wrapping up. Ready to get started?`
   } as { [key: number]: string }
