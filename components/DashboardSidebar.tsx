@@ -8,7 +8,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { 
+import { useRouter } from 'next/navigation';
+import {
   User,
   TrendingUp,
   TrendingDown,
@@ -18,7 +19,9 @@ import {
   Sparkles,
   Target,
   BookOpen,
+  LogOut,
 } from 'lucide-react';
+import { createClient } from '@/lib/supabase-client';
 import AwakenWithFiveCard from './AwakenWithFiveCard';
 
 // ============================================
@@ -103,7 +106,14 @@ interface DashboardSidebarProps {
   // Step 13: weekly check-in banner
   weeklyCheckInDue?: boolean;
   onRequestCheckIn?: () => void;
-  
+
+  // Sprint 3 Unit 8: gate the Pattern Profile link on the user actually
+  // having a pattern_profiles row (i.e., they've completed at least one
+  // Mirror session). Stage 1 users — and any user who hasn't run Mirror —
+  // shouldn't see the link, since /profile/patterns has nothing to render
+  // for them.
+  hasPatternProfile?: boolean;
+
   // Handlers
   onStage7Click?: () => void;
   onInstallClick?: () => void;
@@ -465,10 +475,27 @@ export default function DashboardSidebar({
   streakFreezeAvailable,
   weeklyCheckInDue,
   onRequestCheckIn,
+  hasPatternProfile = false,
   onStage7Click,
   onInstallClick,
 }: DashboardSidebarProps) {
-  
+
+  const router = useRouter();
+  const [signingOut, setSigningOut] = useState(false);
+
+  const handleSignOut = async () => {
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      router.push('/');
+    } catch (err) {
+      console.error('[DashboardSidebar] Sign out error:', err);
+      setSigningOut(false);
+    }
+  };
+
   // Use sprintDay with fallback to identitySprintDay for backwards compatibility
   const displaySprintDay = sprintDay ?? identitySprintDay;
   
@@ -515,13 +542,15 @@ export default function DashboardSidebar({
           </div>
           
           <div className="flex flex-col gap-2 mt-2">
-            <Link 
-              href="/profile/patterns"
-              className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg text-xs font-medium transition-colors border border-amber-200/50"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              Pattern Profile & Transformation Map
-            </Link>
+            {hasPatternProfile && (
+              <Link
+                href="/profile/patterns"
+                className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg text-xs font-medium transition-colors border border-amber-200/50"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Pattern Profile & Transformation Map
+              </Link>
+            )}
             <Link 
               href="/library"
               className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-medium transition-colors border border-blue-200/50"
@@ -961,6 +990,21 @@ export default function DashboardSidebar({
             AWAKEN WITH 5 CTA
             ========================================== */}
         <AwakenWithFiveCard />
+
+        {/* ==========================================
+            SIGN OUT
+            ========================================== */}
+        <div className="flex justify-center pt-2">
+          <button
+            type="button"
+            onClick={handleSignOut}
+            disabled={signingOut}
+            className="inline-flex items-center gap-2 px-3 py-1.5 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            {signingOut ? 'Signing out…' : 'Sign Out'}
+          </button>
+        </div>
       </div>
     </aside>
   );

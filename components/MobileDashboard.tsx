@@ -7,7 +7,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Menu, X, User, TrendingUp, TrendingDown, Zap, Sparkles, Target, BookOpen, Lock } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Menu, X, User, TrendingUp, TrendingDown, Zap, Sparkles, Target, BookOpen, Lock, LogOut } from 'lucide-react';
+import { createClient } from '@/lib/supabase-client';
 import AwakenWithFiveCard from './AwakenWithFiveCard';
 
 // ============================================
@@ -81,6 +83,8 @@ interface MobileDashboardProps {
   // Step 13: weekly check-in banner
   weeklyCheckInDue?: boolean;
   onRequestCheckIn?: () => void;
+  // Sprint 3 Unit 8: gate Pattern Profile link on actual Mirror data presence.
+  hasPatternProfile?: boolean;
 onStage7Unlock?: () => void;
   onInstallClick?: () => void;
 }
@@ -441,9 +445,24 @@ export default function MobileDashboard({
   adherencePercentage = 0, consecutiveDays = 0, coherenceStatement,
   currentIdentity, microAction, sprintDay, identitySprintDay,
   flowBlockWeeklyMap, flowBlockSprintDay, totalDaysInApp, daysInStage,
-calmTrend, streakFreezeAvailable, weeklyCheckInDue, onRequestCheckIn, onStage7Unlock, onInstallClick,
+calmTrend, streakFreezeAvailable, weeklyCheckInDue, onRequestCheckIn, hasPatternProfile = false, onStage7Unlock, onInstallClick,
 }: MobileDashboardProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const router = useRouter();
+  const [signingOut, setSigningOut] = useState(false);
+
+  const handleSignOut = async () => {
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      router.push('/');
+    } catch (err) {
+      console.error('[MobileDashboard] Sign out error:', err);
+      setSigningOut(false);
+    }
+  };
 
   const displaySprintDay = sprintDay ?? identitySprintDay;
   const displayStatement = coherenceStatement ?? currentIdentity;
@@ -506,11 +525,13 @@ calmTrend, streakFreezeAvailable, weeklyCheckInDue, onRequestCheckIn, onStage7Un
                 <p className="text-xs text-zinc-500">Stage {currentStage}: {getStageName(currentStage)}</p>
               </div>
             </div>
-            <Link href="/profile/patterns" onClick={() => setIsOpen(false)}
-              className="inline-flex items-center gap-2 mt-2 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg text-xs font-medium transition-colors border border-amber-200/50">
-              <Sparkles className="w-3.5 h-3.5" />
-              Pattern Profile & Transformation Map
-            </Link>
+            {hasPatternProfile && (
+              <Link href="/profile/patterns" onClick={() => setIsOpen(false)}
+                className="inline-flex items-center gap-2 mt-2 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg text-xs font-medium transition-colors border border-amber-200/50">
+                <Sparkles className="w-3.5 h-3.5" />
+                Pattern Profile & Transformation Map
+              </Link>
+            )}
           </div>
 
           {/* TIME IN SYSTEM */}
@@ -730,6 +751,19 @@ calmTrend, streakFreezeAvailable, weeklyCheckInDue, onRequestCheckIn, onStage7Un
           </Link>
 
           <AwakenWithFiveCard />
+
+          {/* SIGN OUT */}
+          <div className="flex justify-center pt-2 pb-4">
+            <button
+              type="button"
+              onClick={handleSignOut}
+              disabled={signingOut}
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-zinc-400 hover:text-zinc-700 text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              {signingOut ? 'Signing out…' : 'Sign Out'}
+            </button>
+          </div>
         </div>
       </div>
     </>
