@@ -148,6 +148,13 @@ import { useLoopDeLooping } from '@/components/LoopDeLoopingModal';
 import { useCoRegulation } from '@/components/CoRegulationModal';
 import { useNightlyDebrief } from '@/components/NightlyDebriefModal';
 import { useNosGlide } from '@/components/NosGlideModal';
+import { useResonanceBreathing } from '@/components/ResonanceModal';
+import { useAwarenessRep } from '@/components/AwarenessRepModal';
+import {
+  getNextScript,
+  getScriptAudioPath,
+  type AwarenessRepScript,
+} from '@/lib/awarenessRepRotation';
 
 // ============================================
 // DEV LOGGING UTILITY
@@ -323,9 +330,9 @@ ${tierInterpretation}
 
 **So what is this, exactly?**
 
-The Stack is a neural transformation protocol. It rewires how your nervous system regulates, how your mind focuses, and how you show up in the world.
+The Stack is a neural transformation protocol.
 
-This isn't meditation. It's not therapy. It's systems engineering for your brain and body.
+This isn't meditation. It's not therapy. It's systems engineering for your brain and body — designed to give you steadier focus, fewer reactive moments, and the kind of clarity that holds up under pressure.
 
 **How it works:**
 
@@ -335,19 +342,19 @@ You don't unlock the next stage by waiting. You unlock it by **proving competenc
 
 **What you're installing in Stage 1:**
 
-Stage 1 is called **Neural Priming**. It stabilizes your nervous system's baseline signal through two core practices:
+Stage 1 is called **Neural Priming**. It stabilizes your nervous system's baseline signal through two core rituals:
 
 ${rituals.list}
 
 **Total: ${rituals.total} each morning.**
 
-These aren't random rituals. Resonance Breathing trains heart-brain coherence through HRV optimization. The Awareness Rep builds the neural circuits for meta-awareness — noticing that you're noticing.
+These aren't random rituals. Resonance Breathing trains your nervous system to shift from stress to calm on command — over time, you stop getting stuck in reactive states. The Awareness Rep builds the muscle to catch yourself before you spiral, giving you space between trigger and reaction.
 
 **What to expect from me:**
 
 I'm not a cheerleader. I'm direct, I explain the science when it matters, and I'll call out avoidance patterns when I see them. But I'm also here to adapt to your reality and celebrate real progress.
 
-You can use the toolbar on the right to start practices, track progress, and access on-demand tools as they unlock.
+Use the toolbar to start rituals and track progress. Your dashboard — REwired Index, domain scores, and Course Library — is available from the menu.
 
 **Ready to learn each ritual and begin Stage 1?**`;
 }
@@ -446,24 +453,6 @@ ${rituals.list}
 
 Use the toolbar to start, or ask me anything.`;
 }
-// ============================================
-// STAGE INTRO MESSAGE
-// ============================================
-
-function getStageIntroMessage(stage: number, userName: string): string {
-  const rituals = stageRituals[stage] || stageRituals[1];
-  const stageName = getStageName(stage);
-  
-  return `${userName ? `${userName}, ` : ''}Welcome to **Stage ${stage}: ${stageName}**.
-
-Your new daily rituals:
-${rituals.list}
-
-**Total: ${rituals.total}**
-
-Ready to begin? Type "yes" or use the tool to get started.`;
-}
-
 // Determine which opening to use
 function determineOpeningType(
   lastVisit: string | null,
@@ -687,6 +676,13 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   const streamCancelRef = useRef<boolean>(false);
   const [openingType, setOpeningType] = useState<'first_time' | 'same_day' | 'new_day'>('first_time');
   const [introStep, setIntroStep] = useState<number>(0);
+  // Day 1 handoff: after the user clicks "Start my first Resonance Breathing",
+  // we walk them through a one-time HRVB → Awareness Rep → wrap chain.
+  // Phase is local React state — if the page reloads mid-flow, the user falls
+  // back to the normal toolbar and we don't pester them with the handoff again.
+  const [day1HandoffPhase, setDay1HandoffPhase] = useState<
+    'none' | 'awaiting_hrvb' | 'awaiting_awareness_rep_start' | 'awaiting_awareness_rep'
+  >('none');
   const [practicesCompletedToday, setPracticesCompletedToday] = useState<string[]>([]);
   const [showPromptStarters, setShowPromptStarters] = useState(true);
   const hasAutoTriggeredToday = useRef(false);
@@ -838,6 +834,8 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   const { open: openReframe, Modal: ReframeModal } = useReframe();
   const { open: openThoughtHygiene, Modal: ThoughtHygieneModal } = useThoughtHygiene();
   const { open: openNosGlide, Modal: NosGlideModal } = useNosGlide();
+  const { open: openResonance, Modal: ResonanceModal } = useResonanceBreathing();
+  const { open: openAwarenessRep, Modal: AwarenessRepModal } = useAwarenessRep();
   const { open: openCoRegulation, Modal: CoRegulationModal } = useCoRegulation();
 const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebrief();
   const { open: openLoopDeLooping, Modal: LoopDeLoopingModal } = useLoopDeLooping();
@@ -856,7 +854,7 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
   // HELPER FUNCTIONS
   // ============================================
   const getUserName = () => user?.user_metadata?.first_name || '';
-  const currentQuickReply = openingType === 'first_time' && introStep < 6 ? introQuickReplies[introStep] : null;
+  const currentQuickReply = openingType === 'first_time' && introStep < 5 ? introQuickReplies[introStep] : null;
 
   // ============================================
   // MESSAGE PERSISTENCE (Same-day across devices)
@@ -2393,7 +2391,7 @@ Tone rules:
     }
 
     if (!aiInsight) {
-      aiInsight = `That ${delta(strongest.delta)} in ${strongest.name} is the system responding — your nervous system learned something real. ${weakest.name} is the growth edge, and that's exactly what Stage 2 is designed to develop.`;
+      aiInsight = `That ${delta(strongest.delta)} in ${strongest.name} is the Stack working — your nervous system learned something real. ${weakest.name} is the growth edge, and that's exactly what Stage 2 is designed to develop.`;
     }
 
     setUnlockBeat1Data({ aiInsight, gate1Choice: null, gate2Choice: null });
@@ -2458,7 +2456,7 @@ Tone rules:
     // Generate AI roadmap note
     let aiRoadmapNote = '';
     try {
-      const roadmapPrompt = `You are the UNbecoming Guide. Write exactly 2 sentences connecting this user's specific situation to what Stages 2-4 will address. Make it feel like the system was built for them. Direct, no fluff.
+      const roadmapPrompt = `You are the UNbecoming Guide. Write exactly 2 sentences connecting this user's specific situation to what Stages 2-4 will address. Make it feel like the Stack was built for them. Direct, no fluff.
 
 User's weakest domain: ${weakest}
 Pattern profile: ${patternProfile?.mirrorSummary || patternProfile?.coreChallenge || patternProfile?.primaryPattern || 'not available'}
@@ -4156,6 +4154,11 @@ Give me your four numbers (e.g., "4 3 4 5").`;
           
           // No saved messages (first visit today via same_day edge case)
           openingMessage = getSameDayReturnMessage(correctedBaselineData, progressData, currentStage, completedToday);
+        } else if (type === 'first_time') {
+          // Brand-new user — render the welcome / Stage 1 intro and let the
+          // tutorial state machine (introStep) take over from there.
+          await clearTodayMessages();
+          openingMessage = await getFirstTimeOpeningMessage(correctedBaselineData, userName);
         } else {
           // New day — clear yesterday's messages, start fresh
           await clearTodayMessages();
@@ -4354,80 +4357,67 @@ Give me your four numbers (e.g., "4 3 4 5").`;
   }, [user?.id, progress, isInitializing, openingType, weeklyCheckInActive, weeklyCheckInDue, missedDaysIntervention?.isActive, regressionIntervention?.isActive, systemRecoveryIntervention?.isActive, sprintRenewalState.isActive, microActionState.isActive, flowBlockState.isActive, unlockFlowState]);
 
   // ============================================
+  // INTRO TUTORIAL — STEP TRANSITION
+  // Single source of truth for advancing the Day 1 intro tutorial. Both
+  // entry points (button click via handleQuickReply, typed affirmative
+  // inside sendMessage) call this helper to compute the next response and
+  // run any side effects for the given step.
+  // ============================================
+
+  const advanceIntroStep = useCallback(async (currentStep: number): Promise<string> => {
+    const templateContext = buildTemplateContext();
+
+    if (currentStep === 0) {
+      setIntroStep(1);
+      return processTemplate(stageTemplates[1].ritualIntro.practices.hrvb, templateContext);
+    }
+    if (currentStep === 1) {
+      setIntroStep(2);
+      return processTemplate(stageTemplates[1].ritualIntro.practices.awareness_rep, templateContext);
+    }
+    if (currentStep === 2) {
+      setIntroStep(3);
+      return processTemplate(stageTemplates[1].ritualIntro.onDemandToolsIntro, templateContext);
+    }
+    if (currentStep === 3) {
+      setIntroStep(4);
+      return processTemplate(stageTemplates[1].ritualIntro.wrapUp, templateContext);
+    }
+    if (currentStep === 4) {
+      // Final tutorial step — launch the user's first Resonance Breathing,
+      // mark intro complete, and let the modal take over. Day 1 handoff
+      // chain takes over after the modal closes.
+      setIntroStep(5);
+      setDay1HandoffPhase('awaiting_hrvb');
+      openResonance();
+
+      try {
+        const supabase = createClient();
+        await supabase
+          .from('user_progress')
+          .update({ ritual_intro_completed: true })
+          .eq('user_id', user.id);
+      } catch (err) {
+        console.error('Failed to mark intro complete:', err);
+      }
+      return 'Opening now.';
+    }
+    return 'What would you like to explore?';
+  }, [buildTemplateContext, openResonance, user?.id]);
+
+  // ============================================
   // MESSAGE HANDLERS
   // ============================================
-  
+
   const handleQuickReply = async (currentStep: number) => {
     const reply = introQuickReplies[currentStep];
     if (!reply) return;
-    
+
     setMessages(prev => [...prev, { role: 'user', content: reply.text }]);
     setLoading(true);
-    
-    let responseMessage: string;
-    const templateContext = buildTemplateContext();
-    
-if (currentStep === 0) {
-      responseMessage = processTemplate(stageTemplates[1].ritualIntro.practices.hrvb, templateContext);
-      setIntroStep(1);
-    } else if (currentStep === 1) {
-      responseMessage = processTemplate(stageTemplates[1].ritualIntro.practices.awareness_rep, templateContext);
-      setIntroStep(2);
-    } else if (currentStep === 2) {
-      responseMessage = processTemplate(stageTemplates[1].ritualIntro.onDemandToolsIntro, templateContext);
-      setIntroStep(3);
-    } else if (currentStep === 3) {
-      responseMessage = processTemplate(stageTemplates[1].ritualIntro.nosGlideWalkthrough, templateContext);
-      setIntroStep(4);
-    } else if (currentStep === 4) {
-      responseMessage = processTemplate(stageTemplates[1].ritualIntro.wrapUp, templateContext);
-    setIntroStep(5);
-    // Don't mark complete yet — foundation intro comes next
-  } else if (introStep === 5) {
-    // FOUNDATION PROTOCOLS INTRO
-    responseMessage = `One more thing before you start — and this is just as important as the rituals.
 
----
+    const responseMessage = await advanceIntroStep(currentStep);
 
-**THE FOUNDATION PROTOCOLS**
-
-Your rituals train the nervous system. But they run on top of two foundations that determine how fast you rewire:
-
-**🛏️ Sleep Optimization**
-This is when your neural learning consolidates. Non-negotiable requirements:
-- Same sleep/wake time daily (±30 mins)
-- No screens 60 mins before bed
-- No food 2 hours before bed
-- Cool room (65°F / 18°C), total darkness
-- Wake and get natural light immediately (or 10k LUX light)
-- Optional: 2-min Resonance Breathing in bed before sleep
-
-**🏃 Movement Practice (5x/week)**
-Your nervous system needs physical load to clear stress hormones and boost BDNF:
-- "Break a Sweat" — 20+ mins daily (bike, walk, lift, row — whatever moves you)
-- Mix aerobic and strength
-- Optional: 1-2x cold/heat exposure (cold plunge 50-59°F, 2-5 min OR sauna 20-25 min)
-
-These aren't fitness goals. They're **neural regulation infrastructure**. The rituals build the signal — sleep and movement maintain the hardware it runs on.
-
-I'll check in on these periodically. For now, just know: if your rituals feel like they're not landing, sleep and movement are the first place to look.
-
-Ready to start your first practice?`;
-    setIntroStep(6);
-
-    try {
-      const supabase = createClient();
-      await supabase
-        .from('user_progress')
-        .update({ ritual_intro_completed: true })
-        .eq('user_id', user.id);
-    } catch (err) {
-      console.error('Failed to mark intro complete:', err);
-    }
-  } else {
-    responseMessage = "What would you like to explore?";
-  }
-    
     setTimeout(async () => {
       await postAssistantMessage(responseMessage);
       setLoading(false);
@@ -4604,6 +4594,67 @@ microActionState.extractedAction || 'Notice → Label → Release',
       refetchProgress();
     }
   }, [refetchProgress]);
+
+  // ============================================
+  // DAY 1 HANDOFF — wraps the HRVB and Awareness Rep practice-completed
+  // callbacks so the brand-new user gets a guided HRVB → AwarenessRep → wrap
+  // chain on their first session. Outside of the Day 1 handoff phase, these
+  // wrappers fall through to the normal handlePracticeCompleted behavior.
+  // ============================================
+
+  const handleHrvbCompleted = useCallback(() => {
+    if (day1HandoffPhase === 'awaiting_hrvb') {
+      const normalizedId = normalizePracticeId('hrvb');
+      justCompletedViaButton.current = true;
+      setPracticesCompletedToday(prev =>
+        prev.includes(normalizedId) ? prev : [...prev, normalizedId]
+      );
+      if (refetchProgress) refetchProgress();
+      postAssistantMessage(
+        `First ritual done. Your second ritual: Awareness Rep.`
+      );
+      setDay1HandoffPhase('awaiting_awareness_rep_start');
+    } else {
+      handlePracticeCompleted('hrvb');
+    }
+  }, [day1HandoffPhase, handlePracticeCompleted, postAssistantMessage, refetchProgress]);
+
+  const handleStartDay1AwarenessRep = useCallback(async () => {
+    setMessages(prev => [...prev, { role: 'user', content: 'Start Awareness Rep' }]);
+    await postAssistantMessage(`Opening now.`);
+    setDay1HandoffPhase('awaiting_awareness_rep');
+
+    // Pick the right rotation script. On Day 1 the user has no
+    // lastAwarenessRepScript, so getNextScript returns the first script of
+    // the user's tier (F1 — "Breath Entry" — for Stage 1). Mirrors the
+    // ToolsSidebar pattern so the modal plays the intended Day-1 audio
+    // instead of falling back to /audio/AwarenessRep.mp3.
+    const extendedProgress = progress as any;
+    const lastScript = (extendedProgress?.lastAwarenessRepScript ?? null) as AwarenessRepScript | null;
+    const nextScript = getNextScript(extendedProgress?.currentStage ?? 1, lastScript);
+    openAwarenessRep(getScriptAudioPath(nextScript));
+  }, [openAwarenessRep, postAssistantMessage, progress]);
+
+  const handleAwarenessRepCompleted = useCallback(() => {
+    if (day1HandoffPhase === 'awaiting_awareness_rep') {
+      const normalizedId = normalizePracticeId('awareness_rep');
+      justCompletedViaButton.current = true;
+      setPracticesCompletedToday(prev =>
+        prev.includes(normalizedId) ? prev : [...prev, normalizedId]
+      );
+      if (refetchProgress) refetchProgress();
+      postAssistantMessage(
+        `Both rituals done. Day 1 of The Stack — installed.
+
+Stay around as long as you'd like. I'm here for conversation. Try chatting with **Nic** or **Fehren** if you want a different lens. Explore the **Course Library** when you're ready.
+
+Or come back tomorrow morning to start Day 2. Your nervous system is about to start learning.`
+      );
+      setDay1HandoffPhase('none');
+    } else {
+      handlePracticeCompleted('awareness_rep');
+    }
+  }, [day1HandoffPhase, handlePracticeCompleted, postAssistantMessage, refetchProgress]);
 
   // ============================================
   // POST-RITUAL AUTO CHECK-IN (Stage 1 Enhancements)
@@ -5011,7 +5062,7 @@ if (regressionIntervention?.isActive) {
     }
     
     // Intro Flow Handling
-    if (openingType === 'first_time' && introStep < 6) {
+    if (openingType === 'first_time' && introStep < 5) {
       setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
       setLoading(true);
       
@@ -5020,75 +5071,13 @@ if (regressionIntervention?.isActive) {
       );
       
      if (isAffirmative) {
-  let responseMessage: string;
-  const templateContext = buildTemplateContext();
-  
-  if (introStep === 0) {
-    responseMessage = processTemplate(stageTemplates[1].ritualIntro.practices.hrvb, templateContext);
-    setIntroStep(1);
-  } else if (introStep === 1) {
-    responseMessage = processTemplate(stageTemplates[1].ritualIntro.practices.awareness_rep, templateContext);
-    setIntroStep(2);
-  } else if (introStep === 2) {
-    responseMessage = processTemplate(stageTemplates[1].ritualIntro.onDemandToolsIntro, templateContext);
-    setIntroStep(3);
-  } else if (introStep === 3) {
-    responseMessage = processTemplate(stageTemplates[1].ritualIntro.nosGlideWalkthrough, templateContext);
-    setIntroStep(4);
-  } else if (introStep === 4) {
-    responseMessage = processTemplate(stageTemplates[1].ritualIntro.wrapUp, templateContext);
-    setIntroStep(5);
-    // Don't mark complete yet — foundation intro comes next
-  } else if (introStep === 5) {
-    // FOUNDATION PROTOCOLS INTRO
-    responseMessage = `One more thing before you start — and this is just as important as the rituals.
+       const responseMessage = await advanceIntroStep(introStep);
 
----
-
-**THE FOUNDATION PROTOCOLS**
-
-Your rituals train the nervous system. But they run on top of two foundations that determine how fast you rewire:
-
-**🛏️ Sleep Optimization**
-This is when your neural learning consolidates. Non-negotiable requirements:
-- Same sleep/wake time daily (±30 mins)
-- No screens 60 mins before bed
-- No food 2 hours before bed
-- Cool room (65°F / 18°C), total darkness
-- Wake and get natural light immediately (or 10k LUX light)
-- Optional: 2-min Resonance Breathing in bed before sleep
-
-**🏃 Movement Practice (5x/week)**
-Your nervous system needs physical load to clear stress hormones and boost BDNF:
-- "Break a Sweat" — 20+ mins daily (bike, walk, lift, row — whatever moves you)
-- Mix aerobic and strength
-- Optional: 1-2x cold/heat exposure (cold plunge 50-59°F, 2-5 min OR sauna 20-25 min)
-
-These aren't fitness goals. They're **neural regulation infrastructure**. The rituals build the signal — sleep and movement maintain the hardware it runs on.
-
-I'll check in on these periodically. For now, just know: if your rituals feel like they're not landing, sleep and movement are the first place to look.
-
-Ready to start your first practice?`;
-    setIntroStep(6);
-
-    try {
-      const supabase = createClient();
-      await supabase
-        .from('user_progress')
-        .update({ ritual_intro_completed: true })
-        .eq('user_id', user.id);
-    } catch (err) {
-      console.error('Failed to mark intro complete:', err);
-    }
-  } else {
-    responseMessage = "What would you like to explore?";
-  }
-  
-  setTimeout(async () => {
-    setLoading(false);
-    await postAssistantMessage(responseMessage);
-  }, 500);
-      return;
+       setTimeout(async () => {
+         setLoading(false);
+         await postAssistantMessage(responseMessage);
+       }, 500);
+       return;
     } else {
       // Handle non-affirmative responses during intro flow
       try {
@@ -5383,6 +5372,7 @@ Ready to start your first practice?`;
           streakFreezeAvailable={progress?.streakFreezeAvailable}
           weeklyCheckInDue={progress?.weeklyCheckInDue}
           onRequestCheckIn={handleRequestCheckIn}
+          hasPatternProfile={progress?.patternProfile != null}
           onInstallClick={handleInstallNowClick}
         />
       )}
@@ -5505,6 +5495,18 @@ Ready to start your first practice?`;
                   className="px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-xl font-semibold hover:from-amber-600 hover:to-amber-700 disabled:opacity-50 transition-all shadow-sm shadow-amber-500/20"
                 >
                   {currentQuickReply.buttonLabel}
+                </button>
+              </div>
+            )}
+
+            {/* Day 1 handoff: Start Awareness Rep button (after HRVB completed) */}
+            {day1HandoffPhase === 'awaiting_awareness_rep_start' && !loading && (
+              <div className="flex justify-center">
+                <button
+                  onClick={handleStartDay1AwarenessRep}
+                  className="px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-xl font-semibold hover:from-amber-600 hover:to-amber-700 disabled:opacity-50 transition-all shadow-sm shadow-amber-500/20"
+                >
+                  Start Awareness Rep
                 </button>
               </div>
             )}
@@ -5801,7 +5803,7 @@ Ready to start your first practice?`;
                 !systemRecoveryIntervention?.isActive &&
                 unlockFlowState === 'none' &&
                 stage7FlowState === 'none' &&
-                !(openingType === 'first_time' && introStep < 6)
+                !(openingType === 'first_time' && introStep < 5)
               }
             />
             <form onSubmit={sendMessage} className="flex gap-3">
@@ -5907,6 +5909,7 @@ Ready to start your first practice?`;
 streakFreezeAvailable={progress?.streakFreezeAvailable}
           weeklyCheckInDue={progress?.weeklyCheckInDue}
           onRequestCheckIn={handleRequestCheckIn}
+          hasPatternProfile={progress?.patternProfile != null}
           onInstallClick={handleInstallNowClick}
           />
       )}
@@ -5931,6 +5934,8 @@ streakFreezeAvailable={progress?.streakFreezeAvailable}
       <ReframeModal />
       <ThoughtHygieneModal />
       <NosGlideModal />
+      <ResonanceModal onComplete={handleHrvbCompleted} />
+      <AwarenessRepModal onComplete={handleAwarenessRepCompleted} />
       <CoRegulationModal onComplete={() => handlePracticeCompleted('co_regulation')} />
      <NightlyDebriefModal onComplete={() => handlePracticeCompleted('nightly_debrief')} userId={user?.id} />
 
