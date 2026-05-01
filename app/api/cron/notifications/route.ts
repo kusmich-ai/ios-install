@@ -152,10 +152,12 @@ async function getUserAdherence(
 }
 
 // Get signal check trend direction
+// Sprint 4: 'insufficient' returned when fewer than 3 ratings exist; previously masqueraded as
+// 'stable', which produced misleading "holding steady" copy for users with no real data.
 async function getSignalTrend(
   supabase: any,
   userId: string
-): Promise<'up' | 'down' | 'stable'> {
+): Promise<'up' | 'down' | 'stable' | 'insufficient'> {
   const { data } = await supabase
     .from('signal_checks')
     .select('calm_score, created_at')
@@ -163,7 +165,7 @@ async function getSignalTrend(
     .order('created_at', { ascending: false })
     .limit(7);
 
-  if (!data || data.length < 3) return 'stable';
+  if (!data || data.length < 3) return 'insufficient';
 
   const recent = data.slice(0, 3).reduce((s: number, d: { calm_score: number }) => s + d.calm_score, 0) / 3;
   const earlier = data.slice(-3).reduce((s: number, d: { calm_score: number }) => s + d.calm_score, 0) / Math.min(3, data.slice(-3).length);
@@ -324,7 +326,9 @@ export async function GET(req: Request) {
             ? 'Your calm scores are climbing. The nervous system is responding to the training.'
             : trend === 'down'
               ? 'Calm scores dipped this week. Not a crisis — but consistency matters. Next week, recommit.'
-              : 'Calm scores holding steady. Stability is progress too — the foundation is setting.';
+              : trend === 'stable'
+                ? 'Calm scores holding steady. Stability is progress too — the foundation is setting.'
+                : 'Not enough check-ins this week to spot a trend yet. A few more readings and you\'ll see the picture.';
 
           const email = weeklySummary(
             userName,

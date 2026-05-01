@@ -97,7 +97,10 @@ export interface UserProgress {
 
   // Weekly check-in status (Step 13)
   weeklyCheckInDue: boolean;
-  
+
+  // Signal check cadence (Sprint 4) — days since user's most recent signal_checks row, or null if none
+  daysSinceLastSignalCheck: number | null;
+
   // Stage attribution "seen" flags
   stage_1_attribution_seen: boolean;
   stage_2_attribution_seen: boolean;
@@ -428,19 +431,40 @@ export function useUserProgress() {
         .eq('user_id', user.id)
         .eq('practice_date', today);
 
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+      // Sprint 4: Stage 1 uses a 14-day window because cadence is every 3 days — a 7-day
+      // window can hold only 2-3 ratings, too sparse for unlock Path A's avg-vs-baseline
+      // and Path D's trend (both need >=3 ratings to compute meaningfully).
+      // Stage 2+ keeps 7 days (weekly cadence still has enough data points in 7d).
+      const signalCheckWindowDays = progressData.current_stage === 1 ? 14 : 7;
+      const signalCheckWindowStart = new Date();
+      signalCheckWindowStart.setDate(signalCheckWindowStart.getDate() - (signalCheckWindowDays - 1));
 
       const { data: signalCheckLogs } = await supabase
         .from('signal_checks')
         .select('calm_score, created_at')
         .eq('user_id', user.id)
-        .gte('created_at', sevenDaysAgo.toISOString())
+        .gte('created_at', signalCheckWindowStart.toISOString())
         .order('created_at', { ascending: true });
 
       const recentCalmRatings: number[] = (signalCheckLogs || [])
         .map((log: { calm_score: number | null }) => log.calm_score)
         .filter((r: number | null): r is number => r !== null);
+
+      // Sprint 4: most recent signal check overall (no time bound) for stage-tiered cadence trigger.
+      // Uses idx_signal_checks_user_date composite index — limit-1 + DESC order is an index seek.
+      // .maybeSingle() (not .single()) — returns null cleanly when user has no signal checks
+      // yet, avoiding the PGRST116 406 noise that .single() generates on empty queries.
+      const { data: lastSignalCheck } = await supabase
+        .from('signal_checks')
+        .select('created_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const daysSinceLastSignalCheck: number | null = lastSignalCheck?.created_at
+        ? Math.floor((Date.now() - new Date(lastSignalCheck.created_at).getTime()) / (1000 * 60 * 60 * 24))
+        : null;
 
       const { count: somaticFlowCount } = await supabase
         .from('practice_logs')
@@ -677,7 +701,9 @@ export function useUserProgress() {
         milestonePendingDay,
         milestoneMessagesSent,
         weeklyCheckInDue,
-        
+
+        daysSinceLastSignalCheck,
+
         stage_1_attribution_seen: progressData.stage_1_attribution_seen ?? false,
         stage_2_attribution_seen: progressData.stage_2_attribution_seen ?? false,
         stage_3_attribution_seen: progressData.stage_3_attribution_seen ?? false,

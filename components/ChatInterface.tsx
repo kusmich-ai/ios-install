@@ -176,6 +176,11 @@ const initialExtendedFlowBlockState: ExtendedFlowBlockState = {
   todaysBlock: null
 };
 
+// Sprint 4: signal check cadence — Stage 1 every 3 days, Stage 2+ weekly
+function getSignalCheckCadenceDays(stage: number): number {
+  return stage === 1 ? 3 : 7;
+}
+
 // Simple markdown renderer for chat messages
 function renderMarkdown(text: string): string {
   return text
@@ -4678,18 +4683,14 @@ Or come back tomorrow morning to start Day 2. Your nervous system is about to st
 
     if (allComplete && practicesCompletedToday.length > 0) {
       hasAutoTriggeredToday.current = true;
-      // SPRINT4-SIGNAL-CHECK: Stage 1 post-ritual auto check-in disabled.
-      // The chat route's ritual_completion mode surfaces a "Quick signal check"
-      // (Calm/Presence 0-5) whose submission parser is broken, returning
-      // "I'm having trouble responding right now" mid-Day-1. Stage 2+ users
-      // keep the soft post-ritual invitation; only Stage 1's signal-check
-      // path is gated off. Sprint 4: re-evaluate the post-ritual flow
-      // holistically (fix parser, make optional, or move to weekly-only).
-      if (progress?.currentStage !== 1) {
+      const cadence = getSignalCheckCadenceDays(progress.currentStage);
+      const daysSince = progress.daysSinceLastSignalCheck;
+      const cadenceMet = daysSince === null || daysSince >= cadence;
+      if (cadenceMet) {
         setTimeout(() => triggerPostRitualCheckin(), 1500);
       }
     }
-  }, [practicesCompletedToday, progress?.currentStage]);
+  }, [practicesCompletedToday, progress?.currentStage, progress?.daysSinceLastSignalCheck]);
 
   const handleRequestCheckIn = useCallback(async () => {
     try {

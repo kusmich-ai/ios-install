@@ -1251,12 +1251,12 @@ For resistance:
 const STAGE1_ENHANCEMENT_TOOLS: Anthropic.Tool[] = [
   {
     name: "record_signal_check",
-    description: "Record the user's post-practice calm and presence scores (1-5 scale). Call this IMMEDIATELY after the user provides their signal check ratings.",
+    description: "Record the user's post-practice calm and presence scores (0-5 scale). Call this IMMEDIATELY after the user provides their signal check ratings.",
     input_schema: {
       type: "object" as const,
       properties: {
-        calm_score: { type: "integer", description: "Calm rating 1-5" },
-        presence_score: { type: "integer", description: "Presence rating 1-5" }
+        calm_score: { type: "integer", description: "Calm rating 0-5" },
+        presence_score: { type: "integer", description: "Presence rating 0-5" }
       },
       required: ["calm_score", "presence_score"]
     }
@@ -1339,12 +1339,13 @@ const STAGE1_ENHANCEMENT_TOOLS: Anthropic.Tool[] = [
 // ENHANCEMENT TOOL EXECUTION
 // ============================================
 async function executeEnhancementTool(
-  toolName: string, 
-  toolInput: Record<string, unknown>, 
-  userId: string
+  toolName: string,
+  toolInput: Record<string, unknown>,
+  userId: string,
+  userStage: number
 ): Promise<Record<string, unknown>> {
   const supabase = await createSupabaseClient();
-  
+
   switch (toolName) {
     case 'record_signal_check': {
       const { error } = await supabase
@@ -1353,7 +1354,7 @@ async function executeEnhancementTool(
           user_id: userId,
           calm_score: toolInput.calm_score,
           presence_score: toolInput.presence_score,
-          stage: 1
+          stage: userStage
         });
       
       if (error) {
@@ -1569,6 +1570,8 @@ const STAGE1_EXPERIENCE_LAYER = `
 - \`record_signal_check\` — Call this to store calm + presence scores after user provides them
 - \`get_signal_trends\` — Call this to retrieve rolling averages, trends, and cross-domain patterns
 
+**Data sufficiency rule:** Only narrate trends, rolling averages, or score comparisons (e.g. "up from 2.8 on Day 1") if \`get_signal_trends\` returns \`total_checks >= 4\`. With \`total_checks < 4\`, acknowledge the latest score warmly without comparing or trending. Do NOT manufacture a trend from sparse data.
+
 **BASIC PROMPT (Days 1-2):**
 After user confirms practices are done, say something like:
 "Quick signal check — rate two things right now:
@@ -1591,6 +1594,9 @@ Use the cross_domain data from get_signal_trends:
 - Reference trends conversationally, not as a formal report.
 - If user seems rushed or disengaged, skip the trend narration that day.
 - Always call record_signal_check when user provides scores — don't skip this.
+- **Input format:** first number = calm, second = presence (e.g. "4 3" → calm 4, presence 3). Also accept labeled forms: "calm 4 presence 3", "4 and 3 for calm and presence".
+- **If input is ambiguous** (one number only, no numbers, or words like "good"/"bad"/"meh" in place of scores): do NOT call record_signal_check. Ask one clarifying question, in the form: "I need both — calm and presence (0-5). Could you give me 'calm X presence Y' or just two numbers?"
+- **Max one clarification.** If still unclear after that single question, acknowledge warmly and move on — skipping this round is fine; the next ritual completion offers it again. Don't loop a third time.
 
 ---
 
@@ -1713,6 +1719,7 @@ After they share, call \`get_signal_trends\` to pull their actual data. Then pre
 - ALWAYS ask subjective perception FIRST. Never lead with data.
 - One-time delivery (Day 7 only). Don't repeat.
 - After completing, call \`log_journal_entry\` with entry_type "day7_mirror".
+- **Data sufficiency:** if \`get_signal_trends\` returns \`total_checks < 4\`, skip the X→Y numeric comparison in Step 3. Acknowledge the latest score and frame the data as still early — the felt-sense bridge still works without specific deltas.
 
 ---
 
@@ -2465,12 +2472,17 @@ ${context === 'breakthrough_response'
       
       const toolResults: Anthropic.ToolResultBlockParam[] = [];
 
+      const userStage = (typeof additionalContext?.currentStage === 'number' && additionalContext.currentStage > 0)
+        ? additionalContext.currentStage
+        : 1;
+
       for (const toolUse of toolUseBlocks) {
         console.log(`[Enhancement Tool] Executing: ${toolUse.name}`, toolUse.input);
         const result = await executeEnhancementTool(
-          toolUse.name, 
-          toolUse.input as Record<string, unknown>, 
-          userId
+          toolUse.name,
+          toolUse.input as Record<string, unknown>,
+          userId,
+          userStage
         );
         console.log(`[Enhancement Tool] Result:`, result);
 

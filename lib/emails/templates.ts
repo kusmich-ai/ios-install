@@ -112,15 +112,18 @@ export function threeDayAbsence(userName: string, daysAway: number, unsubscribeU
 }
 
 export function weeklySummary(
-  userName: string, 
-  completedDays: number, 
-  totalDays: number, 
+  userName: string,
+  completedDays: number,
+  totalDays: number,
   adherence: number,
-  calmTrend: 'up' | 'down' | 'stable',
+  calmTrend: 'up' | 'down' | 'stable' | 'insufficient',
   insight: string,
   unsubscribeUrl: string
 ): { subject: string; html: string } {
-  const trendText = calmTrend === 'up' ? 'trending up ↑' : calmTrend === 'down' ? 'trending down ↓' : 'holding steady →';
+  const trendText = calmTrend === 'up' ? 'trending up ↑'
+    : calmTrend === 'down' ? 'trending down ↓'
+    : calmTrend === 'stable' ? 'holding steady →'
+    : 'still gathering ⋯';
   
   return {
     subject: `Your week: ${completedDays}/${totalDays} days, calm ${trendText}`,
