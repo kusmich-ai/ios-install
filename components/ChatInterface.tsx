@@ -2334,7 +2334,7 @@ When you're ready to learn more, click the "Unlock Stage 7?" button in your dash
     rewiredDelta: number;
     adherence: number;
     consecutiveDays: number;
-    patternProfile: { primaryPattern: string | null; coreChallenge: string | null; mirrorSummary: string | null } | null;
+    patternProfile: { primaryPattern: string | null; coreChallenge: string | null } | null;
   }) => {
     const { currentScores, baseline, deltas, rewiredIndex, rewiredDelta, adherence, consecutiveDays, patternProfile } = data;
 
@@ -2363,7 +2363,7 @@ Data:
 - REwired Index: ${baseline.rewiredIndex} → ${rewiredIndex} (${delta(rewiredDelta)} points)
 - Strongest moving domain: ${strongest.name} (${delta(strongest.delta)})
 - Weakest moving domain: ${weakest.name} (${delta(weakest.delta)})
-- Pattern profile: ${patternProfile?.mirrorSummary || patternProfile?.coreChallenge || 'not available'}
+- Pattern profile: ${patternProfile ? [patternProfile.primaryPattern, patternProfile.coreChallenge].filter(Boolean).join(' — ') || 'not available' : 'not available'}
 
 Tone rules:
 - Start with something specific about their pattern or strongest domain, NOT generic praise
@@ -2459,7 +2459,7 @@ Tone rules:
       const roadmapPrompt = `You are the UNbecoming Guide. Write exactly 2 sentences connecting this user's specific situation to what Stages 2-4 will address. Make it feel like the Stack was built for them. Direct, no fluff.
 
 User's weakest domain: ${weakest}
-Pattern profile: ${patternProfile?.mirrorSummary || patternProfile?.coreChallenge || patternProfile?.primaryPattern || 'not available'}
+Pattern profile: ${patternProfile ? [patternProfile.primaryPattern, patternProfile.coreChallenge].filter(Boolean).join(' — ') || 'not available' : 'not available'}
 
 Example: "You came in noting that reactivity was bleeding into your relationships — Stage 3 is specifically designed to catch that pattern before it fires. By Stage 5, you'll be training your nervous system to stay open even when it wants to shut down."
 

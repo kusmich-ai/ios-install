@@ -119,7 +119,6 @@ export interface UserProgress {
   patternProfile: {
     primaryPattern: string | null;
     coreChallenge: string | null;
-    mirrorSummary: string | null;
   } | null;
 
   // Awareness Rep rotation
@@ -472,7 +471,7 @@ export function useUserProgress() {
 
       const { data: patternProfileData } = await supabase
         .from('pattern_profiles')
-        .select('primary_pattern, core_challenge, mirror_summary')
+        .select('core_pattern, skipped')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -694,10 +693,9 @@ export function useUserProgress() {
           rewiredIndex: baselineRewiredIndex,
         },
 
-        patternProfile: patternProfileData ? {
-          primaryPattern: patternProfileData.primary_pattern || null,
-          coreChallenge: patternProfileData.core_challenge || null,
-          mirrorSummary: patternProfileData.mirror_summary || null,
+        patternProfile: patternProfileData && !patternProfileData.skipped ? {
+          primaryPattern: patternProfileData.core_pattern?.name || null,
+          coreChallenge: patternProfileData.core_pattern?.description || null,
         } : null,
 
         lastAwarenessRepScript: progressData.last_awareness_rep_script || null,
