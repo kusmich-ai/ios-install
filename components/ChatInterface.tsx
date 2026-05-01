@@ -4678,8 +4678,16 @@ Or come back tomorrow morning to start Day 2. Your nervous system is about to st
 
     if (allComplete && practicesCompletedToday.length > 0) {
       hasAutoTriggeredToday.current = true;
-      // Brief delay so completion messages appear first
-      setTimeout(() => triggerPostRitualCheckin(), 1500);
+      // SPRINT4-SIGNAL-CHECK: Stage 1 post-ritual auto check-in disabled.
+      // The chat route's ritual_completion mode surfaces a "Quick signal check"
+      // (Calm/Presence 0-5) whose submission parser is broken, returning
+      // "I'm having trouble responding right now" mid-Day-1. Stage 2+ users
+      // keep the soft post-ritual invitation; only Stage 1's signal-check
+      // path is gated off. Sprint 4: re-evaluate the post-ritual flow
+      // holistically (fix parser, make optional, or move to weekly-only).
+      if (progress?.currentStage !== 1) {
+        setTimeout(() => triggerPostRitualCheckin(), 1500);
+      }
     }
   }, [practicesCompletedToday, progress?.currentStage]);
 
