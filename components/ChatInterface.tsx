@@ -5879,7 +5879,6 @@ if (regressionIntervention?.isActive) {
           onProgressUpdate={handleProgressUpdate}
           onPracticeCompleted={handlePracticeCompleted}
     isRefreshing={isRefreshing}
-          onInstallClick={handleInstallNowClick}
         />
       )}
 
