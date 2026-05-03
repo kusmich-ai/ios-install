@@ -15,14 +15,20 @@ interface PromptStartersProps {
 // PROMPT LIBRARY
 // ============================================
 // Structure: Each stage has time-of-day pools.
-// Within each pool, prompts are tagged as 'early' (days 0-6), 
+// Within each pool, prompts are tagged as 'early' (days 0-6),
 // 'mid' (days 7-13), or 'any' (always available).
-// This ensures prompts feel contextual to where the user 
+// This ensures prompts feel contextual to where the user
 // actually is in their stage progression.
+//
+// Optional `minDaysInStage` excludes a prompt until the user has at least
+// that many days in their current stage. Used for prompts that assume
+// prior practice history (e.g. "I skipped my practice today" makes no
+// sense on Day 1 when there's nothing to skip).
 
 interface TaggedPrompt {
   text: string;
   phase: 'early' | 'mid' | 'late' | 'any';
+  minDaysInStage?: number;
 }
 
 const PROMPT_LIBRARY: Record<number, Record<string, TaggedPrompt[]>> = {
@@ -31,7 +37,7 @@ const PROMPT_LIBRARY: Record<number, Record<string, TaggedPrompt[]>> = {
       // Early: orientation + getting started
       { text: "What should I focus on during Resonance Breathing?", phase: 'early' },
       { text: "How does HRVB actually rewire my nervous system?", phase: 'early' },
-      { text: "I did my rituals — what should I notice throughout the day?", phase: 'early' },
+      { text: "I did my rituals — what should I notice throughout the day?", phase: 'early', minDaysInStage: 2 },
       // Mid: going deeper + building consistency
       { text: "I'm noticing something shifting — help me understand it", phase: 'mid' },
       { text: "Am I close to unlocking Stage 2?", phase: 'mid' },
@@ -50,7 +56,7 @@ const PROMPT_LIBRARY: Record<number, Record<string, TaggedPrompt[]>> = {
       { text: "I'm feeling stuck — help me see the pattern", phase: 'any' },
       { text: "Run me through a quick decentering", phase: 'any' },
       { text: "My sleep has been off — help me troubleshoot", phase: 'mid' },
-      { text: "I skipped my practice today — let's talk about it", phase: 'any' },
+      { text: "I skipped my practice today — let's talk about it", phase: 'any', minDaysInStage: 2 },
     ],
     evening: [
       { text: "Help me wind down — what should I notice right now?", phase: 'any' },
@@ -219,12 +225,23 @@ function getDailySeed(): number {
 
 function selectPrompts(taggedPrompts: TaggedPrompt[], daysInStage: number, count: number): string[] {
   const phase = getDailyPhase(daysInStage);
-  
-  // Filter to prompts matching current phase OR 'any'
-  const eligible = taggedPrompts.filter(p => p.phase === phase || p.phase === 'any');
-  
-  // Fallback: if not enough eligible, include all
-  const pool = eligible.length >= count ? eligible : taggedPrompts;
+
+  // Filter to prompts matching current phase OR 'any', and respect any
+  // per-prompt minimum on days-in-stage so onboarding users don't see
+  // veteran prompts that assume prior practice history.
+  const eligible = taggedPrompts.filter(p => {
+    const phaseOk = p.phase === phase || p.phase === 'any';
+    const dayOk = p.minDaysInStage === undefined || daysInStage >= p.minDaysInStage;
+    return phaseOk && dayOk;
+  });
+
+  // Fallback: if not enough eligible, relax the phase filter but still
+  // honor minDaysInStage — never resurface a veteran prompt for a Day 1 user.
+  const pool = eligible.length >= count
+    ? eligible
+    : taggedPrompts.filter(p =>
+        p.minDaysInStage === undefined || daysInStage >= p.minDaysInStage
+      );
   
   // Deterministic daily shuffle
   const seed = getDailySeed();
