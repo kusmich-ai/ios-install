@@ -126,6 +126,10 @@ export interface UserProgress {
 
   // Awareness Rep rotation
   lastAwarenessRepScript: string | null;
+
+  // Anchor capture (Sprint 4 Phase 3.B Units 4.1–4.3)
+  morningAnchor: string | null;
+  reminderTime: string | null;
 }
 
 // ============================================
@@ -725,6 +729,9 @@ export function useUserProgress() {
         } : null,
 
         lastAwarenessRepScript: progressData.last_awareness_rep_script || null,
+
+        morningAnchor: progressData.morning_anchor ?? null,
+        reminderTime: progressData.reminder_time ?? null,
       };
 
       console.log('[useUserProgress] Setting progress:', {

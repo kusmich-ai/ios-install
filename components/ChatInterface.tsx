@@ -349,17 +349,21 @@ function getSameDayReturnMessage(
   baselineData: BaselineData,
   progressData: ProgressData | null,
   currentStage: number,
-  practicesCompletedToday: string[]
+  practicesCompletedToday: string[],
+  morningAnchor?: string | null
 ): string {
   const adherence = progressData?.adherence_percentage || 0;
   const requiredPractices = getStagePracticeIds(currentStage);
   const completedCount = practicesCompletedToday.filter(p => requiredPractices.includes(p)).length;
   const totalRequired = requiredPractices.length;
-  
+
   if (completedCount >= totalRequired) {
+    const tomorrowLine = morningAnchor
+      ? `\n\nTomorrow morning, ${morningAnchor.charAt(0).toLowerCase() + morningAnchor.slice(1)}, we go again.`
+      : '';
     return `Welcome back. You've completed all your rituals for today — nice work.
 
-**${completedCount}/${totalRequired}** practices done. That's consistency in action.
+**${completedCount}/${totalRequired}** practices done. That's consistency in action.${tomorrowLine}
 
 What else can I help you with?`;
   }
@@ -394,26 +398,33 @@ function getNewDayMorningMessage(
   progressData: ProgressData | null,
   userName: string,
   currentStage: number,
-  yesterdayInsight?: string | null
+  yesterdayInsight?: string | null,
+  morningAnchor?: string | null
 ): string {
   const adherence = progressData?.adherence_percentage || 0;
   const consecutiveDays = progressData?.consecutive_days || 0;
   const rituals = stageRituals[currentStage] || stageRituals[1];
-  
+
   let streakMessage = '';
   if (consecutiveDays > 0) {
     streakMessage = `**${consecutiveDays}-day streak** and counting. `;
   }
-  
+
   let adherenceMessage = '';
   if (adherence > 0) {
     adherenceMessage = `Adherence: **${adherence}%**. `;
   }
-  
+
   const totalDays = progressData?.created_at
     ? Math.floor((Date.now() - new Date(progressData.created_at).getTime()) / (1000 * 60 * 60 * 24)) + 1
     : consecutiveDays + 1;
-  
+
+  // Display-only lowercase of the anchor's first letter so it reads
+  // naturally inline (matches the pattern used in the Day 1 closing).
+  const anchorLine = morningAnchor
+    ? `Your anchor: ${morningAnchor.charAt(0).toLowerCase() + morningAnchor.slice(1)}.\n\n`
+    : '';
+
   if (yesterdayInsight) {
     return `Good morning${userName ? `, ${userName}` : ''}. Day ${totalDays}.
 
@@ -421,17 +432,17 @@ Before we get into today — yesterday's conversation touched on something worth
 
 ${streakMessage}${adherenceMessage}
 
-**Today's Stage ${currentStage} Rituals:**
+${anchorLine}**Today's Stage ${currentStage} Rituals:**
 ${rituals.list}
 
 Use the toolbar to start, or pick up where we left off.`;
   }
-  
+
   return `Good morning${userName ? `, ${userName}` : ''}. Day ${totalDays} of building The Stack. That's impressive.
 
 ${streakMessage}${adherenceMessage}
 
-**Today's Stage ${currentStage} Rituals:**
+${anchorLine}**Today's Stage ${currentStage} Rituals:**
 ${rituals.list}
 
 Use the toolbar to start, or ask me anything.`;
@@ -4162,7 +4173,7 @@ Give me your four numbers (e.g., "4 3 4 5").`;
           }
           
           // No saved messages (first visit today via same_day edge case)
-          openingMessage = getSameDayReturnMessage(correctedBaselineData, progressData, currentStage, completedToday);
+          openingMessage = getSameDayReturnMessage(correctedBaselineData, progressData, currentStage, completedToday, progress?.morningAnchor ?? null);
         } else if (type === 'first_time') {
           // Brand-new user — render the welcome / Stage 1 intro and let the
           // tutorial state machine (introStep) take over from there.
@@ -4196,7 +4207,7 @@ Give me your four numbers (e.g., "4 3 4 5").`;
             console.error('[ChatInterface] Failed to check yesterday context:', err);
           }
           
-          openingMessage = getNewDayMorningMessage(correctedBaselineData, progressData, userName, currentStage, yesterdayInsight);
+          openingMessage = getNewDayMorningMessage(correctedBaselineData, progressData, userName, currentStage, yesterdayInsight, progress?.morningAnchor ?? null);
         }
 
         setMessages([]);
