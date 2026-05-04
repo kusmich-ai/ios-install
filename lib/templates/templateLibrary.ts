@@ -1306,6 +1306,41 @@ export function getIntroRedirectMessage(currentStep: number): string {
 }
 
 // ============================================
+// ANCHOR CAPTURE TEMPLATES (Day 1, post-rituals)
+// ============================================
+// Two-message capture flow that fires once after the user finishes Day 1
+// of Stage 1 (both rituals complete, morning_anchor still NULL). Stores
+// the user's chosen morning anchor and reminder time on user_progress.
+
+export const anchorCaptureTemplates = {
+  anchorPrompt: `Good. You've felt both practices now. Last thing before I let you go: when's your morning ritual gonna happen tomorrow? The trick is anchoring it to something you already do every day.`,
+
+  anchorOptions: [
+    { value: 'Right after waking up', label: 'Right after waking up' },
+    { value: 'After coffee', label: 'After coffee' },
+    { value: 'After brushing teeth', label: 'After brushing teeth' },
+    { value: 'After first water/light', label: 'After first water/light' },
+    { value: '__OTHER__', label: 'Other — let me type it' },
+  ] as { value: string; label: string }[],
+
+  anchorOtherPrompt: `What's the moment that always happens first?`,
+
+  reminderPrompt: `Got it. And what time do you want a gentle nudge if you haven't started by then?`,
+
+  // Reminder values are HH:MM strings; '__SKIP__' is a sentinel that maps to NULL on save.
+  reminderOptions: [
+    { value: '06:00', label: '6:00 AM' },
+    { value: '07:00', label: '7:00 AM' },
+    { value: '08:00', label: '8:00 AM' },
+    { value: '09:00', label: '9:00 AM' },
+    { value: '__SKIP__', label: 'Later — skip the reminder' },
+  ] as { value: string; label: string }[],
+
+  closingTemplate: (anchor: string) =>
+    `Set. Tomorrow morning, ${anchor}, we'll run Resonance Breathing first. The system will track your consistency from here. See you tomorrow.`,
+};
+
+// ============================================
 // STAGE 7 CONVERSATION TEMPLATES
 // ============================================
 

@@ -32,6 +32,7 @@ export {
   // NEW: Consolidated templates for ChatInterface
   weeklyCheckInTemplates,
   introFlowTemplates,
+  anchorCaptureTemplates,
   stage7ConversationTemplates,
   getIntroRedirectMessage,
   isAskingAboutStage7
