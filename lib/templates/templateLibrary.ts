@@ -310,21 +310,87 @@ These aren't optional. They're the foundation — without them, nothing else sti
 
 Ready to learn each ritual?`,
 
-      combined: `**Stage 1 is two morning rituals — and two tools you can pull anytime.**
+      practices: {
+        hrvb: `**RITUAL 1: RESONANCE BREATHING — 5 MINS**
 
-**RITUAL 1 — Resonance Breathing (5 mins)**
-Stimulates your vagus nerve and trains your heart and nervous system to sync. 4-second inhale, 6-second exhale — the rhythm where they lock in. First thing after waking, in bed, sitting up.
+**What it does:**
+Stimulates your vagus nerve and increases heart rate variability. Translation: trains your nervous system to shift from stress to coherence on command.
 
-**RITUAL 2 — Awareness Rep (2 mins)**
-Right after Resonance Breathing, still seated. Sit with whatever's here — sounds, sensations, thoughts — and practice noticing without getting hooked. When you drift into thought (you will), notice that, and return. Builds the muscle that catches you before you spiral.
+**When:** First thing after waking, before anything else.
 
-**On-demand tools** (available from the {{toolbarReference}} when you need them):
-- **Decentering** — when thoughts or emotions are running you. Creates space between you and the experience.
-- **Worry Loop Dissolver** — when you can't stop worrying about something specific. Interrupts the loop.
+**How:**
+Tomorrow morning, you'll do this in bed right after waking — sitting up, spine long, shoulders relaxed. Today, we'll practice it in a minute so you understand the rhythm before it becomes routine.
 
-The {{toolbarReference}} tracks each ritual and starts the practices.
+We're using a 4-second inhale, 6-second exhale rhythm — this is the rate at which your heart and nervous system sync up most efficiently.
 
-Find 5 minutes where you won't be interrupted — phone down, somewhere comfortable to sit. When you're ready, hit the button below.`
+You'll experience this firsthand in just a minute — for now, just understand what it is.
+
+When ready, every morning you'll initiate this with {{toolbarReference}}.
+
+That's ritual one. Make sense?`,
+
+        awareness_rep: `**RITUAL 2: AWARENESS REP — 2 MINS**
+
+**What it does:**
+Builds the meta-awareness muscle — the part of you that can step back and watch your own thoughts and feelings instead of being run by them.
+
+**When:** Right after Resonance Breathing, while still seated.
+
+**How:**
+You sit with whatever's here — sounds, sensations, thoughts — and practice noticing them without getting hooked.
+
+You're not trying to change anything or "get somewhere." Just notice that you're noticing.
+
+When you drift into thought (you will), notice that too, and return.
+
+That's the practice. Recognizing you're not the things you experience.
+
+You'll experience this firsthand in just a minute — for now, just understand what it is.
+
+You'll initiate this with {{toolbarReference}} every morning, right after Resonance Breathing.
+
+Make sense?`
+      },
+
+      onDemandToolsIntro: `Those two rituals are your morning non-negotiables.
+
+But you also have two **on-demand tools** available from Day 1. These aren't daily rituals — they're tools you reach for when you need them.
+
+**Decentering Practice** — for moments when thoughts or emotions feel like they're running you. A short conversational exercise that creates space between you and the experience. Ask me to run it whenever you need it.
+
+**Worry Loop Dissolver** — when you can't stop worrying about something specific. It interrupts the loop and helps the nervous system release the grip.
+
+Both are available anytime from your toolbar.
+
+Ready for your full Stage 1 overview?`,
+
+     wrapUp: `Here's your complete **Stage 1 toolkit**:
+
+**Morning Rituals (Daily, Non-Negotiable):**
+1. Wake up
+2. Resonance Breathing — 5 mins
+3. Awareness Rep — 2 mins
+4. Then check in with me
+
+**On-Demand Tools (Use When Needed):**
+- Decentering Practice — for moments when thoughts or emotions feel like they're running you
+- Worry Loop Dissolver — when you can't stop worrying about something specific
+
+Your **{{toolbarReference}}** will track your progress and let you know when each ritual is complete.
+
+**A few other things to know:**
+
+I'm here for daily conversation, not just rituals. Ask me anything — about the rituals, your patterns, what's coming up for you.
+
+You also have two coaches available: **Nic** and **Fehren**. Each brings a different lens — try both and see which lands. They're at the top of your chat.
+
+The **Course Library** has deeper content as you progress. Worth exploring as you build the foundation.
+
+One thing before you go: Stage 1 is deceptively simple. Two short rituals, every day. Your mind might tell you it's not enough — that real change requires something harder, longer, more complex. That voice is wrong. Regulation is the foundation everything else is built on. Without it, nothing sticks. The simplicity is the point — you're training your nervous system, and it learns through repetition, not complexity.
+
+Find 5 minutes where you won't be interrupted — phone away, notifications off, somewhere comfortable to sit. When you're ready, hit the button below.
+
+Let's start now.`
     },
 
     dailyPrompts: {
@@ -1284,19 +1350,28 @@ export const weeklyCheckInTemplates = {
 export const introFlowTemplates = {
   // Quick reply button configurations for each intro step
   quickReplies: {
-    0: { text: "Show me the rituals", buttonLabel: "Show me the rituals" },
-    1: { text: "Start my first Resonance Breathing", buttonLabel: "Start my first Resonance Breathing" },
-    2: null
+    0: { text: "Yes, let's learn the rituals", buttonLabel: "Yes, let's go" },
+    1: { text: "Got it, makes sense. What's next?", buttonLabel: "Got it, next ritual" },
+    2: { text: "Makes sense, I'm ready", buttonLabel: "Got it, tell me about the tools" },
+    3: { text: "Ready for my Stage 1 overview", buttonLabel: "Ready, let's go" },
+    4: { text: "Start my first Resonance Breathing", buttonLabel: "Start my first Resonance Breathing" },
+    5: null
   } as { [key: number]: { text: string; buttonLabel: string } | null },
 
   // Redirect messages to get user back on track after answering their question
   redirectMessages: {
     0: `---
 
-Now, back to your rituals. Ready to see them?`,
+Now, back to your rituals. Ready to learn them?`,
     1: `---
 
-Back to it. Ready to start your first Resonance Breathing?`
+Back to the walkthrough. Make sense so far? Ready for the next ritual?`,
+    2: `---
+
+Back to the intro. Ready to hear about your on-demand tools?`,
+    3: `---
+
+Okay, back to wrapping up. Ready to get started?`
   } as { [key: number]: string }
 };
 

@@ -318,7 +318,8 @@ const isAskingAboutStage7 = isAskingAboutStage7FromLib;
 
 async function getFirstTimeOpeningMessage(baselineData: BaselineData, userName: string): Promise<string> {
   const tier = getStatusTier(baselineData.rewiredIndex);
-
+  const rituals = stageRituals[1];
+  
   // Use static tier interpretation for consistency (no API call)
   const tierInterpretation = TIER_INTERPRETATIONS[tier] || TIER_INTERPRETATIONS['Operational'];
   
@@ -332,13 +333,35 @@ ${tierInterpretation}
 
 ---
 
-The Stack rewires how you regulate, think, and perform — **7 progressive stages**, each layer unlocking the next.
+**So what is this, exactly?**
+
+The Stack is a neural transformation protocol.
+
+This isn't meditation. It's not therapy. It's systems engineering for your brain and body — designed to give you steadier focus, fewer reactive moments, and the kind of clarity that holds up under pressure.
+
+**How it works:**
+
+There are **7 progressive stages**. Each one builds new capabilities — each layer unlocking the next.
 
 You don't unlock the next stage by waiting. You unlock it by **proving competence**: consistent practice, measurable improvement, and qualitative readiness. The system adapts to you.
 
-You're starting at **Stage 1: Neural Priming** — stabilizing your nervous system's baseline so everything else has somewhere to stand.
+**What you're installing in Stage 1:**
 
-**Ready to learn the rituals?**`;
+Stage 1 is called **Neural Priming**. It stabilizes your nervous system's baseline signal through two core rituals:
+
+${rituals.list}
+
+**Total: ${rituals.total} each morning.**
+
+These aren't random rituals. Resonance Breathing trains your nervous system to shift from stress to calm on command — over time, you stop getting stuck in reactive states. The Awareness Rep builds the muscle to catch yourself before you spiral, giving you space between trigger and reaction.
+
+**What to expect from me:**
+
+I'm not a cheerleader. I'm direct, I explain the science when it matters, and I'll call out avoidance patterns when I see them. But I'm also here to adapt to your reality and celebrate real progress.
+
+Use the toolbar to start rituals and track progress. Your dashboard — REwired Index, domain scores, and Course Library — is available from the menu.
+
+**Ready to learn each ritual and begin Stage 1?**`;
 }
 // ============================================
 // SAME-DAY RETURN MESSAGE
@@ -836,7 +859,7 @@ const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebri
   // HELPER FUNCTIONS
   // ============================================
   const getUserName = () => user?.user_metadata?.first_name || '';
-  const currentQuickReply = openingType === 'first_time' && introStep < 2 ? introQuickReplies[introStep] : null;
+  const currentQuickReply = openingType === 'first_time' && introStep < 5 ? introQuickReplies[introStep] : null;
 
   // ============================================
   // MESSAGE PERSISTENCE (Same-day across devices)
@@ -1628,7 +1651,7 @@ const getFallbackResultsMessage = (
       adherence: extendedProgress?.adherencePercentage || 0,
       consecutiveDays: extendedProgress?.consecutiveDays || 0,
       practicesCompletedToday,
-      stageIntroCompleted: extendedProgress?.ritualIntroCompleted || introStep >= 2,
+      stageIntroCompleted: extendedProgress?.ritualIntroCompleted || introStep >= 4,
       hasIdentitySet: !!coherenceStatement,
       identityDayInCycle: sprintStart 
         ? Math.floor((Date.now() - new Date(sprintStart).getTime()) / (1000 * 60 * 60 * 24)) + 1
@@ -4351,13 +4374,25 @@ Give me your four numbers (e.g., "4 3 4 5").`;
 
     if (currentStep === 0) {
       setIntroStep(1);
-      return processTemplate(stageTemplates[1].ritualIntro.combined, templateContext);
+      return processTemplate(stageTemplates[1].ritualIntro.practices.hrvb, templateContext);
     }
     if (currentStep === 1) {
+      setIntroStep(2);
+      return processTemplate(stageTemplates[1].ritualIntro.practices.awareness_rep, templateContext);
+    }
+    if (currentStep === 2) {
+      setIntroStep(3);
+      return processTemplate(stageTemplates[1].ritualIntro.onDemandToolsIntro, templateContext);
+    }
+    if (currentStep === 3) {
+      setIntroStep(4);
+      return processTemplate(stageTemplates[1].ritualIntro.wrapUp, templateContext);
+    }
+    if (currentStep === 4) {
       // Final tutorial step — launch the user's first Resonance Breathing,
       // mark intro complete, and let the modal take over. Day 1 handoff
       // chain takes over after the modal closes.
-      setIntroStep(2);
+      setIntroStep(5);
       setDay1HandoffPhase('awaiting_hrvb');
       openResonance();
 
@@ -5036,7 +5071,7 @@ if (regressionIntervention?.isActive) {
     }
     
     // Intro Flow Handling
-    if (openingType === 'first_time' && introStep < 2) {
+    if (openingType === 'first_time' && introStep < 5) {
       setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
       setLoading(true);
       
@@ -5777,7 +5812,7 @@ if (regressionIntervention?.isActive) {
                 !systemRecoveryIntervention?.isActive &&
                 unlockFlowState === 'none' &&
                 stage7FlowState === 'none' &&
-                !(openingType === 'first_time' && introStep < 2)
+                !(openingType === 'first_time' && introStep < 5)
               }
             />
             <form onSubmit={sendMessage} className="flex gap-3">
