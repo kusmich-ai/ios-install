@@ -1839,14 +1839,6 @@ const getFallbackResultsMessage = (
     }
   }, [input]);
 
-  // Update practices completed today when progress changes
-  useEffect(() => {
-    const extendedProgress = progress as any;
-    if (extendedProgress?.practicesCompletedToday) {
-      setPracticesCompletedToday(extendedProgress.practicesCompletedToday);
-    }
-  }, [progress]);
-
   // ============================================
   // EFFECT - Load Flow Block Status
   // ============================================
