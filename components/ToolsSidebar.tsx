@@ -30,8 +30,10 @@ import {
 } from 'lucide-react';
 import { getScheduledPracticesForDate, getUnlockedOnDemandTools } from '@/app/config/stages';
 import type { UserProgress } from '@/app/hooks/useUserProgress';
-import { useResonanceBreathing } from '@/components/ResonanceModal';
-import { useAwarenessRep } from '@/components/AwarenessRepModal';
+// Phase 3.C Unit 2: RB + AR modals are now hosted by ChatInterface and shared
+// via PracticeModalsContext. Sidebar no longer instantiates its own hooks for
+// these two practices.
+import { usePracticeModals } from '@/app/contexts/PracticeModalsContext';
 import { useSomaticFlow } from '@/components/SomaticFlowModal';
 import type { SomaticFlowVersion } from '@/components/SomaticFlow';
 import CuePhaseCard from './CuePhaseCard';
@@ -106,12 +108,9 @@ isRefreshing = false,
   const [completing, setCompleting] = useState<string | null>(null);
   const [completionError, setCompletionError] = useState<string | null>(null);
 
-  // v2.6: Track which awareness rep script is currently being played
-  const [currentAwarenessScript, setCurrentAwarenessScript] = useState<AwarenessRepScript | null>(null);
-
-  // Initialize modal hooks - UNCHANGED
-  const { open: openAwarenessRep, Modal: AwarenessRepModal } = useAwarenessRep();
-  const { open: openResonance, Modal: ResonanceModal } = useResonanceBreathing();
+  // Phase 3.C Unit 2: RB + AR open via context; modals + completion handlers
+  // live in ChatInterface. Other modals retain their per-component hook state.
+  const { openResonance, openAwarenessRep } = usePracticeModals();
   const { open: openSomaticFlow, Modal: SomaticFlowModal } = useSomaticFlow();
   const { open: openCoRegulation, Modal: CoRegulationModal } = useCoRegulation();
   const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebrief();
@@ -134,13 +133,15 @@ const getPracticeStatus = (practiceId: string): 'completed' | 'pending' | 'locke
     if (practiceId === 'hrvb') {
       openResonance();
     } else if (practiceId === 'awareness_rep') {
-      // v2.6: Compute next script in rotation, pass audio path to modal
+      // v2.6: Compute next script in rotation, pass audio path to modal.
+      // Phase 3.C Unit 2: pass the script identifier to the shared modal so
+      // ChatInterface (the new owner of completion logic) can persist the
+      // rotation advance.
       const lastScript = progress.lastAwarenessRepScript as AwarenessRepScript | null;
       const nextScript = getNextScript(progress.currentStage, lastScript);
       const audioPath = getScriptAudioPath(nextScript);
-      setCurrentAwarenessScript(nextScript);
       console.log(`[ToolsSidebar] Awareness Rep rotation: ${nextScript} (${getScriptInfo(nextScript).name})`);
-      openAwarenessRep(audioPath);
+      openAwarenessRep(audioPath, nextScript);
     } else if (practiceId === 'somatic_flow') {
       openSomaticFlow(); 
     } else if (practiceId === 'co_regulation') {
@@ -168,27 +169,16 @@ const getPracticeStatus = (practiceId: string): 'completed' | 'pending' | 'locke
     }
   };
 
-  // UPDATED: handleModalComplete — saves awareness rep rotation after completion
+  // Phase 3.C Unit 2: handleModalComplete now only fires for the modals that
+  // sidebar still owns (somatic_flow, co_regulation, nightly_debrief). RB + AR
+  // completion is handled by ChatInterface, which also persists the
+  // awareness_rep rotation via persistPracticeLog.
   const handleModalComplete = async (practiceId: string, practiceName: string) => {
     console.log(`[ToolsSidebar] Modal completed: ${practiceId}`);
-    
+
     // Only log if not already completed today
     if (getPracticeStatus(practiceId) !== 'completed') {
       await handleMarkComplete(practiceId, practiceName);
-    }
-
-    // v2.6: After awareness rep completes, save which script was played
-    if (practiceId === 'awareness_rep' && currentAwarenessScript) {
-      try {
-        await fetch('/api/practices/update-awareness-rep-script', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, script: currentAwarenessScript }),
-        });
-        console.log(`[ToolsSidebar] Awareness Rep rotation saved: ${currentAwarenessScript}`);
-      } catch (err) {
-        console.error('[ToolsSidebar] Failed to save awareness rep rotation:', err);
-      }
     }
   };
 
@@ -258,13 +248,8 @@ const getPracticeStatus = (practiceId: string): 'completed' | 'pending' | 'locke
 
   return (
     <>
-      {/* Modals - UNCHANGED */}
-      <ResonanceModal 
-        onComplete={() => handleModalComplete('hrvb', 'Resonance Breathing')} 
-      />
-      <AwarenessRepModal 
-        onComplete={() => handleModalComplete('awareness_rep', 'Awareness Rep')} 
-      />
+      {/* Modals — Phase 3.C Unit 2: ResonanceModal + AwarenessRepModal moved to
+          ChatInterface (single instance shared via PracticeModalsContext). */}
 <SomaticFlowModal
         currentVersion={(progress.somaticFlowCurrentVersion ?? 'original') as SomaticFlowVersion}
         hasSeenDemo={progress.somaticFlowDemosSeen?.includes(progress.somaticFlowCurrentVersion ?? 'original') ?? true}

@@ -12,8 +12,9 @@ import {
 } from 'lucide-react';
 import { getScheduledPracticesForDate, getUnlockedOnDemandTools } from '@/app/config/stages';
 import type { UserProgress } from '@/app/hooks/useUserProgress';
-import { useResonanceBreathing } from '@/components/ResonanceModal';
-import { useAwarenessRep } from '@/components/AwarenessRepModal';
+// Phase 3.C Unit 2: RB + AR modals are hosted by ChatInterface and shared via
+// PracticeModalsContext. FAB no longer instantiates its own hooks for those.
+import { usePracticeModals } from '@/app/contexts/PracticeModalsContext';
 import { useSomaticFlow } from '@/components/SomaticFlowModal';
 import type { SomaticFlowVersion } from '@/components/SomaticFlow';
 import CuePhaseCard from './CuePhaseCard';
@@ -98,11 +99,8 @@ export default function FloatingActionButton({
   const [completing, setCompleting] = useState<string | null>(null);
   const [completionError, setCompletionError] = useState<string | null>(null);
 
-  // v2.6: Track which awareness rep script is currently being played
-  const [currentAwarenessScript, setCurrentAwarenessScript] = useState<AwarenessRepScript | null>(null);
-
-  const { open: openResonance, Modal: ResonanceModal } = useResonanceBreathing();
-  const { open: openAwarenessRep, Modal: AwarenessRepModal } = useAwarenessRep();
+  // Phase 3.C Unit 2: RB + AR open via context. Other modals retain per-component hooks.
+  const { openResonance, openAwarenessRep } = usePracticeModals();
   const { open: openSomaticFlow, Modal: SomaticFlowModal } = useSomaticFlow();
   const { open: openCoRegulation, Modal: CoRegulationModal } = useCoRegulation();
   const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebrief();
@@ -123,13 +121,14 @@ export default function FloatingActionButton({
   const handleStartPractice = (practiceId: string) => {
     if (practiceId === 'hrvb') { openResonance(); setIsOpen(false); }
     else if (practiceId === 'awareness_rep') {
-      // v2.6: Compute next script in rotation, pass audio path to modal
+      // v2.6: Compute next script in rotation, pass audio path to modal.
+      // Phase 3.C Unit 2: pass the script identifier through the shared context
+      // so ChatInterface can persist the rotation advance on completion.
       const lastScript = progress.lastAwarenessRepScript as AwarenessRepScript | null;
       const nextScript = getNextScript(progress.currentStage, lastScript);
       const audioPath = getScriptAudioPath(nextScript);
-      setCurrentAwarenessScript(nextScript);
       console.log(`[FAB] Awareness Rep rotation: ${nextScript} (${getScriptInfo(nextScript).name})`);
-      openAwarenessRep(audioPath);
+      openAwarenessRep(audioPath, nextScript);
       setIsOpen(false);
     }
     else if (practiceId === 'somatic_flow') { openSomaticFlow(); setIsOpen(false); }
@@ -139,25 +138,13 @@ export default function FloatingActionButton({
     else { onPracticeClick(practiceId); setIsOpen(false); }
   };
 
-  // UPDATED: handleModalComplete — saves awareness rep rotation after completion
+  // Phase 3.C Unit 2: handleModalComplete now only fires for FAB-owned modals
+  // (somatic_flow, co_regulation, nightly_debrief). RB + AR completion runs
+  // through ChatInterface, which persists awareness_rep rotation centrally.
   const handleModalComplete = async (practiceId: string, practiceName: string) => {
     console.log(`[FloatingActionButton] Modal completed: ${practiceId}`);
     if (getPracticeStatus(practiceId) !== 'completed') {
       await handleMarkComplete(practiceId, practiceName);
-    }
-
-    // v2.6: After awareness rep completes, save which script was played
-    if (practiceId === 'awareness_rep' && currentAwarenessScript) {
-      try {
-        await fetch('/api/practices/update-awareness-rep-script', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, script: currentAwarenessScript }),
-        });
-        console.log(`[FAB] Awareness Rep rotation saved: ${currentAwarenessScript}`);
-      } catch (err) {
-        console.error('[FAB] Failed to save awareness rep rotation:', err);
-      }
     }
   };
 
@@ -203,9 +190,8 @@ export default function FloatingActionButton({
 
   return (
     <>
-      {/* Modals - UNCHANGED */}
-      <ResonanceModal onComplete={() => handleModalComplete('hrvb', 'Resonance Breathing')} />
-      <AwarenessRepModal onComplete={() => handleModalComplete('awareness_rep', 'Awareness Rep')} />
+      {/* Modals — Phase 3.C Unit 2: ResonanceModal + AwarenessRepModal moved to
+          ChatInterface (single instance shared via PracticeModalsContext). */}
       <CoRegulationModal onComplete={() => handleModalComplete('co_regulation', 'Co-Regulation Practice')} />
       <NightlyDebriefModal onComplete={() => handleModalComplete('nightly_debrief', 'Nightly Debrief')} userId={userId} />
 <SomaticFlowModal

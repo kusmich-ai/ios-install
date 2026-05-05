@@ -155,6 +155,7 @@ import {
   getScriptAudioPath,
   type AwarenessRepScript,
 } from '@/lib/awarenessRepRotation';
+import { PracticeModalsContext, type PracticeModalsContextValue } from '@/app/contexts/PracticeModalsContext';
 
 // ============================================
 // DEV LOGGING UTILITY
@@ -692,6 +693,10 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   const [showPromptStarters, setShowPromptStarters] = useState(true);
   const hasAutoTriggeredToday = useRef(false);
   const justCompletedViaButton = useRef(false);
+  // Phase 3.C Unit 2: track which awareness rep rotation script was opened so
+  // we can persist it after completion regardless of which surface triggered
+  // the modal. Was previously held in ToolsSidebar/FAB local state.
+  const currentAwarenessScriptRef = useRef<AwarenessRepScript | null>(null);
   const [unlockFlowState, setUnlockFlowState] = useState<
     'none' | 'eligible_shown' | 'confirmed' | 'intro_started' |
     'mini_checkin' | 'gate1_shown' | 'beat2_pending' | 'gate2_shown' |
@@ -839,8 +844,29 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   const { open: openReframe, Modal: ReframeModal } = useReframe();
   const { open: openThoughtHygiene, Modal: ThoughtHygieneModal } = useThoughtHygiene();
   const { open: openNosGlide, Modal: NosGlideModal } = useNosGlide();
+  // Phase 3.C Unit 2: ChatInterface is the single owner of these hook
+  // instances. ToolsSidebar and FAB consume the same modals via
+  // PracticeModalsContext rather than instantiating their own.
   const { open: openResonance, Modal: ResonanceModal } = useResonanceBreathing();
   const { open: openAwarenessRep, Modal: AwarenessRepModal } = useAwarenessRep();
+  // Wraps the raw hook open() so the rotation script is recorded in a ref
+  // before the modal opens. persistPracticeLog reads the ref on completion.
+  const openAwarenessRepWithScript = useCallback(
+    (audioPath?: string, script?: AwarenessRepScript) => {
+      if (script) {
+        currentAwarenessScriptRef.current = script;
+      }
+      openAwarenessRep(audioPath);
+    },
+    [openAwarenessRep]
+  );
+  const practiceModalsContextValue = useMemo<PracticeModalsContextValue>(
+    () => ({
+      openResonance,
+      openAwarenessRep: openAwarenessRepWithScript,
+    }),
+    [openResonance, openAwarenessRepWithScript]
+  );
   const { open: openCoRegulation, Modal: CoRegulationModal } = useCoRegulation();
 const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebrief();
   const { open: openLoopDeLooping, Modal: LoopDeLoopingModal } = useLoopDeLooping();
@@ -4579,9 +4605,15 @@ microActionState.extractedAction || 'Notice → Label → Release',
   // (ToolsSidebar.tsx:218-244) so reload resilience and adherence/streak math are
   // consistent across all entry points. Failures are logged; never thrown — the
   // chat flow continues even if the DB write fails.
+  //
+  // Phase 3.C Unit 2: also persists the awareness_rep rotation script after the
+  // primary log write succeeds. This responsibility moved here from
+  // ToolsSidebar/FAB when those surfaces stopped owning their own modal
+  // completion handlers.
   const persistPracticeLog = useCallback(async (practiceId: string) => {
+    const dbPracticeType = normalizePracticeId(practiceId);
+
     try {
-      const dbPracticeType = normalizePracticeId(practiceId);
       const now = new Date();
       const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
@@ -4607,7 +4639,24 @@ microActionState.extractedAction || 'Notice → Label → Release',
     } catch (err) {
       console.error('[ChatInterface] practice_logs network error:', err);
     }
-  }, []);
+
+    // Awareness rep rotation tracking: ChatInterface now owns this side-effect
+    // for every entry point (in-chat handoff, sidebar tap, FAB tap).
+    if (dbPracticeType === 'awareness_rep' && currentAwarenessScriptRef.current && user?.id) {
+      const scriptToPersist = currentAwarenessScriptRef.current;
+      try {
+        await fetch('/api/practices/update-awareness-rep-script', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user.id, script: scriptToPersist }),
+        });
+      } catch (err) {
+        console.error('[ChatInterface] awareness_rep rotation save failed:', err);
+      } finally {
+        currentAwarenessScriptRef.current = null;
+      }
+    }
+  }, [user?.id]);
 
   const handlePracticeCompleted = useCallback(async (practiceId: string) => {
     const normalizedId = normalizePracticeId(practiceId);
@@ -4675,8 +4724,8 @@ microActionState.extractedAction || 'Notice → Label → Release',
     const extendedProgress = progress as any;
     const lastScript = (extendedProgress?.lastAwarenessRepScript ?? null) as AwarenessRepScript | null;
     const nextScript = getNextScript(extendedProgress?.currentStage ?? 1, lastScript);
-    openAwarenessRep(getScriptAudioPath(nextScript));
-  }, [openAwarenessRep, postAssistantMessage, progress]);
+    openAwarenessRepWithScript(getScriptAudioPath(nextScript), nextScript);
+  }, [openAwarenessRepWithScript, postAssistantMessage, progress]);
 
   const handleAwarenessRepCompleted = useCallback(async () => {
     if (day1HandoffPhase === 'awaiting_awareness_rep') {
@@ -5384,6 +5433,7 @@ if (regressionIntervention?.isActive) {
   }
 
   return (
+    <PracticeModalsContext.Provider value={practiceModalsContextValue}>
     <div className="flex h-[100dvh] bg-[#1a1a1a]">
       {/* Left Sidebar - Dashboard (Desktop Only) */}
       {!isMobile && (
@@ -6017,5 +6067,6 @@ streakFreezeAvailable={progress?.streakFreezeAvailable}
   />
 )}
     </div>
+    </PracticeModalsContext.Provider>
   );
 }
