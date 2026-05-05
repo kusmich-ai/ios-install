@@ -42,7 +42,6 @@ import {
   // Consolidated templates (from templateLibrary)
   weeklyCheckInTemplates,
   introFlowTemplates,
-  anchorCaptureTemplates,
   stage7ConversationTemplates,
   getIntroRedirectMessage as getIntroRedirectMessageFromLib,
   isAskingAboutStage7 as isAskingAboutStage7FromLib
@@ -664,15 +663,8 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   // Phase is local React state — if the page reloads mid-flow, the user falls
   // back to the normal toolbar and we don't pester them with the handoff again.
   const [day1HandoffPhase, setDay1HandoffPhase] = useState<
-    'none' | 'awaiting_hrvb' | 'awaiting_awareness_rep_start' | 'awaiting_awareness_rep' |
-    'awaiting_anchor' | 'awaiting_anchor_text' | 'awaiting_reminder'
+    'none' | 'awaiting_hrvb' | 'awaiting_awareness_rep_start' | 'awaiting_awareness_rep'
   >('none');
-  // Anchor capture (Day 1, post-rituals). morningAnchorFromDb is undefined
-  // until the initial fetch resolves; null means loaded-and-empty (eligible
-  // to prompt); a string means already captured (skip the flow).
-  const [morningAnchorFromDb, setMorningAnchorFromDb] = useState<string | null | undefined>(undefined);
-  const [capturedAnchor, setCapturedAnchor] = useState<string | null>(null);
-  const hasTriggeredAnchorCapture = useRef(false);
   const [practicesCompletedToday, setPracticesCompletedToday] = useState<string[]>([]);
   const [showPromptStarters, setShowPromptStarters] = useState(true);
   const hasAutoTriggeredToday = useRef(false);
@@ -1791,25 +1783,6 @@ const getFallbackResultsMessage = (
       setPracticesCompletedToday(extendedProgress.practicesCompletedToday);
     }
   }, [progress]);
-
-  // Load morning_anchor directly from user_progress. Unit 4.3 will surface
-  // this on the progress object; until then we read it ourselves so the
-  // anchor-capture trigger has the data it needs.
-  useEffect(() => {
-    if (!user?.id) return;
-    let cancelled = false;
-    const supabase = createClient();
-    supabase
-      .from('user_progress')
-      .select('morning_anchor')
-      .eq('user_id', user.id)
-      .single()
-      .then((res: { data: { morning_anchor: string | null } | null }) => {
-        if (cancelled) return;
-        setMorningAnchorFromDb(res.data?.morning_anchor ?? null);
-      });
-    return () => { cancelled = true; };
-  }, [user?.id]);
 
   // ============================================
   // EFFECT - Load Flow Block Status
@@ -4640,117 +4613,18 @@ microActionState.extractedAction || 'Notice → Label → Release',
         prev.includes(normalizedId) ? prev : [...prev, normalizedId]
       );
       if (refetchProgress) refetchProgress();
-
-      // Day 1 + Stage 1 + anchor not yet captured → branch into anchor flow
-      // instead of the standard wrap. Returning users / re-firings of this
-      // callback fall through to the existing closing message.
-      const ext = progress as any;
-      const eligibleForAnchor =
-        !hasTriggeredAnchorCapture.current &&
-        ext?.currentStage === 1 &&
-        ext?.daysInStage === 1 &&
-        morningAnchorFromDb === null;
-
-      if (eligibleForAnchor) {
-        hasTriggeredAnchorCapture.current = true;
-        setDay1HandoffPhase('awaiting_anchor');
-        postAssistantMessage(anchorCaptureTemplates.anchorPrompt);
-      } else {
-        postAssistantMessage(
-          `Both rituals done. Day 1 of The Stack — installed.
+      postAssistantMessage(
+        `Both rituals done. Day 1 of The Stack — installed.
 
 Stay around as long as you'd like. I'm here for conversation. Try chatting with **Nic** or **Fehren** if you want a different lens. Explore the **Course Library** when you're ready.
 
 Or come back tomorrow morning to start Day 2. Your nervous system is about to start learning.`
-        );
-        setDay1HandoffPhase('none');
-      }
+      );
+      setDay1HandoffPhase('none');
     } else {
       handlePracticeCompleted('awareness_rep');
     }
-  }, [day1HandoffPhase, handlePracticeCompleted, postAssistantMessage, refetchProgress, progress, morningAnchorFromDb]);
-
-  // ============================================
-  // ANCHOR CAPTURE (Day 1, post-rituals)
-  // ============================================
-
-  // Reload-resilience: if the user closes the tab mid-anchor-flow, re-fire
-  // the prompt on next load. Conditions: Stage 1, Day 1, morning_anchor
-  // still NULL, both rituals done today, no other handoff phase active.
-  useEffect(() => {
-    if (hasTriggeredAnchorCapture.current) return;
-    if (day1HandoffPhase !== 'none') return;
-    if (morningAnchorFromDb === undefined) return; // not yet loaded
-    if (morningAnchorFromDb !== null) return;      // already captured
-    if (!progress) return;
-    const ext = progress as any;
-    if (ext.currentStage !== 1) return;
-    if (ext.daysInStage !== 1) return;
-
-    const hrvbDone = practicesCompletedToday.includes(normalizePracticeId('hrvb'));
-    const arDone = practicesCompletedToday.includes(normalizePracticeId('awareness_rep'));
-    if (!hrvbDone || !arDone) return;
-
-    hasTriggeredAnchorCapture.current = true;
-    setDay1HandoffPhase('awaiting_anchor');
-    postAssistantMessage(anchorCaptureTemplates.anchorPrompt);
-  }, [day1HandoffPhase, morningAnchorFromDb, progress, practicesCompletedToday, postAssistantMessage]);
-
-  const persistAnchor = useCallback(async (anchor: string) => {
-    if (!user?.id) return;
-    const supabase = createClient();
-    const { error } = await supabase
-      .from('user_progress')
-      .update({ morning_anchor: anchor })
-      .eq('user_id', user.id);
-    if (error) {
-      console.error('[anchor capture] Failed to persist anchor:', error);
-      return;
-    }
-    setMorningAnchorFromDb(anchor);
-  }, [user?.id]);
-
-  const persistReminder = useCallback(async (value: string | null) => {
-    if (!user?.id) return;
-    const supabase = createClient();
-    const { error } = await supabase
-      .from('user_progress')
-      .update({ reminder_time: value })
-      .eq('user_id', user.id);
-    if (error) {
-      console.error('[anchor capture] Failed to persist reminder_time:', error);
-    }
-  }, [user?.id]);
-
-  const handleAnchorOption = useCallback(async (value: string, label: string) => {
-    setMessages(prev => [...prev, { role: 'user', content: label }]);
-
-    if (value === '__OTHER__') {
-      setDay1HandoffPhase('awaiting_anchor_text');
-      await postAssistantMessage(anchorCaptureTemplates.anchorOtherPrompt);
-      return;
-    }
-
-    setCapturedAnchor(value);
-    await persistAnchor(value);
-    setDay1HandoffPhase('awaiting_reminder');
-    await postAssistantMessage(anchorCaptureTemplates.reminderPrompt);
-  }, [postAssistantMessage, persistAnchor]);
-
-  const handleReminderOption = useCallback(async (value: string, label: string) => {
-    setMessages(prev => [...prev, { role: 'user', content: label }]);
-
-    const reminderValue = value === '__SKIP__' ? null : value;
-    await persistReminder(reminderValue);
-
-    // Display-only lowercase of the leading letter so the anchor reads
-    // naturally inside the closing sentence ("…Tomorrow morning, after
-    // coffee, we'll…"). Stored value remains as-captured.
-    const anchorRaw = capturedAnchor ?? 'tomorrow';
-    const anchorForMessage = anchorRaw.charAt(0).toLowerCase() + anchorRaw.slice(1);
-    await postAssistantMessage(anchorCaptureTemplates.closingTemplate(anchorForMessage));
-    setDay1HandoffPhase('none');
-  }, [postAssistantMessage, persistReminder, capturedAnchor]);
+  }, [day1HandoffPhase, handlePracticeCompleted, postAssistantMessage, refetchProgress]);
 
   // ============================================
   // POST-RITUAL AUTO CHECK-IN (Stage 1 Enhancements)
@@ -4869,23 +4743,11 @@ Or come back tomorrow morning to start Day 2. Your nervous system is about to st
 const sendMessage = async (e: React.FormEvent) => {
   e.preventDefault();
   if (!input.trim() || loading) return;
-
+  
   const userMessage = input.trim();
   setInput('');
 autoMessagePending.current = false;
-
-  // Anchor capture "Other" branch — free-text capture of the user's
-  // morning anchor. Echoes the typed message, persists it, and advances
-  // to the reminder prompt.
-  if (day1HandoffPhase === 'awaiting_anchor_text') {
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
-    setCapturedAnchor(userMessage);
-    await persistAnchor(userMessage);
-    setDay1HandoffPhase('awaiting_reminder');
-    await postAssistantMessage(anchorCaptureTemplates.reminderPrompt);
-    return;
-  }
-
+  
   // ============================================
   // PATTERN DETECTION - Route to specific flows
   // ============================================
@@ -5622,36 +5484,6 @@ if (regressionIntervention?.isActive) {
                 </button>
               </div>
             )}
-
-            {/* Day 1 handoff: Anchor capture — pick a morning anchor */}
-            {day1HandoffPhase === 'awaiting_anchor' && !loading && !isStreaming && (
-              <div className="flex flex-wrap justify-center gap-2">
-                {anchorCaptureTemplates.anchorOptions.map((opt: { value: string; label: string }) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => handleAnchorOption(opt.value, opt.label)}
-                    className="px-4 py-2 bg-zinc-800 text-white rounded-lg font-medium hover:bg-zinc-700 transition-colors text-sm"
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Day 1 handoff: Reminder time selection */}
-            {day1HandoffPhase === 'awaiting_reminder' && !loading && !isStreaming && (
-              <div className="flex flex-wrap justify-center gap-2">
-                {anchorCaptureTemplates.reminderOptions.map((opt: { value: string; label: string }) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => handleReminderOption(opt.value, opt.label)}
-                    className="px-4 py-2 bg-zinc-800 text-white rounded-lg font-medium hover:bg-zinc-700 transition-colors text-sm"
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            )}
             
             
             {/* ============================================ */}
@@ -5945,10 +5777,7 @@ if (regressionIntervention?.isActive) {
                 !systemRecoveryIntervention?.isActive &&
                 unlockFlowState === 'none' &&
                 stage7FlowState === 'none' &&
-                !(openingType === 'first_time' && introStep < 2) &&
-                day1HandoffPhase !== 'awaiting_anchor' &&
-                day1HandoffPhase !== 'awaiting_anchor_text' &&
-                day1HandoffPhase !== 'awaiting_reminder'
+                !(openingType === 'first_time' && introStep < 2)
               }
             />
             <form onSubmit={sendMessage} className="flex gap-3">
@@ -5980,13 +5809,13 @@ if (regressionIntervention?.isActive) {
                         ? "Or type a question..." 
                         : "Type your message..."
                 }
-                disabled={loading || isStreaming || day1HandoffPhase === 'awaiting_anchor' || day1HandoffPhase === 'awaiting_reminder'}
+                disabled={loading || isStreaming}
                 rows={1}
                className="flex-1 bg-[#1a1a1a] border border-white/[0.08] rounded-xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/30 disabled:opacity-50 resize-none min-h-[52px] max-h-[200px] transition-colors"
               />
               <button
                 type="submit"
-                disabled={!input.trim() || loading || isStreaming || day1HandoffPhase === 'awaiting_anchor' || day1HandoffPhase === 'awaiting_reminder'}
+                disabled={!input.trim() || loading || isStreaming}
                 className="px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-xl font-semibold hover:from-amber-600 hover:to-amber-700 disabled:opacity-50 transition-all shadow-sm shadow-amber-500/20"
               >
                 Send
