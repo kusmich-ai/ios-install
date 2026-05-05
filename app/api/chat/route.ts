@@ -1578,8 +1578,6 @@ After user confirms practices are done, say something like:
 Calm: How settled does your nervous system feel? (0 = restless/activated, 5 = deeply settled)
 Presence: How present were you during the practices? (0 = totally distracted, 5 = fully here)"
 
-When they give you numbers, IMMEDIATELY call \`record_signal_check\` with their scores.
-
 **WITH TREND NARRATION (Days 3+):**
 After recording their scores, call \`get_signal_trends\` and reference the data conversationally:
 "Your post-practice calm has averaged 3.6 this week, up from 2.8 on Day 1. That shift isn't random — your vagus nerve is starting to respond to the training."
@@ -1594,6 +1592,7 @@ Use the cross_domain data from get_signal_trends:
 - Reference trends conversationally, not as a formal report.
 - If user seems rushed or disengaged, skip the trend narration that day.
 - Always call record_signal_check when user provides scores — don't skip this.
+- **CRITICAL — Call record_signal_check at most once per turn.** Once the tool returns \`{ success: true }\`, you MUST NOT call it again in the same turn or in any retry within the same user submission. Output your text acknowledgment to the user and stop. Repeated calls produce duplicate database rows.
 - **Input format:** first number = calm, second = presence (e.g. "4 3" → calm 4, presence 3). Also accept labeled forms: "calm 4 presence 3", "4 and 3 for calm and presence".
 - **CRITICAL — Gibberish must NEVER be interpreted as scores.** If user input is not clearly two parseable numbers in 0-5 range, you MUST NOT call \`record_signal_check\`. This includes:
   - Random characters / typos: "fdksjf", "asdf", "lkjsdf"
@@ -2476,13 +2475,20 @@ ${context === 'breakthrough_response'
     // Handle tool use loop (for signal checks, milestones, etc.)
     let toolLoopCount = 0;
     const maxToolLoops = 10; // Safety limit
-    
+
+    // Phase 3.A.2: dedup tool calls within a single user request. If the model
+    // tries to invoke the same tool with the same args twice, short-circuit
+    // the second call with a synthesized tool_result that pushes it toward
+    // producing text. Prevents duplicate signal_checks INSERTs (and similar)
+    // when the model loops on tool-use without emitting text.
+    const seenToolCalls = new Set<string>();
+
     while (response.stop_reason === 'tool_use' && toolLoopCount < maxToolLoops) {
       toolLoopCount++;
       const toolUseBlocks = response.content.filter(
         (block): block is Anthropic.ToolUseBlock => block.type === 'tool_use'
       );
-      
+
       const toolResults: Anthropic.ToolResultBlockParam[] = [];
 
       const userStage = (typeof additionalContext?.currentStage === 'number' && additionalContext.currentStage > 0)
@@ -2490,6 +2496,18 @@ ${context === 'breakthrough_response'
         : 1;
 
       for (const toolUse of toolUseBlocks) {
+        const signature = `${toolUse.name}:${JSON.stringify(toolUse.input)}`;
+
+        if (seenToolCalls.has(signature)) {
+          console.warn(`[API/Chat] Tool circuit break — duplicate call to ${toolUse.name} short-circuited`, { toolInput: toolUse.input });
+          toolResults.push({
+            type: 'tool_result',
+            tool_use_id: toolUse.id,
+            content: 'Already executed in this turn. Do not call again. Provide your text response to the user now.'
+          });
+          continue;
+        }
+
         console.log(`[Enhancement Tool] Executing: ${toolUse.name}`, toolUse.input);
         const result = await executeEnhancementTool(
           toolUse.name,
@@ -2498,6 +2516,8 @@ ${context === 'breakthrough_response'
           userStage
         );
         console.log(`[Enhancement Tool] Result:`, result);
+
+        seenToolCalls.add(signature);
 
         toolResults.push({
           type: 'tool_result',
@@ -2524,7 +2544,7 @@ ${context === 'breakthrough_response'
     }
 
     // Extract text from response (may have mixed content blocks after tool use)
-    const responseText = response.content
+    let responseText = response.content
       .filter((block): block is Anthropic.TextBlock => block.type === 'text')
       .map(block => block.text)
       .join('');
@@ -2598,7 +2618,24 @@ ${context === 'breakthrough_response'
       }
     }
 
-    return NextResponse.json({ 
+    // Phase 3.A.2: defensive fallback. If the main loop and the retry-without-tools
+    // both produced empty/near-empty text, synthesize a graceful reply rather than
+    // returning an empty response that the frontend renders as "I'm having trouble
+    // responding right now." Context-aware when the failed turn ran a signal check.
+    if (!skipCuePrefix && (!responseText || responseText.trim().length < 10)) {
+      const justRanSignalCheck = Array.from(seenToolCalls).some(sig => sig.startsWith('record_signal_check:'));
+      console.error('[API/Chat] Empty response after retry — using graceful fallback', {
+        toolLoopsRan: toolLoopCount,
+        context,
+        skipCuePrefix,
+        justRanSignalCheck,
+      });
+      responseText = justRanSignalCheck
+        ? "Logged. Anything you want to say about how you're feeling?"
+        : "I'm processing that. Could you tell me a bit more?";
+    }
+
+    return NextResponse.json({
       response: skipCuePrefix ? responseText : cuePrefix + responseText,
       context: context || 'general',
     });
