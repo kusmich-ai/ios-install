@@ -4574,31 +4574,68 @@ microActionState.extractedAction || 'Notice → Label → Release',
   // PRACTICE COMPLETED HANDLER
   // ============================================
   
-  const handlePracticeCompleted = useCallback((practiceId: string) => {
+  // Phase 3.C Unit 1: persist chat-launched practice completions to practice_logs
+  // via the same endpoint sidebar/FAB use. Mirrors ToolsSidebar.handleMarkComplete
+  // (ToolsSidebar.tsx:218-244) so reload resilience and adherence/streak math are
+  // consistent across all entry points. Failures are logged; never thrown — the
+  // chat flow continues even if the DB write fails.
+  const persistPracticeLog = useCallback(async (practiceId: string) => {
+    try {
+      const dbPracticeType = normalizePracticeId(practiceId);
+      const now = new Date();
+      const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+      const response = await fetch('/api/practices/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          practiceType: dbPracticeType,
+          completed: true,
+          localDate,
+        }),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text().catch(() => '');
+        console.error('[ChatInterface] practice_logs write failed:', response.status, errText);
+        return;
+      }
+
+      // Mirror sidebar: let the DB commit propagate before downstream
+      // refetchProgress reads adherence_percentage / consecutive_days.
+      await new Promise(resolve => setTimeout(resolve, 300));
+    } catch (err) {
+      console.error('[ChatInterface] practice_logs network error:', err);
+    }
+  }, []);
+
+  const handlePracticeCompleted = useCallback(async (practiceId: string) => {
     const normalizedId = normalizePracticeId(practiceId);
     const practiceName = getPracticeName(practiceId);
-    
+
     devLog('[ChatInterface]', 'Practice completed callback:', { practiceId, practiceName });
-    
-    setMessages(prev => [...prev, { 
-      role: 'assistant', 
-      content: `**${practiceName}** completed! ✓\n\nNice work. Your progress has been logged.` 
+
+    await persistPracticeLog(practiceId);
+
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      content: `**${practiceName}** completed! ✓\n\nNice work. Your progress has been logged.`
     }]);
-    
+
     // Flag that this completion came from a button tap (not DB load)
     justCompletedViaButton.current = true;
-    
+
     setPracticesCompletedToday(prev => {
       if (!prev.includes(normalizedId)) {
         return [...prev, normalizedId];
       }
       return prev;
     });
-    
+
     if (refetchProgress) {
       refetchProgress();
     }
-  }, [refetchProgress]);
+  }, [persistPracticeLog, refetchProgress]);
 
   // ============================================
   // DAY 1 HANDOFF — wraps the HRVB and Awareness Rep practice-completed
@@ -4607,9 +4644,10 @@ microActionState.extractedAction || 'Notice → Label → Release',
   // wrappers fall through to the normal handlePracticeCompleted behavior.
   // ============================================
 
-  const handleHrvbCompleted = useCallback(() => {
+  const handleHrvbCompleted = useCallback(async () => {
     if (day1HandoffPhase === 'awaiting_hrvb') {
       const normalizedId = normalizePracticeId('hrvb');
+      await persistPracticeLog('hrvb');
       justCompletedViaButton.current = true;
       setPracticesCompletedToday(prev =>
         prev.includes(normalizedId) ? prev : [...prev, normalizedId]
@@ -4620,9 +4658,9 @@ microActionState.extractedAction || 'Notice → Label → Release',
       );
       setDay1HandoffPhase('awaiting_awareness_rep_start');
     } else {
-      handlePracticeCompleted('hrvb');
+      await handlePracticeCompleted('hrvb');
     }
-  }, [day1HandoffPhase, handlePracticeCompleted, postAssistantMessage, refetchProgress]);
+  }, [day1HandoffPhase, handlePracticeCompleted, persistPracticeLog, postAssistantMessage, refetchProgress]);
 
   const handleStartDay1AwarenessRep = useCallback(async () => {
     setMessages(prev => [...prev, { role: 'user', content: 'Start Awareness Rep' }]);
@@ -4640,9 +4678,10 @@ microActionState.extractedAction || 'Notice → Label → Release',
     openAwarenessRep(getScriptAudioPath(nextScript));
   }, [openAwarenessRep, postAssistantMessage, progress]);
 
-  const handleAwarenessRepCompleted = useCallback(() => {
+  const handleAwarenessRepCompleted = useCallback(async () => {
     if (day1HandoffPhase === 'awaiting_awareness_rep') {
       const normalizedId = normalizePracticeId('awareness_rep');
+      await persistPracticeLog('awareness_rep');
       justCompletedViaButton.current = true;
       setPracticesCompletedToday(prev =>
         prev.includes(normalizedId) ? prev : [...prev, normalizedId]
@@ -4657,9 +4696,9 @@ Or come back tomorrow morning to start Day 2. Your nervous system is about to st
       );
       setDay1HandoffPhase('none');
     } else {
-      handlePracticeCompleted('awareness_rep');
+      await handlePracticeCompleted('awareness_rep');
     }
-  }, [day1HandoffPhase, handlePracticeCompleted, postAssistantMessage, refetchProgress]);
+  }, [day1HandoffPhase, handlePracticeCompleted, persistPracticeLog, postAssistantMessage, refetchProgress]);
 
   // ============================================
   // POST-RITUAL AUTO CHECK-IN (Stage 1 Enhancements)
