@@ -863,23 +863,86 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
     close: closeAwarenessRepModal,
     Modal: AwarenessRepModal,
   } = useAwarenessRep();
+  // Phase 3.C.1: gate that decides whether opening RB or AR from a non-tutorial
+  // entry point (sidebar/FAB on a fresh Day 1) should also enter the Day 1
+  // handoff state machine. Reads progress.daysInStage which is 1-indexed
+  // (set in useUserProgress.ts via Math.floor(...) + 1).
+  const shouldEnterDay1Handoff = useCallback((): boolean => {
+    if (day1HandoffPhase !== 'none') return false;
+    if (!progress) return false;
+    const ext = progress as any;
+    if (ext.currentStage !== 1) return false;
+    if (ext.daysInStage !== 1) return false;
+    return true;
+  }, [day1HandoffPhase, progress]);
+
+  // Phase 3.C.1: wraps raw openResonance so sidebar/FAB launches on Day 1 also
+  // enter the handoff state machine. The in-chat tutorial path
+  // (advanceIntroStep case 4) already sets day1HandoffPhase explicitly before
+  // calling raw openResonance, so this wrapper is only consequential for
+  // sidebar/FAB launches that bypass the tutorial.
+  const openResonanceWithHandoff = useCallback(async () => {
+    if (shouldEnterDay1Handoff()) {
+      setDay1HandoffPhase('awaiting_hrvb');
+      // Symmetric flag flip: a Day 1 cold-launch effectively means the user
+      // accepted the tutorial offer. Mirrors the write at
+      // advanceIntroStep:4431-4439 so they don't see the welcome flow on
+      // next reload. Failure is logged but does not block modal open.
+      if (user?.id) {
+        try {
+          const supabase = createClient();
+          await supabase
+            .from('user_progress')
+            .update({ ritual_intro_completed: true })
+            .eq('user_id', user.id);
+        } catch (err) {
+          console.error('[ChatInterface] Failed to mark ritual_intro_completed (RB cold-launch):', err);
+        }
+      }
+    }
+    openResonance();
+  }, [openResonance, shouldEnterDay1Handoff, user?.id]);
+
   // Wraps the raw hook open() so the rotation script is recorded in a ref
   // before the modal opens. persistPracticeLog reads the ref on completion.
+  // Phase 3.C.1: also handles handoff state entry for two cases:
+  //   (A) Already in 'awaiting_awareness_rep_start' (post-RB-handoff cue)
+  //       — advance to 'awaiting_awareness_rep'.
+  //   (B) Day 1 cold-launch from sidebar/FAB — enter 'awaiting_awareness_rep'
+  //       and flip ritual_intro_completed to match.
   const openAwarenessRepWithScript = useCallback(
-    (audioPath?: string, script?: AwarenessRepScript) => {
+    async (audioPath?: string, script?: AwarenessRepScript) => {
       if (script) {
         currentAwarenessScriptRef.current = script;
       }
+      if (day1HandoffPhase === 'awaiting_awareness_rep_start') {
+        // Case A
+        setDay1HandoffPhase('awaiting_awareness_rep');
+      } else if (shouldEnterDay1Handoff()) {
+        // Case B
+        setDay1HandoffPhase('awaiting_awareness_rep');
+        if (user?.id) {
+          try {
+            const supabase = createClient();
+            await supabase
+              .from('user_progress')
+              .update({ ritual_intro_completed: true })
+              .eq('user_id', user.id);
+          } catch (err) {
+            console.error('[ChatInterface] Failed to mark ritual_intro_completed (AR cold-launch):', err);
+          }
+        }
+      }
       openAwarenessRep(audioPath);
     },
-    [openAwarenessRep]
+    [openAwarenessRep, day1HandoffPhase, shouldEnterDay1Handoff, user?.id]
   );
   const practiceModalsContextValue = useMemo<PracticeModalsContextValue>(
     () => ({
-      openResonance,
+      openResonance: openResonanceWithHandoff,
       openAwarenessRep: openAwarenessRepWithScript,
     }),
-    [openResonance, openAwarenessRepWithScript]
+    [openResonanceWithHandoff, openAwarenessRepWithScript]
   );
   const { open: openCoRegulation, Modal: CoRegulationModal } = useCoRegulation();
 const { open: openNightlyDebrief, Modal: NightlyDebriefModal } = useNightlyDebrief();
