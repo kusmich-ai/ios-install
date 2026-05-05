@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import ResonanceBreathing from "./ResonanceBreathing";
 
 // ============================================================================
@@ -105,19 +105,23 @@ export function ResonanceModal({ isOpen, onClose, onComplete }: ResonanceModalPr
 export function useResonanceBreathing() {
   const [isOpen, setIsOpen] = useState(false);
 
-  const open = () => setIsOpen(true);
-  const close = () => setIsOpen(false);
-  const toggle = () => setIsOpen((prev) => !prev);
+  // Phase 3.C Unit 3: stable callback identities + module-level Modal component.
+  // Previously this hook returned `Modal` as a fresh inline arrow on every
+  // render, so React treated it as a different component type each parent
+  // re-render and unmounted/remounted ResonanceBreathing — tearing down the
+  // audio session mid-flight. Now `Modal` is the module-level ResonanceModal
+  // component (permanently stable identity); consumers pass isOpen + onClose
+  // through props.
+  const open = useCallback(() => setIsOpen(true), []);
+  const close = useCallback(() => setIsOpen(false), []);
+  const toggle = useCallback(() => setIsOpen((prev) => !prev), []);
 
   return {
     isOpen,
     open,
     close,
     toggle,
-    // Modal component now accepts onComplete prop for auto-logging
-    Modal: ({ onComplete }: { onComplete?: () => void }) => (
-      <ResonanceModal isOpen={isOpen} onClose={close} onComplete={onComplete} />
-    ),
+    Modal: ResonanceModal,
   };
 }
 
@@ -126,7 +130,7 @@ export function useResonanceBreathing() {
 // ============================================================================
 
 export function ResonanceTriggerButton() {
-  const { open, Modal } = useResonanceBreathing();
+  const { open, Modal, isOpen, close } = useResonanceBreathing();
 
   return (
     <>
@@ -156,7 +160,7 @@ export function ResonanceTriggerButton() {
       >
         Begin Breathing
       </button>
-      <Modal />
+      <Modal isOpen={isOpen} onClose={close} />
     </>
   );
 }

@@ -847,8 +847,22 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
   // Phase 3.C Unit 2: ChatInterface is the single owner of these hook
   // instances. ToolsSidebar and FAB consume the same modals via
   // PracticeModalsContext rather than instantiating their own.
-  const { open: openResonance, Modal: ResonanceModal } = useResonanceBreathing();
-  const { open: openAwarenessRep, Modal: AwarenessRepModal } = useAwarenessRep();
+  // Phase 3.C Unit 3: hooks now expose isOpen/close/audioSrc and Modal is the
+  // module-level component (stable identity). Consumer threads state via props
+  // so parent re-renders no longer remount the modal subtree mid-session.
+  const {
+    open: openResonance,
+    isOpen: resonanceModalOpen,
+    close: closeResonanceModal,
+    Modal: ResonanceModal,
+  } = useResonanceBreathing();
+  const {
+    open: openAwarenessRep,
+    isOpen: awarenessRepModalOpen,
+    audioSrc: awarenessRepAudioSrc,
+    close: closeAwarenessRepModal,
+    Modal: AwarenessRepModal,
+  } = useAwarenessRep();
   // Wraps the raw hook open() so the rotation script is recorded in a ref
   // before the modal opens. persistPracticeLog reads the ref on completion.
   const openAwarenessRepWithScript = useCallback(
@@ -6031,8 +6045,17 @@ streakFreezeAvailable={progress?.streakFreezeAvailable}
       <ReframeModal />
       <ThoughtHygieneModal />
       <NosGlideModal />
-      <ResonanceModal onComplete={handleHrvbCompleted} />
-      <AwarenessRepModal onComplete={handleAwarenessRepCompleted} />
+      <ResonanceModal
+        isOpen={resonanceModalOpen}
+        onClose={closeResonanceModal}
+        onComplete={handleHrvbCompleted}
+      />
+      <AwarenessRepModal
+        isOpen={awarenessRepModalOpen}
+        onClose={closeAwarenessRepModal}
+        audioSrc={awarenessRepAudioSrc}
+        onComplete={handleAwarenessRepCompleted}
+      />
       <CoRegulationModal onComplete={() => handlePracticeCompleted('co_regulation')} />
      <NightlyDebriefModal onComplete={() => handlePracticeCompleted('nightly_debrief')} userId={user?.id} />
 

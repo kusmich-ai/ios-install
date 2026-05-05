@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import AwarenessRep from "./AwarenessRep";
 
 // ============================================================================
@@ -116,32 +116,30 @@ export function useAwarenessRep() {
   const [isOpen, setIsOpen] = useState(false);
   const [audioSrc, setAudioSrc] = useState<string | undefined>(undefined);
 
+  // Phase 3.C Unit 3: stable callback identities + module-level Modal component.
+  // Same fix shape as useResonanceBreathing — see that hook for context.
+  // Consumers now pass isOpen + onClose + audioSrc through props.
+
   // v2.6: open() accepts optional audio path from rotation system
-  const open = (rotationAudioPath?: string) => {
+  const open = useCallback((rotationAudioPath?: string) => {
     setAudioSrc(rotationAudioPath);
     setIsOpen(true);
-  };
-  
-  const close = () => {
+  }, []);
+
+  const close = useCallback(() => {
     setIsOpen(false);
     setAudioSrc(undefined);
-  };
-  
-  const toggle = () => setIsOpen((prev) => !prev);
+  }, []);
+
+  const toggle = useCallback(() => setIsOpen((prev) => !prev), []);
 
   return {
     isOpen,
+    audioSrc,
     open,
     close,
     toggle,
-    Modal: ({ onComplete }: { onComplete?: () => void }) => (
-      <AwarenessRepModal 
-        isOpen={isOpen} 
-        onClose={close} 
-        onComplete={onComplete}
-        audioSrc={audioSrc}
-      />
-    ),
+    Modal: AwarenessRepModal,
   };
 }
 
@@ -150,7 +148,7 @@ export function useAwarenessRep() {
 // ============================================================================
 
 export function AwarenessRepTriggerButton() {
-  const { open, Modal } = useAwarenessRep();
+  const { open, Modal, isOpen, audioSrc, close } = useAwarenessRep();
 
   return (
     <>
@@ -180,7 +178,7 @@ export function AwarenessRepTriggerButton() {
       >
         Begin Awareness Rep
       </button>
-      <Modal />
+      <Modal isOpen={isOpen} onClose={close} audioSrc={audioSrc} />
     </>
   );
 }
