@@ -1659,9 +1659,7 @@ const getResistanceResponseFromAPI = async (
           userName: getUserName(),
           currentStage: progress?.currentStage || 1,
           adherence: progress?.adherencePercentage || 0,
-          daysInStage: progress?.stageStartDate 
-            ? Math.floor((Date.now() - new Date(progress.stageStartDate).getTime()) / (1000 * 60 * 60 * 24))
-            : 0
+          daysInStage: progress?.daysInStage ?? 0
         }
       })
     });
@@ -4982,9 +4980,7 @@ Or come back tomorrow morning to start Day 2. Your nervous system is about to st
           context: 'weekly_checkin',
           additionalContext: {
             currentStage: progress?.currentStage || 1,
-            daysInStage: progress?.stageStartDate
-              ? Math.floor((Date.now() - new Date(progress.stageStartDate).getTime()) / (1000 * 60 * 60 * 24))
-              : 0,
+            daysInStage: progress?.daysInStage ?? 0,
             adherence: progress?.adherencePercentage || 0,
             userName: getUserName(),
             consecutiveDays: progress?.consecutiveDays || 0,
@@ -5023,9 +5019,7 @@ Or come back tomorrow morning to start Day 2. Your nervous system is about to st
           context: 'ritual_completion',
           additionalContext: {
             currentStage: progress?.currentStage || 1,
-            daysInStage: progress?.stageStartDate
-              ? Math.floor((Date.now() - new Date(progress.stageStartDate).getTime()) / (1000 * 60 * 60 * 24))
-              : 0,
+            daysInStage: progress?.daysInStage ?? 0,
             adherence: progress?.adherencePercentage || 0,
             userName: getUserName(),
             consecutiveDays: progress?.consecutiveDays || 0,
@@ -5408,9 +5402,7 @@ if (regressionIntervention?.isActive) {
            context: 'general',
             additionalContext: {
               currentStage: progress?.currentStage || 1,
-              daysInStage: progress?.stageStartDate 
-                ? Math.floor((Date.now() - new Date(progress.stageStartDate).getTime()) / (1000 * 60 * 60 * 24))
-                : 0,
+              daysInStage: progress?.daysInStage ?? 0,
               adherence: progress?.adherencePercentage || 0,
               userName: getUserName(),
               upgradeNudge: (progress?.unlockEligible && !hasActiveSubscription)
@@ -5526,9 +5518,7 @@ if (regressionIntervention?.isActive) {
           context: 'general',
           additionalContext: {
             currentStage: progress?.currentStage || 1,
-            daysInStage: progress?.stageStartDate 
-              ? Math.floor((Date.now() - new Date(progress.stageStartDate).getTime()) / (1000 * 60 * 60 * 24))
-              : 0,
+            daysInStage: progress?.daysInStage ?? 0,
             adherence: progress?.adherencePercentage || 0,
             userName: getUserName(),
             upgradeNudge: (progress?.unlockEligible && !hasActiveSubscription)
@@ -6116,9 +6106,7 @@ if (regressionIntervention?.isActive) {
           <div className="max-w-4xl mx-auto px-4 py-4">
             <PromptStarters
               stage={progress?.currentStage || 1}
-              daysInStage={progress?.stageStartDate 
-                ? Math.floor((Date.now() - new Date(progress.stageStartDate).getTime()) / (1000 * 60 * 60 * 24))
-                : 0}
+              daysInStage={progress?.daysInStage ?? 0}
               onPromptSelect={handlePromptStarterSelect}
               visible={
                 showPromptStarters && 
