@@ -876,6 +876,10 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
           console.error('[ChatInterface] Failed to mark ritual_intro_completed (RB cold-launch):', err);
         }
       }
+      // Advance React's intro step in lockstep with the DB write so the
+      // in-chat "Start my first Resonance Breathing" button hides on
+      // sidebar/FAB cold-launch (mirrors advanceIntroStep's setIntroStep(2)).
+      setIntroStep(2);
     }
     openResonance();
   }, [openResonance, shouldEnterDay1Handoff, user?.id]);
@@ -909,6 +913,10 @@ export default function ChatInterface({ user, baselineData }: ChatInterfaceProps
             console.error('[ChatInterface] Failed to mark ritual_intro_completed (AR cold-launch):', err);
           }
         }
+        // Advance React's intro step on cold-launch so the in-chat button
+        // hides. Mirrors openResonanceWithHandoff. Case A intentionally
+        // skipped — the in-chat tutorial path already advanced introStep.
+        setIntroStep(2);
       }
       openAwarenessRep(audioPath);
     },
