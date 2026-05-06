@@ -322,7 +322,7 @@ Right after Resonance Breathing, still seated. Sit with whatever's here — soun
 - **Decentering** — when thoughts or emotions are running you. Creates space between you and the experience.
 - **Worry Loop Dissolver** — when you can't stop worrying about something specific. Interrupts the loop.
 
-The {{toolbarReference}} tracks each ritual and starts the practices.
+Use the {{toolbarReference}} to track each ritual and start the practices.
 
 Find 5 minutes where you won't be interrupted — phone down, somewhere comfortable to sit. When you're ready, hit the button below.`
     },
@@ -570,7 +570,7 @@ A ~2-minute interpretation audit that separates what actually happened from what
 
 *How it works:* You'll move through a simple sequence: Signal → Interpretation → Action. We identify the verifiable signal, make the interpretation explicit, test it, and choose one concrete next step (or deliberate non-action). The result is clarity and agency—not forced positivity.
 
-Use it whenever an interpretation is amplifying the signal (You're making a bigger deal out of something). Access it via {{toolbarReference}} → On-Demand Tools.
+Use it whenever an interpretation is amplifying the signal (You're making a bigger deal out of something). Access it via the {{toolbarReference}} → On-Demand Tools.
 
 ---
 
@@ -633,7 +633,7 @@ Loop: **Notice → Label → Release**
 
 Every 21 days, your cue progresses to train deeper detection.
 
-**Remember:** The **Reframe Protocol** is now available in your {{toolbarReference}} under "On-Demand Tools" for when triggers arise.
+**Remember:** The **Reframe Protocol** is now available in the {{toolbarReference}} under "On-Demand Tools" for when triggers arise.
 
 Starting tomorrow — full sequence + your morning imprint. You're now training detection, not just awareness.`
     },
@@ -788,7 +788,7 @@ Ready to design your system?`
 
 **Total: ${getMorningRitualTime(4)}**
 
-**Remember:** **Thought Hygiene** is now available in your {{toolbarReference}} under "On-Demand Tools" — use it after Flow Blocks when your mind feels cluttered.
+**Remember:** **Thought Hygiene** is now available in the {{toolbarReference}} under "On-Demand Tools" — use it after Flow Blocks when your mind feels cluttered.
 
 Your Flow Menu and Weekly Map are set. Time to train deep work as a neural skill.`
     },
@@ -1006,7 +1006,7 @@ You now have the complete Stack:
 - Reframe Protocol (trigger response)
 - Thought Hygiene (cognitive clearing)
 
-All accessible via your {{toolbarReference}}.
+All accessible via the {{toolbarReference}}.
 
 ---
 
@@ -1424,7 +1424,7 @@ Use it when:
 - Thoughts feel unquestionable or automatic
 - You're caught in a mental loop and need perspective
 
-Access it via {{toolbarReference}} under "On-Demand Tools."`,
+Access it via the {{toolbarReference}} under "On-Demand Tools."`,
 
     startPrompt: `Let's run a **Decentering Practice**.
 
@@ -1445,7 +1445,7 @@ Use it when:
 - The nervous system feels on alert without a clear, present threat
 - You can't stop mentally rehearsing scenarios
 
-Access it via {{toolbarReference}} under "On-Demand Tools."`,
+Access it via the {{toolbarReference}} under "On-Demand Tools."`,
 
     startPrompt: `Let's run the **Worry Loop Dissolver**.
 
@@ -1465,7 +1465,7 @@ Best used:
 - When the same pattern keeps repeating across the week
 - When you want to convert experience into a clear next step
 
-Access it via {{toolbarReference}} under "On-Demand Tools."`,
+Access it via the {{toolbarReference}} under "On-Demand Tools."`,
 
     startPrompt: `Let's run your **Meta-Reflection**.
 
@@ -1485,7 +1485,7 @@ Use it when:
 - Blame, mind-reading, catastrophizing, or certainty creeps in
 - You want clarity instead of rumination
 
-Access it via {{toolbarReference}} under "On-Demand Tools."`,
+Access it via the {{toolbarReference}} under "On-Demand Tools."`,
 
     startPrompt: `Let's run the **Reframe Protocol**.
 
@@ -1506,7 +1506,7 @@ Use it when:
 - Background thoughts are consuming bandwidth
 - Focus feels unavailable despite effort
 
-Access it via {{toolbarReference}} under "On-Demand Tools."`,
+Access it via the {{toolbarReference}} under "On-Demand Tools."`,
 
     startPrompt: `Time to clear your mind.
 
@@ -1526,7 +1526,7 @@ Use it when:
 - Going straight from high-intensity activity to bed
 - Evening anxiety or rumination before sleep
 
-Access it via {{toolbarReference}} under "On-Demand Tools."`,
+Access it via the {{toolbarReference}} under "On-Demand Tools."`,
 
     startPrompt: `Let's run the **NOS Glide (Evening Wind-Down)**.
 

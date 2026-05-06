@@ -1703,7 +1703,7 @@ const getFallbackResultsMessage = (
         : 21,
       isMobile,
       toolsReference: isMobile ? 'the lightning bolt icon' : 'the Daily Ritual tools on the right',
-      toolbarReference: isMobile ? 'the lightning bolt icon' : 'the Daily Ritual tools on the right'
+      toolbarReference: isMobile ? 'lightning bolt icon' : 'Daily Ritual tools on the right'
     };
   }, [user, baselineData, progress, isMobile]);
   
