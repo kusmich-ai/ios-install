@@ -2,27 +2,49 @@
 // Daily cron — finds Stage 1 non-converters and sends nurture emails
 // Schedule: daily at 9:00 AM UTC (see vercel.json)
 //
-// EMAIL SEQUENCE — all timing anchored to stage_unlocked_at (not consecutive_days):
+// EMAIL SEQUENCE — 7 email types, two timing families (eligibility-anchored
+// + inactivity-anchored). All candidate sets exclude users who have set
+// notification_preferences.unsubscribed = true (see getUnsubscribedIds).
 //
-//  nurture_day12  — pre-eligibility momentum email
-//                   Anchor: consecutive_days >= 12, unlock_eligible = FALSE
-//                   Sends to: app (not /upgrade — they're not eligible yet)
+//  nurture_day12       — pre-eligibility momentum email
+//                        Anchor: consecutive_days >= 12, unlock_eligible = FALSE,
+//                        no active subscription
+//                        Sends to: app (not /upgrade — they're not eligible yet)
 //
-//  nurture_email1 — first offer, same day eligibility is reached
-//                   Anchor: stage_unlocked_at IS NOT NULL (just became eligible)
-//                   Sends to: /upgrade with params
+//  nurture_email1      — first offer, same day eligibility is reached
+//                        Anchor: unlock_eligible = TRUE,
+//                        stage_unlocked_at IS NOT NULL, no active subscription
+//                        Sends to: /upgrade with params
 //
-//  nurture_email2 — social proof nudge, 3 days after eligibility
-//                   Anchor: stage_unlocked_at <= 3 days ago
-//                   Sends to: /upgrade with params
+//  nurture_email2      — social proof nudge, 3 days after eligibility
+//                        Anchor: unlock_eligible = TRUE,
+//                        stage_unlocked_at <= 3 days ago, no active subscription
+//                        Sends to: /upgrade with params
 //
-//  nurture_email3 — decision point, 7 days after eligibility
-//                   Anchor: stage_unlocked_at <= 7 days ago
-//                   Sends to: /upgrade with params
+//  nurture_email3      — decision point, 7 days after eligibility
+//                        Anchor: unlock_eligible = TRUE,
+//                        stage_unlocked_at <= 7 days ago, no active subscription
+//                        Sends to: /upgrade with params
 //
-//  nurture_day30  — cold re-engagement, pure inactivity trigger
-//                   Anchor: last_visit <= 7 days ago (no day count anchor)
-//                   Sends to: app (let the product re-sell itself)
+//  nurture_day30       — cold re-engagement after eligibility
+//                        Anchor: unlock_eligible = TRUE,
+//                        last_visit <= 7 days ago, no active subscription
+//                        Sends to: app (let the product re-sell itself)
+//                        NOTE: gated on unlock_eligible=true despite the
+//                        "pure inactivity" framing in older docs — semantics
+//                        review deferred to Sprint 7 nurture-cron disposition.
+//
+//  reengagement_early  — Days 1-6 dropoff
+//                        Anchor: consecutive_days < 7,
+//                        last_visit > 14 days ago, unlock_eligible = FALSE,
+//                        no active subscription
+//                        Sends to: app
+//
+//  reengagement_mid    — Days 7-13 dropoff
+//                        Anchor: consecutive_days BETWEEN 7 AND 13,
+//                        last_visit > 14 days ago, unlock_eligible = FALSE,
+//                        no active subscription
+//                        Sends to: app
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
@@ -69,6 +91,28 @@ async function getAlreadySentIds(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Helper — fetch user_ids who have opted out via notification_preferences
+// Fetched once per cron run and threaded as a parameter to each candidate
+// function so we don't re-query for every email type.
+// Fail-open: on error returns empty array. Nurture is non-transactional and
+// the existing notifications cron also fails open — a logging concern, not a
+// compliance violation as long as the column is populated for live users.
+// ─────────────────────────────────────────────────────────────────────────────
+async function getUnsubscribedIds(
+  supabase: ReturnType<typeof getAdminClient>
+): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('notification_preferences')
+    .select('user_id')
+    .eq('unsubscribed', true);
+  if (error) {
+    console.error('[nurture-emails] getUnsubscribedIds error:', error);
+    return [];
+  }
+  return (data || []).map((r: { user_id: string }) => r.user_id).filter(Boolean);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Eligibility queries
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -77,7 +121,7 @@ async function getAlreadySentIds(
  * Anchor: consecutive_days >= 12 AND unlock_eligible = false.
  * Goal: keep them going 2 more days. Sends to app, not /upgrade.
  */
-async function getDay12Candidates(supabase: ReturnType<typeof getAdminClient>) {
+async function getDay12Candidates(supabase: ReturnType<typeof getAdminClient>, unsubscribedIds: string[]) {
   const sentIds = await getAlreadySentIds(supabase, 'nurture_day12');
 
   let query = supabase
@@ -88,6 +132,9 @@ async function getDay12Candidates(supabase: ReturnType<typeof getAdminClient>) {
     .eq('has_active_subscription', false)
     .gte('consecutive_days', 12);
 
+  if (unsubscribedIds.length > 0) {
+    query = query.not('user_id', 'in', `(${unsubscribedIds.map(id => `"${id}"`).join(',')})`);
+  }
   if (sentIds.length > 0) {
     query = query.not('user_id', 'in', `(${sentIds.map(id => `"${id}"`).join(',')})`);
   }
@@ -101,7 +148,7 @@ async function getDay12Candidates(supabase: ReturnType<typeof getAdminClient>) {
  * Email 1 — first offer, fires when eligibility is first reached.
  * Anchor: stage_unlocked_at IS NOT NULL.
  */
-async function getEmail1Candidates(supabase: ReturnType<typeof getAdminClient>) {
+async function getEmail1Candidates(supabase: ReturnType<typeof getAdminClient>, unsubscribedIds: string[]) {
   const sentIds = await getAlreadySentIds(supabase, 'nurture_email1');
 
   let query = supabase
@@ -112,6 +159,9 @@ async function getEmail1Candidates(supabase: ReturnType<typeof getAdminClient>) 
     .eq('has_active_subscription', false)
     .not('stage_unlocked_at', 'is', null);
 
+  if (unsubscribedIds.length > 0) {
+    query = query.not('user_id', 'in', `(${unsubscribedIds.map(id => `"${id}"`).join(',')})`);
+  }
   if (sentIds.length > 0) {
     query = query.not('user_id', 'in', `(${sentIds.map(id => `"${id}"`).join(',')})`);
   }
@@ -125,7 +175,7 @@ async function getEmail1Candidates(supabase: ReturnType<typeof getAdminClient>) 
  * Email 2 — social proof, 3+ days after eligibility reached.
  * Anchor: stage_unlocked_at <= 3 days ago.
  */
-async function getEmail2Candidates(supabase: ReturnType<typeof getAdminClient>) {
+async function getEmail2Candidates(supabase: ReturnType<typeof getAdminClient>, unsubscribedIds: string[]) {
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
   const sentIds = await getAlreadySentIds(supabase, 'nurture_email2');
 
@@ -138,6 +188,9 @@ async function getEmail2Candidates(supabase: ReturnType<typeof getAdminClient>) 
     .not('stage_unlocked_at', 'is', null)
     .lte('stage_unlocked_at', threeDaysAgo);
 
+  if (unsubscribedIds.length > 0) {
+    query = query.not('user_id', 'in', `(${unsubscribedIds.map(id => `"${id}"`).join(',')})`);
+  }
   if (sentIds.length > 0) {
     query = query.not('user_id', 'in', `(${sentIds.map(id => `"${id}"`).join(',')})`);
   }
@@ -151,7 +204,7 @@ async function getEmail2Candidates(supabase: ReturnType<typeof getAdminClient>) 
  * Email 3 — decision point, 7+ days after eligibility reached.
  * Anchor: stage_unlocked_at <= 7 days ago.
  */
-async function getEmail3Candidates(supabase: ReturnType<typeof getAdminClient>) {
+async function getEmail3Candidates(supabase: ReturnType<typeof getAdminClient>, unsubscribedIds: string[]) {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const sentIds = await getAlreadySentIds(supabase, 'nurture_email3');
 
@@ -164,6 +217,9 @@ async function getEmail3Candidates(supabase: ReturnType<typeof getAdminClient>) 
     .not('stage_unlocked_at', 'is', null)
     .lte('stage_unlocked_at', sevenDaysAgo);
 
+  if (unsubscribedIds.length > 0) {
+    query = query.not('user_id', 'in', `(${unsubscribedIds.map(id => `"${id}"`).join(',')})`);
+  }
   if (sentIds.length > 0) {
     query = query.not('user_id', 'in', `(${sentIds.map(id => `"${id}"`).join(',')})`);
   }
@@ -179,7 +235,7 @@ async function getEmail3Candidates(supabase: ReturnType<typeof getAdminClient>) 
  * + unlock_eligible = false + no subscription.
  * Sends to app — they're not eligible yet, get them back in the door.
  */
-async function getReengagementEarlyCandidates(supabase: ReturnType<typeof getAdminClient>) {
+async function getReengagementEarlyCandidates(supabase: ReturnType<typeof getAdminClient>, unsubscribedIds: string[]) {
   const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
   const sentIds = await getAlreadySentIds(supabase, 'reengagement_early');
 
@@ -192,6 +248,9 @@ async function getReengagementEarlyCandidates(supabase: ReturnType<typeof getAdm
     .lt('consecutive_days', 7)
     .lte('last_visit', fourteenDaysAgo);
 
+  if (unsubscribedIds.length > 0) {
+    query = query.not('user_id', 'in', `(${unsubscribedIds.map(id => `"${id}"`).join(',')})`);
+  }
   if (sentIds.length > 0) {
     query = query.not('user_id', 'in', `(${sentIds.map(id => `"${id}"`).join(',')})`);
   }
@@ -207,7 +266,7 @@ async function getReengagementEarlyCandidates(supabase: ReturnType<typeof getAdm
  * + unlock_eligible = false + no subscription.
  * Sends to app — they were close, remind them progress doesn't reset.
  */
-async function getReengagementMidCandidates(supabase: ReturnType<typeof getAdminClient>) {
+async function getReengagementMidCandidates(supabase: ReturnType<typeof getAdminClient>, unsubscribedIds: string[]) {
   const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
   const sentIds = await getAlreadySentIds(supabase, 'reengagement_mid');
 
@@ -221,6 +280,9 @@ async function getReengagementMidCandidates(supabase: ReturnType<typeof getAdmin
     .lte('consecutive_days', 13)
     .lte('last_visit', fourteenDaysAgo);
 
+  if (unsubscribedIds.length > 0) {
+    query = query.not('user_id', 'in', `(${unsubscribedIds.map(id => `"${id}"`).join(',')})`);
+  }
   if (sentIds.length > 0) {
     query = query.not('user_id', 'in', `(${sentIds.map(id => `"${id}"`).join(',')})`);
   }
@@ -235,7 +297,7 @@ async function getReengagementMidCandidates(supabase: ReturnType<typeof getAdmin
  * Anchor: last_visit <= 7 days ago.
  * Sends to app, not /upgrade.
  */
-async function getDay30Candidates(supabase: ReturnType<typeof getAdminClient>) {
+async function getDay30Candidates(supabase: ReturnType<typeof getAdminClient>, unsubscribedIds: string[]) {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const sentIds = await getAlreadySentIds(supabase, 'nurture_day30');
 
@@ -247,6 +309,9 @@ async function getDay30Candidates(supabase: ReturnType<typeof getAdminClient>) {
     .eq('has_active_subscription', false)
     .lte('last_visit', sevenDaysAgo);
 
+  if (unsubscribedIds.length > 0) {
+    query = query.not('user_id', 'in', `(${unsubscribedIds.map(id => `"${id}"`).join(',')})`);
+  }
   if (sentIds.length > 0) {
     query = query.not('user_id', 'in', `(${sentIds.map(id => `"${id}"`).join(',')})`);
   }
@@ -395,8 +460,13 @@ export async function GET(request: Request) {
   };
 
   try {
+    // Fetch the unsubscribed user_id list once and thread to each candidate
+    // function. Single query per cron run; mirrors the existing email_log
+    // dedupe pattern but at run-level rather than per-email-type.
+    const unsubscribedIds = await getUnsubscribedIds(supabase);
+
     // ── Day 12 — pre-eligibility momentum ───────────────────────────────────
-    const day12Users = await getDay12Candidates(supabase);
+    const day12Users = await getDay12Candidates(supabase, unsubscribedIds);
     for (const u of day12Users) {
       results.day12.attempted++;
       const result = await sendNurtureEmail(supabase, u.user_id, 'nurture_day12', u);
@@ -404,7 +474,7 @@ export async function GET(request: Request) {
     }
 
     // ── Email 1 — first offer (day eligibility reached) ──────────────────────
-    const email1Users = await getEmail1Candidates(supabase);
+    const email1Users = await getEmail1Candidates(supabase, unsubscribedIds);
     for (const u of email1Users) {
       results.email1.attempted++;
       const result = await sendNurtureEmail(supabase, u.user_id, 'nurture_email1', u);
@@ -412,7 +482,7 @@ export async function GET(request: Request) {
     }
 
     // ── Email 2 — social proof (3 days after eligibility) ────────────────────
-    const email2Users = await getEmail2Candidates(supabase);
+    const email2Users = await getEmail2Candidates(supabase, unsubscribedIds);
     for (const u of email2Users) {
       results.email2.attempted++;
       const result = await sendNurtureEmail(supabase, u.user_id, 'nurture_email2', u);
@@ -420,7 +490,7 @@ export async function GET(request: Request) {
     }
 
     // ── Email 3 — decision point (7 days after eligibility) ──────────────────
-    const email3Users = await getEmail3Candidates(supabase);
+    const email3Users = await getEmail3Candidates(supabase, unsubscribedIds);
     for (const u of email3Users) {
       results.email3.attempted++;
       const result = await sendNurtureEmail(supabase, u.user_id, 'nurture_email3', u);
@@ -428,7 +498,7 @@ export async function GET(request: Request) {
     }
 
     // ── Day 30 — cold re-engagement (inactivity trigger) ─────────────────────
-    const day30Users = await getDay30Candidates(supabase);
+    const day30Users = await getDay30Candidates(supabase, unsubscribedIds);
     for (const u of day30Users) {
       results.day30.attempted++;
       const result = await sendNurtureEmail(supabase, u.user_id, 'nurture_day30', u);
@@ -436,7 +506,7 @@ export async function GET(request: Request) {
     }
 
     // ── Re-engagement A — Days 1-6 dropoff (14+ days silent) ─────────────────
-    const reengagementEarlyUsers = await getReengagementEarlyCandidates(supabase);
+    const reengagementEarlyUsers = await getReengagementEarlyCandidates(supabase, unsubscribedIds);
     for (const u of reengagementEarlyUsers) {
       results.reengagementEarly.attempted++;
       const result = await sendNurtureEmail(supabase, u.user_id, 'reengagement_early', u);
@@ -444,7 +514,7 @@ export async function GET(request: Request) {
     }
 
     // ── Re-engagement B — Days 7-13 dropoff (14+ days silent) ────────────────
-    const reengagementMidUsers = await getReengagementMidCandidates(supabase);
+    const reengagementMidUsers = await getReengagementMidCandidates(supabase, unsubscribedIds);
     for (const u of reengagementMidUsers) {
       results.reengagementMid.attempted++;
       const result = await sendNurtureEmail(supabase, u.user_id, 'reengagement_mid', u);
