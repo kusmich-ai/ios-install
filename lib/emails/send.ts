@@ -1,8 +1,8 @@
 // lib/emails/send.ts
 import { Resend } from 'resend';
+import { FROM_ADDRESS, REPLY_TO } from './from';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM_ADDRESS = 'UNbecoming App <unbecoming@unbecoming.app>';
 
 export async function sendEmail(
   to: string, 
@@ -15,7 +15,7 @@ export async function sendEmail(
       to,
       subject,
       html,
-      replyTo: 'hello@nicholaskusmich.com',
+      replyTo: REPLY_TO,
       headers: {
         'List-Unsubscribe': `<https://unbecoming.app/api/notifications/unsubscribe?email=${encodeURIComponent(to)}>`,
         'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
@@ -75,7 +75,7 @@ export async function sendBatch(emails: BatchEmail[]): Promise<BatchResult> {
           to: e.to,
           subject: e.subject,
           html: e.html,
-          replyTo: 'hello@nicholaskusmich.com',
+          replyTo: REPLY_TO,
           headers: {
             'List-Unsubscribe': `<https://unbecoming.app/api/notifications/unsubscribe?email=${encodeURIComponent(e.to)}>`,
             'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',

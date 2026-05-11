@@ -58,6 +58,7 @@ import {
   reengagementEarlyEmail,
   reengagementMidEmail,
 } from '@/lib/emails/nurture-templates';
+import { FROM_ADDRESS, REPLY_TO } from '@/lib/emails/from';
 
 export const dynamic = 'force-dynamic';
 
@@ -423,7 +424,8 @@ async function sendNurtureEmail(
   const { subject, html } = templateMap[emailType](emailData);
 
   const { error } = await resend.emails.send({
-    from: 'Nicholas Kusmich <nic@unbecoming.app>',
+    from: FROM_ADDRESS,
+    replyTo: REPLY_TO,
     to: authData.email,
     subject,
     html,

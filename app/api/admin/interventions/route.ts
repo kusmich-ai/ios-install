@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { Resend } from 'resend';
+import { FROM_ADDRESS, REPLY_TO } from '@/lib/emails/from';
 
 // ============================================
 // ADMIN EMAIL WHITELIST (same as metrics route)
@@ -107,12 +108,11 @@ const EMAIL_TEMPLATES: { [key: string]: (firstName: string) => { subject: string
 // ============================================
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const FROM_EMAIL = process.env.FROM_EMAIL || 'Nicholas <nicholas@unbecoming.app>';
-
 async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
   try {
     const { data, error } = await resend.emails.send({
-      from: FROM_EMAIL,
+      from: FROM_ADDRESS,
+      replyTo: REPLY_TO,
       to,
       subject,
       html,

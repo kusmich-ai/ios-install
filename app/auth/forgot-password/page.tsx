@@ -60,7 +60,7 @@ export default function ForgotPasswordPage() {
               <ol className="text-xs text-gray-400 mt-2 space-y-1 list-decimal list-inside">
                 <li>Check your <span className="text-white">Spam</span> or <span className="text-white">Promotions</span> folder</li>
                 <li>Move the email to your inbox</li>
-                <li>Add <span className="text-white">unbecoming@unbecoming.app</span> to your contacts</li>
+                <li>Add <span className="text-white">hello@unbecoming.app</span> to your contacts</li>
               </ol>
             </div>
           </>
