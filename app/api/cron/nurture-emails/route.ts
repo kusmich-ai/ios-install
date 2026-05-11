@@ -115,6 +115,24 @@ async function getUnsubscribedIds(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Helper — fetch user_ids flagged as test accounts (Nicholas, Rachel, Kayla,
+// Fehren). Same fail-open pattern as getUnsubscribedIds.
+// ─────────────────────────────────────────────────────────────────────────────
+async function getTestUserIds(
+  supabase: ReturnType<typeof getAdminClient>
+): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('notification_preferences')
+    .select('user_id')
+    .eq('is_test_user', true);
+  if (error) {
+    console.error('[nurture-emails] getTestUserIds error:', error);
+    return [];
+  }
+  return (data || []).map((r: { user_id: string }) => r.user_id).filter(Boolean);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Eligibility queries
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -123,7 +141,7 @@ async function getUnsubscribedIds(
  * Anchor: consecutive_days >= 12 AND unlock_eligible = false.
  * Goal: keep them going 2 more days. Sends to app, not /upgrade.
  */
-async function getDay12Candidates(supabase: ReturnType<typeof getAdminClient>, unsubscribedIds: string[]) {
+async function getDay12Candidates(supabase: ReturnType<typeof getAdminClient>, unsubscribedIds: string[], testUserIds: string[]) {
   const sentIds = await getAlreadySentIds(supabase, 'nurture_day12');
 
   let query = supabase
@@ -136,6 +154,9 @@ async function getDay12Candidates(supabase: ReturnType<typeof getAdminClient>, u
 
   if (unsubscribedIds.length > 0) {
     query = query.not('user_id', 'in', `(${unsubscribedIds.map(id => `"${id}"`).join(',')})`);
+  }
+  if (testUserIds.length > 0) {
+    query = query.not('user_id', 'in', `(${testUserIds.map(id => `"${id}"`).join(',')})`);
   }
   if (sentIds.length > 0) {
     query = query.not('user_id', 'in', `(${sentIds.map(id => `"${id}"`).join(',')})`);
@@ -150,7 +171,7 @@ async function getDay12Candidates(supabase: ReturnType<typeof getAdminClient>, u
  * Email 1 — first offer, fires when eligibility is first reached.
  * Anchor: stage_unlocked_at IS NOT NULL.
  */
-async function getEmail1Candidates(supabase: ReturnType<typeof getAdminClient>, unsubscribedIds: string[]) {
+async function getEmail1Candidates(supabase: ReturnType<typeof getAdminClient>, unsubscribedIds: string[], testUserIds: string[]) {
   const sentIds = await getAlreadySentIds(supabase, 'nurture_email1');
 
   let query = supabase
@@ -163,6 +184,9 @@ async function getEmail1Candidates(supabase: ReturnType<typeof getAdminClient>, 
 
   if (unsubscribedIds.length > 0) {
     query = query.not('user_id', 'in', `(${unsubscribedIds.map(id => `"${id}"`).join(',')})`);
+  }
+  if (testUserIds.length > 0) {
+    query = query.not('user_id', 'in', `(${testUserIds.map(id => `"${id}"`).join(',')})`);
   }
   if (sentIds.length > 0) {
     query = query.not('user_id', 'in', `(${sentIds.map(id => `"${id}"`).join(',')})`);
@@ -177,7 +201,7 @@ async function getEmail1Candidates(supabase: ReturnType<typeof getAdminClient>, 
  * Email 2 — social proof, 3+ days after eligibility reached.
  * Anchor: stage_unlocked_at <= 3 days ago.
  */
-async function getEmail2Candidates(supabase: ReturnType<typeof getAdminClient>, unsubscribedIds: string[]) {
+async function getEmail2Candidates(supabase: ReturnType<typeof getAdminClient>, unsubscribedIds: string[], testUserIds: string[]) {
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
   const sentIds = await getAlreadySentIds(supabase, 'nurture_email2');
 
@@ -193,6 +217,9 @@ async function getEmail2Candidates(supabase: ReturnType<typeof getAdminClient>, 
   if (unsubscribedIds.length > 0) {
     query = query.not('user_id', 'in', `(${unsubscribedIds.map(id => `"${id}"`).join(',')})`);
   }
+  if (testUserIds.length > 0) {
+    query = query.not('user_id', 'in', `(${testUserIds.map(id => `"${id}"`).join(',')})`);
+  }
   if (sentIds.length > 0) {
     query = query.not('user_id', 'in', `(${sentIds.map(id => `"${id}"`).join(',')})`);
   }
@@ -206,7 +233,7 @@ async function getEmail2Candidates(supabase: ReturnType<typeof getAdminClient>, 
  * Email 3 — decision point, 7+ days after eligibility reached.
  * Anchor: stage_unlocked_at <= 7 days ago.
  */
-async function getEmail3Candidates(supabase: ReturnType<typeof getAdminClient>, unsubscribedIds: string[]) {
+async function getEmail3Candidates(supabase: ReturnType<typeof getAdminClient>, unsubscribedIds: string[], testUserIds: string[]) {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const sentIds = await getAlreadySentIds(supabase, 'nurture_email3');
 
@@ -221,6 +248,9 @@ async function getEmail3Candidates(supabase: ReturnType<typeof getAdminClient>, 
 
   if (unsubscribedIds.length > 0) {
     query = query.not('user_id', 'in', `(${unsubscribedIds.map(id => `"${id}"`).join(',')})`);
+  }
+  if (testUserIds.length > 0) {
+    query = query.not('user_id', 'in', `(${testUserIds.map(id => `"${id}"`).join(',')})`);
   }
   if (sentIds.length > 0) {
     query = query.not('user_id', 'in', `(${sentIds.map(id => `"${id}"`).join(',')})`);
@@ -237,7 +267,7 @@ async function getEmail3Candidates(supabase: ReturnType<typeof getAdminClient>, 
  * + unlock_eligible = false + no subscription.
  * Sends to app — they're not eligible yet, get them back in the door.
  */
-async function getReengagementEarlyCandidates(supabase: ReturnType<typeof getAdminClient>, unsubscribedIds: string[]) {
+async function getReengagementEarlyCandidates(supabase: ReturnType<typeof getAdminClient>, unsubscribedIds: string[], testUserIds: string[]) {
   const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
   const sentIds = await getAlreadySentIds(supabase, 'reengagement_early');
 
@@ -252,6 +282,9 @@ async function getReengagementEarlyCandidates(supabase: ReturnType<typeof getAdm
 
   if (unsubscribedIds.length > 0) {
     query = query.not('user_id', 'in', `(${unsubscribedIds.map(id => `"${id}"`).join(',')})`);
+  }
+  if (testUserIds.length > 0) {
+    query = query.not('user_id', 'in', `(${testUserIds.map(id => `"${id}"`).join(',')})`);
   }
   if (sentIds.length > 0) {
     query = query.not('user_id', 'in', `(${sentIds.map(id => `"${id}"`).join(',')})`);
@@ -268,7 +301,7 @@ async function getReengagementEarlyCandidates(supabase: ReturnType<typeof getAdm
  * + unlock_eligible = false + no subscription.
  * Sends to app — they were close, remind them progress doesn't reset.
  */
-async function getReengagementMidCandidates(supabase: ReturnType<typeof getAdminClient>, unsubscribedIds: string[]) {
+async function getReengagementMidCandidates(supabase: ReturnType<typeof getAdminClient>, unsubscribedIds: string[], testUserIds: string[]) {
   const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
   const sentIds = await getAlreadySentIds(supabase, 'reengagement_mid');
 
@@ -285,6 +318,9 @@ async function getReengagementMidCandidates(supabase: ReturnType<typeof getAdmin
   if (unsubscribedIds.length > 0) {
     query = query.not('user_id', 'in', `(${unsubscribedIds.map(id => `"${id}"`).join(',')})`);
   }
+  if (testUserIds.length > 0) {
+    query = query.not('user_id', 'in', `(${testUserIds.map(id => `"${id}"`).join(',')})`);
+  }
   if (sentIds.length > 0) {
     query = query.not('user_id', 'in', `(${sentIds.map(id => `"${id}"`).join(',')})`);
   }
@@ -299,7 +335,7 @@ async function getReengagementMidCandidates(supabase: ReturnType<typeof getAdmin
  * Anchor: last_visit <= 7 days ago.
  * Sends to app, not /upgrade.
  */
-async function getDay30Candidates(supabase: ReturnType<typeof getAdminClient>, unsubscribedIds: string[]) {
+async function getDay30Candidates(supabase: ReturnType<typeof getAdminClient>, unsubscribedIds: string[], testUserIds: string[]) {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const sentIds = await getAlreadySentIds(supabase, 'nurture_day30');
 
@@ -313,6 +349,9 @@ async function getDay30Candidates(supabase: ReturnType<typeof getAdminClient>, u
 
   if (unsubscribedIds.length > 0) {
     query = query.not('user_id', 'in', `(${unsubscribedIds.map(id => `"${id}"`).join(',')})`);
+  }
+  if (testUserIds.length > 0) {
+    query = query.not('user_id', 'in', `(${testUserIds.map(id => `"${id}"`).join(',')})`);
   }
   if (sentIds.length > 0) {
     query = query.not('user_id', 'in', `(${sentIds.map(id => `"${id}"`).join(',')})`);
@@ -467,9 +506,10 @@ export async function GET(request: Request) {
     // function. Single query per cron run; mirrors the existing email_log
     // dedupe pattern but at run-level rather than per-email-type.
     const unsubscribedIds = await getUnsubscribedIds(supabase);
+    const testUserIds = await getTestUserIds(supabase);
 
     // ── Day 12 — pre-eligibility momentum ───────────────────────────────────
-    const day12Users = await getDay12Candidates(supabase, unsubscribedIds);
+    const day12Users = await getDay12Candidates(supabase, unsubscribedIds, testUserIds);
     for (const u of day12Users) {
       results.day12.attempted++;
       const result = await sendNurtureEmail(supabase, u.user_id, 'nurture_day12', u);
@@ -477,7 +517,7 @@ export async function GET(request: Request) {
     }
 
     // ── Email 1 — first offer (day eligibility reached) ──────────────────────
-    const email1Users = await getEmail1Candidates(supabase, unsubscribedIds);
+    const email1Users = await getEmail1Candidates(supabase, unsubscribedIds, testUserIds);
     for (const u of email1Users) {
       results.email1.attempted++;
       const result = await sendNurtureEmail(supabase, u.user_id, 'nurture_email1', u);
@@ -485,7 +525,7 @@ export async function GET(request: Request) {
     }
 
     // ── Email 2 — social proof (3 days after eligibility) ────────────────────
-    const email2Users = await getEmail2Candidates(supabase, unsubscribedIds);
+    const email2Users = await getEmail2Candidates(supabase, unsubscribedIds, testUserIds);
     for (const u of email2Users) {
       results.email2.attempted++;
       const result = await sendNurtureEmail(supabase, u.user_id, 'nurture_email2', u);
@@ -493,7 +533,7 @@ export async function GET(request: Request) {
     }
 
     // ── Email 3 — decision point (7 days after eligibility) ──────────────────
-    const email3Users = await getEmail3Candidates(supabase, unsubscribedIds);
+    const email3Users = await getEmail3Candidates(supabase, unsubscribedIds, testUserIds);
     for (const u of email3Users) {
       results.email3.attempted++;
       const result = await sendNurtureEmail(supabase, u.user_id, 'nurture_email3', u);
@@ -501,7 +541,7 @@ export async function GET(request: Request) {
     }
 
     // ── Day 30 — cold re-engagement (inactivity trigger) ─────────────────────
-    const day30Users = await getDay30Candidates(supabase, unsubscribedIds);
+    const day30Users = await getDay30Candidates(supabase, unsubscribedIds, testUserIds);
     for (const u of day30Users) {
       results.day30.attempted++;
       const result = await sendNurtureEmail(supabase, u.user_id, 'nurture_day30', u);
@@ -509,7 +549,7 @@ export async function GET(request: Request) {
     }
 
     // ── Re-engagement A — Days 1-6 dropoff (14+ days silent) ─────────────────
-    const reengagementEarlyUsers = await getReengagementEarlyCandidates(supabase, unsubscribedIds);
+    const reengagementEarlyUsers = await getReengagementEarlyCandidates(supabase, unsubscribedIds, testUserIds);
     for (const u of reengagementEarlyUsers) {
       results.reengagementEarly.attempted++;
       const result = await sendNurtureEmail(supabase, u.user_id, 'reengagement_early', u);
@@ -517,7 +557,7 @@ export async function GET(request: Request) {
     }
 
     // ── Re-engagement B — Days 7-13 dropoff (14+ days silent) ────────────────
-    const reengagementMidUsers = await getReengagementMidCandidates(supabase, unsubscribedIds);
+    const reengagementMidUsers = await getReengagementMidCandidates(supabase, unsubscribedIds, testUserIds);
     for (const u of reengagementMidUsers) {
       results.reengagementMid.attempted++;
       const result = await sendNurtureEmail(supabase, u.user_id, 'reengagement_mid', u);

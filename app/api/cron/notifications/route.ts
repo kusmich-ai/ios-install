@@ -199,7 +199,8 @@ export async function GET(req: Request) {
   const { data: users, error } = await (supabase
     .from('notification_preferences') as any)
     .select('*')
-    .eq('unsubscribed', false);
+    .eq('unsubscribed', false)
+    .eq('is_test_user', false);
 
   if (error || !users) {
     console.error('[Cron] Failed to fetch users:', error);
