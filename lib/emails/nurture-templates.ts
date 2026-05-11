@@ -6,9 +6,10 @@ interface NurtureEmailData {
   days: number;
   delta: number | null;
   upgradeUrl: string;
+  unsubscribeUrl: string;
 }
 
-function baseWrapper(content: string): string {
+function baseWrapper(content: string, unsubscribeUrl: string): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -43,7 +44,7 @@ function baseWrapper(content: string): string {
                 You're receiving this because you're in Stage 1 of The Stack.
               </p>
               <p style="margin:0;font-size:11px;color:#333;">
-                <a href="{{unsubscribe_url}}" style="color:#444;text-decoration:underline;">Unsubscribe</a>
+                <a href="${unsubscribeUrl}" style="color:#444;text-decoration:underline;">Unsubscribe</a>
               </p>
             </td>
           </tr>
@@ -102,7 +103,7 @@ export function day12Email(data: NurtureEmailData): { subject: string; html: str
 
   return {
     subject: "You're 2 days away.",
-    html: baseWrapper(content),
+    html: baseWrapper(content, data.unsubscribeUrl),
   };
 }
 
@@ -140,7 +141,7 @@ export function day14Email(data: NurtureEmailData): { subject: string; html: str
 
   return {
     subject: 'You earned it.',
-    html: baseWrapper(content),
+    html: baseWrapper(content, data.unsubscribeUrl),
   };
 }
 
@@ -179,7 +180,7 @@ export function day17Email(data: NurtureEmailData): { subject: string; html: str
 
   return {
     subject: 'Still here?',
-    html: baseWrapper(content),
+    html: baseWrapper(content, data.unsubscribeUrl),
   };
 }
 
@@ -223,7 +224,7 @@ export function day21Email(data: NurtureEmailData): { subject: string; html: str
 
   return {
     subject: 'Stage 1 is complete. What happens now?',
-    html: baseWrapper(content),
+    html: baseWrapper(content, data.unsubscribeUrl),
   };
 }
 
@@ -261,7 +262,7 @@ export function reengagementEarlyEmail(data: NurtureEmailData): { subject: strin
 
   return {
     subject: 'You started something.',
-    html: baseWrapper(content),
+    html: baseWrapper(content, data.unsubscribeUrl),
   };
 }
 
@@ -302,7 +303,7 @@ export function reengagementMidEmail(data: NurtureEmailData): { subject: string;
 
   return {
     subject: `${data.days > 0 ? `${data.days} days` : 'Your progress'} didn't disappear.`,
-    html: baseWrapper(content),
+    html: baseWrapper(content, data.unsubscribeUrl),
   };
 }
 // Anchor: last_visit >= 7 days ago (pure inactivity trigger).
@@ -333,6 +334,6 @@ export function day30Email(data: NurtureEmailData): { subject: string; html: str
 
   return {
     subject: 'Your installation is paused.',
-    html: baseWrapper(content),
+    html: baseWrapper(content, data.unsubscribeUrl),
   };
 }

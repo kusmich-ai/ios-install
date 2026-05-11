@@ -1,13 +1,15 @@
 // lib/emails/send.ts
 import { Resend } from 'resend';
 import { FROM_ADDRESS, REPLY_TO } from './from';
+import { buildListUnsubscribeHeaders } from './headers';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function sendEmail(
-  to: string, 
-  subject: string, 
-  html: string
+  to: string,
+  subject: string,
+  html: string,
+  userId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const { error } = await resend.emails.send({
@@ -16,10 +18,7 @@ export async function sendEmail(
       subject,
       html,
       replyTo: REPLY_TO,
-      headers: {
-        'List-Unsubscribe': `<https://unbecoming.app/api/notifications/unsubscribe?email=${encodeURIComponent(to)}>`,
-        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-      },
+      headers: buildListUnsubscribeHeaders(userId),
     });
 
     if (error) {
@@ -42,6 +41,8 @@ export interface BatchEmail {
   to: string;
   subject: string;
   html: string;
+  /** Required so Resend's List-Unsubscribe header points to the right recipient */
+  userId: string;
   /** Opaque tag so the caller can match results back to users/types */
   tag?: string;
 }
@@ -76,10 +77,7 @@ export async function sendBatch(emails: BatchEmail[]): Promise<BatchResult> {
           subject: e.subject,
           html: e.html,
           replyTo: REPLY_TO,
-          headers: {
-            'List-Unsubscribe': `<https://unbecoming.app/api/notifications/unsubscribe?email=${encodeURIComponent(e.to)}>`,
-            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-          },
+          headers: buildListUnsubscribeHeaders(e.userId),
         }))
       );
 

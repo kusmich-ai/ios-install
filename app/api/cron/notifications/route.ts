@@ -253,6 +253,7 @@ export async function GET(req: Request) {
             to: user.email,
             subject: email.subject,
             html: email.html,
+            userId: user.user_id,
             tag: 'morning_reminder',
           });
           pendingLogs.push({
@@ -276,6 +277,7 @@ export async function GET(req: Request) {
             to: user.email,
             subject: email.subject,
             html: email.html,
+            userId: user.user_id,
             tag: 'missed_day',
           });
           pendingLogs.push({
@@ -299,6 +301,7 @@ export async function GET(req: Request) {
             to: user.email,
             subject: email.subject,
             html: email.html,
+            userId: user.user_id,
             tag: '3_day_absence',
           });
           pendingLogs.push({
@@ -343,6 +346,7 @@ export async function GET(req: Request) {
             to: user.email,
             subject: email.subject,
             html: email.html,
+            userId: user.user_id,
             tag: 'weekly_summary',
           });
           pendingLogs.push({

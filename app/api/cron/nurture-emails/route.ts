@@ -59,6 +59,7 @@ import {
   reengagementMidEmail,
 } from '@/lib/emails/nurture-templates';
 import { FROM_ADDRESS, REPLY_TO } from '@/lib/emails/from';
+import { buildListUnsubscribeHeaders, buildUnsubscribeUrl } from '@/lib/emails/headers';
 
 export const dynamic = 'force-dynamic';
 
@@ -404,11 +405,14 @@ async function sendNurtureEmail(
     ? buildAppUrl()
     : buildUpgradeUrl(authData.firstName, progressData.consecutive_days, progressData.latest_avg_delta);
 
+  const unsubscribeUrl = buildUnsubscribeUrl(userId);
+
   const emailData = {
     firstName: authData.firstName,
     days: progressData.consecutive_days,
     delta: progressData.latest_avg_delta,
     upgradeUrl: destinationUrl,
+    unsubscribeUrl,
   };
 
   const templateMap: Record<NurtureEmailType, (data: typeof emailData) => { subject: string; html: string }> = {
@@ -429,10 +433,7 @@ async function sendNurtureEmail(
     to: authData.email,
     subject,
     html,
-    headers: {
-      'List-Unsubscribe': `<mailto:unsubscribe@unbecoming.app?subject=unsubscribe>`,
-      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-    },
+    headers: buildListUnsubscribeHeaders(userId),
   });
 
   if (error) return { success: false, reason: error.message };

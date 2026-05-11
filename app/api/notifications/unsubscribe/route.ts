@@ -2,12 +2,17 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-export async function GET(req: Request) {
-  const url = new URL(req.url);
-  const uid = url.searchParams.get('uid');
-
+// Shared handler. GET returns the HTML confirmation page (existing user-
+// facing behavior); POST returns JSON for RFC 8058 one-click compliance.
+// Both read uid from the URL query string — Gmail's one-click POST keeps
+// the uid in the URL and only sends List-Unsubscribe=One-Click in the body.
+async function doUnsubscribe(uid: string): Promise<{
+  ok: boolean;
+  status: number;
+  error?: string;
+}> {
   if (!uid) {
-    return new NextResponse('Missing user ID', { status: 400 });
+    return { ok: false, status: 400, error: 'Missing user ID' };
   }
 
   const supabase = createClient(
@@ -22,7 +27,20 @@ export async function GET(req: Request) {
 
   if (error) {
     console.error('[Unsubscribe] Error:', error);
-    return new NextResponse('Something went wrong. Please try again.', { status: 500 });
+    return { ok: false, status: 500, error: 'Something went wrong. Please try again.' };
+  }
+
+  return { ok: true, status: 200 };
+}
+
+export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const uid = url.searchParams.get('uid') || '';
+
+  const result = await doUnsubscribe(uid);
+
+  if (!result.ok) {
+    return new NextResponse(result.error, { status: result.status });
   }
 
   // Return a simple confirmation page
@@ -41,4 +59,20 @@ export async function GET(req: Request) {
   `, {
     headers: { 'Content-Type': 'text/html' },
   });
+}
+
+export async function POST(req: Request) {
+  const url = new URL(req.url);
+  const uid = url.searchParams.get('uid') || '';
+
+  const result = await doUnsubscribe(uid);
+
+  if (!result.ok) {
+    return NextResponse.json(
+      { ok: false, error: result.error },
+      { status: result.status }
+    );
+  }
+
+  return NextResponse.json({ ok: true }, { status: 200 });
 }

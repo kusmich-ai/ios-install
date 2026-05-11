@@ -5,6 +5,7 @@ import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { Resend } from 'resend';
 import { FROM_ADDRESS, REPLY_TO } from '@/lib/emails/from';
+import { buildListUnsubscribeHeaders } from '@/lib/emails/headers';
 
 // ============================================
 // ADMIN EMAIL WHITELIST (same as metrics route)
@@ -108,7 +109,7 @@ const EMAIL_TEMPLATES: { [key: string]: (firstName: string) => { subject: string
 // ============================================
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
+async function sendEmail(to: string, subject: string, html: string, userId: string): Promise<boolean> {
   try {
     const { data, error } = await resend.emails.send({
       from: FROM_ADDRESS,
@@ -116,6 +117,7 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
       to,
       subject,
       html,
+      headers: buildListUnsubscribeHeaders(userId),
     });
 
     if (error) {
@@ -239,7 +241,7 @@ export async function POST(req: Request) {
       }
 
       // Send the email
-      const emailSent = await sendEmail(email, subject, html);
+      const emailSent = await sendEmail(email, subject, html, userId);
 
       // Log to notification_log regardless (so we track the attempt)
       const { error: logError } = await supabaseAdmin
