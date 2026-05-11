@@ -236,7 +236,7 @@ export async function GET(req: Request) {
         .eq('user_id', user.user_id)
         .single();
       const userStage = progressData?.current_stage || 1;
-      const unsubscribeUrl = `https://unbecoming.app/api/notifications/unsubscribe?uid=${user.user_id}`;
+      const unsubscribeUrl = `https://www.unbecoming.app/api/notifications/unsubscribe?uid=${user.user_id}`;
 
       // Get practice data
       const practice = await getUserPracticeData(supabase, user.user_id, 7, timezone);

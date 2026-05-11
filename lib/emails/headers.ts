@@ -4,7 +4,7 @@
 // header button or the in-body unsubscribe link.
 
 export function buildUnsubscribeUrl(userId: string): string {
-  return `https://unbecoming.app/api/notifications/unsubscribe?uid=${encodeURIComponent(userId)}`;
+  return `https://www.unbecoming.app/api/notifications/unsubscribe?uid=${encodeURIComponent(userId)}`;
 }
 
 export function buildListUnsubscribeHeaders(userId: string): Record<string, string> {
