@@ -19,7 +19,8 @@
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "resend": "^4.1.2",
-    "stripe": "^14.0.0"
+    "stripe": "^14.0.0",
+    "svix": "^1.93.0"
   },
   "devDependencies": {
     "@types/node": "^20",
