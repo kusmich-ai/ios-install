@@ -8,7 +8,6 @@ import { sendBatch, type BatchEmail } from '@/lib/emails/send';
 import {
   morningReminder,
   missedDay,
-  threeDayAbsence,
   weeklySummary,
 } from '@/lib/emails/templates';
 
@@ -211,7 +210,6 @@ export async function GET(req: Request) {
     processed: 0,
     morning_sent: 0,
     missed_day_sent: 0,
-    absence_sent: 0,
     weekly_sent: 0,
     errors: 0,
   };
@@ -287,30 +285,6 @@ export async function GET(req: Request) {
             metadata: { consecutiveMissed: practice.consecutiveMissed },
           });
           results.missed_day_sent++;
-        }
-      }
-
-      // ============================================
-      // 3-DAY ABSENCE — 10am local, if 3+ days missed
-      // ============================================
-      if (hour === 10 && user.missed_day_nudge && practice.consecutiveMissed >= 3) {
-        const alreadySent = await wasAlreadySentToday(supabase, user.user_id, '3_day_absence', timezone);
-        
-        if (!alreadySent) {
-          const email = threeDayAbsence(userName, practice.consecutiveMissed, unsubscribeUrl);
-          emailQueue.push({
-            to: user.email,
-            subject: email.subject,
-            html: email.html,
-            userId: user.user_id,
-            tag: '3_day_absence',
-          });
-          pendingLogs.push({
-            userId: user.user_id,
-            notificationType: '3_day_absence',
-            metadata: { daysAway: practice.consecutiveMissed },
-          });
-          results.absence_sent++;
         }
       }
 
