@@ -56,12 +56,12 @@ export const STAGES: Stage[] = [
       }
     ],
     unlockCriteria: {
-      adherence: 70,           // 5/7 days within window
+      adherence: 55,           // ≥8/14 slots (recalibrated from 70% per audit 2026-05-12 — accommodates M-F weekday rhythm)
       days: 7,
-      deltaThreshold: 0.3,
-      acceleratedDays: 5,      // accelerated path: 5 days at 90%+
-      acceleratedAdherence: 90,
-      competenceBypass: 4.0,
+      deltaThreshold: 0.15,
+      acceleratedDays: 5,      // accelerated path: 5 days at 80%+ (recalibrated from 90%)
+      acceleratedAdherence: 80,
+      competenceBypass: 3.5,
       hardWeekAdherence: 85,
       hardWeekDelta: 0.1
     }

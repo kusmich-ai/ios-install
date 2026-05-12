@@ -149,12 +149,12 @@ const UNLOCK_THRESHOLDS: { [stage: number]: {
   competenceBypass?: number;
 } } = {
   1: {
-    adherence: 70,
+    adherence: 55,
     days: 7,
-    delta: 0.3,
+    delta: 0.15,
     qualitative: 3,
-    accelerated: { adherence: 90, days: 5, delta: 0.3, qualitative: 3 },
-    competenceBypass: 4.0
+    accelerated: { adherence: 80, days: 5, delta: 0.15, qualitative: 3 },
+    competenceBypass: 3.5
   },
   2: {
     adherence: 80,
@@ -297,8 +297,8 @@ function checkBasicUnlockEligibility(
   const COMPETENCE_THRESHOLD = threshold.competenceBypass ?? 4.0;
 
   if (stage === 1) {
-    const standardAdherenceMet = adherence >= 70 && daysInStage >= 7;
-    const acceleratedAdherenceMet = adherence >= 90 && daysInStage >= 5;
+    const standardAdherenceMet = adherence >= 55 && daysInStage >= 7;
+    const acceleratedAdherenceMet = adherence >= 80 && daysInStage >= 5;
     const gate1 = standardAdherenceMet || acceleratedAdherenceMet;
     if (!gate1) return false;
 
@@ -308,8 +308,8 @@ function checkBasicUnlockEligibility(
     const avgCalm = recentCalmRatings.length >= 3
       ? recentCalmRatings.reduce((s, r) => s + r, 0) / recentCalmRatings.length
       : null;
-    const pathA = avgCalm !== null && avgCalm >= baselineCalmScore + 0.3;
-    const pathB = avgDelta >= 0.3;
+    const pathA = avgCalm !== null && avgCalm >= baselineCalmScore + 0.15;
+    const pathB = avgDelta >= 0.15;
     const pathC = avgScore >= COMPETENCE_THRESHOLD;
     const pathD = adherence >= 85 && (trend === 'up' || trend === 'flat' || trend === 'insufficient');
 
