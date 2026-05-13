@@ -266,7 +266,7 @@ export async function GET(req: Request) {
       // ============================================
       // MISSED DAY NUDGE — 10am local, if yesterday was missed
       // ============================================
-      if (hour === 10 && user.missed_day_nudge && !practice.completedYesterday && practice.consecutiveMissed >= 1) {
+      if (hour === 10 && user.missed_day_nudge && !practice.completedYesterday && practice.consecutiveMissed === 1) {
         const alreadySent = await wasAlreadySentToday(supabase, user.user_id, 'missed_day', timezone);
         
         if (!alreadySent) {
