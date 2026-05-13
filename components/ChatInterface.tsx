@@ -2738,17 +2738,48 @@ One sentence only. No preamble.`;
       
       try {
         const supabase = createClient();
-        
+
+        // Snapshot data BEFORE the update for audit trail (Sprint 5 C.1).
+        const fromStage = progress?.currentStage ?? 1;
+        const adherenceSnapshot = progress?.adherencePercentage ?? null;
+        const deltaSnapshot = progress?.domainDeltas?.average ?? null;
+        // Sprint 7 will refine path attribution by re-running checkBasicUnlockEligibility
+        // with per-path inspection. For v1, mark all Stage 1+ unlocks as 'standard'.
+        const unlockPath = 'standard';
+        const nowIso = new Date().toISOString();
+
         const { error } = await supabase
           .from('user_progress')
-          .update({ 
+          .update({
             current_stage: pendingUnlockStage,
-            stage_start_date: new Date().toISOString()
+            stage_start_date: nowIso,
+            stage_unlocked_at: nowIso, // unblocks nurture day14/17/21 conversion sequence
           })
           .eq('user_id', user.id);
-        
+
         if (error) throw error;
-        
+
+        // Best-effort audit-trail insert. If this fails, the user has already
+        // unlocked successfully — log but don't block the user flow.
+        try {
+          const { error: auditError } = await supabase
+            .from('stage_unlocks')
+            .insert({
+              user_id: user.id,
+              from_stage: fromStage,
+              to_stage: pendingUnlockStage,
+              unlocked_at: nowIso,
+              adherence_at_unlock: adherenceSnapshot,
+              delta_at_unlock: deltaSnapshot,
+              unlock_path: unlockPath,
+            });
+          if (auditError) {
+            console.error('[unlock] stage_unlocks audit insert failed:', auditError);
+          }
+        } catch (auditErr) {
+          console.error('[unlock] stage_unlocks audit unexpected error:', auditErr);
+        }
+
         if (refetchProgress) {
           await refetchProgress();
         }
