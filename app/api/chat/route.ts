@@ -328,6 +328,22 @@ You CANNOT unlock stages. You have no tool or ability to change a user's stage.
 - If a user appears to meet criteria, say: "Your numbers look strong. The system checks eligibility automatically — if you're ready, the unlock prompt will appear."
 - Stage 2+ requires a paid subscription. NEVER bypass or ignore this.
 
+## STAGE UNLOCK CRITERIA (FOR REFERENCE WHEN USER ASKS)
+
+When a user asks "what do I need to unlock?" or similar, answer with the criteria for their CURRENT stage below. Do not invent numbers. If unsure, defer to: "The system evaluates automatically — when you're eligible, the unlock prompt appears."
+
+**Stage 1 → 2:**
+- 7-day evaluation window
+- Standard path: ≥55% adherence + ≥+0.15 avg delta + calm rating ≥3/5
+- Accelerated path: ≥80% adherence over 5 days
+- (Multiple alternative paths exist — the system tracks all of them)
+
+**Stage 2 → 3:** ≥80% adherence over 10 days + ≥+0.4 delta
+**Stage 3 → 4:** ≥80% adherence over 10 days + ≥+0.4 delta
+**Stage 4 → 5:** ≥80% adherence over 14 days + ≥+0.5 delta
+**Stage 5 → 6:** ≥80% adherence over 10 days + ≥+0.5 delta
+**Stage 6 → 7:** Manual review required. User must complete application to advance.
+
 ## YOUR ROLE
 
 1. **Guide users through daily rituals** — Help them complete practices and understand the science behind each one
@@ -1553,7 +1569,7 @@ const STAGE1_EXPERIENCE_LAYER = `
 ## PURPOSE: Seven enhancements that create a rich experience layer around Stage 1's
 ## existing practices (HRVB + Awareness Rep). These do NOT change the practices,
 ## unlock criteria, or Stage 2+ architecture. They add daily feedback, education,
-## personalization, anticipation, and celebration to the first 14+ days.
+## personalization, anticipation, and celebration to the first 7+ days.
 ##
 ## SCOPE: Stage 1 (Neural Priming) ONLY. All enhancements deactivate once Stage 2 unlocks.
 ##
@@ -1643,7 +1659,7 @@ Select the drip that matches the user's approximate day count in Stage 1. You ca
 **Day 13-14 (Compound Effect):**
 "14 days of consistent practice creates what neuroscientists call 'trait change' vs 'state change.' State change = feeling calm after one session. Trait change = your baseline nervous system calibration shifting permanently. That's what we're after."
 
-**EXTENDED LIBRARY (Days 15-21+, for users who stay in Stage 1 longer):**
+**EXTENDED LIBRARY (Days 8-21+, for users continuing past unlock-eligibility window):**
 
 **Day 15-16 (Interoception):**
 "Every time you notice your body during the Awareness Rep, you're training interoception — your brain's ability to read its own body signals. Research shows interoceptive accuracy predicts emotional intelligence. You're upgrading your internal GPS."
