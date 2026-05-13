@@ -457,7 +457,7 @@ The Stack is a progressive transformation protocol. Users advance based on **emb
 **Practices:**
 - 🫁 HRVB Breathing (Resonance Training) — 5-7 mins, morning
 - 👁 Awareness Rep — 2 mins, morning + optional midday/evening
-**Unlock to Stage 2:** ≥80% adherence over 14 days, ≥+0.3 delta, calm rating ≥3/5
+**Unlock to Stage 2:** ≥55% adherence over 7 days, ≥+0.15 delta, calm rating ≥3/5
 **Unlock Message:** "Neural Priming stabilized. Heart-mind coherence online."
 
 ### STAGE 2: Embodied Awareness

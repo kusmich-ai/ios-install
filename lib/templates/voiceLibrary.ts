@@ -611,7 +611,7 @@ export const questionTemplates = {
   systemQuestions: {
     howLong: `The stages unlock based on competence, not time.
 
-Minimum 14 days per stage with 80%+ adherence and positive delta improvement. But some people need longer — and that's fine. The system adapts to YOUR nervous system's readiness.
+Each stage has its own evaluation window and adherence threshold — Stage 1 unlocks in as few as 7 days at 55%+, Stages 2-6 typically need 10-14 days at 80%+. Plus positive delta improvement. But some people need longer — and that's fine. The system adapts to YOUR nervous system's readiness.
 
 Average full installation (Stages 1-6): 3-6 months.
 

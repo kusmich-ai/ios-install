@@ -385,9 +385,9 @@ Take a moment to notice the shift. Then type **"unlock"** when you're ready to a
       notYet: `**Stage 1 Progress Check**
 
 Current status vs unlock criteria:
-- Adherence: {{currentAdherence}}% (need 80%)
-- Avg Delta: {{currentAvgDelta}} (need +0.3)
-- Days: {{currentConsecutiveDays}} (need 14)
+- Adherence: {{currentAdherence}}% (need 55%)
+- Avg Delta: {{currentAvgDelta}} (need +0.15)
+- Days: {{currentConsecutiveDays}} (need 7)
 
 Keep going. The system unlocks when your nervous system is ready — not before.`,
 

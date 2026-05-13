@@ -1825,13 +1825,13 @@ Look at the user's baseline scores (from onboarding). Pick the 1-2 most relevant
 "First presence rating above 4. Your insula — the brain's self-monitoring center — is getting stronger. You're literally growing the neural real estate responsible for awareness."
 
 **6. 50_pct_adherence** — 50% overall adherence reached
-"Halfway to unlock threshold. You're at 50% adherence. The compound effect is building — each day of practice makes the next one slightly easier. Momentum is real."
+"50% adherence. You're approaching the Stage 2 unlock threshold (55%). Compound effect is building — each day of practice makes the next one slightly easier. Momentum is real."
 
 **7. 10_day_streak** — 10 consecutive days
 "10 straight days. You're in the neuroplasticity consolidation window now — this is when new neural pathways start becoming default pathways. The effort-to-results ratio is about to shift in your favor."
 
 **8. 80_pct_adherence** — 80% adherence threshold reached
-"80% adherence reached. That's the unlock threshold. Combined with your delta scores, you're approaching Stage 2 eligibility. The system is working because you showed up."
+"80% adherence. You're well past the standard Stage 2 threshold (55%) and at the accelerated-path floor — that means you can qualify for Stage 2 in as few as 5 days. The system is working because you showed up."
 
 **DELIVERY RULES:**
 - Call \`check_milestones\` at the start of Stage 1 conversations to see which are available.
