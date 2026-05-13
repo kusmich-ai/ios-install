@@ -281,6 +281,65 @@ function getCalmRatingTrend(ratings: number[]): 'up' | 'flat' | 'down' | 'insuff
   return 'flat';
 }
 
+/**
+ * SPRINT 5 C.3 (May 13, 2026): Baseline calm score for Path A unlock
+ * evaluation.
+ *
+ * BUG FIXED: Previously the caller passed baselineScores.regulation
+ * (from ios:baseline:domain_scores — the onboarding 4-question
+ * regulation-domain self-rating) as baselineCalmScore. That measured
+ * a DIFFERENT construct than the signal_checks.calm_score values
+ * used on the left side of the comparison (post-ritual calm rating).
+ * Same 0-5 scale, different things.
+ *
+ * CURRENT APPROACH: average of the user's first 3 signal_checks.calm_score
+ * entries (or fewer if <3 exist; fallback to 2.5 if zero).
+ *
+ * CAVEAT: Signal checks are captured AFTER each ritual, so the first
+ * signal check is post-Resonance-Breathing — biased UPWARD versus a
+ * true "before any intervention" baseline. Using avg of first 3
+ * smooths noise but doesn't eliminate the bias. Acceptable for v1
+ * because the alternative (no baseline) is worse, and Path A's
+ * relative-improvement framing (avgCalm >= baseline + 0.15) still
+ * captures meaningful progress signal.
+ *
+ * FUTURE (Sprint 6 onboarding refresh): add a true "baseline calm"
+ * question to SimpleBaseline, write to user_progress.baseline_calm_score
+ * or similar, replace this helper with that read.
+ */
+async function getBaselineCalmScore(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+  fallback: number = 2.5
+): Promise<number> {
+  const { data, error } = await supabase
+    .from('signal_checks')
+    .select('calm_score')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: true })
+    .limit(3);
+
+  if (error) {
+    console.error('[getBaselineCalmScore] query error:', error);
+    return fallback;
+  }
+
+  if (!data || data.length === 0) {
+    return fallback;
+  }
+
+  const validScores = data
+    .map((row: { calm_score: number | null }) => row.calm_score)
+    .filter((score: number | null): score is number => typeof score === 'number');
+
+  if (validScores.length === 0) {
+    return fallback;
+  }
+
+  const sum = validScores.reduce((acc: number, score: number) => acc + score, 0);
+  return sum / validScores.length;
+}
+
 function checkBasicUnlockEligibility(
   stage: number,
   adherence: number,
@@ -308,6 +367,9 @@ function checkBasicUnlockEligibility(
     const avgCalm = recentCalmRatings.length >= 3
       ? recentCalmRatings.reduce((s, r) => s + r, 0) / recentCalmRatings.length
       : null;
+    // Path A: calm has improved from baseline. baselineCalmScore comes
+    // from getBaselineCalmScore() — first-signal-check-derived (Sprint 5 C.3).
+    // The +0.15 threshold was recalibrated from 0.3 in Sprint 5 D.
     const pathA = avgCalm !== null && avgCalm >= baselineCalmScore + 0.15;
     const pathB = avgDelta >= 0.15;
     const pathC = avgScore >= COMPETENCE_THRESHOLD;
@@ -629,6 +691,11 @@ export function useUserProgress() {
         latestQualitativeRating !== null && latestQualitativeRating >= threshold.accelerated.qualitative
       ) : false;
 
+      // SPRINT 5 C.3: Use first-signal-check-derived baseline instead of
+      // baselineScores.regulation (which measured a different construct).
+      // See getBaselineCalmScore docstring for full context.
+      const baselineCalmScore = await getBaselineCalmScore(supabase, user.id);
+
       const unlockEligible = checkBasicUnlockEligibility(
         progressData.current_stage,
         progressData.adherence_percentage,
@@ -637,7 +704,7 @@ export function useUserProgress() {
         latestQualitativeRating,
         avgScore,
         recentCalmRatings,
-        baselineScores.regulation
+        baselineCalmScore
       );
 
       const unlockProgress = threshold ? {
