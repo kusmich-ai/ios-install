@@ -22,6 +22,8 @@ import { cookies } from 'next/headers';
 import { withToolLayers } from '@/lib/prompts/withToolLayers';
 import { CUE_KERNEL } from '@/lib/prompts/cueKernel';
 import { withCueKernel } from '@/lib/prompts/withCueKernel';
+import { buildUnlockCriteriaBlock } from '@/lib/prompts/buildUnlockCriteriaBlock';
+import { STAGES } from '@/app/config/stages';
 import { getAttributionDriftContext, getAttributionResetInjection, detectAttributionDrift } from '@/lib/frustrationDetection';
 
 
@@ -328,21 +330,7 @@ You CANNOT unlock stages. You have no tool or ability to change a user's stage.
 - If a user appears to meet criteria, say: "Your numbers look strong. The system checks eligibility automatically — if you're ready, the unlock prompt will appear."
 - Stage 2+ requires a paid subscription. NEVER bypass or ignore this.
 
-## STAGE UNLOCK CRITERIA (FOR REFERENCE WHEN USER ASKS)
-
-When a user asks "what do I need to unlock?" or similar, answer with the criteria for their CURRENT stage below. Do not invent numbers. If unsure, defer to: "The system evaluates automatically — when you're eligible, the unlock prompt appears."
-
-**Stage 1 → 2:**
-- 7-day evaluation window
-- Standard path: ≥55% adherence + ≥+0.15 avg delta + calm rating ≥3/5
-- Accelerated path: ≥80% adherence over 5 days
-- (Multiple alternative paths exist — the system tracks all of them)
-
-**Stage 2 → 3:** ≥80% adherence over 10 days + ≥+0.4 delta
-**Stage 3 → 4:** ≥80% adherence over 10 days + ≥+0.4 delta
-**Stage 4 → 5:** ≥80% adherence over 14 days + ≥+0.5 delta
-**Stage 5 → 6:** ≥80% adherence over 10 days + ≥+0.5 delta
-**Stage 6 → 7:** Manual review required. User must complete application to advance.
+${buildUnlockCriteriaBlock(STAGES)}
 
 ## YOUR ROLE
 
