@@ -11,38 +11,51 @@ interface NurtureEmailData {
   unsubscribeUrl: string;
 }
 
+interface Day5ApproachEmailData {
+  firstName: string | null;
+  adherence: number;            // current adherence_percentage (e.g. 45)
+  remainingPractices: number;   // approx slots needed to clear threshold
+  delta: number | null;
+  ctaUrl: string;               // CTA destination (chat)
+  unsubscribeUrl: string;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
-// EMAIL 0 — Day 12: Pre-eligibility momentum
-// Anchor: consecutive_days >= 12 AND unlock_eligible = false
-// Goal: keep them going 2 more days. Sends to app, not /upgrade.
+// DAY 5 APPROACH — pre-threshold momentum (Sprint 6 T3.3)
+// Anchor: Day 5 of Stage 1 (stage_start_date ~5d ago) + adherence ≥ 40
+//         + unlock_eligible = false + no subscription.
+// Goal: align the engaged cohort with Sprint 5 D's 7-day unlock window.
+// Replaces nurture_day12 (Sprint 6 Phase 1 Audit Urgent B — old gate was
+// near-empty under Sprint 5 D thresholds and body was factually wrong).
 // ─────────────────────────────────────────────────────────────────────────────
-export function day12Email(data: NurtureEmailData): { subject: string; html: string } {
+export function day5ApproachEmail(data: Day5ApproachEmailData): { subject: string; html: string } {
   const name = data.firstName ? `${data.firstName},` : 'Hey,';
-  const deltaLine = data.delta !== null
-    ? `<p style="margin:0 0 20px;font-size:15px;color:#888;line-height:1.7;">Your domains have moved <span style="color:#ff9e19;font-weight:600;">+${data.delta}</span> from baseline. The system is responding.</p>`
+
+  // Show the trending-up signal only when it's meaningful (>0.05). Numeric
+  // value intentionally suppressed — plain-language framing only.
+  const deltaLine = (data.delta !== null && data.delta > 0.05)
+    ? `<p style="margin:0 0 20px;font-size:15px;color:#888;line-height:1.7;">Your numbers are trending up.</p>`
     : '';
 
   const content = `
-    <h1 style="margin:0 0 6px;font-size:24px;font-weight:700;color:#fff;line-height:1.2;">${name} 2 days away.</h1>
-    <p style="margin:0 0 24px;font-size:13px;color:#ff9e19;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;">${data.days} days in · Stage 2 unlock approaching</p>
+    <h1 style="margin:0 0 6px;font-size:24px;font-weight:700;color:#fff;line-height:1.2;">${name} day 5.</h1>
+    <p style="margin:0 0 24px;font-size:13px;color:#ff9e19;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;">Stage 2 unlocks Day 7</p>
 
-    <p style="margin:0 0 20px;font-size:15px;color:#ccc;line-height:1.7;">You're ${data.days} days in. Stage 2 unlock requires 14 days of consistent practice — you're 2 away.</p>
+    <p style="margin:0 0 20px;font-size:15px;color:#ccc;line-height:1.7;">You're at ${data.adherence}%. To unlock on Day 7, you need to hit 55%. That's about ${data.remainingPractices} more sessions in the next 2 days.</p>
 
     ${deltaLine}
 
-    <p style="margin:0 0 20px;font-size:15px;color:#888;line-height:1.7;">This is the window where most people stop. Not because they want to — but because the habit hasn't fully installed yet and something disrupts the rhythm.</p>
+    <p style="margin:0 0 20px;font-size:15px;color:#888;line-height:1.7;">There's no button to push. When you hit 55%, Stage 2 opens on its own. Day 6 and Day 7 are the days that count.</p>
 
-    <p style="margin:0 0 8px;font-size:15px;color:#fff;font-weight:500;line-height:1.7;">Two more days. Then Stage 2 unlocks and the system goes deeper.</p>
-
-    ${ctaButton('Open The Stack →', data.upgradeUrl)}
+    ${ctaButton('Open The Stack →', data.ctaUrl)}
 
     ${divider()}
 
-    <p style="margin:0;font-size:12px;color:#555;line-height:1.6;">Resonance Breathing + Awareness Rep. 8 minutes. That's all that's needed today.</p>
+    <p style="margin:0;font-size:12px;color:#555;line-height:1.6;">Show up.</p>
   `;
 
   return {
-    subject: "You're 2 days away.",
+    subject: 'Two more days.',
     html: baseWrapper(content, data.unsubscribeUrl),
   };
 }

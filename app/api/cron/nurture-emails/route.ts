@@ -6,10 +6,13 @@
 // + inactivity-anchored). All candidate sets exclude users who have set
 // notification_preferences.unsubscribed = true (see getUnsubscribedIds).
 //
-//  nurture_day12       — pre-eligibility momentum email
-//                        Anchor: consecutive_days >= 12, unlock_eligible = FALSE,
+//  nurture_day5_approach — pre-threshold momentum email (Sprint 6 T3.3)
+//                        Anchor: stage_start_date ±0.5d around 5d ago,
+//                        adherence_percentage >= 40, unlock_eligible = FALSE,
 //                        no active subscription
-//                        Sends to: app (not /upgrade — they're not eligible yet)
+//                        Sends to: /chat (continue today's practice)
+//                        Replaces legacy nurture_day12 (gate empty under
+//                        Sprint 5 D thresholds; body claimed "14 days" window).
 //
 //  nurture_email1      — first offer, same day eligibility is reached
 //                        Anchor: unlock_eligible = TRUE,
@@ -50,7 +53,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
 import {
-  day12Email,
+  day5ApproachEmail,
   day14Email,
   day17Email,
   day21Email,
@@ -137,20 +140,30 @@ async function getTestUserIds(
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Day 12 — pre-eligibility momentum email.
- * Anchor: consecutive_days >= 12 AND unlock_eligible = false.
- * Goal: keep them going 2 more days. Sends to app, not /upgrade.
+ * Day 5 approach — pre-threshold momentum email (Sprint 6 T3.3).
+ * Anchor: stage_start_date in 5d window (±0.5d) AND adherence ≥ 40
+ *         AND unlock_eligible = false AND no active subscription.
+ * Goal: nudge the engaged cohort that's approaching Sprint 5 D's 7-day
+ * unlock window. Replaces nurture_day12 (which was structurally near-empty
+ * under the new thresholds).
  */
-async function getDay12Candidates(supabase: ReturnType<typeof getAdminClient>, unsubscribedIds: string[], testUserIds: string[]) {
-  const sentIds = await getAlreadySentIds(supabase, 'nurture_day12');
+async function getDay5ApproachCandidates(supabase: ReturnType<typeof getAdminClient>, unsubscribedIds: string[], testUserIds: string[]) {
+  const sentIds = await getAlreadySentIds(supabase, 'nurture_day5_approach');
+
+  // ±12h window around exact Day 5 — mirrors lapsed-templates pattern.
+  // Upper bound (more recent) = 4.5 days ago; lower bound (further back) = 5.5 days ago.
+  const upperBound = new Date(Date.now() - 4.5 * 24 * 60 * 60 * 1000).toISOString();
+  const lowerBound = new Date(Date.now() - 5.5 * 24 * 60 * 60 * 1000).toISOString();
 
   let query = supabase
     .from('user_progress')
-    .select('user_id, consecutive_days, latest_avg_delta')
+    .select('user_id, adherence_percentage, latest_avg_delta, stage_start_date')
     .eq('current_stage', 1)
     .eq('unlock_eligible', false)
     .eq('has_active_subscription', false)
-    .gte('consecutive_days', 12);
+    .gte('adherence_percentage', 40)
+    .gte('stage_start_date', lowerBound)
+    .lte('stage_start_date', upperBound);
 
   if (unsubscribedIds.length > 0) {
     query = query.not('user_id', 'in', `(${unsubscribedIds.map(id => `"${id}"`).join(',')})`);
@@ -163,7 +176,7 @@ async function getDay12Candidates(supabase: ReturnType<typeof getAdminClient>, u
   }
 
   const { data, error } = await query;
-  if (error) throw new Error(`Day12 query failed: ${error.message}`);
+  if (error) throw new Error(`Day5Approach query failed: ${error.message}`);
   return data || [];
 }
 
@@ -418,7 +431,6 @@ async function logEmail(
 // Send a single nurture email
 // ─────────────────────────────────────────────────────────────────────────────
 type NurtureEmailType =
-  | 'nurture_day12'
   | 'nurture_email1'
   | 'nurture_email2'
   | 'nurture_email3'
@@ -435,9 +447,8 @@ async function sendNurtureEmail(
   const authData = await getUserAuthData(supabase, userId);
   if (!authData) return { success: false, reason: 'no_auth_data' };
 
-  // Day 12, Day 30, and re-engagement emails send to app
-  const sendsToApp = emailType === 'nurture_day12'
-    || emailType === 'nurture_day30'
+  // Day 30 and re-engagement emails send to app
+  const sendsToApp = emailType === 'nurture_day30'
     || emailType === 'reengagement_early'
     || emailType === 'reengagement_mid';
   const destinationUrl = sendsToApp
@@ -455,7 +466,6 @@ async function sendNurtureEmail(
   };
 
   const templateMap: Record<NurtureEmailType, (data: typeof emailData) => { subject: string; html: string }> = {
-    nurture_day12: day12Email,
     nurture_email1: day14Email,
     nurture_email2: day17Email,
     nurture_email3: day21Email,
@@ -482,6 +492,47 @@ async function sendNurtureEmail(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Send the Day 5 approach email (Sprint 6 T3.3).
+// Separate from sendNurtureEmail because the template's data shape differs
+// (adherence + remainingPractices instead of consecutive_days + upgradeUrl).
+// ─────────────────────────────────────────────────────────────────────────────
+async function sendDay5ApproachEmail(
+  supabase: ReturnType<typeof getAdminClient>,
+  candidate: { user_id: string; adherence_percentage: number; latest_avg_delta: number | null }
+) {
+  const authData = await getUserAuthData(supabase, candidate.user_id);
+  if (!authData) return { success: false, reason: 'no_auth_data' };
+
+  const adherence = candidate.adherence_percentage;
+  // Approximate slots needed to clear the 55% threshold. Floor at 2 so the
+  // body copy never reads "0 more slots." Formula matches planning doc spec.
+  const remainingPractices = Math.max(2, Math.ceil((0.55 - adherence / 100) * 28));
+
+  const { subject, html } = day5ApproachEmail({
+    firstName: authData.firstName,
+    adherence,
+    remainingPractices,
+    delta: candidate.latest_avg_delta,
+    ctaUrl: `${BASE_URL}/chat`,
+    unsubscribeUrl: buildUnsubscribeUrl(candidate.user_id),
+  });
+
+  const { error } = await resend.emails.send({
+    from: FROM_ADDRESS,
+    replyTo: REPLY_TO,
+    to: authData.email,
+    subject,
+    html,
+    headers: buildListUnsubscribeHeaders(candidate.user_id),
+  });
+
+  if (error) return { success: false, reason: error.message };
+
+  await logEmail(supabase, candidate.user_id, 'nurture_day5_approach');
+  return { success: true };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // CRON HANDLER
 // ─────────────────────────────────────────────────────────────────────────────
 export async function GET(request: Request) {
@@ -492,7 +543,7 @@ export async function GET(request: Request) {
 
   const supabase = getAdminClient();
   const results = {
-    day12:             { attempted: 0, sent: 0, failed: 0 },
+    day5Approach:      { attempted: 0, sent: 0, failed: 0 },
     email1:            { attempted: 0, sent: 0, failed: 0 },
     email2:            { attempted: 0, sent: 0, failed: 0 },
     email3:            { attempted: 0, sent: 0, failed: 0 },
@@ -508,12 +559,12 @@ export async function GET(request: Request) {
     const unsubscribedIds = await getUnsubscribedIds(supabase);
     const testUserIds = await getTestUserIds(supabase);
 
-    // ── Day 12 — pre-eligibility momentum ───────────────────────────────────
-    const day12Users = await getDay12Candidates(supabase, unsubscribedIds, testUserIds);
-    for (const u of day12Users) {
-      results.day12.attempted++;
-      const result = await sendNurtureEmail(supabase, u.user_id, 'nurture_day12', u);
-      result.success ? results.day12.sent++ : results.day12.failed++;
+    // ── Day 5 approach — pre-threshold momentum (Sprint 6 T3.3) ─────────────
+    const day5Users = await getDay5ApproachCandidates(supabase, unsubscribedIds, testUserIds);
+    for (const u of day5Users) {
+      results.day5Approach.attempted++;
+      const result = await sendDay5ApproachEmail(supabase, u);
+      result.success ? results.day5Approach.sent++ : results.day5Approach.failed++;
     }
 
     // ── Email 1 — first offer (day eligibility reached) ──────────────────────
